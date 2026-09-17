@@ -235,27 +235,16 @@ class EditionTransactionController extends Controller
     }
 
     /**
-     * Total income/expense/balance, scoped to $editionId when given.
      * Deliberately ignores the type/search filters — the three figures
      * are only meaningful together against the same edition scope.
+     * Calculation itself lives on EditionTransaction::summaryForEdition()
+     * (Phase 3.42), shared with the admin dashboard, so the two screens
+     * can never disagree on a given edition's balance.
      *
      * @return array{income: float, expense: float, balance: float}
      */
     private function summaryFor(?int $editionId): array
     {
-        $totals = EditionTransaction::query()
-            ->when($editionId, fn ($query, $id) => $query->where('edition_id', $id))
-            ->selectRaw("COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as income")
-            ->selectRaw("COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as expense")
-            ->first();
-
-        $income = (float) $totals->income;
-        $expense = (float) $totals->expense;
-
-        return [
-            'income' => $income,
-            'expense' => $expense,
-            'balance' => $income - $expense,
-        ];
+        return EditionTransaction::summaryForEdition($editionId);
     }
 }

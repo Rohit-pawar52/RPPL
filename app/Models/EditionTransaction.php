@@ -60,4 +60,32 @@ class EditionTransaction extends Model
     {
         return $this->hasOne(EditionContribution::class, 'edition_transaction_id');
     }
+
+    /**
+     * Total income/expense/balance, scoped to $editionId when given.
+     * The one source of truth for this calculation — both
+     * EditionTransactionController's ledger index and the admin
+     * dashboard (Phase 3.42) call this rather than each summing the
+     * table their own way, so the two screens can never disagree on
+     * what a given edition's balance is.
+     *
+     * @return array{income: float, expense: float, balance: float}
+     */
+    public static function summaryForEdition(?int $editionId): array
+    {
+        $totals = static::query()
+            ->when($editionId, fn ($query, $id) => $query->where('edition_id', $id))
+            ->selectRaw("COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as income")
+            ->selectRaw("COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as expense")
+            ->first();
+
+        $income = (float) $totals->income;
+        $expense = (float) $totals->expense;
+
+        return [
+            'income' => $income,
+            'expense' => $expense,
+            'balance' => $income - $expense,
+        ];
+    }
 }
