@@ -155,4 +155,21 @@ class DashboardTest extends TestCase
     {
         $this->get(route('admin.dashboard'))->assertRedirect(route('admin.login'));
     }
+
+    /**
+     * Phase 3.41 — the sidebar previously had permanently-disabled
+     * "Scoring"/"Reports"/"Settings" placeholders that misleadingly
+     * suggested unfinished features (scoring is fully built, just
+     * accessed per-match rather than as a top-level page). Removed
+     * outright rather than pointed at a route, per the audit.
+     */
+    public function test_sidebar_no_longer_shows_disabled_placeholder_items(): void
+    {
+        $response = $this->actingAs($this->admin())->get(route('admin.dashboard'));
+
+        $response->assertOk();
+        $response->assertDontSee('Scoring');
+        $response->assertDontSee('Reports');
+        $response->assertDontSee('Settings');
+    }
 }
