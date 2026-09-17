@@ -13,3 +13,7 @@ This file is a running, repo-tracked list of standing instructions for how Claud
 ### 2026-09-17 — GitHub rulesets configured
 
 Both `main` and `uat` now have GitHub Rulesets: `uat` requires a PR + the `build-and-test` CI check + blocks force pushes; `main` requires a PR (direct push blocked). No one is on the bypass list — even the repo owner must go through a PR.
+
+### 2026-09-17 — Commit messages must be clean and detailed
+
+Every commit must clearly explain what actually changed and why — detailed enough that reading the commit message alone (without re-reading the diff or this conversation) tells you what was built/changed. Never use vague messages like "update", "fix", "changes", or "wip". Prefer a short summary line plus, when the change isn't self-explanatory from the summary alone, a body describing what was added/changed and the reason. This matters because the whole point of a clean git history is to let someone understand later, from the log alone, what each change actually did.
