@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\MatchFlowController;
 use App\Http\Controllers\Admin\MatchPlayerController;
 use App\Http\Controllers\Admin\PlayerController;
 use App\Http\Controllers\Admin\PlayerRegistrationController;
+use App\Http\Controllers\Admin\ReportsController;
 use App\Http\Controllers\Admin\ScorecardController;
 use App\Http\Controllers\Admin\ScoringController;
 use App\Http\Controllers\Admin\TeamController;
@@ -37,6 +38,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware(['auth', 'active', 'can:access-admin-panel'])->group(function () {
         Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
         Route::get('dashboard', DashboardController::class)->name('dashboard');
+
+        // Read-side reporting/navigation hub (Phase 3.43) — links to
+        // existing exports/PDFs, plus one new print-friendly Financial
+        // Summary. No writes, no new tables.
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('/', [ReportsController::class, 'index'])->name('index');
+            Route::get('/financial-summary', [ReportsController::class, 'financialSummary'])->name('financial-summary');
+        });
 
         // EditionController and PlayerController additionally enforce their
         // policies (admin-only) via explicit $this->authorize() calls in
@@ -117,6 +126,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('edition-transactions', EditionTransactionController::class);
         Route::resource('committee-members', CommitteeMemberController::class);
         Route::resource('contributors', ContributorController::class);
+        // Must precede the resource route below — otherwise "export"
+        // would be captured by the {edition_contribution} wildcard.
+        Route::get('edition-contributions/export', [EditionContributionController::class, 'export'])->name('edition-contributions.export');
         // No edit/update: a contribution's financial history is never
         // silently rewritten (see EditionContributionController).
         Route::resource('edition-contributions', EditionContributionController::class)->only([

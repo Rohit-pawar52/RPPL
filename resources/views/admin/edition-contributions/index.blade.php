@@ -42,12 +42,21 @@
             @endif
         </form>
 
-        <a
-            href="{{ route('admin.edition-contributions.create') }}"
-            class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-blue-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-blue-500"
-        >
-            + Record contribution
-        </a>
+        <div class="flex items-center gap-2">
+            <a
+                href="{{ route('admin.edition-contributions.export', $filters) }}"
+                class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50"
+            >
+                <x-icon name="document-chart" class="h-4 w-4" />
+                Export
+            </a>
+            <a
+                href="{{ route('admin.edition-contributions.create') }}"
+                class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-blue-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-blue-500"
+            >
+                + Record contribution
+            </a>
+        </div>
     </div>
 
     <div class="mb-4">

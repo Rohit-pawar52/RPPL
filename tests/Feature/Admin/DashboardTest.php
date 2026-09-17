@@ -285,19 +285,20 @@ class DashboardTest extends TestCase
     }
 
     /**
-     * Phase 3.41 — the sidebar previously had permanently-disabled
-     * "Scoring"/"Reports"/"Settings" placeholders that misleadingly
-     * suggested unfinished features (scoring is fully built, just
-     * accessed per-match rather than as a top-level page). Removed
-     * outright rather than pointed at a route, per the audit.
+     * Phase 3.41 removed the permanently-disabled "Scoring"/"Reports"/
+     * "Settings" sidebar placeholders that misleadingly suggested
+     * unfinished features. Phase 3.43 gave Reports a real route, so it
+     * is back — as an actual link, not a dead stub — while Scoring and
+     * Settings (still no real top-level page) must remain absent.
      */
-    public function test_sidebar_no_longer_shows_disabled_placeholder_items(): void
+    public function test_sidebar_shows_real_reports_link_but_not_scoring_or_settings_stubs(): void
     {
         $response = $this->actingAs($this->admin())->get(route('admin.dashboard'));
 
         $response->assertOk();
         $response->assertDontSee('Scoring');
-        $response->assertDontSee('Reports');
         $response->assertDontSee('Settings');
+        $response->assertSee('Reports');
+        $response->assertSee(route('admin.reports.index'), false);
     }
 }

@@ -201,5 +201,11 @@
                 <p class="mt-2 text-[11px] text-neutral-400">Already included in Finance income above — shown separately for visibility only.</p>
             </div>
         </div>
+
+        <p class="mt-3 text-right">
+            <a href="{{ route('admin.reports.index', ['edition_id' => $edition->id]) }}" class="text-[11px] font-medium text-blue-600 hover:underline">
+                View full Reports &rarr;
+            </a>
+        </p>
     @endif
 @endsection
