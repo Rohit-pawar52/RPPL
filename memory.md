@@ -25,3 +25,9 @@ Every new feature must come with tests, added in the same piece of work — don'
 ### 2026-09-17 — Don't push/PR for every small change
 
 We're working solo — don't push/pull/open a PR after every small edit. Batch small changes locally (commit as usual for a clean history) and only push/PR: after a genuinely bigger task is complete, at the end of the day, or whenever the user explicitly says to push. Small/minor tweaks should just accumulate as local commits until one of those points.
+
+## Project setup log
+
+### 2026-09-17 — GitHub repository and workflow set up
+
+The project was put on GitHub (`Rohit-pawar52/RPPL`) with the same branching/CI workflow used on a prior project: `main` (production) and `uat` (staging) as protected branches, feature branches go off `uat`, PR into `uat` → verify → PR `uat` into `main` to promote. A GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every PR into either branch — builds frontend assets, runs the full PHP test suite, and checks code style with Pint — and both branches have a GitHub Ruleset requiring that check (plus a PR in general) before merging, with no bypass for anyone including the repo owner. The codebase had never been run through Pint before, so a one-time formatting pass was applied across the whole project to make that check pass from day one (whitespace/style only, verified with a full test run — no behavior changed).
