@@ -21,3 +21,7 @@ Every commit must clearly explain what actually changed and why — detailed eno
 ### 2026-09-17 — Add tests as you go, but only the necessary ones
 
 Every new feature must come with tests, added in the same piece of work — don't defer this. But only add tests that genuinely increase confidence (the real behavior/business rule, the edge cases that could actually break, authorization). Do not add excessive/low-value tests (e.g. a separate test per trivial validation rule, duplicate coverage of something another test already proves, testing framework/library behavior instead of this project's own logic) — those just slow down the test suite and CI on every merge without adding real safety.
+
+### 2026-09-17 — Don't push/PR for every small change
+
+We're working solo — don't push/pull/open a PR after every small edit. Batch small changes locally (commit as usual for a clean history) and only push/PR: after a genuinely bigger task is complete, at the end of the day, or whenever the user explicitly says to push. Small/minor tweaks should just accumulate as local commits until one of those points.
