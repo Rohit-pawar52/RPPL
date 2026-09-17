@@ -17,3 +17,7 @@ Both `main` and `uat` now have GitHub Rulesets: `uat` requires a PR + the `build
 ### 2026-09-17 — Commit messages must be clean and detailed
 
 Every commit must clearly explain what actually changed and why — detailed enough that reading the commit message alone (without re-reading the diff or this conversation) tells you what was built/changed. Never use vague messages like "update", "fix", "changes", or "wip". Prefer a short summary line plus, when the change isn't self-explanatory from the summary alone, a body describing what was added/changed and the reason. This matters because the whole point of a clean git history is to let someone understand later, from the log alone, what each change actually did.
+
+### 2026-09-17 — Add tests as you go, but only the necessary ones
+
+Every new feature must come with tests, added in the same piece of work — don't defer this. But only add tests that genuinely increase confidence (the real behavior/business rule, the edge cases that could actually break, authorization). Do not add excessive/low-value tests (e.g. a separate test per trivial validation rule, duplicate coverage of something another test already proves, testing framework/library behavior instead of this project's own logic) — those just slow down the test suite and CI on every merge without adding real safety.
