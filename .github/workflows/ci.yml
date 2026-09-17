@@ -1,0 +1,56 @@
+name: CI
+
+# Every pull request into uat (or main) must pass this before it can be
+# merged - the uat/main branch rulesets require this check to succeed.
+# This is CI only: it decides whether a change is allowed to merge.
+# Deployment (if/when this project adds a hosting target) is a separate,
+# later step triggered by the merge itself, not by this workflow.
+on:
+  pull_request:
+    branches: [uat, main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: mbstring, pdo_sqlite, sqlite3, bcmath, gd, zip
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      # Several views render through @vite() - building assets here isn't
+      # required by the sqlite-backed test suite itself, but it catches a
+      # broken frontend build before it ever reaches uat/main.
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      # phpunit.xml already points DB_CONNECTION at an in-memory sqlite
+      # database and QUEUE_CONNECTION at sync, so the full suite runs
+      # here with no database service container and no queue worker.
+      - name: Run test suite
+        run: php artisan test
+
+      - name: Check code style (Pint)
+        run: ./vendor/bin/pint --test
