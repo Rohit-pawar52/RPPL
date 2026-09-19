@@ -34,6 +34,23 @@ This file is updated section-by-section as manual UAT progresses. A section is o
 | **MEDIUM** | Real problem, workaround exists, not launch-blocking |
 | **LOW** | Cosmetic/minor, fix opportunistically |
 
+## How to Execute This Checklist
+
+For every item currently marked `NOT TESTED`:
+
+- **PASS** — change the status to `PASS` only after manually verifying the actual behavior matches the stated "Expected" result.
+- **FAIL** — leave/set it as `FAIL` and create a matching entry in [Issues Found During UAT](#10-issues-found-during-uat).
+- **BLOCKED** — use when another defect, missing precondition, or environment problem prevents the test from actually being run.
+- **N/A** — use only when the test genuinely does not apply (e.g. an optional feature not configured in this environment).
+
+**Never mark a test `PASS` just because a corresponding PHPUnit test exists or passes.** Automated and manual verification are tracked completely independently in this project — see the Documentation Maintenance Rule at the end of this document.
+
+## Test Data Safety
+
+- Use **dummy/non-sensitive files** for Aadhaar documents, payment proof screenshots, and any photo uploads during UAT. Never use a real Aadhaar document or real personal financial data.
+- Use a **dedicated UAT Edition** (and dedicated UAT teams/players/venue) rather than testing against real historical tournament data where practical.
+- Do **not** run destructive database reset commands (`migrate:fresh`, `db:wipe`, etc.) against an environment holding data you care about.
+
 ---
 
 ## Contents
@@ -45,10 +62,11 @@ This file is updated section-by-section as manual UAT progresses. A section is o
 5. [Batch 4 — Public Website, Statistics & Standings](#5-batch-4--public-website-statistics--standings)
 6. [Batch 5 — Finance, Contributions & Reports](#6-batch-5--finance-contributions--reports)
 7. [Batch 6 — Responsive, Privacy & Final Smoke](#7-batch-6--responsive-privacy--final-smoke)
-8. [Pre-UAT / Product Observations](#8-pre-uat--product-observations)
-9. [Issues Found During UAT](#9-issues-found-during-uat)
-10. [Final UAT Summary](#10-final-uat-summary)
-11. [Future Regression Checklist](#11-future-regression-checklist)
+8. [Master Module Coverage Checklist](#8-master-module-coverage-checklist)
+9. [Pre-UAT / Product Observations](#9-pre-uat--product-observations)
+10. [Issues Found During UAT](#10-issues-found-during-uat)
+11. [Final UAT Summary](#11-final-uat-summary)
+12. [Future Regression Checklist](#12-future-regression-checklist)
 
 ---
 
@@ -1041,32 +1059,283 @@ Repeat with `slug => 'scorer'` for a scorer account.
 **Status: NOT TESTED**
 
 ### Finance Ledger / Committee / Contributors
-- [ ] UAT-FIN-01 — Record one income and one expense transaction for the UAT Edition. **Status: NOT TESTED**
-- [ ] UAT-COMM-01 — Create a Committee Member. **Status: NOT TESTED**
-- [ ] UAT-CONTRIB-01 — Create a Contributor with a photo upload; preview renders. **Status: NOT TESTED**
-- [ ] UAT-CONTRIB-02 — Record a committee contribution meeting the enforced minimum. **Status: NOT TESTED**
-- [ ] UAT-CONTRIB-03 — Record a general contributor contribution. **Status: NOT TESTED**
+
+#### UAT-FIN-01 — Record income and expense transactions
+**Area:** Finance Ledger · **Role:** Admin · **Status:** NOT TESTED
+
+**Purpose:** Verify manual income and expense entries can be recorded against the UAT Edition.
+
+**Steps:**
+1. Open `admin.edition-transactions.create`.
+2. Record one income transaction (edition, amount, category) for the UAT Edition.
+3. Record one expense transaction the same way.
+
+**Expected:** Both transactions appear in the Finance ledger index, correctly scoped to the UAT Edition, with correct type/amount.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-COMM-01 — Create a Committee Member
+**Area:** Committee Members · **Role:** Admin · **Status:** NOT TESTED
+
+**Steps:**
+1. Open `admin.committee-members.create`.
+2. Enter details and save.
+
+**Expected:** Committee Member is created, appears in the index, and is selectable as a contribution source.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-CONTRIB-01 — Create a Contributor with a photo
+**Area:** Contributors · **Role:** Admin · **Status:** NOT TESTED
+
+**Steps:**
+1. Open `admin.contributors.create`.
+2. Enter details and upload a photo.
+3. Save and view the show page.
+
+**Expected:** Contributor is created; the uploaded photo renders correctly on the admin show/edit page.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-CONTRIB-02 — Committee contribution at/above the enforced minimum
+**Area:** Contributions · **Role:** Admin · **Status:** NOT TESTED
+
+**Preconditions:** The Committee Member from UAT-COMM-01 exists.
+
+**Steps:**
+1. Open `admin.edition-contributions.create`.
+2. Select the Committee Member as source, an amount at/above the enforced committee minimum, and the UAT Edition.
+3. Save.
+
+**Expected:** Contribution is recorded, and a matching income transaction is automatically created in the Finance ledger for the same amount.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-CONTRIB-03 — General contributor contribution
+**Area:** Contributions · **Role:** Admin · **Status:** NOT TESTED
+
+**Preconditions:** The Contributor from UAT-CONTRIB-01 exists.
+
+**Steps:**
+1. Record a contribution against the general Contributor, any positive amount, for the UAT Edition.
+
+**Expected:** Contribution is recorded with its own matching income transaction.
+
+**Result:** NOT TESTED
 
 ### Public Contributor Leaderboard & Receipt
-- [ ] UAT-LEAD-01 — Leaderboard shows the photographed contributor's real photo and initials fallback for one without a photo. **Status: NOT TESTED**
-- [ ] UAT-LEAD-02 — Badge wording is correct (e.g. "Top Contributor") and no amount/phone/notes appear anywhere, including page source. **Status: NOT TESTED**
-- [ ] UAT-RCPT-01 — Contribution receipt HTML preview and PDF download both show correct amount/date/name. **Status: NOT TESTED**
+
+#### UAT-LEAD-01 — Leaderboard photo and initials fallback
+**Area:** Public Contributor Leaderboard · **Role:** Guest · **Status:** NOT TESTED
+
+**Preconditions:** UAT-CONTRIB-01/02/03 completed; at least one other contributor with no photo also has a contribution on the UAT Edition.
+
+**Steps:**
+1. Open the public UAT Edition page's contributor leaderboard section.
+
+**Expected:** The photographed contributor shows their actual circular photo; a contributor without a photo shows an initials avatar instead.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-LEAD-02 — Badge wording and amount privacy
+**Area:** Public Contributor Leaderboard · **Role:** Guest · **Status:** NOT TESTED
+
+**Steps:**
+1. Inspect the leaderboard's badge label for the top-ranked contributor(s).
+2. View page source for the leaderboard section.
+
+**Expected:** Badge wording matches the application's defined recognition tiers (e.g. "Top Contributor"); no contribution amount, phone number, or notes appear anywhere in the rendered HTML.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-RCPT-01 — Contribution receipt HTML and PDF
+**Area:** Contribution Receipt · **Role:** Admin · **Status:** NOT TESTED
+
+**Steps:**
+1. Open the HTML receipt preview for a UAT contribution.
+2. Download the receipt PDF for the same contribution.
+
+**Expected:** Both the HTML preview and the PDF show the correct amount/date/contributor name and agree with each other.
+
+**Result:** NOT TESTED
 
 ### Finance/Contribution Cross-Checks
-- [ ] UAT-FINX-01 — Ledger income total correctly includes each contribution exactly once (no double-count). **Status: NOT TESTED**
-- [ ] UAT-FINX-02 — Dashboard Finance card matches the ledger page's income/expense/balance. **Status: NOT TESTED**
-- [ ] UAT-FINX-03 — Dashboard Contributions card matches the Contributions page total, with the "already included in Finance income" note visible. **Status: NOT TESTED**
-- [ ] UAT-FINX-04 — Public leaderboard hides amount while the admin Contributions page shows it for the same rows. **Status: NOT TESTED**
+
+#### UAT-FINX-01 — Ledger income includes each contribution exactly once
+**Area:** Finance/Contribution Consistency · **Role:** Admin · **Status:** NOT TESTED
+
+**Preconditions:** UAT-FIN-01, UAT-CONTRIB-02, and UAT-CONTRIB-03 completed.
+
+**Steps:**
+1. Compare the Finance ledger's total income for the UAT Edition against the manual income entry plus both contribution amounts.
+
+**Expected:** Each contribution appears in the ledger exactly once (as its own income transaction); no double-counting.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-FINX-02 — Dashboard Finance card matches the ledger
+**Area:** Dashboard · **Role:** Admin · **Status:** NOT TESTED
+
+**Steps:**
+1. Compare the Dashboard's Finance card (income/expense/balance) against the Finance ledger page for the same Edition.
+
+**Expected:** Figures match exactly.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-FINX-03 — Dashboard Contributions card shows the "already included" note
+**Area:** Dashboard · **Role:** Admin · **Status:** NOT TESTED
+
+**Steps:**
+1. View the Dashboard's Contributions card for the UAT Edition.
+
+**Expected:** Total matches the Contributions page total; the card visibly notes that this total is already included within Finance income (not additional money on top).
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-FINX-04 — Public leaderboard hides amount; admin Contributions page shows it
+**Area:** Finance/Contribution Consistency · **Role:** Admin + Guest · **Status:** NOT TESTED
+
+**Steps:**
+1. Note the amount for a UAT contribution on the admin Contributions page.
+2. Compare against the same contributor's presentation on the public leaderboard.
+
+**Expected:** The admin page shows the actual amount; the public leaderboard never shows any amount for the same contributor.
+
+**Result:** NOT TESTED
 
 ### Dashboard & Reports
-- [ ] UAT-DASH-01 — Pending-verification banner links to the correctly filtered registration queue. **Status: NOT TESTED**
-- [ ] UAT-DASH-02 — Registration Payments card shows the correct paid amount (sum of actual stored fees). **Status: NOT TESTED**
-- [ ] UAT-REPORT-01 — Registration CSV downloads and opens with sane headers/data. **Status: NOT TESTED**
-- [ ] UAT-REPORT-02 — Finance CSV downloads and includes contribution-linked rows correctly labeled. **Status: NOT TESTED**
-- [ ] UAT-REPORT-03 — Contribution CSV downloads with correct columns and no phone column. **Status: NOT TESTED**
-- [ ] UAT-REPORT-04 — Edition Summary PDF layout is not clipped and includes all expected sections. **Status: NOT TESTED**
-- [ ] UAT-REPORT-05 — Financial Summary print preview renders cleanly. **Status: NOT TESTED**
-- [ ] UAT-REPORT-06 — Changing the Reports edition selector updates every link/figure. **Status: NOT TESTED**
+
+#### UAT-DASH-01 — Pending-verification banner link
+**Area:** Dashboard · **Role:** Admin · **Status:** NOT TESTED
+
+**Preconditions:** At least one registration with `payment_status = pending` exists for the current Dashboard Edition.
+
+**Steps:**
+1. Open the Dashboard.
+2. Click the pending-verification banner/link.
+
+**Expected:** Lands on the Player Registrations index, pre-filtered to the correct Edition and `payment_status = pending`.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-DASH-02 — Registration Payments paid amount uses real stored fees
+**Area:** Dashboard · **Role:** Admin · **Status:** NOT TESTED
+
+**Preconditions:** At least two paid registrations exist with different stored `registration_fee` values.
+
+**Steps:**
+1. Compare the Dashboard's "Paid Amount" figure against the sum of the actual stored `registration_fee` values on paid registrations for the Edition.
+
+**Expected:** Figure reflects the real stored fees, not the edition's current fee multiplied by the paid count.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-REPORT-01 — Registration CSV
+**Area:** Reports · **Role:** Admin · **Status:** NOT TESTED
+
+**Steps:**
+1. On `admin/reports` for the UAT Edition, download the Registration CSV.
+2. Open the file.
+
+**Expected:** File downloads and opens correctly with sensible headers/rows matching the UAT registrations.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-REPORT-02 — Finance CSV
+**Area:** Reports · **Role:** Admin · **Status:** NOT TESTED
+
+**Steps:**
+1. Download the Finance CSV for the UAT Edition.
+
+**Expected:** File downloads and opens correctly, including the manual and contribution-linked transactions, each correctly labeled by source.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-REPORT-03 — Contribution CSV
+**Area:** Reports · **Role:** Admin · **Status:** NOT TESTED
+
+**Steps:**
+1. Download the Contribution CSV for the UAT Edition.
+
+**Expected:** File downloads and opens correctly with reference/contributor-name/source/amount/date/notes/recorded-by/transaction-id columns; no phone column.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-REPORT-04 — Edition Summary PDF
+**Area:** Reports · **Role:** Admin · **Status:** NOT TESTED
+
+**Steps:**
+1. Download the Edition Summary PDF from Reports for the UAT Edition.
+
+**Expected:** Opens cleanly, not clipped, and includes overview/registrations/teams/matches/standings/statistics sections.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-REPORT-05 — Financial Summary print preview
+**Area:** Reports · **Role:** Admin · **Status:** NOT TESTED
+
+**Steps:**
+1. Open the Financial Summary page for the UAT Edition.
+2. Open the browser's print preview for the page.
+
+**Expected:** Renders cleanly both on screen and in print preview; figures are readable and not cut off.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-REPORT-06 — Reports Edition selector updates all figures
+**Area:** Reports · **Role:** Admin · **Status:** NOT TESTED
+
+**Steps:**
+1. On `admin/reports`, change the Edition selector to a different edition.
+
+**Expected:** Every link and figure on the page updates to reflect the newly selected edition.
+
+**Result:** NOT TESTED
+
+### Batch 5 Summary
+
+| Area | Tests | Passed | Failed | Blocked | Not Tested |
+|---|---|---|---|---|---|
+| Finance Ledger / Committee / Contributors | 5 | 0 | 0 | 0 | 5 |
+| Public Contributor Leaderboard & Receipt | 3 | 0 | 0 | 0 | 3 |
+| Finance/Contribution Cross-Checks | 4 | 0 | 0 | 0 | 4 |
+| Dashboard & Reports | 8 | 0 | 0 | 0 | 8 |
+| **Total** | **20** | **0** | **0** | **0** | **20** |
+
+**Batch 5 Status: NOT TESTED**
 
 ---
 
@@ -1075,30 +1344,333 @@ Repeat with `slug => 'scorer'` for a scorer account.
 **Status: NOT TESTED**
 
 ### Cancellation / Abandonment
-- [ ] UAT-CANCEL-01 — Cancel a scheduled match before toss; clean status, no scoring artifacts. **Status: NOT TESTED**
-- [ ] UAT-CANCEL-02 — Abandon a match after some scoring; existing deliveries remain visible, no further scoring possible. **Status: NOT TESTED**
 
-### Responsive
-- [ ] UAT-RESP-01 — Public home/edition page at 375/768/1366px. **Status: NOT TESTED**
-- [ ] UAT-RESP-02 — Public registration form at 375px. **Status: NOT TESTED**
-- [ ] UAT-RESP-03 — Status lookup form at 375px. **Status: NOT TESTED**
-- [ ] UAT-RESP-04 — Admin dashboard at 375px. **Status: NOT TESTED**
-- [ ] UAT-RESP-05 — Admin scoring page at 375/768px. **Status: NOT TESTED**
-- [ ] UAT-RESP-06 — Public live score page at 375px. **Status: NOT TESTED**
-- [ ] UAT-RESP-07 — Contributor leaderboard grid at 375px. **Status: NOT TESTED**
-- [ ] UAT-RESP-08 — Admin Reports page at 375px. **Status: NOT TESTED**
+#### UAT-CANCEL-01 — Cancel a scheduled match before scoring
+**Area:** Match Lifecycle · **Role:** Admin · **Status:** NOT TESTED
 
-### Security/Privacy Spot Check
-- [ ] UAT-SEC-01 — Scorer gets 403 on Reports/Finance/Contributions/Users; can still reach Matches/scoring. **Status: NOT TESTED**
-- [ ] UAT-SEC-02 — Guest is redirected to login for any admin URL and for private document URLs. **Status: NOT TESTED**
-- [ ] UAT-SEC-03 — No hidden fields/attributes leak amount, phone, or payment reference on public pages (page source check). **Status: NOT TESTED**
+**Purpose:** Verify a scheduled match (before toss/scoring) can be cleanly cancelled.
 
-### Final Smoke
-- [ ] UAT-SMOKE-01 — One uninterrupted admin walkthrough (Dashboard → Reports → Edition → Registrations → Teams → Match → Scorecard → Dashboard) with no console errors. **Status: NOT TESTED**
+**Preconditions:** Use a disposable throwaway match — do not use the main UAT match already scored in Batch 3.
+
+**Steps:**
+1. Create a new scheduled match.
+2. Cancel it before starting toss.
+
+**Expected:** Status becomes "cancelled"; no scoring data is created; the cancelled match cannot continue through the normal toss/scoring workflow; public/admin presentation of the match remains sensible (clearly shown as cancelled, not as an active fixture).
+
+**Result:** NOT TESTED
 
 ---
 
-## 8. Pre-UAT / Product Observations
+#### UAT-CANCEL-02 — Abandon a live match after at least one delivery
+**Area:** Match Lifecycle · **Role:** Admin/Scorer · **Status:** NOT TESTED
+
+**Preconditions:** Use a separate disposable match — do not use the main UAT match.
+
+**Steps:**
+1. Create a match, complete toss, start it, and record at least one delivery.
+2. Abandon the match.
+
+**Expected:** Status becomes "abandoned"; the delivery/scoring history already recorded remains preserved and visible; further scoring is blocked; public/admin status presentation remains sensible.
+
+**Result:** NOT TESTED
+
+### Responsive / Mobile
+
+*Representative widths only — not every page needs all three: 375px mobile, 768px tablet, 1366px desktop.*
+
+#### UAT-RESP-01 — Public Home / Edition pages
+**Area:** Responsive · **Role:** Guest · **Status:** NOT TESTED
+
+**Steps:** View the public Home and Edition pages at 375px, 768px, and 1366px.
+
+**Expected:** No horizontal overflow or broken layout at any of the three widths.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-RESP-02 — Public Player Registration
+**Area:** Responsive · **Role:** Guest · **Status:** NOT TESTED
+
+**Steps:** View the public registration form at 375px; interact with text fields and file pickers.
+
+**Expected:** Form does not overflow; file pickers are usable on a small screen.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-RESP-03 — Registration Status lookup
+**Area:** Responsive · **Role:** Guest · **Status:** NOT TESTED
+
+**Steps:** View the public status-lookup form at 375px.
+
+**Expected:** Form is usable, no overflow.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-RESP-04 — Admin Dashboard
+**Area:** Responsive · **Role:** Admin · **Status:** NOT TESTED
+
+**Steps:** View the admin Dashboard at 375px.
+
+**Expected:** Cards stack sensibly; no overlapping text or unusable controls.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-RESP-05 — Admin/Scorer live scoring page *(high priority)*
+**Area:** Responsive · **Role:** Admin/Scorer · **Status:** NOT TESTED
+
+**Purpose:** This is the page a scorer is most likely to use on a phone/tablet at the actual ground — highest practical priority of the responsive checks.
+
+**Steps:** View the delivery-recording form at 375px and 768px.
+
+**Expected:** Selects/buttons/checkboxes on the scoring form remain usable at both widths; no control is cut off or impossible to tap.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-RESP-06 — Public Live Score page
+**Area:** Responsive · **Role:** Guest · **Status:** NOT TESTED
+
+**Steps:** View the public live match page at 375px.
+
+**Expected:** Score/innings/recent-deliveries sections remain usable and readable.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-RESP-07 — Public Contributor leaderboard
+**Area:** Responsive · **Role:** Guest · **Status:** NOT TESTED
+
+**Steps:** View the leaderboard grid at 375px.
+
+**Expected:** Cards wrap to fewer columns cleanly; no overflow.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-RESP-08 — Admin Reports page
+**Area:** Responsive · **Role:** Admin · **Status:** NOT TESTED
+
+**Steps:** View `admin/reports` at 375px.
+
+**Expected:** Report rows/links remain usable, no horizontal overflow.
+
+**Result:** NOT TESTED
+
+### User & Scorer Management
+
+*Not covered by any existing batch — added as its own subsection. Only behaviors confirmed to exist in the current codebase (`UserController`, `UpdateUserRequest`) are included.*
+
+#### UAT-USER-01 — Admin creates a scorer account
+**Area:** User Management · **Role:** Admin · **Status:** NOT TESTED
+
+**Purpose:** Verify an admin can create a new user account with the Scorer role and that it receives scorer-level (not admin-level) access.
+
+**Steps:**
+1. Open `admin.users.create`.
+2. Create a new account with role = Scorer.
+3. Log in as that account.
+
+**Expected:** Account is created and active immediately; logging in as it grants scorer-level navigation/access (Dashboard + Matches only), not admin-level access.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-USER-02 — Inactive user cannot authenticate
+**Area:** User Management · **Role:** Admin (setup) / the deactivated user (test) · **Status:** NOT TESTED
+
+**Steps:**
+1. Deactivate a non-admin test user account (`is_active = false`) via `admin.users.edit`.
+2. Attempt to log in as that account.
+
+**Expected:** Login fails the same way an incorrect password would (no distinguishable "account disabled" message); the account cannot authenticate while inactive.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-USER-03 — Admin self-lockout and last-active-admin safeguard
+**Area:** User Management · **Role:** Admin · **Status:** NOT TESTED
+
+**Purpose:** Verify the application prevents an admin from removing their own admin access, and prevents deactivating/demoting the last remaining active admin account.
+
+**Steps:**
+1. While logged in as an admin, attempt to deactivate your own account or change your own role away from Admin.
+2. With only one active admin account in the system, attempt to deactivate or demote that account from a different admin session (or after temporarily creating a second admin to test the general rule, then reducing back to one).
+
+**Expected:** Both attempts are rejected with a validation error (cannot deactivate/demote your own account; at least one active administrator account must remain in the system).
+
+**Result:** NOT TESTED
+
+### Security/Privacy Spot Check
+
+#### UAT-SEC-01 — Scorer authorization spot check
+**Area:** Authorization · **Role:** Scorer · **Status:** NOT TESTED
+
+**Steps:**
+1. As scorer, attempt to access `admin/reports`, `admin/edition-transactions`, `admin/edition-contributions`, and `admin/users`.
+2. As scorer, access Matches/scoring pages.
+
+**Expected:** Scorer retains intended match/scoring access; admin-only areas (finance, contributions, reports, user management) remain protected (403) according to current policies.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-SEC-02 — Guest/admin-route/private-document protection
+**Area:** Authorization / Privacy · **Role:** Guest · **Status:** NOT TESTED
+
+**Steps:**
+1. While logged out, attempt to open an admin route directly.
+2. Attempt to open an Aadhaar/payment-proof document URL directly.
+
+**Expected:** Admin routes require authentication (redirect to login); Aadhaar/payment-proof documents cannot be accessed publicly — a logged-out user never receives the private document.
+
+**Result:** NOT TESTED
+
+---
+
+#### UAT-SEC-03 — Public-source privacy spot check
+**Area:** Privacy · **Role:** Guest · **Status:** NOT TESTED
+
+**Steps:**
+1. Inspect the rendered HTML/page source of the public registration-status result and the contributor leaderboard.
+
+**Expected:** No hidden inputs, `data-*` attributes, HTML comments, embedded JS, or URLs leak `payment_reference`, private document paths, contributor phone numbers, intentionally-hidden contribution amounts, or other admin-only financial data.
+
+**Result:** NOT TESTED
+
+### Final Smoke
+
+#### UAT-SMOKE-01 — Uninterrupted admin navigation walkthrough
+**Area:** Final Smoke · **Role:** Admin · **Status:** NOT TESTED
+
+**Steps:**
+1. In one session, navigate: Dashboard → Reports → Edition → Registrations → Teams → Match → Scorecard → Dashboard.
+
+**Expected:** Navigation works throughout; active-navigation highlighting makes sense; no broken links; no obvious browser console errors; no unexpected 500 errors.
+
+**Result:** NOT TESTED
+
+### Batch 6 Summary
+
+| Area | Tests | Passed | Failed | Blocked | Not Tested |
+|---|---|---|---|---|---|
+| Cancellation / Abandonment | 2 | 0 | 0 | 0 | 2 |
+| Responsive / Mobile | 8 | 0 | 0 | 0 | 8 |
+| User & Scorer Management | 3 | 0 | 0 | 0 | 3 |
+| Security/Privacy Spot Check | 3 | 0 | 0 | 0 | 3 |
+| Final Smoke | 1 | 0 | 0 | 0 | 1 |
+| **Total** | **17** | **0** | **0** | **0** | **17** |
+
+**Batch 6 Status: NOT TESTED**
+
+---
+
+## 8. Master Module Coverage Checklist
+
+This is **not** a separate set of test results — it is an index showing which detailed UAT entries above cover each current application module, so the whole application's coverage can be seen at a glance.
+
+| Module | Covered by |
+|---|---|
+| Authentication | UAT-AUTH-01 – 05 |
+| User / Scorer management | UAT-USER-01 – 03 |
+| Editions | UAT-ED-01 – 03 |
+| Players | UAT-PLY-01, UAT-PLY-02 |
+| Public registration | UAT-REG-01 – 05 |
+| Registration status lookup | UAT-STATUS-01 – 04 |
+| Registration review (admin) | UAT-REGADM-01 – 06 |
+| Registration CSV import | UAT-IMPORT-01 |
+| Registration CSV export | UAT-REPORT-01 |
+| Teams | UAT-TEAM-01 |
+| Edition Teams | UAT-TEAM-02 |
+| Squads | UAT-TEAM-03 |
+| Venues | UAT-VEN-01 |
+| Matches | UAT-MATCH-01 |
+| Playing XI | UAT-XI-01, UAT-XI-02 |
+| Toss | UAT-TOSS-01, UAT-TOSS-02 |
+| Innings | UAT-INN-01 – 03 |
+| Ball-by-ball scoring | UAT-SCORE-01 – 08 |
+| Undo delivery | UAT-SCORE-07, UAT-SCORE-08 |
+| Realtime (Reverb + polling) | UAT-LIVE-01 – 04 |
+| Public live match page | UAT-LIVE-01 – 04, UAT-RESP-06 |
+| Match result | UAT-RESULT-01 – 03 |
+| Scorecard (admin/public) | UAT-SCC-01, UAT-SCC-02 |
+| Scorecard PDF | UAT-SCC-03 |
+| Player statistics | UAT-STAT-02 |
+| Standings | UAT-STAT-01, UAT-STAT-03 |
+| Public Players | UAT-PUB-01 |
+| Public Teams | UAT-PUB-01 |
+| Public Venues | UAT-PUB-01 |
+| Finance | UAT-FIN-01, UAT-FINX-01, UAT-FINX-02 |
+| Committee Members | UAT-COMM-01 |
+| Contributors | UAT-CONTRIB-01 |
+| Contributions | UAT-CONTRIB-02, UAT-CONTRIB-03 |
+| Contribution leaderboard | UAT-LEAD-01, UAT-LEAD-02, UAT-FINX-04 |
+| Contribution receipt | UAT-RCPT-01 |
+| Dashboard | UAT-DASH-01, UAT-DASH-02, UAT-FINX-02, UAT-FINX-03 |
+| Reports (hub) | UAT-REPORT-01 – 06 |
+| Finance CSV | UAT-REPORT-02 |
+| Contribution CSV | UAT-REPORT-03 |
+| Edition Summary PDF | UAT-REPORT-04 |
+| Financial Summary | UAT-REPORT-05 |
+| Cancellation | UAT-CANCEL-01 |
+| Abandonment | UAT-CANCEL-02 |
+| Authorization | UAT-SEC-01, UAT-REGADM-04 |
+| Privacy | UAT-SEC-02, UAT-SEC-03, UAT-STATUS-03, UAT-LEAD-02, UAT-REGADM-05 |
+| Responsive/mobile | UAT-RESP-01 – 08, UAT-ED-03, UAT-REG-04, UAT-PUB-03 |
+
+### File Upload Coverage
+
+| Upload | Covered by |
+|---|---|
+| Player photo | UAT-PLY-01 |
+| Team logo | UAT-TEAM-01 |
+| Contributor photo | UAT-CONTRIB-01 |
+| Aadhaar image | UAT-REG-01 |
+| Aadhaar PDF | UAT-REG-02 |
+| Payment proof screenshot | UAT-REG-01 |
+
+### Download / Export Coverage
+
+| Export/Download | Covered by |
+|---|---|
+| Registration CSV | UAT-REPORT-01 |
+| Finance CSV | UAT-REPORT-02 |
+| Contribution CSV | UAT-REPORT-03 |
+| Match Scorecard PDF | UAT-SCC-03 |
+| Edition Summary PDF | UAT-REPORT-04 |
+| Contribution Receipt PDF | UAT-RCPT-01 |
+| Financial Summary (print preview, no PDF exists) | UAT-REPORT-05 |
+
+### Critical Business Consistency Checks
+
+| Invariant | Covered by |
+|---|---|
+| Registration paid amount uses actual stored `registration_fee` values | UAT-DASH-02 |
+| Contributions enter Finance income exactly once | UAT-FINX-01 |
+| Contribution total is never added again on top of Finance balance | UAT-FINX-03 |
+| Public contributor amount remains hidden | UAT-LEAD-02, UAT-FINX-04 |
+| Admin contribution amount remains visible | UAT-FINX-04 |
+| Private player-registration documents remain private | UAT-REGADM-04, UAT-REGADM-05, UAT-SEC-02 |
+| Completed match cannot continue scoring | UAT-RESULT-03 |
+| Cancelled/abandoned matches cannot continue normal scoring | UAT-CANCEL-01, UAT-CANCEL-02 |
+| Public stats/standings reflect completed match data | UAT-STAT-01, UAT-STAT-03 |
+
+---
+
+## 9. Pre-UAT / Product Observations
 
 *Product / deployment observations — not current UAT failures.*
 
@@ -1109,9 +1681,21 @@ Repeat with `slug => 'scorer'` for a scorer account.
 
 ---
 
-## 9. Issues Found During UAT
+## 10. Issues Found During UAT
 
-*No issues currently logged. Use the template below for every failure found in future batches.*
+*No issues currently logged.*
+
+**Intended workflow when a real failure is found:**
+1. Identify the failing UAT ID.
+2. Record the actual behavior observed (not a guess).
+3. Assign a severity (BLOCKER/HIGH/MEDIUM/LOW).
+4. Fix the application.
+5. Add or update an automated regression test where it would add real value.
+6. Retest the UAT case manually.
+7. Record the Retest Status on the issue entry.
+8. Only then update the corresponding UAT entry's final status.
+
+Use the template below for every failure found:
 
 ### ISSUE-UAT-XXX
 
@@ -1133,31 +1717,38 @@ Repeat with `slug => 'scorer'` for a scorer account.
 
 ---
 
-## 10. Final UAT Summary
+## 11. Final UAT Summary
 
 **Overall Manual UAT: IN PROGRESS**
 
-**Completed:**
+This document now contains the complete master checklist for the current application (all 6 batches fully written out). Batches 1–4 have been manually executed; Batches 5–6 are documented and ready to execute but have **not** yet been run.
+
+**Completed (manually executed):**
 - Batch 1 — Foundation, Admin CRUD & Public Registration (26/26 PASS)
 - Batch 2 — Teams & Match Setup (7/7 PASS)
 - Batch 3 — Scoring, Realtime & Match Result (23/23 PASS)
 - Batch 4 — Public Website, Statistics & Standings (6/6 PASS)
 
-**Cumulative manual result:** 62 PASS / 0 FAIL / 0 BLOCKED
+**Documented, not yet executed:**
+- Batch 5 — Finance, Contributions & Reports (0/20 tested)
+- Batch 6 — Responsive, Privacy & Final Smoke (0/17 tested)
 
-**Pending:**
-- Batch 5 — Finance, Contributions & Reports
-- Batch 6 — Responsive, Privacy & Final Smoke
+**Confirmed Manual PASS:** 62
+**Confirmed FAIL:** 0
+**Confirmed BLOCKED:** 0
+**Remaining (NOT TESTED):** 37 (20 in Batch 5 + 17 in Batch 6)
+**Total documented manual tests:** 99
 
 **Automated baseline (separate from manual UAT, unchanged):** 746 tests / 2562 assertions / 0 failures.
 
 ---
 
-## 11. Future Regression Checklist
+## 12. Future Regression Checklist
 
 A short, high-value checklist to re-run manually after any future feature change or refactor — not a duplicate of every UAT case above, only the critical flows most likely to break silently:
 
 - [ ] Authentication (admin/scorer login, guest redirect, logout)
+- [ ] Admin/scorer account lifecycle (creation, deactivation, self-lockout and last-active-admin safeguard)
 - [ ] Public guest registration (image + PDF Aadhaar upload, duplicate handling)
 - [ ] Private document access (admin can view, scorer/guest cannot)
 - [ ] Registration payment verification (status/reference update)
