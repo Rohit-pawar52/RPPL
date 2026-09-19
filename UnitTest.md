@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-09-19
 **Automated Baseline:** 746 tests passing, 2562 assertions, 0 failures (PHPUnit, `tests/`)
-**Manual UAT Status:** IN PROGRESS — Batches 1–3 complete
+**Manual UAT Status:** IN PROGRESS — Batches 1–4 complete
 
 ## Purpose
 
@@ -939,14 +939,100 @@ Repeat with `slug => 'scorer'` for a scorer account.
 
 ## 5. Batch 4 — Public Website, Statistics & Standings
 
-**Status: NOT TESTED**
+**Status: COMPLETE — all 6 checks PASS**
 
-- [ ] UAT-STAT-01 — Edition standings reflect the finalized match's result. **Status: NOT TESTED**
-- [ ] UAT-STAT-02 — Player statistics/leaderboard reflect the match's runs/wickets. **Status: NOT TESTED**
-- [ ] UAT-STAT-03 — Public edition page shows matching standings/stats. **Status: NOT TESTED**
-- [ ] UAT-PUB-01 — Public players/teams/venues index and show pages render correctly with photos/logos. **Status: NOT TESTED**
-- [ ] UAT-PUB-02 — Public home page loads and the Register nav link works. **Status: NOT TESTED**
-- [ ] UAT-PUB-03 — Public edition page usable at 375px (no horizontal overflow). **Status: NOT TESTED**
+### Statistics & Standings
+
+#### UAT-STAT-01 — Edition standings reflect the completed match
+**Area:** Standings · **Role:** Admin · **Status:** PASS
+
+**Purpose:** Verify the completed UAT match is correctly reflected in the Edition standings, including win/loss and points information.
+
+**Preconditions:** The UAT Match was finalized in Batch 3.
+
+**Steps:**
+1. Open the UAT Edition's admin show page.
+2. Review the standings table.
+
+**Expected:** The standings table reflects the finalized match's outcome, with the relevant win/loss and points information updated correctly for both teams.
+
+**Result:** PASS
+
+---
+
+#### UAT-STAT-02 — Player statistics/leaderboard reflect the match
+**Area:** Player Statistics · **Role:** Admin · **Status:** PASS
+
+**Steps:**
+1. Review the Edition's statistics/leaderboard data.
+
+**Expected:** Runs, wickets, and any relevant records generated from the manually scored UAT match are reflected correctly.
+
+**Result:** PASS
+
+---
+
+#### UAT-STAT-03 — Public Edition page matches admin standings/statistics
+**Area:** Public Website · **Role:** Guest · **Status:** PASS
+
+**Steps:**
+1. Open the public Edition page for the UAT Edition.
+2. Compare standings/statistics against the admin-side data.
+
+**Expected:** The public Edition page displays standings/statistics consistently with the underlying completed match and the admin-side information — no discrepancy.
+
+**Result:** PASS
+
+### Public Directory / Website
+
+#### UAT-PUB-01 — Public Players/Teams/Venues directories
+**Area:** Public Website · **Role:** Guest · **Status:** PASS
+
+**Steps:**
+1. Open the public Players index and a UAT player's show page.
+2. Open the public Teams index and a UAT team's show page.
+3. Open the public Venues index and the UAT venue's show page.
+
+**Expected:** All pages load successfully and display the relevant UAT entities; where photos/logos exist, they render correctly.
+
+**Result:** PASS
+
+---
+
+#### UAT-PUB-02 — Public home page and registration navigation
+**Area:** Public Website · **Role:** Guest · **Status:** PASS
+
+**Steps:**
+1. Open the public home page.
+2. Use the Player Registration navigation/action.
+
+**Expected:** The home page loads correctly and the Player Registration navigation/action works as expected.
+
+**Result:** PASS
+
+---
+
+#### UAT-PUB-03 — Public Edition page quick mobile sanity check
+**Area:** Public Website · **Role:** Guest · **Status:** PASS
+
+**Purpose:** A quick 375px sanity check of the public Edition page — not full responsive certification, which remains covered by the dedicated Batch 6 responsive checks.
+
+**Steps:**
+1. View the public Edition page at a 375px mobile viewport.
+
+**Expected:** No major broken layout or unusable horizontal-overflow problem.
+
+**Result:** PASS
+
+### Batch 4 Summary
+
+| Area | Tests | Passed | Failed | Blocked | Notes |
+|---|---|---|---|---|---|
+| Statistics & Standings | 3 | 3 | 0 | 0 | — |
+| Public Directory / Website | 3 | 3 | 0 | 0 | UAT-PUB-03 is a quick sanity check only; full responsive certification is in Batch 6 |
+| **Total** | **6** | **6** | **0** | **0** | |
+
+**Batch 4 Status: PASS**
 
 ---
 
@@ -1055,11 +1141,11 @@ Repeat with `slug => 'scorer'` for a scorer account.
 - Batch 1 — Foundation, Admin CRUD & Public Registration (26/26 PASS)
 - Batch 2 — Teams & Match Setup (7/7 PASS)
 - Batch 3 — Scoring, Realtime & Match Result (23/23 PASS)
+- Batch 4 — Public Website, Statistics & Standings (6/6 PASS)
 
-**Cumulative manual result:** 56 PASS / 0 FAIL / 0 BLOCKED
+**Cumulative manual result:** 62 PASS / 0 FAIL / 0 BLOCKED
 
 **Pending:**
-- Batch 4 — Public Website, Statistics & Standings
 - Batch 5 — Finance, Contributions & Reports
 - Batch 6 — Responsive, Privacy & Final Smoke
 
