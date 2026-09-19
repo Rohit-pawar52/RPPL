@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-09-19
 **Automated Baseline:** 746 tests passing, 2562 assertions, 0 failures (PHPUnit, `tests/`)
-**Manual UAT Status:** IN PROGRESS — Batch 1 complete
+**Manual UAT Status:** IN PROGRESS — Batches 1–2 complete
 
 ## Purpose
 
@@ -481,22 +481,144 @@ Repeat with `slug => 'scorer'` for a scorer account.
 
 ## 3. Batch 2 — Teams & Match Setup
 
-**Status: NOT TESTED**
+**Status: COMPLETE — all 7 checks PASS**
 
 ### Teams / Edition Teams / Squad Assignment
-- [ ] UAT-TEAM-01 — Create two teams with logos; logos render on index/show. **Status: NOT TESTED**
-- [ ] UAT-TEAM-02 — Add both teams to the UAT Edition via Edition Teams. **Status: NOT TESTED**
-- [ ] UAT-TEAM-03 — Assign registrations to squads with jersey numbers; duplicate jersey on the same team is rejected. **Status: NOT TESTED**
+
+#### UAT-TEAM-01 — Create Teams with logos
+**Area:** Teams · **Role:** Admin · **Status:** PASS
+
+**Purpose:** Verify Teams can be created with a logo upload and that the logo renders correctly in the admin UI.
+
+**Preconditions:** Admin is logged in.
+
+**Steps:**
+1. Open `admin.teams.create`.
+2. Enter a team name and upload a logo image.
+3. Save.
+4. Repeat for a second team.
+5. View both teams on the index and show pages.
+
+**Expected:** Both teams are created; each uploaded logo renders correctly on the index thumbnail and the show page.
+
+**Result:** PASS
+
+---
+
+#### UAT-TEAM-02 — Add Teams to the Edition
+**Area:** Edition Teams · **Role:** Admin · **Status:** PASS
+
+**Purpose:** Verify both created teams can be added as participants of the UAT Edition.
+
+**Preconditions:** The UAT Edition and the two teams from UAT-TEAM-01 exist.
+
+**Steps:**
+1. Open `admin.edition-teams.create`.
+2. Select the UAT Edition and the first team; save.
+3. Repeat for the second team.
+
+**Expected:** Both teams appear as participants of the UAT Edition in the Edition Teams listing.
+
+**Result:** PASS
+
+---
+
+#### UAT-TEAM-03 — Assign registered players to squads with jersey numbers
+**Area:** Squads (Team Players) · **Role:** Admin · **Status:** PASS
+
+**Purpose:** Verify eligible registered players can be assigned to an Edition Team squad with a jersey number and role, and that the duplicate-jersey guard is enforced.
+
+**Preconditions:** Eligible player registrations exist for the UAT Edition; both Edition Teams from UAT-TEAM-02 exist.
+
+**Steps:**
+1. Open `admin.team-players.create`.
+2. Assign an eligible registration to one Edition Team with a jersey number and role.
+3. Repeat for further eligible registrations across both Edition Teams.
+4. Attempt to assign a second player to an already-used jersey number on the same Edition Team.
+
+**Expected:** Valid assignments succeed and appear in the squad listing; the duplicate-jersey attempt on the same Edition Team is rejected with a validation error, and no duplicate squad record is created.
+
+**Result:** PASS
 
 ### Venues
-- [ ] UAT-VEN-01 — Create one venue; it appears in the match-creation venue dropdown. **Status: NOT TESTED**
+
+#### UAT-VEN-01 — Create a Venue and confirm it is selectable for a Match
+**Area:** Venues · **Role:** Admin · **Status:** PASS
+
+**Steps:**
+1. Open `admin.venues.create`.
+2. Enter venue details and save.
+3. Open the Match creation form and check the venue dropdown.
+
+**Expected:** The venue is created and appears as a selectable option when creating a match.
+
+**Result:** PASS
 
 ### Match Creation
-- [ ] UAT-MATCH-01 — Create a match (edition/teams/venue/overs/scheduled date); appears as "scheduled" in the index. **Status: NOT TESTED**
+
+#### UAT-MATCH-01 — Create a small UAT Match
+**Area:** Matches · **Role:** Admin · **Status:** PASS
+
+**Purpose:** Verify a match can be created against the UAT Edition with the two UAT teams, the UAT venue, a scheduled date/time, and a reduced overs-per-innings configuration, and that it initially appears with Scheduled status.
+
+**Preconditions:** UAT Edition, both Edition Teams, and the UAT Venue exist.
+
+**Steps:**
+1. Open `admin.matches.create`.
+2. Select the UAT Edition, Team A, Team B, and the Venue.
+3. Set a scheduled date/time and configure `overs_per_innings` to a small value (1 over) for a compact UAT scoring script.
+4. Save.
+
+**Expected:** The match is created and appears in `admin.matches.index` with status **Scheduled**.
+
+**Result:** PASS
 
 ### Playing XI
-- [ ] UAT-XI-01 — Select Playing XI for both teams from the match page; Start Toss becomes enabled. **Status: NOT TESTED**
-- [ ] UAT-XI-02 — Attempting to start toss with only one side selected is blocked. **Status: NOT TESTED**
+
+#### UAT-XI-01 — Configure Playing XI for both sides
+**Area:** Playing XI · **Role:** Admin · **Status:** PASS
+
+**Purpose:** Verify Playing XI (selected match players) can be configured for both sides from their respective squads, and that doing so allows the match to proceed toward the Toss workflow.
+
+**Preconditions:** The UAT Match exists; both Edition Teams have assigned squad players (UAT-TEAM-03).
+
+**Steps:**
+1. From the match show page, open **Manage Playing XI**.
+2. Select eligible squad players for Team A.
+3. Select eligible squad players for Team B.
+4. Return to the match show page.
+
+**Expected:** Selected players are saved for both sides; the match page now allows progression into the Toss workflow (Start Toss becomes available).
+
+**Result:** PASS
+
+---
+
+#### UAT-XI-02 — Incomplete selected-player state blocks progression
+**Area:** Playing XI · **Role:** Admin · **Status:** PASS
+
+**Purpose:** Verify the existing guard prevents the match from progressing to Toss/Start when the required selected-player state is incomplete for one or both sides.
+
+**Preconditions:** A match where at least one side does not yet have a selected player.
+
+**Steps:**
+1. With only one side's Playing XI selected (or before selecting either side), attempt to proceed to Start Toss / Start Match.
+
+**Expected:** Progression is blocked (the action remains unavailable/disabled) until both sides have at least the required selected-player state.
+
+**Result:** PASS
+
+### Batch 2 Summary
+
+| Area | Tests | Passed | Failed | Blocked | Notes |
+|---|---|---|---|---|---|
+| Teams / Edition Teams / Squad Assignment | 3 | 3 | 0 | 0 | — |
+| Venues | 1 | 1 | 0 | 0 | — |
+| Match Creation | 1 | 1 | 0 | 0 | — |
+| Playing XI | 2 | 2 | 0 | 0 | — |
+| **Total** | **7** | **7** | **0** | **0** | |
+
+**Batch 2 Status: PASS**
 
 ---
 
@@ -657,15 +779,17 @@ Repeat with `slug => 'scorer'` for a scorer account.
 
 **Completed:**
 - Batch 1 — Foundation, Admin CRUD & Public Registration (26/26 PASS)
+- Batch 2 — Teams & Match Setup (7/7 PASS)
+
+**Cumulative manual result:** 33 PASS / 0 FAIL / 0 BLOCKED
 
 **Pending:**
-- Batch 2 — Teams & Match Setup
 - Batch 3 — Scoring, Realtime & Match Result
 - Batch 4 — Public Website, Statistics & Standings
 - Batch 5 — Finance, Contributions & Reports
 - Batch 6 — Responsive, Privacy & Final Smoke
 
-**Automated baseline (separate from manual UAT):** 746 tests / 2562 assertions / 0 failures.
+**Automated baseline (separate from manual UAT, unchanged):** 746 tests / 2562 assertions / 0 failures.
 
 ---
 
