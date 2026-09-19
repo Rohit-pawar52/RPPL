@@ -13,6 +13,16 @@
             <a href="{{ route('public.players.index') }}" class="hover:text-neutral-900">Players</a>
             <a href="{{ route('public.venues.index') }}" class="hover:text-neutral-900">Venues</a>
             <a href="{{ route('public.player-registration.create') }}" class="hover:text-neutral-900">Register</a>
+            {{-- Hidden by default; resources/js/push-notifications.js reveals it
+                 only once the browser/Firebase config are confirmed usable, and
+                 never requests permission until this button is explicitly clicked. --}}
+            <button
+                type="button"
+                id="fcm-subscribe-button"
+                class="hidden rounded-md border border-neutral-200 px-2.5 py-1 text-xs font-medium text-neutral-600 hover:border-neutral-300 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+                🔔 Enable Notifications
+            </button>
             <a href="{{ route('admin.login') }}" class="text-neutral-400 hover:text-neutral-600">Admin</a>
         </nav>
     </div>
