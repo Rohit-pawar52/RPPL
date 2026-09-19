@@ -1,6 +1,6 @@
 # RPPL Tournament Management System
 
-A Laravel-based admin panel and public tournament website for RPPL (Rohit Pawar Premier League) — a local cricket tournament. Covers everything from setting up an edition, teams, and players, through ball-by-ball live scoring, to standings/statistics, committee/contributor fundraising with receipts, and a public "Google-Forms-replacement" player registration flow.
+A Laravel-based admin panel and public tournament website for RPPL (RajaBhoj Pawar Premier League) — a local cricket tournament. Covers everything from setting up an edition, teams, and players, through ball-by-ball live scoring, to standings/statistics, committee/contributor fundraising with receipts, and a public "Google-Forms-replacement" player registration flow.
 
 This README is meant to be comprehensive enough that reading it alone tells you what the project is and what it can currently do. **Whenever a new feature is built, add it here** — see [`memory.md`](memory.md) for the standing instructions this project follows.
 

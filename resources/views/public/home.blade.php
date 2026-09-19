@@ -1,10 +1,10 @@
 @extends('layouts.public')
 
-@section('title', 'RPPL &middot; Rohit Pawar Premier League')
+@section('title', 'RPPL &middot; RajaBhoj Pawar Premier League')
 
 @section('content')
     <div class="rounded-lg border border-neutral-200 bg-white p-4">
-        <h1 class="text-base font-semibold text-neutral-900">Rohit Pawar Premier League</h1>
+        <h1 class="text-base font-semibold text-neutral-900">RajaBhoj Pawar Premier League</h1>
         <p class="mt-1 text-xs text-neutral-500">Local cricket tournament scores, fixtures, and standings.</p>
     </div>
 
