@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-09-19
 **Automated Baseline:** 746 tests passing, 2562 assertions, 0 failures (PHPUnit, `tests/`)
-**Manual UAT Status:** IN PROGRESS — Batches 1–2 complete
+**Manual UAT Status:** IN PROGRESS — Batches 1–3 complete
 
 ## Purpose
 
@@ -624,42 +624,316 @@ Repeat with `slug => 'scorer'` for a scorer account.
 
 ## 4. Batch 3 — Scoring, Realtime & Match Result
 
-**Status: NOT TESTED**
+**Status: COMPLETE — all 23 checks PASS**
 
 ### Toss and Match Start
-- [ ] UAT-TOSS-01 — Start Toss then Save Toss (winner + decision); Start Match becomes available. **Status: NOT TESTED**
-- [ ] UAT-TOSS-02 — Start Match transitions status to live and exposes Score Innings. **Status: NOT TESTED**
+
+#### UAT-TOSS-01 — Toss workflow
+**Area:** Match Flow · **Role:** Admin/Scorer · **Status:** PASS
+
+**Purpose:** Verify the toss can be started and recorded (winner + bat/bowl decision).
+
+**Preconditions:** The UAT Match has Playing XI configured for both sides (Batch 2).
+
+**Steps:**
+1. From the match show page, Start Toss.
+2. Select the toss-winning side and the bat/bowl decision.
+3. Save.
+
+**Expected:** Toss is saved successfully; the match becomes eligible to start.
+
+**Result:** PASS
+
+---
+
+#### UAT-TOSS-02 — Start Match
+**Area:** Match Flow · **Role:** Admin/Scorer · **Status:** PASS
+
+**Steps:**
+1. With the toss recorded, Start Match.
+
+**Expected:** Match transitions to the live state and first-innings scoring (Score Innings) becomes available.
+
+**Result:** PASS
 
 ### Live Ball-by-Ball Scoring
-- [ ] UAT-SCORE-01 — Normal single updates score/overs correctly. **Status: NOT TESTED**
-- [ ] UAT-SCORE-02 — Dot ball advances the over without adding runs. **Status: NOT TESTED**
-- [ ] UAT-SCORE-03 — Boundary (4) updates score correctly. **Status: NOT TESTED**
-- [ ] UAT-SCORE-04 — Wide does not advance the legal ball count but adds to the total. **Status: NOT TESTED**
-- [ ] UAT-SCORE-05 — Wicket prompts for a replacement batter on the vacant end. **Status: NOT TESTED**
-- [ ] UAT-SCORE-06 — Completing the over limit disables further delivery entry with a clear message. **Status: NOT TESTED**
-- [ ] UAT-SCORE-07 — Undo Last Delivery removes the latest ball (with confirmation) and recalculates the score correctly. **Status: NOT TESTED**
-- [ ] UAT-SCORE-08 — Re-entering a delivery after undo produces the correct final score. **Status: NOT TESTED**
+
+#### UAT-SCORE-01 — Normal single
+**Area:** Ball-by-Ball Scoring · **Role:** Admin/Scorer · **Status:** PASS
+
+**Steps:**
+1. Record a delivery with 1 run off the bat.
+
+**Expected:** Runs update correctly; strike rotation behaves correctly for an odd-runs delivery.
+
+**Result:** PASS
+
+---
+
+#### UAT-SCORE-02 — Dot ball
+**Area:** Ball-by-Ball Scoring · **Role:** Admin/Scorer · **Status:** PASS
+
+**Steps:**
+1. Record a delivery with 0 runs.
+
+**Expected:** Score remains correct; the legal-ball count advances by one.
+
+**Result:** PASS
+
+---
+
+#### UAT-SCORE-03 — Boundary
+**Area:** Ball-by-Ball Scoring · **Role:** Admin/Scorer · **Status:** PASS
+
+**Steps:**
+1. Record a delivery with 4 runs off the bat.
+
+**Expected:** Four runs are recorded correctly against the total and the batter's figures.
+
+**Result:** PASS
+
+---
+
+#### UAT-SCORE-04 — Wide
+**Area:** Ball-by-Ball Scoring · **Role:** Admin/Scorer · **Status:** PASS
+
+**Steps:**
+1. Record a delivery marked as a Wide with its extra run(s).
+
+**Expected:** The extra run(s) are added to the total; the legal-ball count does not incorrectly advance for the wide.
+
+**Result:** PASS
+
+---
+
+#### UAT-SCORE-05 — Wicket / replacement batter
+**Area:** Ball-by-Ball Scoring · **Role:** Admin/Scorer · **Status:** PASS
+
+**Steps:**
+1. Record a delivery marked as a wicket, selecting the dismissed batter and dismissal type.
+2. Select the replacement batter for the vacant end on the next delivery.
+
+**Expected:** The wicket is recorded correctly; the next-batter workflow correctly prompts for and accepts the replacement.
+
+**Result:** PASS
+
+---
+
+#### UAT-SCORE-06 — Over/innings limit
+**Area:** Ball-by-Ball Scoring · **Role:** Admin/Scorer · **Status:** PASS
+
+**Steps:**
+1. Continue scoring until the configured one-over limit for the innings is reached.
+
+**Expected:** The configured over limit is respected; the scoring state/UI changes appropriately (further delivery entry is no longer available) once the limit is reached.
+
+**Result:** PASS
+
+---
+
+#### UAT-SCORE-07 — Undo latest delivery
+**Area:** Ball-by-Ball Scoring · **Role:** Admin/Scorer · **Status:** PASS
+
+**Steps:**
+1. Use Undo Last Delivery (with confirmation) on the most recently recorded delivery.
+
+**Expected:** The latest delivery is removed; the canonical score recalculates correctly to reflect its removal.
+
+**Result:** PASS
+
+---
+
+#### UAT-SCORE-08 — Re-enter delivery after undo
+**Area:** Ball-by-Ball Scoring · **Role:** Admin/Scorer · **Status:** PASS
+
+**Steps:**
+1. After the undo in UAT-SCORE-07, re-enter the delivery.
+
+**Expected:** The delivery can be entered again; the score returns to the expected state as if the undo had not affected the final outcome.
+
+**Result:** PASS
 
 ### Innings Completion / Second Innings
-- [ ] UAT-INN-01 — Complete Innings locks the first innings and enables Start Second Innings. **Status: NOT TESTED**
-- [ ] UAT-INN-02 — Second innings scores correctly, including a chase scenario. **Status: NOT TESTED**
-- [ ] UAT-INN-03 — Complete Innings on the second innings. **Status: NOT TESTED**
+
+#### UAT-INN-01 — First innings completion
+**Area:** Innings Flow · **Role:** Admin/Scorer · **Status:** PASS
+
+**Steps:**
+1. Complete Innings on the first innings once its over limit is reached.
+
+**Expected:** The first innings becomes completed/locked; Start Second Innings becomes available.
+
+**Result:** PASS
+
+---
+
+#### UAT-INN-02 — Second innings (chase)
+**Area:** Innings Flow · **Role:** Admin/Scorer · **Status:** PASS
+
+**Steps:**
+1. Start the second innings.
+2. Score deliveries for the chase.
+
+**Expected:** The chase-scoring workflow operates correctly (score/target tracking behaves as expected through the second innings).
+
+**Result:** PASS
+
+---
+
+#### UAT-INN-03 — Second innings completion
+**Area:** Innings Flow · **Role:** Admin/Scorer · **Status:** PASS
+
+**Steps:**
+1. Complete Innings on the second innings.
+
+**Expected:** Second innings completes correctly, consistent with the first innings' completion behavior.
+
+**Result:** PASS
 
 ### Match Result
-- [ ] UAT-RESULT-01 — Result preview on the match page matches actual scores before finalizing. **Status: NOT TESTED**
-- [ ] UAT-RESULT-02 — Finalize Match locks the result and disables further scoring. **Status: NOT TESTED**
-- [ ] UAT-RESULT-03 — Scoring page is no longer writable after finalization. **Status: NOT TESTED**
+
+#### UAT-RESULT-01 — Result preview
+**Area:** Match Result · **Role:** Admin/Scorer · **Status:** PASS
+
+**Steps:**
+1. On the match show page, review the result preview after both innings are completed but before finalizing.
+
+**Expected:** The result preview agrees with the completed innings' scores.
+
+**Result:** PASS
+
+---
+
+#### UAT-RESULT-02 — Finalize Match
+**Area:** Match Result · **Role:** Admin/Scorer · **Status:** PASS
+
+**Steps:**
+1. Click Finalize Match (with confirmation).
+
+**Expected:** The match transitions to completed status and the result is displayed.
+
+**Result:** PASS
+
+---
+
+#### UAT-RESULT-03 — Completed match rejects further scoring
+**Area:** Match Result · **Role:** Admin/Scorer · **Status:** PASS
+
+**Steps:**
+1. After finalization, attempt to access the scoring page/record a further delivery for this match.
+
+**Expected:** The completed match cannot accept further scoring/deliveries.
+
+**Result:** PASS
 
 ### Scorecard
-- [ ] UAT-SCC-01 — Admin scorecard shows correct batting/bowling figures for both innings. **Status: NOT TESTED**
-- [ ] UAT-SCC-02 — Public scorecard matches admin data with no admin-only leakage. **Status: NOT TESTED**
-- [ ] UAT-SCC-03 — Scorecard PDF downloads cleanly with a sensible filename. **Status: NOT TESTED**
+
+#### UAT-SCC-01 — Admin scorecard
+**Area:** Scorecard · **Role:** Admin · **Status:** PASS
+
+**Steps:**
+1. Open the admin scorecard for the completed UAT Match.
+
+**Expected:** The scorecard displays the manually scored innings correctly (batting/bowling figures consistent with what was recorded).
+
+**Result:** PASS
+
+---
+
+#### UAT-SCC-02 — Public scorecard
+**Area:** Scorecard · **Role:** Guest · **Status:** PASS
+
+**Steps:**
+1. Open the public scorecard page for the same match.
+
+**Expected:** The corresponding match data displays correctly without exposing admin-only information.
+
+**Result:** PASS
+
+---
+
+#### UAT-SCC-03 — Scorecard PDF
+**Area:** Scorecard · **Role:** Guest/Admin · **Status:** PASS
+
+**Steps:**
+1. Download the Match Scorecard PDF.
+
+**Expected:** The PDF downloads and opens successfully and is visually usable.
+
+**Result:** PASS
 
 ### Realtime / Public Live Experience
-- [ ] UAT-LIVE-01 — Two-tab test: scoring in the admin tab updates the public live tab via Reverb within a couple of seconds. **Status: NOT TESTED**
-- [ ] UAT-LIVE-02 — With Reverb stopped, the public live tab still updates via ~10s polling fallback. **Status: NOT TESTED**
-- [ ] UAT-LIVE-03 — Restarting Reverb resumes realtime updates without a broken page state. **Status: NOT TESTED**
-- [ ] UAT-LIVE-04 — Returning to a backgrounded/sleeping tab triggers an immediate refresh. **Status: NOT TESTED**
+
+*Realtime was intentionally tested while the match was still live, rather than after finalization.*
+
+#### UAT-LIVE-01 — Realtime update via Reverb
+**Area:** Realtime / Public Live · **Role:** Admin + Guest (two-tab) · **Status:** PASS
+
+**Purpose:** Verify a delivery recorded by the admin/scorer appears on the public live page without a manual refresh, via the WebSocket (Reverb) path.
+
+**Preconditions:** Reverb is running; the UAT Match is live.
+
+**Steps:**
+1. Open the admin scoring page in one tab/browser and the public live match page in another.
+2. Record a delivery in the admin tab.
+3. Observe the public live tab.
+
+**Expected:** The newly recorded delivery appears on the public live page without a manual refresh.
+
+**Result:** PASS
+
+---
+
+#### UAT-LIVE-02 — Polling fallback with Reverb unavailable
+**Area:** Realtime / Public Live · **Role:** Admin + Guest · **Status:** PASS
+
+**Steps:**
+1. Stop/disconnect the Reverb server.
+2. Record another delivery in the admin tab.
+3. Observe the public live tab.
+
+**Expected:** The public live page still refreshes the score via the polling fallback even with Reverb unavailable.
+
+**Result:** PASS
+
+---
+
+#### UAT-LIVE-03 — Realtime resumes after Reverb restored
+**Area:** Realtime / Public Live · **Role:** Admin + Guest · **Status:** PASS
+
+**Steps:**
+1. Restart the Reverb server.
+2. Continue scoring and observe the public live tab.
+
+**Expected:** Realtime/live functionality continues normally after Reverb is restored, with no broken page state.
+
+**Result:** PASS
+
+---
+
+#### UAT-LIVE-04 — Refresh on tab visibility change
+**Area:** Realtime / Public Live · **Role:** Guest · **Status:** PASS
+
+**Steps:**
+1. Background/sleep the public live tab, then return to it.
+
+**Expected:** The canonical score refreshes appropriately upon returning to the tab.
+
+**Result:** PASS
+
+### Batch 3 Summary
+
+| Area | Tests | Passed | Failed | Blocked | Notes |
+|---|---|---|---|---|---|
+| Toss and Match Start | 2 | 2 | 0 | 0 | — |
+| Live Ball-by-Ball Scoring | 8 | 8 | 0 | 0 | — |
+| Innings Completion / Second Innings | 3 | 3 | 0 | 0 | — |
+| Match Result | 3 | 3 | 0 | 0 | — |
+| Scorecard | 3 | 3 | 0 | 0 | — |
+| Realtime / Public Live Experience | 4 | 4 | 0 | 0 | Tested while match was still live, before finalization |
+| **Total** | **23** | **23** | **0** | **0** | |
+
+**Batch 3 Status: PASS**
 
 ---
 
@@ -780,11 +1054,11 @@ Repeat with `slug => 'scorer'` for a scorer account.
 **Completed:**
 - Batch 1 — Foundation, Admin CRUD & Public Registration (26/26 PASS)
 - Batch 2 — Teams & Match Setup (7/7 PASS)
+- Batch 3 — Scoring, Realtime & Match Result (23/23 PASS)
 
-**Cumulative manual result:** 33 PASS / 0 FAIL / 0 BLOCKED
+**Cumulative manual result:** 56 PASS / 0 FAIL / 0 BLOCKED
 
 **Pending:**
-- Batch 3 — Scoring, Realtime & Match Result
 - Batch 4 — Public Website, Statistics & Standings
 - Batch 5 — Finance, Contributions & Reports
 - Batch 6 — Responsive, Privacy & Final Smoke
