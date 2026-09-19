@@ -1769,6 +1769,12 @@ A short, high-value checklist to re-run manually after any future feature change
 
 ---
 
+## 13. Stakeholder Demo Dataset
+
+`php artisan migrate:fresh --seed` now seeds a complete, internally-consistent stakeholder demo dataset (3 editions, ~45 players, 6 teams, 3 venues, registrations/squads, matches across every lifecycle state with real ball-by-ball scoring, committee/contributor finance) instead of the old `RpplDemoSeeder` placeholder data. See `README.md`'s "Demo data" section for demo login credentials and what the dataset contains. This is separate from, and does not change, the manual UAT results recorded above (62 PASS / 37 NOT TESTED / 99 total) — the demo dataset is for stakeholder walkthroughs, not a substitute for UAT execution.
+
+---
+
 ## Documentation Maintenance Rule
 
 After each UAT section/batch is manually completed:

@@ -10,6 +10,7 @@ This README is meant to be comprehensive enough that reading it alone tells you 
 - [Architecture conventions](#architecture-conventions)
 - [Tech stack](#tech-stack)
 - [Getting started](#getting-started)
+- [Demo data](#demo-data)
 - [Testing](#testing)
 - [Branching & workflow](#branching--workflow)
 - [Continuous Integration](#continuous-integration)
@@ -127,6 +128,19 @@ This codebase deliberately stays small and boring rather than speculative:
    sudo apt-get install tesseract-ocr tesseract-ocr-eng
    ```
    Without it installed, registration submission works exactly the same — OCR is best-effort background processing (see `ProcessPaymentProofOcr`) and never blocks or affects registration creation; it just leaves the suggestion unextracted. If `tesseract` isn't on your system `PATH`, set `TESSERACT_PATH` in `.env` to its full executable path (leave blank to use `PATH`). Admin visibility into the OCR result is a later phase — this exists today purely as backend processing.
+
+## Demo data
+
+`php artisan migrate:fresh --seed` seeds a complete, internally-consistent stakeholder demo dataset — everything in this README's Features list has real, connected data to show:
+
+- **3 editions**: RPPL 2024 (completed/historical), RPPL 2025 (active — the richest dataset, and the only one with public registration open), RPPL 2026 (upcoming/draft).
+- **Login accounts** — `admin@rppl.test` / `password` (Admin) and `scorer@rppl.test` / `password` (Scorer). **Local/demo credentials only — never use these in production.**
+- ~45 reusable players, 6 teams, 3 venues; registrations/squads for the historical and active editions (paid/pending/failed/refunded payment variety on the active edition).
+- Matches covering every lifecycle state on the active edition — scheduled, toss, live (exactly one, for the live-scoring/public-live-page demo), completed (via real ball-by-ball scoring through the actual scoring services, so scorecards/statistics/standings are genuinely derived, not fabricated), cancelled, and abandoned (with its partial delivery history preserved) — plus completed historical matches and draft upcoming fixtures.
+- 10 committee members, 14 general contributors (some explicitly linked to a committee member), contributions (via `EditionContributionService`, so each has exactly one linked finance transaction), and additional manual finance ledger entries — enough to populate the Dashboard, Reports, and the public contributor leaderboard across every badge tier.
+- No OCR jobs are ever dispatched by the seeders, and no fake payment-proof screenshots are generated — see `database/seeders/Demo/DemoRegistrationSeeder.php`'s docblock for why every seeded registration's `ocr_status` is `failed` rather than the raw `pending` default.
+
+The seeder architecture lives in `database/seeders/Demo/` (one class per domain area — users, players, teams, editions, registrations/squads, matches/scoring, finance), orchestrated by `DatabaseSeeder`. It replaces the previous `RpplDemoSeeder`, which used real IPL franchise/player names.
 
 ## Testing
 
