@@ -18,6 +18,21 @@ class PlayerRegistration extends Model
     public const PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'refunded'];
 
     /**
+     * Must match the enum values in the add_ocr_fields migration
+     * exactly. Named constants (rather than scattering the bare string
+     * literals through PaymentProofOcrService/ProcessPaymentProofOcr)
+     * so a typo in one of these values fails at compile/static-analysis
+     * time instead of silently creating a fifth, unrecognized status.
+     */
+    public const OCR_PENDING = 'pending';
+
+    public const OCR_EXTRACTED = 'extracted';
+
+    public const OCR_NOT_FOUND = 'not_found';
+
+    public const OCR_FAILED = 'failed';
+
+    /**
      * registration_number is deliberately NEVER listed here — it must
      * only ever be server-generated via assignRegistrationNumber(),
      * never settable through mass-assignment from any request (admin
@@ -25,6 +40,13 @@ class PlayerRegistration extends Model
      * assignment (as assignRegistrationNumber() does) still works
      * regardless of $fillable; only fill()/create()/update() are
      * restricted by it.
+     *
+     * ocr_transaction_id/ocr_status are listed here purely so
+     * ProcessPaymentProofOcr can write them via a plain update() call,
+     * matching every other internal write in this model — no public
+     * FormRequest (guest submission, admin create/update) ever includes
+     * either key in its validated() rules, so this carries no more risk
+     * than payment_reference already does.
      */
     protected $fillable = [
         'edition_id',
@@ -35,6 +57,8 @@ class PlayerRegistration extends Model
         'aadhaar_document_path',
         'payment_proof_path',
         'payment_reference',
+        'ocr_transaction_id',
+        'ocr_status',
     ];
 
     protected function casts(): array
@@ -92,5 +116,26 @@ class PlayerRegistration extends Model
     public function teamPlayer(): HasOne
     {
         return $this->hasOne(TeamPlayer::class);
+    }
+
+    /**
+     * Whether this registration's OCR-extracted candidate also appears
+     * on a different registration. Advisory only — ocr_transaction_id
+     * has no unique constraint (see the migration), and this never
+     * rejects/blocks anything; it only lets a future admin screen
+     * (Phase C) surface a warning to actually investigate. Deliberately
+     * compares against ocr_transaction_id only, never payment_reference
+     * — the two are intentionally separate values (see
+     * GuestPlayerRegistrationService/ProcessPaymentProofOcr).
+     */
+    public function hasDuplicateOcrTransactionId(): bool
+    {
+        if ($this->ocr_transaction_id === null || $this->ocr_transaction_id === '') {
+            return false;
+        }
+
+        return static::where('ocr_transaction_id', $this->ocr_transaction_id)
+            ->where('id', '!=', $this->id)
+            ->exists();
     }
 }

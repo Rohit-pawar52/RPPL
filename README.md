@@ -121,6 +121,12 @@ This codebase deliberately stays small and boring rather than speculative:
    php artisan reverb:start
    ```
    Set matching `REVERB_APP_ID` / `REVERB_APP_KEY` / `REVERB_APP_SECRET` in `.env` first (any values work locally, they just need to match on both the app and Reverb). Without this running, everything else still works — score updates simply won't arrive live until the page is refreshed.
+8. (Optional, for payment-proof OCR) Install [Tesseract](https://github.com/tesseract-ocr/tesseract) locally so a guest registration's payment screenshot gets an automatic transaction-ID suggestion:
+   ```
+   # Debian/Ubuntu
+   sudo apt-get install tesseract-ocr tesseract-ocr-eng
+   ```
+   Without it installed, registration submission works exactly the same — OCR is best-effort background processing (see `ProcessPaymentProofOcr`) and never blocks or affects registration creation; it just leaves the suggestion unextracted. If `tesseract` isn't on your system `PATH`, set `TESSERACT_PATH` in `.env` to its full executable path (leave blank to use `PATH`). Admin visibility into the OCR result is a later phase — this exists today purely as backend processing.
 
 ## Testing
 

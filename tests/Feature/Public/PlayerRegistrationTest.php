@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Public;
 
+use App\Jobs\ProcessPaymentProofOcr;
 use App\Models\Edition;
 use App\Models\Player;
 use App\Models\PlayerRegistration;
@@ -11,6 +12,7 @@ use App\Services\Registration\GuestPlayerRegistrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -18,9 +20,10 @@ use Tests\TestCase;
 /**
  * Phase 3.39C — public/guest player registration submission. Admin
  * registration/CSV import compatibility is proven by their own existing
- * test suites continuing to pass unchanged (not repeated here). No
- * admin document viewing, status lookup, OCR, or finance linkage exists
- * yet — those are later phases.
+ * test suites continuing to pass unchanged (not repeated here). Payment
+ * proof OCR (Phase B) dispatch/failure-isolation is covered at the
+ * bottom of this file; OCR's own extraction/job behavior has its own
+ * dedicated test suites (TransactionIdExtractorTest, ProcessPaymentProofOcrTest).
  */
 class PlayerRegistrationTest extends TestCase
 {
@@ -315,5 +318,50 @@ class PlayerRegistrationTest extends TestCase
             $this->assertSame(0, PlayerRegistration::count());
             $this->assertEmpty(Storage::disk('local')->allFiles(), 'stored files must be cleaned up when the authoritative write fails');
         }
+    }
+
+    // ----- Payment proof OCR dispatch (Phase B) -----
+
+    public function test_successful_registration_dispatches_ocr_processing_for_the_new_registration(): void
+    {
+        Storage::fake('local');
+        Queue::fake();
+        $edition = $this->openEdition();
+
+        $this->submit($this->validPayload())->assertRedirect(route('public.player-registration.success'));
+
+        $registration = PlayerRegistration::firstOrFail();
+        Queue::assertPushed(ProcessPaymentProofOcr::class, fn ($job) => $job->registration->is($registration));
+    }
+
+    /**
+     * The core Phase B safety invariant, proven at the service boundary
+     * rather than via a brittle framework-level queue-connection
+     * simulation: a queue dispatch failure must never roll back the
+     * already-committed registration, delete its just-stored files, or
+     * surface an error in place of the successful result. Forcing the
+     * default queue connection to one that doesn't exist makes
+     * ProcessPaymentProofOcr::dispatch() itself throw when it tries to
+     * resolve a connection — a genuine dispatch-time failure, not a
+     * mocked-away one.
+     */
+    public function test_registration_succeeds_even_when_ocr_dispatch_itself_fails(): void
+    {
+        Storage::fake('local');
+        $edition = $this->openEdition();
+        config(['queue.default' => 'nonexistent-connection']);
+
+        $registration = app(GuestPlayerRegistrationService::class)->register(
+            $edition,
+            $this->validPayload(),
+            $this->aadhaar(),
+            $this->paymentProof(),
+        );
+
+        $this->assertInstanceOf(PlayerRegistration::class, $registration);
+        $this->assertTrue($registration->exists);
+        $this->assertDatabaseHas('player_registrations', ['id' => $registration->id]);
+        Storage::disk('local')->assertExists($registration->aadhaar_document_path);
+        Storage::disk('local')->assertExists($registration->payment_proof_path);
     }
 }

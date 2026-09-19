@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'tesseract' => [
+        // Blank/unset (the default) means "use the tesseract binary on
+        // PATH", which is all production/Linux needs. Only set this if
+        // the binary genuinely isn't on PATH for the running process
+        // (e.g. some local Windows setups) — see PaymentProofOcrService.
+        'path' => env('TESSERACT_PATH'),
+    ],
+
 ];
