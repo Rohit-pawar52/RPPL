@@ -57,6 +57,14 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('player-registration-status', function (Request $request) {
             return Limit::perMinute(10)->by($request->ip());
         });
+
+        // Called only after an explicit browser "Enable Notifications"
+        // opt-in (Phase B1 audit) — generous enough for a real visitor's
+        // own retry/token-refresh, without leaving the endpoint open to
+        // bulk abuse.
+        RateLimiter::for('fcm-subscribe', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip());
+        });
     }
 
     /**

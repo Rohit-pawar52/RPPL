@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Public\EditionController;
+use App\Http\Controllers\Public\FcmTokenController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\MatchController;
 use App\Http\Controllers\Public\PlayerController;
@@ -57,4 +58,12 @@ Route::prefix('player-registration')->name('public.player-registration.')->group
     Route::post('/status', [PlayerRegistrationController::class, 'statusLookup'])
         ->middleware('throttle:player-registration-status')
         ->name('status.lookup');
+});
+
+// Anonymous FCM token subscription (Phase B1) — no login, no browser/
+// Firebase integration yet; this is the data-foundation endpoint only.
+Route::prefix('notifications')->name('public.notifications.')->group(function () {
+    Route::post('/subscribe', [FcmTokenController::class, 'store'])
+        ->middleware('throttle:fcm-subscribe')
+        ->name('subscribe');
 });

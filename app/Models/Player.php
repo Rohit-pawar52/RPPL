@@ -68,6 +68,17 @@ class Player extends Model
     }
 
     /**
+     * V1 never sets fcm_tokens.player_id (every subscription is
+     * anonymous — see FcmTokenSubscriptionService) — this relation
+     * exists now purely so a future identified-player association needs
+     * no schema change, per the Phase B1 audit report.
+     */
+    public function fcmTokens(): HasMany
+    {
+        return $this->hasMany(FcmToken::class);
+    }
+
+    /**
      * The single most recent registration (by registered_at), used to
      * cheaply derive a "current/recent team" per player in listings
      * without loading every registration for every row.
