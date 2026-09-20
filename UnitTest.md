@@ -1795,7 +1795,7 @@ A separate module-specific checklist, added after the project's 62/37/99 UAT acc
 
 **Expected:** A `NotificationSend` row appears with `attempted_count = accepted_count + failure_count`, `completed_at` populated; the real subscribed device receives a push (foreground: in-page notification; background: OS/browser notification).
 
-**Result:** NOT TESTED — requires a real Firebase service-account credential and a real subscribed device; not configured in this environment as of Phase B5.
+**Result:** NOT TESTED (full scenario) — a real Firebase service-account credential was configured and the server-side send pipeline was verified against real Firebase (a disposable, non-real token was correctly submitted via a real `sendMulticast()` call, authenticated, and classified as invalid by Firebase itself — cleaned up immediately after, never persisted). The remaining gap is exclusively the real-device half: no real subscribed browser token exists in this environment (requires a manual browser step — see the Phase B5 report), so an actual push has not been delivered to a real device.
 
 #### UAT-FCM-03 — Notification click opens the correct page
 **Area:** Public / Push Notifications · **Role:** Guest · **Status:** NOT TESTED
