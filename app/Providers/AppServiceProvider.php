@@ -27,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureRateLimiting();
         $this->configureAuthorization();
+        $this->configureFirebaseCredentialsFallback();
     }
 
     /**
@@ -90,5 +91,34 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-tournament', function (User $user) {
             return $user->role?->slug === 'admin';
         });
+    }
+
+    /**
+     * kreait/laravel-firebase's own default config already supports
+     * FIREBASE_CREDENTIALS as an env-provided path — but requiring an
+     * absolute, machine-specific path in .env is a real portability
+     * problem: it works on exactly one developer's machine and breaks
+     * the moment the app is deployed anywhere else (a different OS, a
+     * different directory, a different developer's checkout).
+     *
+     * Instead, when FIREBASE_CREDENTIALS is left blank, fall back to
+     * storage_path('app/firebase/firebase-service-account.json') —
+     * resolved fresh, relative to wherever THIS app instance actually
+     * lives, on every machine (dev, staging, production) alike. The
+     * credential file only ever needs to exist at that one conventional
+     * location; nothing environment-specific goes in .env at all. This
+     * runs in boot() (not register()) specifically so it applies AFTER
+     * kreait/laravel-firebase's own ServiceProvider has already merged
+     * its default config in register() — Laravel guarantees every
+     * provider's register() runs before any provider's boot(),
+     * regardless of registration order, so this is safe either way.
+     * An explicit FIREBASE_CREDENTIALS value, if ever set, still wins
+     * (e.g. a hosting platform that mounts the secret somewhere else).
+     */
+    private function configureFirebaseCredentialsFallback(): void
+    {
+        if (blank(config('firebase.projects.app.credentials'))) {
+            config(['firebase.projects.app.credentials' => storage_path('app/firebase/firebase-service-account.json')]);
+        }
     }
 }
