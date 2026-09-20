@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\GameMatchController;
 use App\Http\Controllers\Admin\InningsController;
 use App\Http\Controllers\Admin\MatchFlowController;
 use App\Http\Controllers\Admin\MatchPlayerController;
+use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PlayerController;
 use App\Http\Controllers\Admin\PlayerRegistrationController;
 use App\Http\Controllers\Admin\ReportsController;
@@ -137,6 +138,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // No destroy: accounts are deactivated (is_active), never
         // deleted — see UserController's docblock.
         Route::resource('users', UserController::class)->except(['destroy']);
+        // No destroy: a broadcast's content is never deleted once
+        // authored — see NotificationController's docblock. Send/Resend
+        // routes belong to a later phase, not this one.
+        Route::resource('notifications', NotificationController::class)->except(['destroy']);
         Route::prefix('edition-contributions/{edition_contribution}')->name('edition-contributions.')->group(function () {
             Route::get('receipt', [EditionContributionController::class, 'receipt'])->name('receipt');
             Route::get('receipt/pdf', [EditionContributionController::class, 'receiptPdf'])->name('receipt.pdf');
