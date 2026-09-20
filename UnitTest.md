@@ -1775,6 +1775,46 @@ A short, high-value checklist to re-run manually after any future feature change
 
 ---
 
+## 14. Push Notifications (Firebase) — Manual Check
+
+A separate module-specific checklist, added after the project's 62/37/99 UAT accounting above was finalized — it does **not** change or add to that count. Automated coverage (818 tests as of Phase B4) already proves the backend/queue/authorization logic without real Firebase; the items below are the real-browser/real-send steps that automated tests structurally cannot cover.
+
+#### UAT-FCM-01 — Guest can enable notifications
+**Area:** Public / Push Notifications · **Role:** Guest · **Status:** NOT TESTED
+
+**Steps:** Visit the public site with a real Firebase Web config configured; click "Enable Notifications"; accept the browser permission prompt.
+
+**Expected:** Permission is requested only after the click (never automatically); control becomes "Notifications On"; exactly one `fcm_tokens` row exists for the device with `is_active=true`, `user_id`/`player_id` null, `last_seen_at` populated. Reloading the page does not create a duplicate row.
+
+**Result:** NOT TESTED — requires a real Firebase Web config, not configured in this environment as of Phase B5 (see the Phase B5 report).
+
+#### UAT-FCM-02 — Admin creates and sends a notification
+**Area:** Admin / Push Notifications · **Role:** Admin · **Status:** NOT TESTED
+
+**Steps:** Create a notification via `admin.notifications.create`; click Send; wait for the queue worker to process it.
+
+**Expected:** A `NotificationSend` row appears with `attempted_count = accepted_count + failure_count`, `completed_at` populated; the real subscribed device receives a push (foreground: in-page notification; background: OS/browser notification).
+
+**Result:** NOT TESTED — requires a real Firebase service-account credential and a real subscribed device; not configured in this environment as of Phase B5.
+
+#### UAT-FCM-03 — Notification click opens the correct page
+**Area:** Public / Push Notifications · **Role:** Guest · **Status:** NOT TESTED
+
+**Steps:** Send a notification with an internal `action_url` (e.g. `/player-registration`); click the resulting browser/OS notification.
+
+**Expected:** An existing RPPL tab is focused and navigated, or a new tab opens, to that internal path; never an external origin.
+
+**Result:** NOT TESTED — requires the same real device as UAT-FCM-01/02.
+
+#### UAT-FCM-04 — Resend preserves prior send history
+**Area:** Admin / Push Notifications · **Role:** Admin · **Status:** PASS (automated)
+
+**Expected:** Editing a notification's content after a Send, then clicking Resend, creates a second, independent `NotificationSend` snapshot without altering the first — proven by `tests/Feature/Admin/NotificationSendTest.php`.
+
+**Result:** PASS — covered by automated test, not a live-Firebase concern; listed here for completeness of the module's checklist only.
+
+---
+
 ## Documentation Maintenance Rule
 
 After each UAT section/batch is manually completed:

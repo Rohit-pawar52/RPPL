@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Database\Seeders\Demo\DemoEditionSeeder;
 use Database\Seeders\Demo\DemoFinanceSeeder;
 use Database\Seeders\Demo\DemoMatchSeeder;
+use Database\Seeders\Demo\DemoNotificationSeeder;
 use Database\Seeders\Demo\DemoPlayerSeeder;
 use Database\Seeders\Demo\DemoRegistrationSeeder;
 use Database\Seeders\Demo\DemoTeamSeeder;
@@ -36,6 +37,7 @@ class DatabaseSeeder extends Seeder
             DemoRegistrationSeeder::class,
             DemoMatchSeeder::class,
             DemoFinanceSeeder::class,
+            DemoNotificationSeeder::class,
         ]);
     }
 }

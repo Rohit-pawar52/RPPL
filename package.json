@@ -3,8 +3,8 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build",
-        "dev": "vite"
+        "build": "node resources/build/generate-firebase-sw.js && vite build",
+        "dev": "node resources/build/generate-firebase-sw.js && vite"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

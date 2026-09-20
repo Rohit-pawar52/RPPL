@@ -9,6 +9,8 @@ use App\Models\EditionContribution;
 use App\Models\EditionTeam;
 use App\Models\EditionTransaction;
 use App\Models\GameMatch;
+use App\Models\Notification;
+use App\Models\NotificationSend;
 use App\Models\Player;
 use App\Models\PlayerRegistration;
 use App\Models\Team;
@@ -44,6 +46,7 @@ class DemoDataSeederTest extends TestCase
         $this->assertMatchLifecycleStatesArePresent();
         $this->assertFinanceAndContributionsAreConsistent();
         $this->assertReportingServicesCanConsumeTheSeededData();
+        $this->assertDemoNotificationMastersExistWithNoFakeSendHistory();
     }
 
     private function assertDemoUsersExist(): void
@@ -180,5 +183,22 @@ class DemoDataSeederTest extends TestCase
 
         $leaderboard = app(PlayerStatisticsService::class)->getEditionLeaderboard($active);
         $this->assertIsArray($leaderboard);
+    }
+
+    /**
+     * Phase B5 — demo notification masters exist for the stakeholder
+     * demo, but with deliberately ZERO send history: seeding a fake
+     * "accepted" count would misrepresent a real Firebase result that
+     * never happened.
+     */
+    private function assertDemoNotificationMastersExistWithNoFakeSendHistory(): void
+    {
+        $this->assertGreaterThanOrEqual(2, Notification::count());
+        $this->assertSame(0, NotificationSend::count());
+
+        Notification::all()->each(function (Notification $notification) {
+            $this->assertNotNull($notification->created_by);
+            $this->assertTrue($notification->creator->is_active);
+        });
     }
 }
