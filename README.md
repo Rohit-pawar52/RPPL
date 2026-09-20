@@ -71,6 +71,15 @@ A self-serve replacement for collecting player registrations via a form, entirel
 - **Dashboard** — an operational overview for the currently-relevant edition (active, else soonest upcoming, else most recently completed): registration/team/squad/match counts, an actionable "pending payment verification" banner, a Registration Payments summary (paid/pending/failed/refunded counts and the actual amount collected), a Finance snapshot (income/expenses/balance), and a Contributions snapshot (total, record count, recognized-contributor count) — each linking straight into the relevant admin page, already filtered to the selected edition.
 - **Reports hub** — a central, edition-scoped page (`admin/reports`) linking to every existing report/export (Edition Summary PDF, Registration CSV, Finance CSV, Contribution CSV, a recent-completed-matches list with scorecard PDF links) plus one new **Financial Summary** — a print-friendly page showing income/expense/balance, registration payment figures, and contribution totals together for the edition. The contribution total is always shown as a subset of Finance income (every contribution already has a matching income transaction), never added on top of it; registration payments are a separate operational figure, never folded into the finance ledger balance. Admin-only.
 
+### Push notifications (Firebase Cloud Messaging)
+
+Broadcast push notifications to public website visitors, entirely anonymous — no visitor login exists or is required:
+
+- **Guest subscription** — a visitor clicks "Enable Notifications" in the public header; the browser's own permission prompt is the only thing that ever appears (never triggered automatically). A granted browser token is stored in `fcm_tokens`, keyed by the token itself so a returning visitor's repeat subscription updates the same row rather than creating a duplicate.
+- **Admin content management** (`admin/notifications`, admin-only) — create/edit a `Notification`'s title, message, and an optional internal action URL (an external link is rejected by validation; there is no open-redirect surface).
+- **Send / Resend** — one explicit action always broadcasts the notification's *current* content to every currently active subscriber, creating a new, immutable `NotificationSend` snapshot every time (editing the notification after a send never rewrites what that send actually contained). Sending is queued (`SendNotificationJob`) and reports back attempted/accepted/failed counts — "Accepted" means Firebase accepted the message for delivery, never "Delivered" or "Read". A permanently invalid/unregistered token is deactivated automatically; a transient failure is not.
+- No audience selector, schedule, topic, or rich media in V1 — every send targets every active subscriber, by design.
+
 ## Architecture conventions
 
 This codebase deliberately stays small and boring rather than speculative:
@@ -128,6 +137,13 @@ This codebase deliberately stays small and boring rather than speculative:
    sudo apt-get install tesseract-ocr tesseract-ocr-eng
    ```
    Without it installed, registration submission works exactly the same — OCR is best-effort background processing (see `ProcessPaymentProofOcr`) and never blocks or affects registration creation; it just leaves the suggestion unextracted. If `tesseract` isn't on your system `PATH`, set `TESSERACT_PATH` in `.env` to its full executable path (leave blank to use `PATH`). Admin visibility into the OCR result is a later phase — this exists today purely as backend processing.
+9. Start a queue worker — **required** for OCR processing and for push notification sending, both of which run as queued jobs against `QUEUE_CONNECTION=database`:
+   ```
+   php artisan queue:work
+   ```
+10. (Optional, for push notifications) Two separate sets of Firebase configuration:
+    - **Browser (public, safe to commit as blanks in `.env.example`)** — the `VITE_FIREBASE_*` values and `VITE_FIREBASE_VAPID_KEY` in `.env`, from your Firebase project's Web app config. Without these, the public "Enable Notifications" control simply stays hidden — the rest of the site is unaffected.
+    - **Server (private, NEVER commit)** — download a service-account JSON key from Firebase Console → Project Settings → Service Accounts, place it outside version control (e.g. `storage/app/firebase/firebase-service-account.json`, already gitignored), and set `FIREBASE_CREDENTIALS` in `.env` to its absolute path. Without this, admin notification content management (create/edit/Send button) still works — a queued send to a non-zero audience will simply fail safely and log the error rather than actually reaching Firebase; a send with zero active subscribers always completes successfully regardless, since no Firebase call is made in that case.
 
 ## Demo data
 

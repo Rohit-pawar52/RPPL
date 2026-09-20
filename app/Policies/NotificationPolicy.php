@@ -35,6 +35,17 @@ class NotificationPolicy
         return $this->isAdmin($user);
     }
 
+    /**
+     * Send/Resend (Phase B4) — the same admin-only ability as every
+     * other action here; a distinct method purely so the controller's
+     * intent ("may this admin trigger a broadcast") reads clearly at
+     * the call site, not because the rule itself differs.
+     */
+    public function send(User $user, Notification $notification): bool
+    {
+        return $this->isAdmin($user);
+    }
+
     private function isAdmin(User $user): bool
     {
         return $user->role?->slug === 'admin';

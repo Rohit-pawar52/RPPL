@@ -21,3 +21,27 @@ export function initConfirmDeleteForms() {
         });
     });
 }
+
+/**
+ * Same pattern as initConfirmDeleteForms(), for a non-destructive but
+ * still consequential action (e.g. Send/Resend notification, Phase B4)
+ * — a separate attribute/function rather than generalizing the delete
+ * one, since "Yes, delete" is never the right confirm-button label here.
+ */
+export function initConfirmActionForms() {
+    document.querySelectorAll('form[data-confirm-action]').forEach((form) => {
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            window.confirmAction({
+                title: form.dataset.confirmTitle,
+                text: form.dataset.confirmText,
+                confirmButtonText: form.dataset.confirmButtonText ?? 'Yes, continue',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+}

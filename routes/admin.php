@@ -139,9 +139,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // deleted — see UserController's docblock.
         Route::resource('users', UserController::class)->except(['destroy']);
         // No destroy: a broadcast's content is never deleted once
-        // authored — see NotificationController's docblock. Send/Resend
-        // routes belong to a later phase, not this one.
+        // authored — see NotificationController's docblock.
         Route::resource('notifications', NotificationController::class)->except(['destroy']);
+        // One explicit action for both Send and Resend (Phase B4) — the
+        // backend semantics are identical either way (always the
+        // notification's CURRENT content, always a new NotificationSend
+        // row); only the button label differs based on send history.
+        Route::post('notifications/{notification}/send', [NotificationController::class, 'send'])->name('notifications.send');
         Route::prefix('edition-contributions/{edition_contribution}')->name('edition-contributions.')->group(function () {
             Route::get('receipt', [EditionContributionController::class, 'receipt'])->name('receipt');
             Route::get('receipt/pdf', [EditionContributionController::class, 'receiptPdf'])->name('receipt.pdf');

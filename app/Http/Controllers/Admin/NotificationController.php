@@ -7,22 +7,24 @@ use App\Http\Requests\Admin\Notification\StoreNotificationRequest;
 use App\Http\Requests\Admin\Notification\UpdateNotificationRequest;
 use App\Models\FcmToken;
 use App\Models\Notification;
+use App\Services\Notification\NotificationSendService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 /**
- * Admin notification-CONTENT management (Phase B3) — plain CRUD for the
- * editable Notification master. No Send/Resend action exists yet (a
- * later phase) and this deliberately has no destroy(): there is no real
- * business need to delete a broadcast's content once authored, the same
+ * Admin notification-CONTENT management (Phase B3) plus the one Send/
+ * Resend action (Phase B4) — this controller only ever creates the
+ * immutable NotificationSend snapshot (via NotificationSendService) and
+ * queues SendNotificationJob; it never touches Firebase/Kreait classes
+ * directly. Deliberately has no destroy(): there is no real business
+ * need to delete a broadcast's content once authored, the same
  * reasoning UserController's account-deactivation-not-deletion
  * precedent already established for this project.
- *
- * Never contains Firebase/queue logic — that belongs entirely to the
- * future sending phase.
  */
 class NotificationController extends Controller
 {
+    public function __construct(private readonly NotificationSendService $sends) {}
+
     public function index(): View
     {
         $this->authorize('viewAny', Notification::class);
@@ -78,6 +80,7 @@ class NotificationController extends Controller
 
         return view('admin.notifications.show', [
             'notification' => $notification,
+            'activeSubscriberCount' => FcmToken::active()->count(),
         ]);
     }
 
@@ -107,5 +110,28 @@ class NotificationController extends Controller
         return redirect()
             ->route('admin.notifications.index')
             ->with('success', 'Notification updated successfully.');
+    }
+
+    /**
+     * Send and Resend are the SAME action — always the notification's
+     * CURRENT content, always a new NotificationSend row (see
+     * NotificationSendService). No audience selector: V1 always means
+     * every currently active FcmToken.
+     */
+    public function send(Notification $notification): RedirectResponse
+    {
+        $this->authorize('send', $notification);
+
+        $result = $this->sends->send($notification, request()->user());
+
+        if (! $result['dispatched']) {
+            return redirect()
+                ->route('admin.notifications.show', $notification)
+                ->with('error', 'The notification was recorded but could not be queued for sending. Please try again, or contact a developer if this keeps happening.');
+        }
+
+        return redirect()
+            ->route('admin.notifications.show', $notification)
+            ->with('success', 'Notification queued for sending.');
     }
 }

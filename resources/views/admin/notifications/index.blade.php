@@ -78,6 +78,24 @@
                                 >
                                     <x-icon name="pencil" class="h-4 w-4" />
                                 </a>
+                                <form
+                                    method="POST"
+                                    action="{{ route('admin.notifications.send', $notification) }}"
+                                    data-confirm-action
+                                    data-confirm-title="{{ $latestSend ? 'Resend' : 'Send' }} this notification?"
+                                    data-confirm-text="This will send to ALL currently active notification subscribers ({{ $activeSubscriberCount }})."
+                                    data-confirm-button-text="Yes, {{ $latestSend ? 'resend' : 'send' }}"
+                                >
+                                    @csrf
+                                    <button
+                                        type="submit"
+                                        title="{{ $latestSend ? 'Resend' : 'Send' }}"
+                                        aria-label="{{ $latestSend ? 'Resend' : 'Send' }} {{ $notification->title }}"
+                                        class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-blue-600"
+                                    >
+                                        <x-icon name="bell" class="h-4 w-4" />
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>
