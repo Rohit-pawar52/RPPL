@@ -7,7 +7,7 @@
         <h1 class="text-base font-semibold text-neutral-900">Registration Successful</h1>
 
         <p class="mt-4 text-xs text-neutral-500">Registration Number</p>
-        <p class="mt-1 text-xl font-semibold tracking-wide text-blue-700">{{ $registration_number }}</p>
+        <p class="mt-1 text-xl font-semibold tracking-wide theme-primary-text">{{ $registration_number }}</p>
         <p class="mt-2 text-xs font-medium text-red-600">Please save this Registration Number &mdash; you will need it to check your status later.</p>
 
         <dl class="mt-5 grid grid-cols-1 gap-3 text-left text-xs sm:grid-cols-2">
@@ -34,11 +34,11 @@
         <p class="mt-5 text-xs text-neutral-500">
             Your payment and documents will be manually verified by RPPL administration. This may take a few days.
             You can return anytime and
-            <a href="{{ route('public.player-registration.status') }}" class="font-medium text-blue-600 hover:underline">Check Registration Status</a>
+            <a href="{{ route('public.player-registration.status') }}" class="font-medium theme-link hover:underline">Check Registration Status</a>
             using your Registration Number.
         </p>
 
-        <a href="{{ route('public.home') }}" class="mt-5 inline-block text-xs font-medium text-blue-600 hover:underline">
+        <a href="{{ route('public.home') }}" class="mt-5 inline-block text-xs font-medium theme-link hover:underline">
             &larr; Back to RPPL home
         </a>
     </div>

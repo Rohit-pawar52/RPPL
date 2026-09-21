@@ -26,7 +26,7 @@
                 <select
                     id="source"
                     name="source"
-                    class="w-full rounded-md border bg-white px-3 py-2 text-[13px] focus:outline-none focus:ring-2 {{ $errors->has('source_id') ? 'border-red-400 focus:ring-red-100' : 'border-neutral-300 focus:ring-blue-100' }}"
+                    class="w-full rounded-md border bg-white px-3 py-2 text-[13px] focus:outline-none focus:ring-2 {{ $errors->has('source_id') ? 'border-red-400 focus:ring-red-100' : 'border-neutral-300 theme-focus-ring' }}"
                 >
                     <option value="" disabled @selected(! old('source'))>Select a contributor</option>
 
@@ -71,7 +71,7 @@
             <x-form.input name="notes" label="Notes" :value="old('notes')" />
 
             <div class="mt-2 flex items-center gap-2">
-                <button type="submit" class="rounded-md bg-blue-600 px-3 py-2 text-[13px] font-medium text-white hover:bg-blue-500">
+                <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
                     Save contribution
                 </button>
                 <a href="{{ route('admin.edition-contributions.index') }}" class="rounded-md border border-neutral-200 px-3 py-2 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">

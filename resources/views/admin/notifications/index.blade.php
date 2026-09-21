@@ -12,7 +12,7 @@
 
         <a
             href="{{ route('admin.notifications.create') }}"
-            class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-blue-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-blue-500"
+            class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
         >
             + New notification
         </a>
@@ -74,7 +74,7 @@
                                     href="{{ route('admin.notifications.edit', $notification) }}"
                                     title="Edit"
                                     aria-label="Edit {{ $notification->title }}"
-                                    class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-blue-600"
+                                    class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 theme-hover-primary"
                                 >
                                     <x-icon name="pencil" class="h-4 w-4" />
                                 </a>
@@ -91,7 +91,7 @@
                                         type="submit"
                                         title="{{ $latestSend ? 'Resend' : 'Send' }}"
                                         aria-label="{{ $latestSend ? 'Resend' : 'Send' }} {{ $notification->title }}"
-                                        class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-blue-600"
+                                        class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 theme-hover-primary"
                                     >
                                         <x-icon name="bell" class="h-4 w-4" />
                                     </button>

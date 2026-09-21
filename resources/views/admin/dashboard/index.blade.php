@@ -101,7 +101,7 @@
         <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
             <div class="mb-3 flex items-center justify-between gap-3">
                 <h3 class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Registration Payments</h3>
-                <a href="{{ route('admin.player-registrations.index', ['edition_id' => $edition->id]) }}" class="text-[11px] font-medium text-blue-600 hover:underline">
+                <a href="{{ route('admin.player-registrations.index', ['edition_id' => $edition->id]) }}" class="text-[11px] font-medium theme-link hover:underline">
                     View all &rarr;
                 </a>
             </div>
@@ -155,7 +155,7 @@
             <div class="rounded-lg border border-neutral-200 bg-white p-4">
                 <div class="mb-3 flex items-center justify-between gap-3">
                     <h3 class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Finance</h3>
-                    <a href="{{ route('admin.edition-transactions.index', ['edition_id' => $edition->id]) }}" class="text-[11px] font-medium text-blue-600 hover:underline">
+                    <a href="{{ route('admin.edition-transactions.index', ['edition_id' => $edition->id]) }}" class="text-[11px] font-medium theme-link hover:underline">
                         View ledger &rarr;
                     </a>
                 </div>
@@ -180,7 +180,7 @@
             <div class="rounded-lg border border-neutral-200 bg-white p-4">
                 <div class="mb-3 flex items-center justify-between gap-3">
                     <h3 class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Contributions</h3>
-                    <a href="{{ route('admin.edition-contributions.index', ['edition_id' => $edition->id]) }}" class="text-[11px] font-medium text-blue-600 hover:underline">
+                    <a href="{{ route('admin.edition-contributions.index', ['edition_id' => $edition->id]) }}" class="text-[11px] font-medium theme-link hover:underline">
                         View all &rarr;
                     </a>
                 </div>
@@ -203,7 +203,7 @@
         </div>
 
         <p class="mt-3 text-right">
-            <a href="{{ route('admin.reports.index', ['edition_id' => $edition->id]) }}" class="text-[11px] font-medium text-blue-600 hover:underline">
+            <a href="{{ route('admin.reports.index', ['edition_id' => $edition->id]) }}" class="text-[11px] font-medium theme-link hover:underline">
                 View full Reports &rarr;
             </a>
         </p>

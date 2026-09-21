@@ -13,14 +13,14 @@
             name="address"
             rows="3"
             maxlength="500"
-            class="w-full rounded-md border px-3 py-2 text-[13px] focus:outline-none focus:ring-2 {{ $errors->has('address') ? 'border-red-400 focus:ring-red-100' : 'border-neutral-300 focus:ring-blue-100' }}"
+            class="w-full rounded-md border px-3 py-2 text-[13px] focus:outline-none focus:ring-2 {{ $errors->has('address') ? 'border-red-400 focus:ring-red-100' : 'border-neutral-300 theme-focus-ring' }}"
         >{{ old('address', $settings->get('contact.address')) }}</textarea>
         @error('address')
             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
         @enderror
     </div>
 
-    <button type="submit" class="rounded-md bg-blue-600 px-3 py-2 text-[13px] font-medium text-white hover:bg-blue-500">
+    <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
         Save changes
     </button>
 </form>

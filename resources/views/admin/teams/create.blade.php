@@ -16,7 +16,7 @@
             @include('admin.teams._form')
 
             <div class="mt-4 flex items-center gap-2">
-                <button type="submit" class="rounded-md bg-blue-600 px-3 py-2 text-[13px] font-medium text-white hover:bg-blue-500">
+                <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
                     Save team
                 </button>
                 <a href="{{ route('admin.teams.index') }}" class="rounded-md border border-neutral-200 px-3 py-2 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">

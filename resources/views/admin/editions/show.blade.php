@@ -57,7 +57,7 @@
             <h3 class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Finance</h3>
             <a
                 href="{{ route('admin.edition-transactions.index', ['edition_id' => $edition->id]) }}"
-                class="text-xs font-medium text-blue-600 hover:underline"
+                class="text-xs font-medium theme-link hover:underline"
             >
                 View Transactions
             </a>
@@ -83,7 +83,7 @@
             <h3 class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Contributions</h3>
             <a
                 href="{{ route('admin.edition-contributions.index', ['edition_id' => $edition->id]) }}"
-                class="text-xs font-medium text-blue-600 hover:underline"
+                class="text-xs font-medium theme-link hover:underline"
             >
                 View Contributions
             </a>

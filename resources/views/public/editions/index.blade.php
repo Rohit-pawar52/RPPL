@@ -32,7 +32,7 @@
                             <td class="hidden px-2 py-2 text-right text-neutral-600 sm:table-cell">{{ $edition->edition_teams_count }}</td>
                             <td class="hidden px-2 py-2 text-right text-neutral-600 sm:table-cell">{{ $edition->matches_count }}</td>
                             <td class="px-2 py-2 text-right">
-                                <a href="{{ route('public.editions.show', $edition) }}" class="text-xs text-blue-600 hover:underline">View &rarr;</a>
+                                <a href="{{ route('public.editions.show', $edition) }}" class="text-xs theme-link hover:underline">View &rarr;</a>
                             </td>
                         </tr>
                     @empty

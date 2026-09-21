@@ -7,6 +7,7 @@
     @if($branding->faviconUrl)
         <link rel="icon" href="{{ $branding->faviconUrl }}">
     @endif
+    @include('layouts.partials.theme-vars')
     @vite(['resources/css/app.css'])
 </head>
 <body class="h-full text-[13px] text-neutral-800 antialiased">
@@ -20,7 +21,7 @@
                         class="h-12 w-12 rounded-md object-contain"
                     />
                 @else
-                    <span class="flex h-12 w-12 items-center justify-center rounded-md bg-blue-600 text-lg font-bold text-white">
+                    <span class="theme-primary-bg flex h-12 w-12 items-center justify-center rounded-md text-lg font-bold">
                         {{ Illuminate\Support\Str::substr($branding->shortName, 0, 1) }}
                     </span>
                 @endif

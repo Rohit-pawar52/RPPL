@@ -20,7 +20,7 @@
                 @endif
             </div>
 
-            <label class="cursor-pointer text-[11px] font-medium text-blue-600 hover:text-blue-700">
+            <label class="cursor-pointer text-[11px] font-medium theme-link">
                 {{ $player?->photo_path ? 'Replace photo' : 'Upload photo' }}
                 <input
                     type="file"

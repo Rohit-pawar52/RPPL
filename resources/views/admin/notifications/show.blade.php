@@ -36,7 +36,7 @@
                 @csrf
                 <button
                     type="submit"
-                    class="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-500"
+                    class="inline-flex items-center gap-1.5 rounded-md theme-button px-2.5 py-1.5 text-xs font-medium"
                 >
                     <x-icon name="bell" class="h-3.5 w-3.5" />
                     {{ $hasSent ? 'Resend Notification' : 'Send Notification' }}

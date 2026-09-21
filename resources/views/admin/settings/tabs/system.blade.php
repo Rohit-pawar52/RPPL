@@ -16,7 +16,7 @@
             name="maintenance_message"
             rows="3"
             maxlength="1000"
-            class="w-full rounded-md border px-3 py-2 text-[13px] focus:outline-none focus:ring-2 {{ $errors->has('maintenance_message') ? 'border-red-400 focus:ring-red-100' : 'border-neutral-300 focus:ring-blue-100' }}"
+            class="w-full rounded-md border px-3 py-2 text-[13px] focus:outline-none focus:ring-2 {{ $errors->has('maintenance_message') ? 'border-red-400 focus:ring-red-100' : 'border-neutral-300 theme-focus-ring' }}"
         >{{ old('maintenance_message', $settings->get('system.maintenance_message')) }}</textarea>
         @error('maintenance_message')
             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
@@ -31,7 +31,7 @@
         These are stored preferences only — nothing on the site currently reads or enforces maintenance mode, currency, or timezone from here yet.
     </p>
 
-    <button type="submit" class="rounded-md bg-blue-600 px-3 py-2 text-[13px] font-medium text-white hover:bg-blue-500">
+    <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
         Save changes
     </button>
 </form>

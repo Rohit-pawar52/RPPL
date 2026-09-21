@@ -32,7 +32,7 @@
         @forelse($editionTeams as $editionTeam)
             <a
                 href="{{ route('public.teams.show', ['team' => $team, 'edition_id' => $editionTeam->edition_id]) }}"
-                class="rounded-md border px-2.5 py-1 text-xs font-medium {{ $selectedEditionTeam?->id === $editionTeam->id ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}"
+                class="rounded-md border px-2.5 py-1 text-xs font-medium {{ $selectedEditionTeam?->id === $editionTeam->id ? 'theme-primary-border theme-primary-soft-bg theme-primary-text' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}"
             >
                 {{ $editionTeam->edition->name }}
             </a>

@@ -97,7 +97,7 @@
                     <a
                         href="{{ route('admin.player-registrations.aadhaar', $registration) }}"
                         target="_blank" rel="noopener"
-                        class="inline-flex items-center gap-1 rounded-md border border-neutral-200 px-2 py-1 font-medium text-blue-600 hover:bg-blue-50"
+                        class="inline-flex items-center gap-1 rounded-md border border-neutral-200 px-2 py-1 font-medium theme-link theme-hover-primary-soft-bg"
                     >
                         View / Download
                     </a>
@@ -111,7 +111,7 @@
                     <a
                         href="{{ route('admin.player-registrations.payment-proof', $registration) }}"
                         target="_blank" rel="noopener"
-                        class="inline-flex items-center gap-1 rounded-md border border-neutral-200 px-2 py-1 font-medium text-blue-600 hover:bg-blue-50"
+                        class="inline-flex items-center gap-1 rounded-md border border-neutral-200 px-2 py-1 font-medium theme-link theme-hover-primary-soft-bg"
                     >
                         View
                     </a>

@@ -27,11 +27,11 @@
         .header .brand {
             font-size: 18px;
             font-weight: bold;
-            color: #1d4ed8;
+            color: {{ $branding->primaryColor }};
         }
         .header .subtitle {
             font-size: 12px;
-            color: #6b7280;
+            color: {{ $branding->secondaryColor }};
             margin-top: 2px;
         }
         .meta {

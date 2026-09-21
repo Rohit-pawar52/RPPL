@@ -11,10 +11,10 @@
     <x-form.input name="short_name" label="Short Name" :value="$settings->get('general.short_name')" required maxlength="30" />
     <x-form.input name="tagline" label="Tagline" :value="$settings->get('general.tagline')" maxlength="255" />
 
-    <div class="grid grid-cols-3 gap-3">
-        <x-form.input name="primary_color" label="Primary Color" type="color" :value="$settings->get('general.primary_color')" />
-        <x-form.input name="secondary_color" label="Secondary Color" type="color" :value="$settings->get('general.secondary_color')" />
-        <x-form.input name="button_color" label="Button Color" type="color" :value="$settings->get('general.button_color')" />
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <x-form.color name="primary_color" label="Primary Color" :value="$settings->get('general.primary_color')" />
+        <x-form.color name="secondary_color" label="Secondary Color" :value="$settings->get('general.secondary_color')" />
+        <x-form.color name="button_color" label="Button Color" :value="$settings->get('general.button_color')" />
     </div>
 
     <div class="mb-3.5">
@@ -28,7 +28,7 @@
                 @endif
             </div>
             <div>
-                <label class="cursor-pointer text-[11px] font-medium text-blue-600 hover:text-blue-700">
+                <label class="cursor-pointer text-[11px] font-medium theme-link">
                     {{ $logoPath ? 'Replace logo' : 'Upload logo' }}
                     <input
                         type="file"
@@ -63,7 +63,7 @@
                 @endif
             </div>
             <div>
-                <label class="cursor-pointer text-[11px] font-medium text-blue-600 hover:text-blue-700">
+                <label class="cursor-pointer text-[11px] font-medium theme-link">
                     {{ $faviconPath ? 'Replace favicon' : 'Upload favicon' }}
                     <input
                         type="file"
@@ -87,7 +87,7 @@
         @enderror
     </div>
 
-    <button type="submit" class="rounded-md bg-blue-600 px-3 py-2 text-[13px] font-medium text-white hover:bg-blue-500">
+    <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
         Save changes
     </button>
 </form>

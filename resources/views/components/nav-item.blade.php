@@ -16,7 +16,7 @@
 @else
     <a
         href="{{ $route }}"
-        class="flex items-center gap-2 rounded-md px-3 py-2 text-[13px] {{ $active ? 'bg-blue-50 font-medium text-blue-700' : 'text-neutral-600 hover:bg-neutral-100' }}"
+        class="flex items-center gap-2 rounded-md px-3 py-2 text-[13px] {{ $active ? 'theme-primary-soft-bg theme-primary-text font-medium' : 'text-neutral-600 hover:bg-neutral-100' }}"
     >
         <x-icon :name="$icon" class="h-4 w-4 shrink-0" />
         {{ $slot }}

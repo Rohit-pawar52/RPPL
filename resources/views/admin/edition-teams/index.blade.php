@@ -10,10 +10,10 @@
                 name="search"
                 value="{{ $filters['search'] ?? '' }}"
                 placeholder="Search team name&hellip;"
-                class="w-full max-w-[220px] rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-100"
+                class="w-full max-w-[220px] rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
             />
 
-            <select name="edition_id" class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-100">
+            <select name="edition_id" class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring">
                 <option value="">All editions</option>
                 @foreach($editions as $edition)
                     <option value="{{ $edition->id }}" @selected(($filters['edition_id'] ?? '') == $edition->id)>
@@ -35,7 +35,7 @@
 
         <a
             href="{{ route('admin.edition-teams.create') }}"
-            class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-blue-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-blue-500"
+            class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
         >
             + Add team to edition
         </a>

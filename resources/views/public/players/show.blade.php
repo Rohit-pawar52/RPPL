@@ -36,14 +36,14 @@
     <div class="mt-4 flex flex-wrap items-center gap-2">
         <a
             href="{{ route('public.players.show', $player) }}"
-            class="rounded-md border px-2.5 py-1 text-xs font-medium {{ ! $selectedEdition ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}"
+            class="rounded-md border px-2.5 py-1 text-xs font-medium {{ ! $selectedEdition ? 'theme-primary-border theme-primary-soft-bg theme-primary-text' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}"
         >
             Career / All Editions
         </a>
         @foreach($player->playerRegistrations as $registration)
             <a
                 href="{{ route('public.players.show', ['player' => $player, 'edition_id' => $registration->edition_id]) }}"
-                class="rounded-md border px-2.5 py-1 text-xs font-medium {{ $selectedEdition?->id === $registration->edition_id ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}"
+                class="rounded-md border px-2.5 py-1 text-xs font-medium {{ $selectedEdition?->id === $registration->edition_id ? 'theme-primary-border theme-primary-soft-bg theme-primary-text' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}"
             >
                 {{ $registration->edition->name }}
             </a>

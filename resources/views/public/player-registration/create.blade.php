@@ -10,7 +10,7 @@
             <p class="mt-1 text-xs text-neutral-400">Please check back later or contact RPPL administration.</p>
             <p class="mt-4 text-xs text-neutral-500">
                 Already registered?
-                <a href="{{ route('public.player-registration.status') }}" class="font-medium text-blue-600 hover:underline">Check Registration Status</a>
+                <a href="{{ route('public.player-registration.status') }}" class="font-medium theme-link hover:underline">Check Registration Status</a>
             </p>
         </div>
     @else
@@ -25,7 +25,7 @@
             </p>
             <p class="mt-2 text-xs text-neutral-500">
                 Already registered?
-                <a href="{{ route('public.player-registration.status') }}" class="font-medium text-blue-600 hover:underline">Check Registration Status</a>
+                <a href="{{ route('public.player-registration.status') }}" class="font-medium theme-link hover:underline">Check Registration Status</a>
             </p>
         </div>
 
@@ -81,7 +81,7 @@
                     @enderror
                 </div>
 
-                <button type="submit" class="w-full rounded-md bg-blue-600 px-3 py-2 text-[13px] font-medium text-white hover:bg-blue-500">
+                <button type="submit" class="w-full rounded-md theme-button px-3 py-2 text-[13px] font-medium">
                     Submit Registration
                 </button>
             </form>

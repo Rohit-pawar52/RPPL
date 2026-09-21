@@ -10,10 +10,10 @@
                 name="search"
                 value="{{ $filters['search'] ?? '' }}"
                 placeholder="Search by name&hellip;"
-                class="w-full max-w-[200px] rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-100"
+                class="w-full max-w-[200px] rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
             />
 
-            <select name="status" class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-100">
+            <select name="status" class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring">
                 <option value="">All statuses</option>
                 @foreach(\App\Models\Edition::STATUSES as $status)
                     <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>
@@ -27,7 +27,7 @@
                 name="year"
                 value="{{ $filters['year'] ?? '' }}"
                 placeholder="Year"
-                class="w-24 rounded-md border border-neutral-300 px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-100"
+                class="w-24 rounded-md border border-neutral-300 px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
             />
 
             <button type="submit" class="rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
@@ -43,7 +43,7 @@
 
         <a
             href="{{ route('admin.editions.create') }}"
-            class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-blue-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-blue-500"
+            class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
         >
             + New edition
         </a>
@@ -87,7 +87,7 @@
                                     href="{{ route('admin.editions.edit', $edition) }}"
                                     title="Edit"
                                     aria-label="Edit {{ $edition->name }}"
-                                    class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-blue-600"
+                                    class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 theme-hover-primary"
                                 >
                                     <x-icon name="pencil" class="h-4 w-4" />
                                 </a>

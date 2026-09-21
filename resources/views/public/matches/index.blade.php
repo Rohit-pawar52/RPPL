@@ -9,7 +9,7 @@
         <form method="GET" action="{{ route('public.matches.index') }}" class="flex items-center gap-2">
             <select
                 name="edition_id"
-                class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-100"
+                class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
             >
                 <option value="">All editions</option>
                 @foreach($editions as $edition)

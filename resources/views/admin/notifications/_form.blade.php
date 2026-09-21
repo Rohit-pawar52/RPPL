@@ -12,7 +12,7 @@
         name="message"
         rows="3"
         maxlength="500"
-        class="w-full rounded-md border px-3 py-2 text-[13px] focus:outline-none focus:ring-2 {{ $errors->has('message') ? 'border-red-400 focus:ring-red-100' : 'border-neutral-300 focus:ring-blue-100' }}"
+        class="w-full rounded-md border px-3 py-2 text-[13px] focus:outline-none focus:ring-2 {{ $errors->has('message') ? 'border-red-400 focus:ring-red-100' : 'border-neutral-300 theme-focus-ring' }}"
     >{{ old('message', $notification->message ?? '') }}</textarea>
     @error('message')
         <p class="mt-1 text-xs text-red-600">{{ $message }}</p>

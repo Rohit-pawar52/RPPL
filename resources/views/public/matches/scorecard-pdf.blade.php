@@ -20,11 +20,11 @@
         .brand .title {
             font-size: 16px;
             font-weight: bold;
-            color: #1d4ed8;
+            color: {{ $branding->primaryColor }};
         }
         .brand .subtitle {
             font-size: 11px;
-            color: #6b7280;
+            color: {{ $branding->secondaryColor }};
             margin-top: 2px;
         }
         .match-header {

@@ -25,7 +25,7 @@
                 autocomplete="tel"
                 required
             />
-            <button type="submit" class="w-full rounded-md bg-blue-600 px-3 py-2 text-[13px] font-medium text-white hover:bg-blue-500">
+            <button type="submit" class="w-full rounded-md theme-button px-3 py-2 text-[13px] font-medium">
                 Check Status
             </button>
         </form>
@@ -81,7 +81,7 @@
             @endif
         @endisset
 
-        <a href="{{ route('public.player-registration.create') }}" class="mt-5 inline-block text-xs font-medium text-blue-600 hover:underline">
+        <a href="{{ route('public.player-registration.create') }}" class="mt-5 inline-block text-xs font-medium theme-link hover:underline">
             &larr; Back to Player Registration
         </a>
     </div>

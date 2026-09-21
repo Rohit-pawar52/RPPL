@@ -7,6 +7,7 @@
     @if($branding->faviconUrl)
         <link rel="icon" href="{{ $branding->faviconUrl }}">
     @endif
+    @include('layouts.partials.theme-vars')
 
     @php
         $flash = [

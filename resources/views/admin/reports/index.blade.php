@@ -10,7 +10,7 @@
             <select
                 name="edition_id"
                 onchange="this.form.submit()"
-                class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-100"
+                class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
             >
                 @foreach($editions as $option)
                     <option value="{{ $option->id }}" @selected($edition && $edition->id === $option->id)>
@@ -87,7 +87,7 @@
                         <p class="text-[11px] text-neutral-500">
                             Individual committee/general contribution records for this edition &middot; CSV.
                             Individual receipts remain available from
-                            <a href="{{ route('admin.edition-contributions.index', ['edition_id' => $edition->id]) }}" class="text-blue-600 hover:underline">Edition Contributions</a>.
+                            <a href="{{ route('admin.edition-contributions.index', ['edition_id' => $edition->id]) }}" class="theme-link hover:underline">Edition Contributions</a>.
                         </p>
                     </div>
                     <a
@@ -119,7 +119,7 @@
         <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
             <div class="mb-3 flex items-center justify-between gap-3">
                 <h3 class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Match Reports</h3>
-                <a href="{{ route('admin.matches.index', ['edition_id' => $edition->id]) }}" class="text-[11px] font-medium text-blue-600 hover:underline">
+                <a href="{{ route('admin.matches.index', ['edition_id' => $edition->id]) }}" class="text-[11px] font-medium theme-link hover:underline">
                     View all matches &rarr;
                 </a>
             </div>

@@ -5,7 +5,7 @@
 @section('content')
     <div class="rounded-lg border border-neutral-200 bg-white p-4">
         <h1 class="text-base font-semibold text-neutral-900">{{ $branding->applicationName }}</h1>
-        <p class="mt-1 text-xs text-neutral-500">
+        <p class="mt-1 text-xs {{ $branding->tagline ? 'theme-secondary-text' : 'text-neutral-500' }}">
             {{ $branding->tagline ?: 'Local cricket tournament scores, fixtures, and standings.' }}
         </p>
     </div>
@@ -20,7 +20,7 @@
                 <h2 class="text-sm font-semibold text-neutral-900">{{ $edition->name }}</h2>
                 <x-status-badge :status="$edition->status" />
             </div>
-            <a href="{{ route('public.editions.show', $edition) }}" class="mt-1 inline-block text-xs text-blue-600 hover:underline">
+            <a href="{{ route('public.editions.show', $edition) }}" class="mt-1 inline-block text-xs theme-link hover:underline">
                 View edition details &rarr;
             </a>
         </div>
@@ -49,7 +49,7 @@
             <div class="rounded-lg border border-neutral-200 bg-white p-4">
                 <div class="mb-3 flex items-center justify-between">
                     <h3 class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Points Table</h3>
-                    <a href="{{ route('public.editions.show', $edition) }}" class="text-xs text-blue-600 hover:underline">Full table &rarr;</a>
+                    <a href="{{ route('public.editions.show', $edition) }}" class="text-xs theme-link hover:underline">Full table &rarr;</a>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full min-w-[320px] text-left text-[13px]">
@@ -82,7 +82,7 @@
             <div class="rounded-lg border border-neutral-200 bg-white p-4">
                 <div class="mb-3 flex items-center justify-between">
                     <h3 class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Top Performers</h3>
-                    <a href="{{ route('public.editions.show', $edition) }}" class="text-xs text-blue-600 hover:underline">More &rarr;</a>
+                    <a href="{{ route('public.editions.show', $edition) }}" class="text-xs theme-link hover:underline">More &rarr;</a>
                 </div>
 
                 <p class="mb-1 text-[11px] font-medium text-neutral-500">Most Runs</p>

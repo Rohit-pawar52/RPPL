@@ -4,13 +4,20 @@ namespace App\Support;
 
 /**
  * The small, presentation-safe slice of Settings that layouts/partials
- * actually need (Phase 3.44B3) — a plain immutable value object, never
- * the full SettingsRegistry/SettingsService surface. Shared into views
- * by BrandingComposer so a template never has to call
- * app(SettingsService::class)->get(...) directly.
+ * actually need (Phase 3.44B3, extended in 3.44B4 with theme colors) —
+ * a plain immutable value object, never the full SettingsRegistry/
+ * SettingsService surface. Shared into views by BrandingComposer so a
+ * template never has to call app(SettingsService::class)->get(...)
+ * directly.
  *
  * Deliberately excludes every payment/Razorpay key: nothing that reaches
  * a view through this object can ever be a secret, even by accident.
+ *
+ * primaryColor/secondaryColor/buttonColor are always a genuine
+ * #RRGGBB string — sanitized against a malformed persisted value by
+ * BrandingComposer before this object is even constructed, never raw
+ * user input. buttonForegroundColor is derived (ForegroundContrast),
+ * never independently configurable.
  */
 final class Branding
 {
@@ -26,6 +33,11 @@ final class Branding
         public readonly ?string $contactWhatsapp,
         public readonly ?string $contactAddress,
         public readonly string $displayTimezone,
+        public readonly string $primaryColor,
+        public readonly string $primaryForegroundColor,
+        public readonly string $secondaryColor,
+        public readonly string $buttonColor,
+        public readonly string $buttonForegroundColor,
     ) {}
 
     public function hasContactDetails(): bool

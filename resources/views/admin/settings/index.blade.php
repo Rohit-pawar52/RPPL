@@ -26,7 +26,7 @@
         @foreach($tabs as $tabKey => $tabLabel)
             <a
                 href="{{ route('admin.settings.index', ['tab' => $tabKey]) }}"
-                class="rounded-t-md px-3 py-2 text-[13px] font-medium {{ $activeTab === $tabKey ? 'border-b-2 border-blue-600 text-blue-700' : 'text-neutral-500 hover:text-neutral-700' }}"
+                class="rounded-t-md px-3 py-2 text-[13px] font-medium {{ $activeTab === $tabKey ? 'border-b-2 theme-primary-border theme-primary-text' : 'text-neutral-500 hover:text-neutral-700' }}"
             >
                 {{ $tabLabel }}
             </a>

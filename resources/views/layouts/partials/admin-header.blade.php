@@ -16,7 +16,7 @@
                 @if($branding->logoUrl)
                     <img src="{{ $branding->logoUrl }}" alt="{{ $branding->applicationName }}" class="h-7 w-7 rounded-md object-contain" />
                 @else
-                    <span class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-xs font-bold text-white">
+                    <span class="theme-primary-bg flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold">
                         {{ Illuminate\Support\Str::substr($branding->shortName, 0, 1) }}
                     </span>
                 @endif

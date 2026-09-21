@@ -37,7 +37,7 @@
         These are stored preferences only — no Razorpay integration exists yet.
     </p>
 
-    <button type="submit" class="rounded-md bg-blue-600 px-3 py-2 text-[13px] font-medium text-white hover:bg-blue-500">
+    <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
         Save changes
     </button>
 </form>

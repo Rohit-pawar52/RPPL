@@ -7,6 +7,7 @@
     @if($branding->faviconUrl)
         <link rel="icon" href="{{ $branding->faviconUrl }}">
     @endif
+    @include('layouts.partials.theme-vars')
     @vite(['resources/css/app.css', 'resources/js/push-notifications.js'])
 </head>
 <body class="h-full text-[13px] text-neutral-800 antialiased">

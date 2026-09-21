@@ -7,6 +7,7 @@
     @if($branding->faviconUrl)
         <link rel="icon" href="{{ $branding->faviconUrl }}">
     @endif
+    @include('layouts.partials.theme-vars')
 
     @php
         $flash = [
@@ -29,7 +30,7 @@
                 @if($branding->logoUrl)
                     <img src="{{ $branding->logoUrl }}" alt="{{ $branding->applicationName }}" class="h-8 w-8 rounded-md object-contain" />
                 @else
-                    <span class="flex h-8 w-8 items-center justify-center rounded-md bg-blue-600 text-sm font-bold text-white">
+                    <span class="theme-primary-bg flex h-8 w-8 items-center justify-center rounded-md text-sm font-bold">
                         {{ Illuminate\Support\Str::substr($branding->shortName, 0, 1) }}
                     </span>
                 @endif
