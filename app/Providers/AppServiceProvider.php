@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\View\Composers\AnnouncementTickerComposer;
 use App\View\Composers\BrandingComposer;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -31,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureAuthorization();
         $this->configureFirebaseCredentialsFallback();
         $this->configureBranding();
+        $this->configureAnnouncementTicker();
     }
 
     /**
@@ -146,5 +148,16 @@ class AppServiceProvider extends ServiceProvider
             'admin.edition-contributions.receipt',
             'public.matches.scorecard-pdf',
         ], BrandingComposer::class);
+    }
+
+    /**
+     * The public ticker's currently-active announcements (Phase 3.45) —
+     * bound only to its own partial view, included exactly once from
+     * layouts.public, so this query never runs for admin/guest/
+     * maintenance pages (none of which include that partial).
+     */
+    private function configureAnnouncementTicker(): void
+    {
+        View::composer('layouts.partials.announcement-ticker', AnnouncementTickerComposer::class);
     }
 }

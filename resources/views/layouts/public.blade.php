@@ -12,6 +12,7 @@
 </head>
 <body class="h-full text-[13px] text-neutral-800 antialiased">
     <div class="flex min-h-full flex-col">
+        @include('layouts.partials.announcement-ticker')
         @include('layouts.partials.public-header')
 
         <main class="mx-auto w-full max-w-5xl flex-1 p-4 lg:p-6">

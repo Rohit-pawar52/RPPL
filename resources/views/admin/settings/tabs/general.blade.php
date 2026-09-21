@@ -17,6 +17,12 @@
         <x-form.color name="button_color" label="Button Color" :value="$settings->get('general.button_color')" />
     </div>
 
+    <p class="mb-1 text-[11px] font-medium text-neutral-500">Announcement ticker (public website)</p>
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <x-form.color name="announcement_background_color" label="Announcement Background Color" :value="$settings->get('general.announcement_background_color')" />
+        <x-form.color name="announcement_text_color" label="Announcement Text Color" :value="$settings->get('general.announcement_text_color')" />
+    </div>
+
     <div class="mb-3.5">
         <p class="mb-1 text-xs font-medium text-neutral-700">Logo</p>
         <div class="flex items-center gap-3">

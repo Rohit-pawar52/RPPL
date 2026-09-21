@@ -78,6 +78,8 @@ class SettingsController extends Controller
             'general.primary_color' => $data['primary_color'],
             'general.secondary_color' => $data['secondary_color'],
             'general.button_color' => $data['button_color'],
+            'general.announcement_background_color' => $data['announcement_background_color'],
+            'general.announcement_text_color' => $data['announcement_text_color'],
         ]);
 
         return redirect()->route('admin.settings.index', ['tab' => 'general'])

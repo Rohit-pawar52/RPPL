@@ -35,6 +35,8 @@
     --rppl-button: #2563eb;
     --rppl-button-hover: color-mix(in srgb, var(--rppl-button) 85%, black);
     --rppl-button-fg: #ffffff;
+    --rppl-announcement-bg: #2563eb;
+    --rppl-announcement-text: #ffffff;
 }
 
 /*
@@ -90,4 +92,68 @@
 
 .theme-focus-ring:focus {
     --tw-ring-color: var(--rppl-primary-soft);
+}
+
+/*
+ * Public announcement ticker (Phase 3.45) — CSS-only continuous
+ * marquee, never <marquee>, never a JS animation loop. The rendered
+ * content is duplicated once in the Blade partial so a plain
+ * translateX(-50%) loop has no visible seam; .rppl-ticker-track's own
+ * width is intrinsic (max-content), so this works for one message or
+ * many without any JS measuring anything. prefers-reduced-motion
+ * disables the animation and makes the (now single-copy) content
+ * horizontally scrollable instead of removing it.
+ */
+.rppl-ticker {
+    background-color: var(--rppl-announcement-bg);
+    color: var(--rppl-announcement-text);
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.rppl-ticker-track {
+    display: inline-flex;
+    width: max-content;
+    animation: rppl-ticker-scroll var(--rppl-ticker-duration, 30s) linear infinite;
+}
+
+.rppl-ticker-content {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.rppl-ticker-item {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.rppl-ticker-separator {
+    font-size: 0.75rem;
+    line-height: 1;
+    opacity: 0.6;
+}
+
+@keyframes rppl-ticker-scroll {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rppl-ticker {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .rppl-ticker-track {
+        animation: none;
+    }
+    .rppl-ticker-content-duplicate {
+        display: none;
+    }
 }

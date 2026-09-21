@@ -39,6 +39,12 @@ final class SettingsRegistry
         'general.primary_color' => ['type' => Setting::TYPE_COLOR, 'default' => '#2563eb'],
         'general.secondary_color' => ['type' => Setting::TYPE_COLOR, 'default' => '#737373'],
         'general.button_color' => ['type' => Setting::TYPE_COLOR, 'default' => '#2563eb'],
+        // Global appearance for the public announcement ticker (Phase
+        // 3.45) — shared by every ticker message, never one color per
+        // announcement. Defaults to the same brand blue on white text,
+        // a legible high-visibility notice-bar look out of the box.
+        'general.announcement_background_color' => ['type' => Setting::TYPE_COLOR, 'default' => '#2563eb'],
+        'general.announcement_text_color' => ['type' => Setting::TYPE_COLOR, 'default' => '#ffffff'],
 
         // System — system.display_timezone is a DISPLAY preference only;
         // it must never be used to change config('app.timezone') or the

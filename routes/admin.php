@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\Auth\LoginController;
 use App\Http\Controllers\Admin\CommitteeMemberController;
 use App\Http\Controllers\Admin\ContributorController;
@@ -176,5 +177,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::put('payments', [SettingsController::class, 'updatePayments'])->name('payments.update');
             Route::put('public-website', [SettingsController::class, 'updatePublicWebsite'])->name('public-website.update');
         });
+
+        // Public notice-ticker announcements (Phase 3.45) — no show():
+        // there's no separate detail view, only manage/edit in place.
+        Route::resource('announcements', AnnouncementController::class)->except(['show']);
     });
 });

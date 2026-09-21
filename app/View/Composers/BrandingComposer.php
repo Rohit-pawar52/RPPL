@@ -45,6 +45,8 @@ class BrandingComposer
             secondaryColor: $this->sanitizedColor('general.secondary_color'),
             buttonColor: $buttonColor,
             buttonForegroundColor: ForegroundContrast::for($buttonColor),
+            announcementBackgroundColor: $this->sanitizedColor('general.announcement_background_color'),
+            announcementTextColor: $this->sanitizedColor('general.announcement_text_color'),
         ));
     }
 

@@ -75,6 +75,8 @@ class SettingsManagementTest extends TestCase
             'primary_color' => '#111111',
             'secondary_color' => '#222222',
             'button_color' => '#333333',
+            'announcement_background_color' => '#333333',
+            'announcement_text_color' => '#ffffff',
         ])->assertForbidden();
 
         $this->assertSame('RajaBhoj Pawar Premier League', app(SettingsService::class)->get('general.application_name'));
@@ -104,6 +106,8 @@ class SettingsManagementTest extends TestCase
             'primary_color' => '#123456',
             'secondary_color' => '#654321',
             'button_color' => '#abcdef',
+            'announcement_background_color' => '#abcdef',
+            'announcement_text_color' => '#ffffff',
         ]);
 
         $response->assertRedirect(route('admin.settings.index', ['tab' => 'general']));
@@ -123,6 +127,8 @@ class SettingsManagementTest extends TestCase
             'primary_color' => 'not-a-color',
             'secondary_color' => '#654321',
             'button_color' => '#abcdef',
+            'announcement_background_color' => '#abcdef',
+            'announcement_text_color' => '#ffffff',
         ]);
 
         $response->assertSessionHasErrors('primary_color');
@@ -137,6 +143,8 @@ class SettingsManagementTest extends TestCase
             'primary_color' => '#123456',
             'secondary_color' => '#654321',
             'button_color' => '#abcdef',
+            'announcement_background_color' => '#abcdef',
+            'announcement_text_color' => '#ffffff',
         ]);
 
         $response->assertSessionHasErrors('application_name');
@@ -154,6 +162,8 @@ class SettingsManagementTest extends TestCase
             'primary_color' => '#123456',
             'secondary_color' => '#654321',
             'button_color' => '#abcdef',
+            'announcement_background_color' => '#abcdef',
+            'announcement_text_color' => '#ffffff',
             'logo' => $logo,
         ]);
 
@@ -175,6 +185,8 @@ class SettingsManagementTest extends TestCase
             'primary_color' => '#123456',
             'secondary_color' => '#654321',
             'button_color' => '#abcdef',
+            'announcement_background_color' => '#abcdef',
+            'announcement_text_color' => '#ffffff',
             'logo' => $first,
         ]);
         $firstPath = app(SettingsService::class)->get('general.logo_path');
@@ -186,6 +198,8 @@ class SettingsManagementTest extends TestCase
             'primary_color' => '#123456',
             'secondary_color' => '#654321',
             'button_color' => '#abcdef',
+            'announcement_background_color' => '#abcdef',
+            'announcement_text_color' => '#ffffff',
             'logo' => $second,
         ]);
         $secondPath = app(SettingsService::class)->get('general.logo_path');
@@ -207,6 +221,8 @@ class SettingsManagementTest extends TestCase
             'primary_color' => '#123456',
             'secondary_color' => '#654321',
             'button_color' => '#abcdef',
+            'announcement_background_color' => '#abcdef',
+            'announcement_text_color' => '#ffffff',
             'favicon' => $favicon,
         ]);
 
@@ -228,6 +244,8 @@ class SettingsManagementTest extends TestCase
             'primary_color' => '#123456',
             'secondary_color' => '#654321',
             'button_color' => '#abcdef',
+            'announcement_background_color' => '#abcdef',
+            'announcement_text_color' => '#ffffff',
             'logo' => $logo,
         ]);
         $path = app(SettingsService::class)->get('general.logo_path');
@@ -239,6 +257,8 @@ class SettingsManagementTest extends TestCase
             'primary_color' => '#123456',
             'secondary_color' => '#654321',
             'button_color' => '#abcdef',
+            'announcement_background_color' => '#abcdef',
+            'announcement_text_color' => '#ffffff',
             'remove_logo' => '1',
         ]);
 
@@ -397,6 +417,8 @@ class SettingsManagementTest extends TestCase
             'primary_color' => '#123456',
             'secondary_color' => '#654321',
             'button_color' => '#abcdef',
+            'announcement_background_color' => '#abcdef',
+            'announcement_text_color' => '#ffffff',
         ]);
 
         $this->assertSame('INR', app(SettingsService::class)->get('system.currency'));

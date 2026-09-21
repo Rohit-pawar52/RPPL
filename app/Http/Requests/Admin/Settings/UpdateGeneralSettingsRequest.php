@@ -28,6 +28,8 @@ class UpdateGeneralSettingsRequest extends FormRequest
             'primary_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'secondary_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'button_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'announcement_background_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'announcement_text_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             // The `image` validation rule has no ico support at all
             // (verified against Laravel's own ValidatesAttributes —
             // its mimes list is jpg/jpeg/png/gif/bmp/webp only), so the

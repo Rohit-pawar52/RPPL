@@ -1,8 +1,9 @@
-{{-- Runtime CSS custom properties for the three configured theme colors
-     (Phase 3.44B4) — rendered fresh on every request from $branding, so
-     an admin's color change takes effect on the very next page load,
-     no npm build. $branding->primaryColor/secondaryColor/buttonColor/
-     *ForegroundColor are ALWAYS already-sanitized #RRGGBB strings (see
+{{-- Runtime CSS custom properties for the configured theme colors
+     (Phase 3.44B4, extended in 3.45 with the announcement ticker
+     colors) — rendered fresh on every request from $branding, so an
+     admin's color change takes effect on the very next page load, no
+     npm build. Every $branding->*Color/*ForegroundColor value is
+     ALWAYS an already-sanitized #RRGGBB string (see
      BrandingComposer::sanitizedColor()/ForegroundContrast) — never raw
      settings input — so interpolating them directly here can never
      inject arbitrary CSS. Derived shades (hover/soft) use color-mix(),
@@ -17,5 +18,7 @@
         --rppl-button: {{ $branding->buttonColor }};
         --rppl-button-hover: color-mix(in srgb, {{ $branding->buttonColor }} 85%, black);
         --rppl-button-fg: {{ $branding->buttonForegroundColor }};
+        --rppl-announcement-bg: {{ $branding->announcementBackgroundColor }};
+        --rppl-announcement-text: {{ $branding->announcementTextColor }};
     }
 </style>

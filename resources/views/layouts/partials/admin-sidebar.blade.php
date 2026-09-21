@@ -59,6 +59,9 @@
             <x-nav-item :route="route('admin.notifications.index')" icon="bell" :active="request()->routeIs('admin.notifications.*')">
                 Notifications
             </x-nav-item>
+            <x-nav-item :route="route('admin.announcements.index')" icon="megaphone" :active="request()->routeIs('admin.announcements.*')">
+                Announcements
+            </x-nav-item>
             <x-nav-item :route="route('admin.reports.index')" icon="document-chart" :active="request()->routeIs('admin.reports.*')">
                 Reports
             </x-nav-item>

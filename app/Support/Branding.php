@@ -13,11 +13,12 @@ namespace App\Support;
  * Deliberately excludes every payment/Razorpay key: nothing that reaches
  * a view through this object can ever be a secret, even by accident.
  *
- * primaryColor/secondaryColor/buttonColor are always a genuine
- * #RRGGBB string — sanitized against a malformed persisted value by
- * BrandingComposer before this object is even constructed, never raw
- * user input. buttonForegroundColor is derived (ForegroundContrast),
- * never independently configurable.
+ * primaryColor/secondaryColor/buttonColor/announcementBackgroundColor/
+ * announcementTextColor are always a genuine #RRGGBB string —
+ * sanitized against a malformed persisted value by BrandingComposer
+ * before this object is even constructed, never raw user input.
+ * buttonForegroundColor is derived (ForegroundContrast), never
+ * independently configurable.
  */
 final class Branding
 {
@@ -38,6 +39,8 @@ final class Branding
         public readonly string $secondaryColor,
         public readonly string $buttonColor,
         public readonly string $buttonForegroundColor,
+        public readonly string $announcementBackgroundColor,
+        public readonly string $announcementTextColor,
     ) {}
 
     public function hasContactDetails(): bool
