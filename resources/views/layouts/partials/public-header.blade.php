@@ -19,16 +19,31 @@
             <a href="{{ route('public.players.index') }}" class="hover:text-neutral-900">Players</a>
             <a href="{{ route('public.venues.index') }}" class="hover:text-neutral-900">Venues</a>
             <a href="{{ route('public.player-registration.create') }}" class="hover:text-neutral-900">Register</a>
-            {{-- Hidden by default; resources/js/push-notifications.js reveals it
-                 only once the browser/Firebase config are confirmed usable, and
-                 never requests permission until this button is explicitly clicked. --}}
-            <button
-                type="button"
-                id="fcm-subscribe-button"
-                class="hidden rounded-md border border-neutral-200 px-2.5 py-1 text-xs font-medium text-neutral-600 hover:border-neutral-300 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-                🔔 Enable Notifications
-            </button>
+            {{-- Compact bell badge (Phase 3.47) — hidden by default;
+                 resources/js/push-notifications.js reveals it only once
+                 the browser/Firebase config are confirmed usable.
+                 Clicking it never itself guarantees a native permission
+                 prompt: the JS decides what to do based on the CURRENT
+                 Notification.permission (request it, show blocked help,
+                 or do nothing if already granted) — see
+                 push-notifications.js for the full state machine. --}}
+            <span class="relative inline-flex">
+                <button
+                    type="button"
+                    id="fcm-subscribe-button"
+                    class="hidden rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
+                    aria-label="Enable notifications"
+                    title="Enable notifications"
+                    data-state="default"
+                >
+                    <x-icon name="bell" class="h-4 w-4" />
+                </button>
+                <span
+                    id="fcm-subscribe-indicator"
+                    class="rppl-notify-indicator pointer-events-none absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ring-2 ring-white"
+                    aria-hidden="true"
+                ></span>
+            </span>
             <a href="{{ route('admin.login') }}" class="text-neutral-400 hover:text-neutral-600">Admin</a>
         </nav>
     </div>

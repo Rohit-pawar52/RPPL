@@ -211,3 +211,21 @@
     font-weight: 600;
     color: #171717;
 }
+
+/*
+ * Push-notification bell state indicator (Phase 3.47) — a small static
+ * dot, never an animation/pulse. Hidden entirely for the default
+ * (not-yet-decided) state; resources/js/push-notifications.js sets
+ * data-state to "enabled" or "denied" to reveal it.
+ */
+.rppl-notify-indicator {
+    display: none;
+}
+.rppl-notify-indicator[data-state='enabled'] {
+    display: block;
+    background-color: #16a34a;
+}
+.rppl-notify-indicator[data-state='denied'] {
+    display: block;
+    background-color: #a3a3a3;
+}

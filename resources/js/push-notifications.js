@@ -4,15 +4,26 @@ import { getMessaging, getToken, isSupported, onMessage } from 'firebase/messagi
 import Swal from 'sweetalert2';
 
 /**
- * Public Firebase Cloud Messaging subscription (Phase B2) — deliberately
- * isolated from public-live-match.js/Echo-Reverb and every admin/scoring
- * script; no login. A browser permission prompt is only ever triggered
- * by an explicit click on #fcm-subscribe-button (see initSubscribeButton())
- * — never on load/scroll/timeout. A returning visitor whose permission
- * is already 'granted' has their CURRENT token silently re-submitted to
- * the existing /notifications/subscribe backend on load, purely to keep
- * RPPL's record fresh — see maybeRefreshExistingSubscription(); that is a
- * re-use of an already-granted permission, never a new prompt.
+ * Public Firebase Cloud Messaging subscription (Phase B2), with a
+ * soft-prompt opt-in UX on top (Phase 3.47) — deliberately isolated
+ * from public-live-match.js/Echo-Reverb and every admin/scoring
+ * script; no login.
+ *
+ * The browser-native permission popup is NEVER triggered automatically
+ * on load/scroll/timeout. It is only ever triggered by an explicit
+ * user action — clicking the header bell (#fcm-subscribe-button), or
+ * clicking "Enable Notifications" on the RPPL-controlled soft prompt
+ * (#rppl-push-soft-prompt) — and only when Notification.permission is
+ * currently 'default'. The soft prompt itself is RPPL-controlled UI
+ * that may appear automatically (after a short delay, subject to the
+ * eligibility rules in maybeScheduleSoftPrompt()); it never IS the
+ * native prompt.
+ *
+ * A returning visitor whose permission is already 'granted' has their
+ * CURRENT token silently re-submitted to the existing
+ * /notifications/subscribe backend on load, purely to keep RPPL's
+ * record fresh — see maybeRefreshExistingSubscription(); that reuses
+ * an already-granted permission, never a new prompt.
  *
  * Only the PUBLIC Firebase Web config lives here — never a secret, and
  * never the private service-account credential (that never appears in
@@ -23,6 +34,22 @@ import Swal from 'sweetalert2';
 
 const SUBSCRIBE_URL = '/notifications/subscribe';
 const SERVICE_WORKER_URL = '/firebase-messaging-sw.js';
+
+// The soft prompt appears this long after the page is ready — long
+// enough that a visitor has actually seen the site first, short enough
+// to still catch someone browsing quickly. Centralized here rather
+// than repeated at each call site.
+const SOFT_PROMPT_DELAY_MS = 2000;
+
+// How long an explicit "Not Now" suppresses the AUTOMATIC soft prompt.
+// Never affects a manual bell click — see initBellButton().
+const COOLDOWN_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+const COOLDOWN_STORAGE_KEY = 'rppl_push_prompt_next_at';
+
+// Optional same-session anti-repeat (Phase 3.47 §14) — keeps the
+// automatic prompt from reappearing on every reload within one browser
+// session even before a 7-day cooldown would otherwise apply.
+const SESSION_SHOWN_KEY = 'rppl_push_prompt_shown_session';
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -35,11 +62,11 @@ const firebaseConfig = {
 
 const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
-const LABELS = {
-    default: '🔔 Enable Notifications',
-    working: 'Enabling…',
-    enabled: '🔔 Notifications On',
-    denied: 'Notifications Blocked',
+const BELL_LABELS = {
+    default: 'Enable notifications',
+    working: 'Enabling notifications…',
+    enabled: 'Notifications enabled',
+    denied: 'Notifications blocked — click for help',
 };
 
 function hasCompleteConfig() {
@@ -53,10 +80,74 @@ function hasCompleteConfig() {
     );
 }
 
-function setState(button, state) {
-    button.textContent = LABELS[state] ?? LABELS.default;
-    button.disabled = state === 'working' || state === 'denied';
+/**
+ * localStorage/sessionStorage can throw (private browsing, blocked
+ * storage, disabled cookies) — every access goes through these small
+ * wrappers so a storage failure only ever means "the soft prompt may
+ * reappear more than intended," never a broken page. Nothing sensitive
+ * is ever stored here — only a dismissal timestamp and a same-session
+ * boolean flag (see the module docblock and Phase 3.47 §20/§7).
+ */
+function readStorage(storage, key) {
+    try {
+        return storage.getItem(key);
+    } catch {
+        return null;
+    }
+}
+
+function writeStorage(storage, key, value) {
+    try {
+        storage.setItem(key, value);
+    } catch {
+        // Ignored — see the docblock above.
+    }
+}
+
+function removeStorage(storage, key) {
+    try {
+        storage.removeItem(key);
+    } catch {
+        // Ignored — see the docblock above.
+    }
+}
+
+function isWithinCooldown() {
+    const raw = readStorage(window.localStorage, COOLDOWN_STORAGE_KEY);
+
+    if (!raw) {
+        return false;
+    }
+
+    const nextAt = Number(raw);
+
+    return Number.isFinite(nextAt) && Date.now() < nextAt;
+}
+
+function startCooldown() {
+    writeStorage(window.localStorage, COOLDOWN_STORAGE_KEY, String(Date.now() + COOLDOWN_DURATION_MS));
+}
+
+/**
+ * Called only after a successful Enable — a stale "come back later"
+ * cooldown from an earlier "Not Now" no longer means anything once the
+ * visitor has actually enabled notifications (Phase 3.47 §12).
+ */
+function clearCooldown() {
+    removeStorage(window.localStorage, COOLDOWN_STORAGE_KEY);
+}
+
+function setBellState(button, indicator, state) {
     button.dataset.state = state;
+    button.disabled = state === 'working';
+
+    const label = BELL_LABELS[state] ?? BELL_LABELS.default;
+    button.setAttribute('aria-label', label);
+    button.title = label;
+
+    if (indicator) {
+        indicator.dataset.state = state;
+    }
 }
 
 /**
@@ -74,15 +165,16 @@ async function submitToken(token) {
 }
 
 /**
- * Runs on every page load. 'denied' shows the blocked state without ever
- * calling requestPermission() again. 'granted' silently re-fetches and
- * re-submits the CURRENT token (a no-op from the visitor's point of view
- * — no prompt, no visible change beyond the button reflecting "on").
- * 'default' leaves the button in its normal, clickable state.
+ * Runs on every page load. 'denied' reflects the blocked state on the
+ * bell without ever calling requestPermission() again. 'granted'
+ * silently re-fetches and re-submits the CURRENT token (a no-op from
+ * the visitor's point of view — no prompt, the server's own upsert
+ * behavior prevents duplicate rows). 'default' leaves the bell in its
+ * normal, clickable state.
  */
-async function maybeRefreshExistingSubscription(button, messaging, registration) {
+async function maybeRefreshExistingSubscription(button, indicator, messaging, registration) {
     if (Notification.permission === 'denied') {
-        setState(button, 'denied');
+        setBellState(button, indicator, 'denied');
 
         return;
     }
@@ -99,10 +191,10 @@ async function maybeRefreshExistingSubscription(button, messaging, registration)
         }
 
         await submitToken(token);
-        setState(button, 'enabled');
+        setBellState(button, indicator, 'enabled');
     } catch (error) {
         // A returning visitor's silent refresh failing is not worth
-        // surfacing in the UI — the button stays in its default state
+        // surfacing in the UI — the bell stays in its default state
         // and a future click can retry the whole flow. Still logged to
         // the console (never the token/credentials, just the SDK's own
         // error) so a developer can diagnose without this ever
@@ -111,37 +203,149 @@ async function maybeRefreshExistingSubscription(button, messaging, registration)
     }
 }
 
-function initSubscribeButton(button, messaging, registration) {
-    button.addEventListener('click', async () => {
-        setState(button, 'working');
+/**
+ * The one place that actually calls Notification.requestPermission() —
+ * shared by the bell's own click handler and the soft prompt's Enable
+ * button, so there is exactly one enable flow, never two competing
+ * implementations (Phase 3.47 §26).
+ */
+async function enableNotifications(button, indicator, messaging, registration) {
+    setBellState(button, indicator, 'working');
 
-        try {
-            const permission = await Notification.requestPermission();
+    try {
+        const permission = await Notification.requestPermission();
 
-            if (permission !== 'granted') {
-                setState(button, permission === 'denied' ? 'denied' : 'default');
+        if (permission !== 'granted') {
+            setBellState(button, indicator, permission === 'denied' ? 'denied' : 'default');
 
-                return;
-            }
-
-            const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: registration });
-
-            if (!token) {
-                setState(button, 'default');
-
-                return;
-            }
-
-            await submitToken(token);
-            setState(button, 'enabled');
-        } catch (error) {
-            // Never the token/credentials — just the SDK's own error,
-            // logged so a developer can diagnose a failed click without
-            // this ever showing a scary message to a real visitor.
-            console.error('Enable Notifications failed:', error);
-            setState(button, 'default');
+            return;
         }
+
+        const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: registration });
+
+        if (!token) {
+            setBellState(button, indicator, 'default');
+
+            return;
+        }
+
+        await submitToken(token);
+        setBellState(button, indicator, 'enabled');
+        clearCooldown();
+    } catch (error) {
+        // Never the token/credentials — just the SDK's own error,
+        // logged so a developer can diagnose a failed click without
+        // this ever showing a scary message to a real visitor.
+        console.error('Enable Notifications failed:', error);
+        setBellState(button, indicator, 'default');
+    }
+}
+
+/**
+ * A browser can never be forced to re-show its native permission
+ * prompt once a site has been blocked — the only real remedy is the
+ * visitor's own browser site-settings. This is RPPL-controlled UI
+ * explaining that, never another attempt at requestPermission().
+ */
+function showBlockedHelp() {
+    Swal.fire({
+        icon: 'info',
+        title: 'Notifications Blocked',
+        text: 'Notifications are blocked in your browser. Please allow notifications for this site from your browser’s site settings.',
+        confirmButtonText: 'Got it',
     });
+}
+
+function hideSoftPrompt(prompt) {
+    prompt?.classList.add('hidden');
+}
+
+/**
+ * The bell always reflects Notification.permission — the browser's own
+ * state is authoritative, never cached (Phase 3.47 §10). A denied
+ * click explains the block instead of prompting again; a granted click
+ * is a no-op (already enabled); only a default click proceeds to the
+ * shared enable flow, intentionally bypassing the 7-day "Not Now"
+ * cooldown — that cooldown only ever suppresses the AUTOMATIC prompt
+ * (Phase 3.47 §8).
+ */
+function initBellButton(button, indicator, prompt, messaging, registration) {
+    button.addEventListener('click', () => {
+        if (Notification.permission === 'denied') {
+            showBlockedHelp();
+
+            return;
+        }
+
+        if (Notification.permission === 'granted') {
+            return;
+        }
+
+        hideSoftPrompt(prompt);
+        enableNotifications(button, indicator, messaging, registration);
+    });
+}
+
+/**
+ * Wires the soft prompt's own two actions, if the prompt markup is
+ * present on this page (layouts.public only — never admin/guest/
+ * maintenance). Returns the prompt element (or null) so the caller can
+ * decide whether/when to reveal it.
+ */
+function initSoftPrompt(button, indicator, messaging, registration) {
+    const prompt = document.getElementById('rppl-push-soft-prompt');
+
+    if (!prompt) {
+        return null;
+    }
+
+    document.getElementById('rppl-push-soft-prompt-enable')?.addEventListener('click', () => {
+        hideSoftPrompt(prompt);
+        enableNotifications(button, indicator, messaging, registration);
+    });
+
+    document.getElementById('rppl-push-soft-prompt-dismiss')?.addEventListener('click', () => {
+        hideSoftPrompt(prompt);
+        startCooldown();
+    });
+
+    return prompt;
+}
+
+/**
+ * Decides whether the AUTOMATIC soft prompt should appear at all, and
+ * if so, reveals it after SOFT_PROMPT_DELAY_MS. Eligibility (Phase
+ * 3.47 §2/§6/§7/§14): permission must currently be 'default' (never
+ * 'granted' or 'denied'), no active 7-day cooldown from an earlier
+ * "Not Now", and not already shown once this browser session. Permission
+ * is re-checked again right before revealing, in case the visitor used
+ * the bell directly during the delay.
+ */
+function maybeScheduleSoftPrompt(prompt) {
+    if (!prompt) {
+        return;
+    }
+
+    if (Notification.permission !== 'default') {
+        return;
+    }
+
+    if (isWithinCooldown()) {
+        return;
+    }
+
+    if (readStorage(window.sessionStorage, SESSION_SHOWN_KEY)) {
+        return;
+    }
+
+    window.setTimeout(() => {
+        if (Notification.permission !== 'default') {
+            return;
+        }
+
+        writeStorage(window.sessionStorage, SESSION_SHOWN_KEY, '1');
+        prompt.classList.remove('hidden');
+    }, SOFT_PROMPT_DELAY_MS);
 }
 
 /**
@@ -226,6 +430,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    const indicator = document.getElementById('fcm-subscribe-indicator');
+
     if (!('Notification' in window) || !('serviceWorker' in navigator) || !hasCompleteConfig()) {
         if (import.meta.env.DEV && !hasCompleteConfig()) {
             // Public Firebase Web config only — never a secret — safe to
@@ -250,10 +456,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         button.classList.remove('hidden');
 
-        initSubscribeButton(button, messaging, registration);
+        const softPrompt = initSoftPrompt(button, indicator, messaging, registration);
+        initBellButton(button, indicator, softPrompt, messaging, registration);
         initForegroundMessages(messaging);
         initServiceWorkerMessageRelay();
-        await maybeRefreshExistingSubscription(button, messaging, registration);
+        await maybeRefreshExistingSubscription(button, indicator, messaging, registration);
+        maybeScheduleSoftPrompt(softPrompt);
     } catch (error) {
         // Any Firebase/service-worker initialization failure must never
         // break public navigation — the control simply stays hidden.

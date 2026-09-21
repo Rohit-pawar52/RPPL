@@ -32,6 +32,7 @@
         </main>
 
         @include('layouts.partials.public-footer')
+        @include('layouts.partials.push-soft-prompt')
     </div>
 </body>
 </html>
