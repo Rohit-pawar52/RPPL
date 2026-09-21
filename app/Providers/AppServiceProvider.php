@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\User;
 use App\View\Composers\AnnouncementTickerComposer;
 use App\View\Composers\BrandingComposer;
+use App\View\Composers\ContentPageFooterComposer;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -33,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureFirebaseCredentialsFallback();
         $this->configureBranding();
         $this->configureAnnouncementTicker();
+        $this->configureContentPageFooter();
     }
 
     /**
@@ -144,6 +146,7 @@ class AppServiceProvider extends ServiceProvider
             'layouts.guest',
             'public.home',
             'public.maintenance',
+            'public.content-page',
             'admin.editions.report-pdf',
             'admin.edition-contributions.receipt',
             'public.matches.scorecard-pdf',
@@ -159,5 +162,16 @@ class AppServiceProvider extends ServiceProvider
     private function configureAnnouncementTicker(): void
     {
         View::composer('layouts.partials.announcement-ticker', AnnouncementTickerComposer::class);
+    }
+
+    /**
+     * The public footer's active content-page links (Phase 3.46) —
+     * bound only to its own partial view, so this never runs for
+     * admin/guest/maintenance pages (none of which include the public
+     * footer).
+     */
+    private function configureContentPageFooter(): void
+    {
+        View::composer('layouts.partials.public-footer', ContentPageFooterComposer::class);
     }
 }

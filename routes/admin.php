@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\Auth\LoginController;
 use App\Http\Controllers\Admin\CommitteeMemberController;
+use App\Http\Controllers\Admin\ContentPageController;
 use App\Http\Controllers\Admin\ContributorController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DataCleanupController;
@@ -181,5 +182,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Public notice-ticker announcements (Phase 3.45) — no show():
         // there's no separate detail view, only manage/edit in place.
         Route::resource('announcements', AnnouncementController::class)->except(['show']);
+
+        // Fixed content pages — Privacy Policy/Terms/FAQs (Phase 3.46).
+        // One tabbed index (mirrors Settings) and one update action;
+        // no create/store/destroy — the three canonical rows always
+        // exist via DemoContentPageSeeder.
+        Route::prefix('content-pages')->name('content-pages.')->group(function () {
+            Route::get('/', [ContentPageController::class, 'index'])->name('index');
+            Route::put('{content_page}', [ContentPageController::class, 'update'])->name('update');
+        });
     });
 });

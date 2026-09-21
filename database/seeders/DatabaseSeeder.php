@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Database\Seeders\Demo\DemoAnnouncementSeeder;
+use Database\Seeders\Demo\DemoContentPageSeeder;
 use Database\Seeders\Demo\DemoEditionSeeder;
 use Database\Seeders\Demo\DemoFinanceSeeder;
 use Database\Seeders\Demo\DemoMatchSeeder;
@@ -33,6 +34,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoleSeeder::class,
             DemoSettingSeeder::class,
+            DemoContentPageSeeder::class,
             DemoUserSeeder::class,
             DemoPlayerSeeder::class,
             DemoTeamSeeder::class,

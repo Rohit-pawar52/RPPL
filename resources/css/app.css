@@ -157,3 +157,57 @@
         display: none;
     }
 }
+
+/*
+ * Rendered Markdown body for the fixed content pages (Phase 3.46) —
+ * Privacy Policy / Terms & Conditions / FAQs. A small, hand-written
+ * rule set rather than pulling in @tailwindcss/typography for three
+ * pages; matches the compact, neutral look already used everywhere
+ * else in the public site.
+ */
+.content-page-body {
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: #404040;
+}
+.content-page-body h2 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #171717;
+}
+.content-page-body h2:first-child {
+    margin-top: 0;
+}
+.content-page-body h3 {
+    margin-top: 1.25rem;
+    margin-bottom: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #171717;
+}
+.content-page-body p {
+    margin-bottom: 0.75rem;
+}
+.content-page-body ul,
+.content-page-body ol {
+    margin: 0 0 0.75rem 1.25rem;
+}
+.content-page-body ul {
+    list-style-type: disc;
+}
+.content-page-body ol {
+    list-style-type: decimal;
+}
+.content-page-body li {
+    margin-bottom: 0.25rem;
+}
+.content-page-body a {
+    color: var(--rppl-primary);
+    text-decoration: underline;
+}
+.content-page-body strong {
+    font-weight: 600;
+    color: #171717;
+}

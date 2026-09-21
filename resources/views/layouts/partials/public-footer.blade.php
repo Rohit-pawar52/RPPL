@@ -26,5 +26,13 @@
                 @endif
             </p>
         @endif
+
+        @if($footerContentPages->isNotEmpty())
+            <p class="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5">
+                @foreach($footerContentPages as $page)
+                    <a href="{{ $page->publicUrl() }}" class="hover:text-neutral-600">{{ $page->title }}</a>
+                @endforeach
+            </p>
+        @endif
     </div>
 </footer>

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Public\ContentPageController;
 use App\Http\Controllers\Public\EditionController;
 use App\Http\Controllers\Public\FcmTokenController;
 use App\Http\Controllers\Public\HomeController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\Public\PlayerRegistrationController;
 use App\Http\Controllers\Public\TeamController;
 use App\Http\Controllers\Public\VenueController;
 use App\Http\Middleware\EnsurePublicSiteIsNotUnderMaintenance;
+use App\Models\ContentPage;
 use Illuminate\Support\Facades\Route;
 
 // Public tournament website — read-only, no auth/policy middleware.
@@ -74,4 +76,19 @@ Route::middleware(EnsurePublicSiteIsNotUnderMaintenance::class)->group(function 
             ->middleware('throttle:fcm-subscribe')
             ->name('subscribe');
     });
+
+    // Fixed content pages (Phase 3.46) — three explicit routes, each
+    // bound to its own canonical `type` via Route::defaults(), sharing
+    // one controller action/template. Deliberately NOT a generic
+    // /pages/{anything} route, which would accept an arbitrary type
+    // from the URL.
+    Route::get('privacy-policy', [ContentPageController::class, 'show'])
+        ->defaults('type', ContentPage::TYPE_PRIVACY_POLICY)
+        ->name('public.privacy-policy');
+    Route::get('terms-and-conditions', [ContentPageController::class, 'show'])
+        ->defaults('type', ContentPage::TYPE_TERMS_CONDITIONS)
+        ->name('public.terms-conditions');
+    Route::get('faqs', [ContentPageController::class, 'show'])
+        ->defaults('type', ContentPage::TYPE_FAQS)
+        ->name('public.faqs');
 });
