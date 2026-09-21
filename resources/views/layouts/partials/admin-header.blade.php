@@ -13,8 +13,14 @@
             </button>
 
             <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 font-semibold text-neutral-900">
-                <span class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-xs font-bold text-white">R</span>
-                <span class="hidden text-sm sm:inline">RPPL Admin</span>
+                @if($branding->logoUrl)
+                    <img src="{{ $branding->logoUrl }}" alt="{{ $branding->applicationName }}" class="h-7 w-7 rounded-md object-contain" />
+                @else
+                    <span class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-xs font-bold text-white">
+                        {{ Illuminate\Support\Str::substr($branding->shortName, 0, 1) }}
+                    </span>
+                @endif
+                <span class="hidden text-sm sm:inline">{{ $branding->shortName }} Admin</span>
             </a>
         </div>
 

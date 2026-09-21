@@ -34,7 +34,7 @@
                 @if($match->venue)
                     &middot; {{ $match->venue->name }}
                 @endif
-                &middot; {{ $match->scheduled_at->format('d M Y, h:i A') }}
+                &middot; {{ display_datetime($match->scheduled_at, 'd M Y, h:i A') }}
             </p>
 
             @if($match->tossWinner)

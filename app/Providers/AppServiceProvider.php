@@ -3,10 +3,12 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\View\Composers\BrandingComposer;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 
@@ -28,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
         $this->configureAuthorization();
         $this->configureFirebaseCredentialsFallback();
+        $this->configureBranding();
     }
 
     /**
@@ -120,5 +123,28 @@ class AppServiceProvider extends ServiceProvider
         if (blank(config('firebase.projects.app.credentials'))) {
             config(['firebase.projects.app.credentials' => storage_path('app/firebase/firebase-service-account.json')]);
         }
+    }
+
+    /**
+     * Shares one $branding value object (App\Support\Branding) with the
+     * exact set of views that render presentation settings (Phase
+     * 3.44B3) — an explicit list, never a '*' wildcard, so
+     * SettingsService is only read for views that actually need it.
+     * Layout files pass $branding forward to their own @include'd
+     * partials automatically (Blade's normal scope inheritance), so
+     * partials are not listed here separately.
+     */
+    private function configureBranding(): void
+    {
+        View::composer([
+            'layouts.public',
+            'layouts.admin',
+            'layouts.guest',
+            'public.home',
+            'public.maintenance',
+            'admin.editions.report-pdf',
+            'admin.edition-contributions.receipt',
+            'public.matches.scorecard-pdf',
+        ], BrandingComposer::class);
     }
 }

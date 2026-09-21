@@ -148,7 +148,7 @@
                     @forelse($matchHistory as $row)
                         @php $match = $row['match']; @endphp
                         <tr>
-                            <td class="whitespace-nowrap px-2 py-1.5 text-neutral-500">{{ $match->scheduled_at->format('d M Y') }}</td>
+                            <td class="whitespace-nowrap px-2 py-1.5 text-neutral-500">{{ display_datetime($match->scheduled_at, 'd M Y') }}</td>
                             <td class="px-2 py-1.5 text-neutral-800">
                                 <a href="{{ route('public.matches.show', $match) }}" class="hover:underline">
                                     {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}

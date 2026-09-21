@@ -77,7 +77,7 @@
                         </td>
                         <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">{{ $match->venue->name ?? 'TBD' }}</td>
                         <td class="hidden px-4 py-2 text-neutral-500 lg:table-cell">
-                            {{ $match->scheduled_at->format('d M Y, h:i A') }}
+                            {{ display_datetime($match->scheduled_at, 'd M Y, h:i A') }}
                         </td>
                         <td class="px-4 py-2">
                             <x-status-badge :status="$match->match_status" />

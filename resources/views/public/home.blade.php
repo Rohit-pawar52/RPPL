@@ -1,11 +1,13 @@
 @extends('layouts.public')
 
-@section('title', 'RPPL &middot; RajaBhoj Pawar Premier League')
+@section('title', $branding->shortName.' &middot; '.$branding->applicationName)
 
 @section('content')
     <div class="rounded-lg border border-neutral-200 bg-white p-4">
-        <h1 class="text-base font-semibold text-neutral-900">RajaBhoj Pawar Premier League</h1>
-        <p class="mt-1 text-xs text-neutral-500">Local cricket tournament scores, fixtures, and standings.</p>
+        <h1 class="text-base font-semibold text-neutral-900">{{ $branding->applicationName }}</h1>
+        <p class="mt-1 text-xs text-neutral-500">
+            {{ $branding->tagline ?: 'Local cricket tournament scores, fixtures, and standings.' }}
+        </p>
     </div>
 
     @if(! $edition)

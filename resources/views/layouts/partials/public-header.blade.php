@@ -1,8 +1,14 @@
 <header class="sticky top-0 z-40 border-b border-neutral-200 bg-white">
     <div class="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-6">
         <a href="{{ route('public.home') }}" class="flex items-center gap-2 font-semibold text-neutral-900">
-            <span class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-xs font-bold text-white">R</span>
-            <span class="text-sm">RPPL</span>
+            @if($branding->logoUrl)
+                <img src="{{ $branding->logoUrl }}" alt="{{ $branding->applicationName }}" class="h-7 w-7 rounded-md object-contain" />
+            @else
+                <span class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-xs font-bold text-white">
+                    {{ Illuminate\Support\Str::substr($branding->shortName, 0, 1) }}
+                </span>
+            @endif
+            <span class="text-sm">{{ $branding->shortName }}</span>
         </a>
 
         <nav class="flex flex-wrap items-center gap-4 text-[13px] font-medium text-neutral-600">

@@ -63,7 +63,7 @@
                             {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
                         </a>
                         <p class="text-[11px] text-neutral-500">
-                            {{ $match->scheduled_at->format('d M Y, h:i A') }}
+                            {{ display_datetime($match->scheduled_at, 'd M Y, h:i A') }}
                             @if($match->venue)
                                 &middot; {{ $match->venue->name }}
                             @endif
@@ -85,7 +85,7 @@
                         <a href="{{ route('admin.matches.show', $match) }}" class="font-medium text-neutral-800 hover:underline">
                             {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
                         </a>
-                        <p class="text-[11px] text-neutral-500">{{ $match->scheduled_at->format('d M Y') }}</p>
+                        <p class="text-[11px] text-neutral-500">{{ display_datetime($match->scheduled_at, 'd M Y') }}</p>
                     </div>
                     <p class="text-[11px] text-neutral-600">{{ $match->match_result ?? '—' }}</p>
                 </div>

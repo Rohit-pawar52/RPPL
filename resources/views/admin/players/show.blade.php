@@ -202,7 +202,7 @@
                     @forelse($matchHistory as $row)
                         @php $match = $row['match']; @endphp
                         <tr>
-                            <td class="whitespace-nowrap px-2 py-1.5 text-neutral-500">{{ $match->scheduled_at->format('d M Y') }}</td>
+                            <td class="whitespace-nowrap px-2 py-1.5 text-neutral-500">{{ display_datetime($match->scheduled_at, 'd M Y') }}</td>
                             <td class="hidden px-2 py-1.5 text-neutral-600 md:table-cell">{{ $match->edition->name }}</td>
                             <td class="px-2 py-1.5 text-neutral-800">
                                 <a href="{{ route('admin.matches.show', $match) }}" class="hover:underline">

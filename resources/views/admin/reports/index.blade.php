@@ -130,7 +130,7 @@
                         <a href="{{ route('admin.matches.show', $match) }}" class="font-medium text-neutral-800 hover:underline">
                             {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
                         </a>
-                        <p class="text-[11px] text-neutral-500">{{ $match->scheduled_at->format('d M Y') }}</p>
+                        <p class="text-[11px] text-neutral-500">{{ display_datetime($match->scheduled_at, 'd M Y') }}</p>
                     </div>
                     <a
                         href="{{ route('public.matches.scorecard.pdf', $match) }}"

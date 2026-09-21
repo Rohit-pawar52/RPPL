@@ -101,7 +101,7 @@
 <body>
     <div class="receipt">
         <div class="header">
-            <div class="brand">RPPL Tournament</div>
+            <div class="brand">{{ $branding->applicationName }}</div>
             <div class="subtitle">Contribution Receipt</div>
         </div>
 
@@ -133,7 +133,7 @@
         </div>
 
         <div class="footer">
-            <p>Thank you for your contribution to RPPL.</p>
+            <p>Thank you for your contribution to {{ $branding->shortName }}.</p>
             <p>This is a computer-generated receipt.</p>
         </div>
     </div>

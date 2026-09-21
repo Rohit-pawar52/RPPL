@@ -40,7 +40,7 @@
                         {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
                     </a>
                     <p class="text-[11px] text-neutral-500">
-                        {{ $match->scheduled_at->format('d M Y') }}
+                        {{ display_datetime($match->scheduled_at, 'd M Y') }}
                         @if($match->venue)
                             &middot; {{ $match->venue->name }}
                         @endif

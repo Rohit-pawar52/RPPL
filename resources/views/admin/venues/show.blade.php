@@ -39,7 +39,7 @@
                     {{ $match->edition->name }} &middot; Match {{ $match->match_number ?? '—' }}
                 </span>
                 <span class="flex items-center gap-2 text-neutral-500">
-                    {{ $match->scheduled_at?->format('d M Y') ?? '—' }}
+                    {{ display_datetime($match->scheduled_at, 'd M Y') ?? '—' }}
                     <x-status-badge :status="$match->match_status" />
                 </span>
             </div>
