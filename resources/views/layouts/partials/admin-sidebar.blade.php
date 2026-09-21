@@ -62,6 +62,9 @@
             <x-nav-item :route="route('admin.reports.index')" icon="document-chart" :active="request()->routeIs('admin.reports.*')">
                 Reports
             </x-nav-item>
+            <x-nav-item :route="route('admin.data-cleanup.index')" icon="trash" :active="request()->routeIs('admin.data-cleanup.*')">
+                Data Cleanup
+            </x-nav-item>
         @endcan
     </nav>
 </aside>

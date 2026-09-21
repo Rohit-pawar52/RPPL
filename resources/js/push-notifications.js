@@ -1,5 +1,7 @@
+import axios from 'axios';
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, isSupported, onMessage } from 'firebase/messaging';
+import Swal from 'sweetalert2';
 
 /**
  * Public Firebase Cloud Messaging subscription (Phase B2) — deliberately
@@ -58,13 +60,17 @@ function setState(button, state) {
 }
 
 /**
- * The only place a token is ever sent anywhere — axios already carries
- * Laravel's XSRF cookie/header automatically for a same-origin POST, so
- * this needs no extra CSRF wiring. Never logs the token, the response,
- * or a raw SDK error; a failure here must never break public navigation.
+ * The only place a token is ever sent anywhere. Imports axios directly
+ * (rather than relying on window.axios, which resources/js/bootstrap.js
+ * only sets up for pages that load app.js — the public layout does not,
+ * it loads only this module) — axios already carries Laravel's XSRF
+ * cookie/header automatically for a same-origin POST regardless of
+ * which instance is used, so this needs no extra CSRF wiring. Never
+ * logs the token, the response, or a raw SDK error; a failure here must
+ * never break public navigation.
  */
 async function submitToken(token) {
-    await window.axios.post(SUBSCRIBE_URL, { token });
+    await axios.post(SUBSCRIBE_URL, { token });
 }
 
 /**
@@ -94,10 +100,14 @@ async function maybeRefreshExistingSubscription(button, messaging, registration)
 
         await submitToken(token);
         setState(button, 'enabled');
-    } catch {
+    } catch (error) {
         // A returning visitor's silent refresh failing is not worth
-        // surfacing — the button stays in its default state and a
-        // future click can retry the whole flow.
+        // surfacing in the UI — the button stays in its default state
+        // and a future click can retry the whole flow. Still logged to
+        // the console (never the token/credentials, just the SDK's own
+        // error) so a developer can diagnose without this ever
+        // interrupting a real visitor.
+        console.error('Push notification subscription refresh failed:', error);
     }
 }
 
@@ -124,27 +134,65 @@ function initSubscribeButton(button, messaging, registration) {
 
             await submitToken(token);
             setState(button, 'enabled');
-        } catch {
+        } catch (error) {
+            // Never the token/credentials — just the SDK's own error,
+            // logged so a developer can diagnose a failed click without
+            // this ever showing a scary message to a real visitor.
+            console.error('Enable Notifications failed:', error);
             setState(button, 'default');
         }
     });
 }
 
 /**
+ * The reliable in-page confirmation, shown only while the tab is
+ * actually visible — shared by BOTH of Firebase's own routing paths
+ * (onMessage below, and the service worker's relay further down), since
+ * in local testing Firebase inconsistently chose one or the other across
+ * otherwise-identical sends. The OS-level notification (shown
+ * separately, by the service worker) remains the primary channel and is
+ * unaffected either way; this is purely additive, for the case where the
+ * visitor already has RPPL open when it arrives, so they always see
+ * something regardless of Windows/Chrome notification settings. No
+ * click-to-navigate here — that would need its own action_url
+ * sanitization copy, and isn't worth it unless actually wanted.
+ */
+function showInPageConfirmation(title, body) {
+    if (document.visibilityState !== 'visible') {
+        return;
+    }
+
+    Swal.fire({
+        icon: 'info',
+        title,
+        text: body,
+        toast: true,
+        position: 'top-end',
+        timer: 6000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+    });
+}
+
+/**
  * Foreground-only — onMessage() never fires for a background push (the
  * service worker's onBackgroundMessage() handles that; see
- * firebase-messaging-sw.js). Native Notification API only, no toast
- * library. This is preparation for a later phase: no real payload can
- * arrive until server-side sending exists.
+ * firebase-messaging-sw.js). Native Notification API AND the shared
+ * in-page SweetAlert — Firebase's foreground/background routing proved
+ * inconsistent in local testing, so both display paths are wired to
+ * BOTH of Firebase's routing outcomes rather than assuming only one
+ * will ever fire.
  */
 function initForegroundMessages(messaging) {
     onMessage(messaging, (payload) => {
+        const title = payload?.notification?.title ?? 'RPPL';
+        const body = payload?.notification?.body ?? '';
+
+        showInPageConfirmation(title, body);
+
         if (Notification.permission !== 'granted') {
             return;
         }
-
-        const title = payload?.notification?.title ?? 'RPPL';
-        const body = payload?.notification?.body ?? '';
 
         const notification = new Notification(title, { body });
 
@@ -152,6 +200,22 @@ function initForegroundMessages(messaging) {
             window.focus();
             notification.close();
         };
+    });
+}
+
+/**
+ * The service worker relays EVERY push it receives here (see
+ * firebase-messaging-sw.js) regardless of Firebase's own
+ * onMessage/onBackgroundMessage routing choice — see
+ * showInPageConfirmation() above for why both paths are covered.
+ */
+function initServiceWorkerMessageRelay() {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type !== 'RPPL_PUSH_RECEIVED') {
+            return;
+        }
+
+        showInPageConfirmation(event.data.title, event.data.body);
     });
 }
 
@@ -188,9 +252,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         initSubscribeButton(button, messaging, registration);
         initForegroundMessages(messaging);
+        initServiceWorkerMessageRelay();
         await maybeRefreshExistingSubscription(button, messaging, registration);
-    } catch {
+    } catch (error) {
         // Any Firebase/service-worker initialization failure must never
         // break public navigation — the control simply stays hidden.
+        // Logged (never the token/credentials) so it's diagnosable.
+        console.error('Push notification initialization failed:', error);
     }
 });

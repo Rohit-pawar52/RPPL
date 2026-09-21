@@ -67,19 +67,41 @@ function sanitizeActionUrl(candidate) {
 }
 
 /**
- * Background-only (the tab is not focused/not open — see onMessage() in
- * push-notifications.js for the foreground case). Matches the real
- * payload FcmMessagingService now sends (Phase B4):
- * notification.title/body + data.action_url.
+ * The OS-level notification remains the primary channel — it is what
+ * reaches a visitor who doesn't currently have RPPL open at all, which
+ * is the actual point of a push notification. It depends entirely on
+ * Windows/Chrome settings outside this app's control (Focus Assist,
+ * per-origin notification throttling, etc. — see the Phase B5
+ * real-device verification), so it can legitimately show nothing with
+ * no error even when everything here is correct.
+ *
+ * In ADDITION, this always relays the payload to every open RPPL tab
+ * (regardless of Firebase's own onMessage/onBackgroundMessage focus
+ * routing, which proved unreliable in local testing) — the page decides
+ * for itself whether it's actually visible and shows a guaranteed,
+ * in-page confirmation (SweetAlert) only in that case. See
+ * push-notifications.js's service-worker message listener.
  */
 messaging.onBackgroundMessage((payload) => {
     const title = payload?.notification?.title ?? 'RPPL';
     const body = payload?.notification?.body ?? '';
     const actionUrl = sanitizeActionUrl(payload?.data?.action_url);
 
-    self.registration.showNotification(title, {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+        clients.forEach((client) => client.postMessage({ type: 'RPPL_PUSH_RECEIVED', title, body, actionUrl }));
+    });
+
+    // Returning the showNotification() promise (rather than firing it and
+    // letting the callback return undefined) lets Firebase's own
+    // onBackgroundMessage wrapper keep the service worker alive until it
+    // actually finishes — otherwise the worker can be suspended before
+    // the notification is fully shown. No `icon` option: public/
+    // favicon.ico is a broken/empty file in this project, and a bad icon
+    // URL can make Chrome silently fail to render the notification at
+    // all rather than just showing without one — omitting it lets the
+    // browser fall back to its own default instead of depending on it.
+    return self.registration.showNotification(title, {
         body,
-        icon: '/favicon.ico',
         data: { actionUrl },
     });
 });

@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\Auth\LoginController;
 use App\Http\Controllers\Admin\CommitteeMemberController;
 use App\Http\Controllers\Admin\ContributorController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DataCleanupController;
 use App\Http\Controllers\Admin\EditionContributionController;
 use App\Http\Controllers\Admin\EditionController;
 use App\Http\Controllers\Admin\EditionTeamController;
@@ -138,14 +139,25 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // No destroy: accounts are deactivated (is_active), never
         // deleted — see UserController's docblock.
         Route::resource('users', UserController::class)->except(['destroy']);
-        // No destroy: a broadcast's content is never deleted once
-        // authored — see NotificationController's docblock.
+        // No per-item destroy: a broadcast's content is never deleted
+        // individually — see NotificationController's docblock. Bulk,
+        // date-based retention cleanup exists separately below
+        // (DataCleanupController), never a single-record delete action.
         Route::resource('notifications', NotificationController::class)->except(['destroy']);
         // One explicit action for both Send and Resend (Phase B4) — the
         // backend semantics are identical either way (always the
         // notification's CURRENT content, always a new NotificationSend
         // row); only the button label differs based on send history.
         Route::post('notifications/{notification}/send', [NotificationController::class, 'send'])->name('notifications.send');
+        // Bulk retention/cleanup for notifications/notification_sends/
+        // fcm_tokens (Phase B5) — always an explicit, confirmed admin
+        // action, never automatic.
+        Route::prefix('data-cleanup')->name('data-cleanup.')->group(function () {
+            Route::get('/', [DataCleanupController::class, 'index'])->name('index');
+            Route::delete('notifications', [DataCleanupController::class, 'destroyNotifications'])->name('notifications.destroy');
+            Route::delete('notification-sends', [DataCleanupController::class, 'destroyNotificationSends'])->name('notification-sends.destroy');
+            Route::delete('fcm-tokens', [DataCleanupController::class, 'destroyFcmTokens'])->name('fcm-tokens.destroy');
+        });
         Route::prefix('edition-contributions/{edition_contribution}')->name('edition-contributions.')->group(function () {
             Route::get('receipt', [EditionContributionController::class, 'receipt'])->name('receipt');
             Route::get('receipt/pdf', [EditionContributionController::class, 'receiptPdf'])->name('receipt.pdf');
