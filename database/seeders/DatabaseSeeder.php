@@ -8,6 +8,7 @@ use Database\Seeders\Demo\DemoMatchSeeder;
 use Database\Seeders\Demo\DemoNotificationSeeder;
 use Database\Seeders\Demo\DemoPlayerSeeder;
 use Database\Seeders\Demo\DemoRegistrationSeeder;
+use Database\Seeders\Demo\DemoSettingSeeder;
 use Database\Seeders\Demo\DemoTeamSeeder;
 use Database\Seeders\Demo\DemoUserSeeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -30,6 +31,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleSeeder::class,
+            DemoSettingSeeder::class,
             DemoUserSeeder::class,
             DemoPlayerSeeder::class,
             DemoTeamSeeder::class,

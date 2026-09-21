@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\PlayerRegistrationController;
 use App\Http\Controllers\Admin\ReportsController;
 use App\Http\Controllers\Admin\ScorecardController;
 use App\Http\Controllers\Admin\ScoringController;
+use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\TeamPlayerController;
 use App\Http\Controllers\Admin\UserController;
@@ -161,6 +162,19 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::prefix('edition-contributions/{edition_contribution}')->name('edition-contributions.')->group(function () {
             Route::get('receipt', [EditionContributionController::class, 'receipt'])->name('receipt');
             Route::get('receipt/pdf', [EditionContributionController::class, 'receiptPdf'])->name('receipt.pdf');
+        });
+
+        // Global Settings admin UI (Phase 3.44B2) — one tabbed page, one
+        // update action per tab so each FormRequest can allow-list only
+        // its own tab's fields. Never a single generic "update settings"
+        // action that would accept any field from any tab.
+        Route::prefix('settings')->name('settings.')->group(function () {
+            Route::get('/', [SettingsController::class, 'index'])->name('index');
+            Route::put('general', [SettingsController::class, 'updateGeneral'])->name('general.update');
+            Route::put('contact', [SettingsController::class, 'updateContact'])->name('contact.update');
+            Route::put('system', [SettingsController::class, 'updateSystem'])->name('system.update');
+            Route::put('payments', [SettingsController::class, 'updatePayments'])->name('payments.update');
+            Route::put('public-website', [SettingsController::class, 'updatePublicWebsite'])->name('public-website.update');
         });
     });
 });

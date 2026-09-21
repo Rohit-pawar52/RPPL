@@ -65,6 +65,9 @@
             <x-nav-item :route="route('admin.data-cleanup.index')" icon="trash" :active="request()->routeIs('admin.data-cleanup.*')">
                 Data Cleanup
             </x-nav-item>
+            <x-nav-item :route="route('admin.settings.index')" icon="cog" :active="request()->routeIs('admin.settings.*')">
+                Settings
+            </x-nav-item>
         @endcan
     </nav>
 </aside>

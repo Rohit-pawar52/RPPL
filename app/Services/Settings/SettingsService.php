@@ -6,6 +6,7 @@ use App\Models\Setting;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
@@ -111,6 +112,22 @@ class SettingsService
     }
 
     /**
+     * Whether a registered `encrypted` setting currently has a persisted
+     * (non-null) value, WITHOUT decrypting it — the admin UI's "Configured
+     * — leave blank to keep existing value" indicator is built on this
+     * alone, so a secret's ciphertext/plaintext never has to reach a
+     * controller or Blade view just to know whether one exists.
+     */
+    public function hasEncryptedValue(string $key): bool
+    {
+        if (! SettingsRegistry::has($key) || SettingsRegistry::type($key) !== Setting::TYPE_ENCRYPTED) {
+            throw new InvalidArgumentException("[{$key}] is not a registered encrypted setting.");
+        }
+
+        return $this->rawPersistedValue($key) !== null;
+    }
+
+    /**
      * Writes exactly one registered setting. Rejects any key
      * SettingsRegistry doesn't recognize — settings are allow-listed,
      * never freely creatable, so a request field that doesn't map to a
@@ -118,17 +135,38 @@ class SettingsService
      */
     public function set(string $key, mixed $value): void
     {
-        if (! SettingsRegistry::has($key)) {
-            throw new InvalidArgumentException("[{$key}] is not a registered setting.");
+        $this->setMany([$key => $value]);
+    }
+
+    /**
+     * Writes several registered settings atomically — either every key
+     * in $values is persisted, or (on any failure, e.g. a DB error
+     * mid-batch) none of them are. Every key is validated against
+     * SettingsRegistry BEFORE any write starts, so a single unregistered
+     * key rejects the whole batch rather than partially applying it.
+     * The cache is flushed exactly once, after the transaction commits.
+     *
+     * @param  array<string, mixed>  $values
+     */
+    public function setMany(array $values): void
+    {
+        foreach (array_keys($values) as $key) {
+            if (! SettingsRegistry::has($key)) {
+                throw new InvalidArgumentException("[{$key}] is not a registered setting.");
+            }
         }
 
-        $type = SettingsRegistry::type($key);
-        [$group, $settingKey] = $this->splitKey($key);
+        DB::transaction(function () use ($values) {
+            foreach ($values as $key => $value) {
+                $type = SettingsRegistry::type($key);
+                [$group, $settingKey] = $this->splitKey($key);
 
-        Setting::query()->updateOrCreate(
-            ['group' => $group, 'key' => $settingKey],
-            ['value' => $this->normalize($type, $value), 'type' => $type],
-        );
+                Setting::query()->updateOrCreate(
+                    ['group' => $group, 'key' => $settingKey],
+                    ['value' => $this->normalize($type, $value), 'type' => $type],
+                );
+            }
+        });
 
         $this->flush();
     }
