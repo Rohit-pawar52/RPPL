@@ -1,8 +1,8 @@
 # RPPL Testing & UAT Documentation
 
-**Last Updated:** 2026-09-19
-**Automated Baseline:** 746 tests passing, 2562 assertions, 0 failures (PHPUnit, `tests/`)
-**Manual UAT Status:** IN PROGRESS — Batches 1–4 complete
+**Last Updated:** 2026-09-23
+**Automated Baseline:** 1104 tests passing (PHPUnit, `tests/`) — see [§15](#15-current-automated-verification--table-ux--reporting-phase) for the current verification pass this number comes from
+**Manual UAT Status:** IN PROGRESS — Batches 1–4 complete (unchanged this pass — see §15, no new manual browser UAT was executed in the Table UX / Reporting phase)
 
 ## Purpose
 
@@ -67,6 +67,9 @@ For every item currently marked `NOT TESTED`:
 10. [Issues Found During UAT](#10-issues-found-during-uat)
 11. [Final UAT Summary](#11-final-uat-summary)
 12. [Future Regression Checklist](#12-future-regression-checklist)
+13. [Stakeholder Demo Dataset](#13-stakeholder-demo-dataset)
+14. [Push Notifications (Firebase) — Manual Check](#14-push-notifications-firebase--manual-check)
+15. [Current Automated Verification — Table UX / Reporting Phase](#15-current-automated-verification--table-ux--reporting-phase)
 
 ---
 
@@ -1739,7 +1742,7 @@ This document now contains the complete master checklist for the current applica
 **Remaining (NOT TESTED):** 37 (20 in Batch 5 + 17 in Batch 6)
 **Total documented manual tests:** 99
 
-**Automated baseline (separate from manual UAT, unchanged):** 746 tests / 2562 assertions / 0 failures.
+**Automated baseline (separate from manual UAT, unchanged):** 1104 tests passing, 0 failures — see [§15](#15-current-automated-verification--table-ux--reporting-phase) for what changed since the 746 figure above was recorded.
 
 ---
 
@@ -1766,6 +1769,7 @@ A short, high-value checklist to re-run manually after any future feature change
 - [ ] Reports/exports/PDFs (Registration CSV, Finance CSV, Contribution CSV, Edition Summary PDF, Scorecard PDF, Financial Summary)
 - [ ] Mobile scoring usability (375px admin scoring page)
 - [ ] Authorization/privacy spot check (scorer vs admin vs guest)
+- [ ] Admin table UX (search/filters/date-range/sorting/rows-per-page/row-selection/selective export) on Player Registrations, Edition Transactions, Edition Contributions, Matches — see §15, live browser spot-check still outstanding
 
 ---
 
@@ -1812,6 +1816,36 @@ A separate module-specific checklist, added after the project's 62/37/99 UAT acc
 **Expected:** Editing a notification's content after a Send, then clicking Resend, creates a second, independent `NotificationSend` snapshot without altering the first — proven by `tests/Feature/Admin/NotificationSendTest.php`.
 
 **Result:** PASS — covered by automated test, not a live-Firebase concern; listed here for completeness of the module's checklist only.
+
+---
+
+## 15. Current Automated Verification — Table UX / Reporting Phase
+
+A dated addendum, added after a large automated-only work phase (dynamic currency formatting, Settings/branding/theme, maintenance mode, announcements, content pages, and — the bulk of this pass — server-side table UX/reporting on 7 admin modules). Like §13/§14 above, this **does not** change or add to the manual UAT accounting in §11 (still 62 PASS / 37 NOT TESTED / 99 total, Batches 1–4 only) — no new manual browser UAT was executed in this phase. It exists so the top-of-document automated baseline is traceable to something concrete rather than just a bare number.
+
+**Automated test suite:** 1104 passing, 0 failures (`php artisan test`) — up from the 746 recorded at the top of this document and the 818 recorded in §14; grown across several intervening phases (pre-UAT audit, currency/UX polish, Table UX/Reporting) not individually logged in this file. 1104 is the current, final figure as of this addendum.
+
+**Code style:** `vendor/bin/pint --test` — clean, 0 style violations.
+
+**npm build:** last run clean during this phase (`npm run build` — Vite production build succeeded, no errors) at the point new JS (`resources/js/table-selection.js`) was introduced; the final commit of this phase touched no further JS/CSS, so no rebuild was required for it.
+
+**Fresh-install status:** verified earlier in the pre-UAT audit phase via a disposable SQLite database (`migrate:fresh --seed --force` against a temp file, never the real dev DB) — not re-verified in this specific addendum, since this phase's changes were query/view/route logic only, no new migrations.
+
+**Demo-data integrity:** re-confirmed via read-only row counts immediately before every commit in this phase — Editions 3, Players 45, Teams 6, PlayerRegistrations 69, Matches 11, CommitteeMembers 10, Announcements 3, ContentPages 3, Users 2, Notifications 3, Contributors 14, EditionTransactions 40, EditionContributions 29. No seeded/demo row was added, removed, or mutated by this phase.
+
+**Newer modules/features and where their automated coverage lives** (not full manual UAT-XXX entries — see §12 "Future Regression Checklist" for what to re-check manually before a demo that showcases these):
+- OCR payment-proof suggestion — `tests/Feature/Admin/PlayerRegistrationManagementTest.php` (OCR visibility/duplicate-warning cases), `ProcessPaymentProofOcr` job tests.
+- Firebase push notifications — §14 above (backend/queue/authorization automated; real-device send not yet manually verified).
+- Settings / dynamic branding / theme — `tests/Feature/Settings/*` (`SettingsServiceTest`, `ThemeColorTest`, `BrandingConsumptionTest`, `MoneyHelperTest`, `DisplayTimezoneFormatterTest`).
+- Maintenance mode — covered within `ThemeColorTest` ("maintenance page receives theme variables"); the middleware itself (`EnsurePublicSiteIsNotUnderMaintenance`) has its own dedicated Feature test.
+- Announcements (public ticker) — `tests/Feature/Admin/AnnouncementManagementTest.php` and public-facing ticker composer tests.
+- Content pages (Privacy/Terms/FAQs) — `tests/Feature/Admin/ContentPageManagementTest.php`.
+- Table UX / reporting (search, filters, date-range, validated sorting, pagination, 10/20/50/100/200 rows-per-page, current-page-only row selection, selective CSV/PDF export) — per-module tests in `PlayerRegistrationManagementTest`, `EditionTransactionTest`, `CommitteeContributionTest`, `GameMatchManagementTest`, `PlayerManagementTest`, `CommitteeMemberManagementTest`, `ContributorManagementTest`: default/allowed/invalid per_page values, per_page survives filter/sort/pagination, sortable-header rendering (real `<a href>`, real arrow glyph, no Markdown-link syntax — regression coverage for a fixed entity-escaping bug), and selected-row export/report still working at a larger page size.
+
+**Genuinely remaining manual-UAT items (not yet executed, honestly stated):**
+- Batches 5–6 of the original manual UAT plan (Finance/Contributions/Reports; Responsive/Privacy/Final Smoke) — unchanged, still NOT TESTED, per §11.
+- A **live browser spot-check of the new table UX** (sorting, `per_page=50`, and checkbox row-selection) on Edition Transactions, Player Registrations, and Edition Contributions was **attempted but not completed** in this phase — the documented demo admin credentials (`admin@rppl.test` / `password`) no longer matched the real dev database's stored password (changed at some unknown point outside this session), and the password was deliberately **not** reset without authorization. What stands in for it: the automated suite renders the identical controller→Blade path and asserts directly on the raw HTML output (real anchor tags, real arrow glyphs, absence of Markdown-link syntax) — a strong but not equivalent substitute for an actual click-through. This item should be the first thing manually verified before a stakeholder demo that showcases the new table controls.
+- The real-device Firebase push flow (UAT-FCM-01/02/03) — unchanged from §14, still requires a real browser + real Firebase Web config.
 
 ---
 

@@ -80,6 +80,35 @@ Broadcast push notifications to public website visitors, entirely anonymous — 
 - **Send / Resend** — one explicit action always broadcasts the notification's *current* content to every currently active subscriber, creating a new, immutable `NotificationSend` snapshot every time (editing the notification after a send never rewrites what that send actually contained). Sending is queued (`SendNotificationJob`) and reports back attempted/accepted/failed counts — "Accepted" means Firebase accepted the message for delivery, never "Delivered" or "Read". A permanently invalid/unregistered token is deactivated automatically; a transient failure is not.
 - No audience selector, schedule, topic, or rich media in V1 — every send targets every active subscriber, by design.
 
+### Announcements (public ticker)
+
+- Admin-managed announcements (`admin/announcements`) with a start/end scheduling window and a computed status (scheduled/active/expired/disabled) — never a manually-set status field.
+- Active announcements scroll across a CSS-only marquee ticker on every public page (`AnnouncementTickerComposer`); admin controls the display order via an explicit `sort_order`, not a generic column sort.
+
+### Content pages (Privacy Policy / Terms & Conditions / FAQs)
+
+- Three fixed content-page slots (`admin/content-pages`), each with Markdown-authored content rendered safely to HTML (`MarkdownRenderer`, raw HTML input escaped, unsafe links rejected) and shown at its own public route/footer link.
+- No create/delete — the three slots are fixed identities, only their content is editable.
+
+### Global settings, dynamic branding & theme
+
+- A tabbed admin Settings screen (`admin/settings`) covering general branding (application name, short name, tagline, logo/favicon, footer text), contact details, system options (currency symbol, display timezone), and encrypted payment-gateway secrets — each tab its own scoped update action, never one generic "update settings" endpoint.
+- Branding and theme colors are consumed live, application-wide (public site, admin panel, PDFs/receipts) via `BrandingComposer`/CSS custom properties — changing a setting takes effect on the very next request, no rebuild/redeploy needed.
+- A single `money()` helper (`app/helpers.php`) formats every currency figure (admin screens, PDFs, the public registration flow) using the configured currency symbol, so there is one place formatting rules live rather than a hardcoded `₹` scattered through views.
+- **Maintenance mode** — an admin-configurable toggle that shows a branded maintenance page to public visitors (admin login/panel remains accessible) instead of Laravel's default down-page.
+
+### Admin table UX — search, filters, sorting, pagination, exports
+
+The highest-traffic admin lists (Player Registrations, Edition Transactions, Edition Contributions, Matches, Players, Committee Members, Contributors) share a consistent, server-side table experience rather than each hand-rolling its own:
+
+- **Search & domain filters** — module-specific, server-side (e.g. registration#/name/phone on Registrations; edition/type on Transactions) — never a generic all-columns search.
+- **Date-range filtering** (Player Registrations, Edition Transactions, Edition Contributions, Matches) — inclusive `from_date`/`to_date` on each module's operationally meaningful date column, validated server-side.
+- **Validated sorting** — clickable column headers with an allow-listed sort column + asc/desc toggle (`FiltersAdminTables::allowedSort()`); a raw/unknown sort column always falls back safely, never passed straight into `orderBy()`.
+- **Rows-per-page** — a "Rows" selector on every one of these tables, allow-listed to **10 / 20 / 50 / 100 / 200** (default **20**); an invalid or missing value falls back to the default rather than being trusted directly.
+- **Row selection & selective reporting** (Player Registrations, Edition Transactions, Edition Contributions, Matches) — an explicit "select all **on this page**" checkbox (never "select every filtered record") feeding a selected-rows CSV export; Edition Contributions additionally offers a selected-rows **bulk PDF receipt** run. Matches also gained its first-ever CSV export (filtered and selected) in this pass, where none existed before.
+- All of search/filters/date-range/sort/per-page state survives pagination via the query string — no session/localStorage table state.
+- Deliberately **not** added to Content Pages, Settings, Users, Data Cleanup, Announcements (its `sort_order` is a manual ticker-order field, not a generic sort), Notifications, Editions, or Venues — each screen is either not a real data table or too small (≤14 rows) to justify it.
+
 ## Architecture conventions
 
 This codebase deliberately stays small and boring rather than speculative:
