@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', $player->name.' &middot; RPPL')
+@section('title', $player->name.' &middot; '.$branding->shortName)
 
 @section('content')
     <a href="{{ route('public.players.index') }}" class="mb-4 inline-block text-xs text-neutral-500 hover:text-neutral-700">

@@ -118,33 +118,49 @@ This codebase deliberately stays small and boring rather than speculative:
    ```
    php artisan migrate
    ```
-5. Build frontend assets:
+5. Link the public storage disk — **required** for branding (logo/favicon), player/team/contributor photos, and any other uploaded file to actually be servable; without this they 404 even though the upload itself succeeds:
+   ```
+   php artisan storage:link
+   ```
+6. Build frontend assets:
    ```
    npm run dev   # or: npm run build
    ```
-6. Serve the application:
+7. Serve the application:
    ```
    php artisan serve
    ```
-7. (Optional, for live match scoring) Start Reverb in a second terminal:
+8. (Optional, for live match scoring) Start Reverb in a second terminal:
    ```
    php artisan reverb:start
    ```
    Set matching `REVERB_APP_ID` / `REVERB_APP_KEY` / `REVERB_APP_SECRET` in `.env` first (any values work locally, they just need to match on both the app and Reverb). Without this running, everything else still works — score updates simply won't arrive live until the page is refreshed.
-8. (Optional, for payment-proof OCR) Install [Tesseract](https://github.com/tesseract-ocr/tesseract) locally so a guest registration's payment screenshot gets an automatic transaction-ID suggestion:
+9. (Optional, for payment-proof OCR) Install [Tesseract](https://github.com/tesseract-ocr/tesseract) locally so a guest registration's payment screenshot gets an automatic transaction-ID suggestion:
    ```
    # Debian/Ubuntu
    sudo apt-get install tesseract-ocr tesseract-ocr-eng
    ```
-   Without it installed, registration submission works exactly the same — OCR is best-effort background processing (see `ProcessPaymentProofOcr`) and never blocks or affects registration creation; it just leaves the suggestion unextracted. If `tesseract` isn't on your system `PATH`, set `TESSERACT_PATH` in `.env` to its full executable path (leave blank to use `PATH`). Admin visibility into the OCR result is a later phase — this exists today purely as backend processing.
-9. Start a queue worker — **required** for OCR processing and for push notification sending, both of which run as queued jobs against `QUEUE_CONNECTION=database`:
-   ```
-   php artisan queue:work
-   ```
-10. (Optional, for push notifications) Two separate sets of Firebase configuration:
+   Without it installed, registration submission works exactly the same — OCR is best-effort background processing (see `ProcessPaymentProofOcr`) and never blocks or affects registration creation; it just leaves the suggestion unextracted. If `tesseract` isn't on your system `PATH`, set `TESSERACT_PATH` in `.env` to its full executable path (leave blank to use `PATH`). The extracted suggestion (and a same-reference duplicate warning) appears on each registration's admin detail page, advisory only — it never replaces the admin-entered Payment reference.
+10. Start a queue worker — **required** for OCR processing and for push notification sending, both of which run as queued jobs against `QUEUE_CONNECTION=database`:
+    ```
+    php artisan queue:work
+    ```
+11. (Optional, for push notifications) Two separate sets of Firebase configuration:
     - **Browser (public, safe to commit as blanks in `.env.example`)** — the `VITE_FIREBASE_*` values and `VITE_FIREBASE_VAPID_KEY` in `.env`, from your Firebase project's Web app config. Without these, the public "Enable Notifications" control simply stays hidden — the rest of the site is unaffected. **After changing any of these, run `npm run build` (or restart `npm run dev`)** — both regenerate `public/firebase-messaging-sw.js` from the same `.env` values (see `resources/build/generate-firebase-sw.js`) before starting Vite, so the app bundle and the service worker can never drift out of sync with each other or ship a placeholder value; the generated file itself is gitignored and edited only via `resources/js/firebase-messaging-sw.template.js`, never directly.
     - **Server (private, NEVER commit)** — download a service-account JSON key from Firebase Console → Project Settings → Service Accounts and place it at `storage/app/firebase/firebase-service-account.json` (already gitignored). **Leave `FIREBASE_CREDENTIALS` in `.env` blank** — `AppServiceProvider` automatically points Firebase at that same conventional path (via `storage_path()`, resolved fresh on whichever machine the app is actually running on), so nothing environment-specific ever needs to go in `.env`; only set the env var explicitly if a credential must live somewhere non-standard. Without any credential configured, admin notification content management (create/edit/Send button) still works — a queued send to a non-zero audience will simply fail safely and log the error rather than actually reaching Firebase; a send with zero active subscribers always completes successfully regardless, since no Firebase call is made in that case.
     - **Production requirement**: Firebase Web Push (the browser subscription flow) requires a secure context — HTTPS in production, `localhost` is fine for local development. This is a deployment/hosting requirement, not something RPPL's code can relax.
+
+## Production checklist
+
+`.env.example` is a local-development template — flip these explicitly before going live:
+
+- `APP_ENV=production` and `APP_DEBUG=false` (`.env.example` defaults `APP_DEBUG=true`, which must never run in production — it leaks stack traces/config).
+- `SESSION_SECURE_COOKIE=true`, served over HTTPS (not set by default; without it the session cookie is also sent over plain HTTP).
+- `php artisan storage:link` has been run on the deployed instance (see step 5 above — easy to forget on a fresh deploy).
+- A queue worker is running under a process supervisor (e.g. Supervisor/systemd), not just a one-off terminal — required for OCR and push notification sending (step 10 above).
+- Real Firebase credentials configured (step 11) if push notifications are wanted; the app works fine without them, just with that one feature inactive.
+- A unique `APP_KEY` generated per environment (`php artisan key:generate`) — also used to encrypt the Settings module's Razorpay secret fields; rotating it later invalidates any already-stored encrypted values.
+- No scheduler/cron entry is required — this app has no `Schedule::` jobs.
 
 ## Demo data
 
@@ -156,6 +172,8 @@ This codebase deliberately stays small and boring rather than speculative:
 - Matches covering every lifecycle state on the active edition — scheduled, toss, live (exactly one, for the live-scoring/public-live-page demo), completed (via real ball-by-ball scoring through the actual scoring services, so scorecards/statistics/standings are genuinely derived, not fabricated), cancelled, and abandoned (with its partial delivery history preserved) — plus completed historical matches and draft upcoming fixtures.
 - 10 committee members, 14 general contributors (some explicitly linked to a committee member), contributions (via `EditionContributionService`, so each has exactly one linked finance transaction), and additional manual finance ledger entries — enough to populate the Dashboard, Reports, and the public contributor leaderboard across every badge tier.
 - No OCR jobs are ever dispatched by the seeders, and no fake payment-proof screenshots are generated — see `database/seeders/Demo/DemoRegistrationSeeder.php`'s docblock for why every seeded registration's `ocr_status` is `failed` rather than the raw `pending` default.
+
+**Before a live demo**, re-run `php artisan migrate:fresh --seed` if it's been more than a day or two since the database was last seeded — the one seeded "live" match and the one seeded "toss"-stage match have a `scheduled_at` fixed relative to seed time, so their kickoff time visibly drifts into the past the longer you wait (`match_status` itself does not change on its own). Everything else in the demo dataset is not time-sensitive.
 
 The seeder architecture lives in `database/seeders/Demo/` (one class per domain area — users, players, teams, editions, registrations/squads, matches/scoring, finance), orchestrated by `DatabaseSeeder`. It replaces the previous `RpplDemoSeeder`, which used real IPL franchise/player names.
 

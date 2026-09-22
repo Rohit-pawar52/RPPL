@@ -69,6 +69,16 @@ class InningsManagementTest extends TestCase
         return $match->fresh();
     }
 
+    /**
+     * legal_balls is deliberately non-zero here (not the migration's
+     * default of 0): InningsService::canCompleteInnings() requires at
+     * least one legal delivery before an innings may be manually
+     * completed (see its own docblock — this floor prevents an admin
+     * from completing a 0/0, zero-ball innings). These are lifecycle/
+     * authorization tests, not scoring-correctness tests, so setting
+     * legal_balls directly is enough — no full DeliveryService call is
+     * needed to represent "at least one ball has been bowled."
+     */
     private function matchWithFirstInningsLive(): GameMatch
     {
         $match = $this->matchWithSquadsAndToss();
@@ -79,6 +89,7 @@ class InningsManagementTest extends TestCase
             'batting_team_id' => $match->edition_team_a_id,
             'bowling_team_id' => $match->edition_team_b_id,
             'status' => 'live',
+            'legal_balls' => 1,
         ]);
 
         return $match->fresh();
@@ -309,6 +320,32 @@ class InningsManagementTest extends TestCase
             ->assertNotFound();
 
         $this->assertSame('live', $matchB->firstInnings->fresh()->status);
+    }
+
+    /**
+     * Pre-UAT audit fix: an innings with zero legal deliveries recorded
+     * must not be manually completable — otherwise an admin could
+     * produce an impossible 0/0, zero-ball "completed" innings (and, if
+     * done to both innings, a nonsensical completed/tied match with no
+     * scoring at all). See InningsService::canCompleteInnings().
+     */
+    public function test_innings_with_zero_legal_balls_cannot_be_completed(): void
+    {
+        $match = $this->matchWithSquadsAndToss();
+        Innings::create([
+            'match_id' => $match->id,
+            'innings_number' => 1,
+            'batting_team_id' => $match->edition_team_a_id,
+            'bowling_team_id' => $match->edition_team_b_id,
+            'status' => 'live',
+            'legal_balls' => 0,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.matches.innings.complete', [$match, $match->firstInnings]))
+            ->assertSessionHas('error');
+
+        $this->assertSame('live', $match->firstInnings->fresh()->status);
     }
 
     public function test_completion_does_not_modify_match_result_or_status(): void

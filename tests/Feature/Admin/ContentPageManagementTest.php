@@ -86,6 +86,21 @@ class ContentPageManagementTest extends TestCase
         $this->assertSame(3, ContentPage::count());
     }
 
+    /**
+     * Pre-UAT audit fix: the seeded content used to end every page with
+     * the literal sentence "This is placeholder starter content — edit
+     * it here before publishing.", visible to any real site visitor
+     * (these pages are linked from the public footer on every page).
+     */
+    public function test_demo_seeded_content_does_not_announce_itself_as_placeholder(): void
+    {
+        $this->seed(DemoContentPageSeeder::class);
+
+        foreach (ContentPage::all() as $page) {
+            $this->assertStringNotContainsString('placeholder starter content', (string) $page->content);
+        }
+    }
+
     // ----- Updates -----
 
     public function test_admin_can_update_privacy_policy(): void

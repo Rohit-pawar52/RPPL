@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Check Registration Status &middot; RPPL')
+@section('title', 'Check Registration Status &middot; '.$branding->shortName)
 
 @section('content')
     <div class="mx-auto max-w-lg rounded-lg border border-neutral-200 bg-white p-6">
@@ -36,7 +36,7 @@
                     $labels = [
                         'pending' => ['Pending Verification', 'Your payment proof is awaiting manual verification.'],
                         'paid' => ['Paid', 'Your payment has been verified.'],
-                        'failed' => ['Payment Verification Failed', 'Your payment could not be verified. Please contact RPPL administration.'],
+                        'failed' => ['Payment Verification Failed', 'Your payment could not be verified. Please contact '.$branding->shortName.' administration.'],
                         'refunded' => ['Refunded', 'Your payment is marked as refunded.'],
                     ];
                     [$paymentLabel, $paymentMessage] = $labels[$result->payment_status] ?? [ucfirst($result->payment_status), ''];

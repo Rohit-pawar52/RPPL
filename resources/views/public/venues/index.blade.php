@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Venues &middot; RPPL')
+@section('title', 'Venues &middot; '.$branding->shortName)
 
 @section('content')
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">

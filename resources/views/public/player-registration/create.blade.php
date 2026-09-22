@@ -1,13 +1,13 @@
 @extends('layouts.public')
 
-@section('title', 'Player Registration &middot; RPPL')
+@section('title', 'Player Registration &middot; '.$branding->shortName)
 
 @section('content')
     @if(! $edition)
         <div class="rounded-lg border border-neutral-200 bg-white p-6 text-center">
             <h1 class="text-base font-semibold text-neutral-900">Player Registration</h1>
             <p class="mt-2 text-sm text-neutral-500">Player registration is currently closed.</p>
-            <p class="mt-1 text-xs text-neutral-400">Please check back later or contact RPPL administration.</p>
+            <p class="mt-1 text-xs text-neutral-400">Please check back later or contact {{ $branding->shortName }} administration.</p>
             <p class="mt-4 text-xs text-neutral-500">
                 Already registered?
                 <a href="{{ route('public.player-registration.status') }}" class="font-medium theme-link hover:underline">Check Registration Status</a>
@@ -21,7 +21,7 @@
             </p>
             <p class="mt-2 text-xs text-neutral-500">
                 Pay the registration fee via UPI/bank transfer and upload your payment proof below. Payment and
-                document verification is done manually by RPPL administration after submission.
+                document verification is done manually by {{ $branding->shortName }} administration after submission.
             </p>
             <p class="mt-2 text-xs text-neutral-500">
                 Already registered?

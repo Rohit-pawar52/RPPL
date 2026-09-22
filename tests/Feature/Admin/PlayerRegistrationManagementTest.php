@@ -196,6 +196,43 @@ class PlayerRegistrationManagementTest extends TestCase
             ->assertSee($registration->player->name);
     }
 
+    /**
+     * Pre-UAT audit fix: ocr_transaction_id/ocr_status were captured by
+     * the OCR job but never surfaced anywhere in the admin UI, so an
+     * admin had no way to compare the extracted candidate against the
+     * payment reference they enter. A duplicate-warning badge should
+     * also appear when hasDuplicateOcrTransactionId() is true.
+     */
+    public function test_admin_can_see_the_ocr_suggestion_and_duplicate_warning(): void
+    {
+        PlayerRegistration::factory()->create([
+            'ocr_status' => 'extracted',
+            'ocr_transaction_id' => 'TXN12345',
+        ]);
+        $registration = PlayerRegistration::factory()->create([
+            'ocr_status' => 'extracted',
+            'ocr_transaction_id' => 'TXN12345',
+        ]);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.show', $registration));
+
+        $response->assertOk();
+        $response->assertSee('TXN12345');
+        $response->assertSee('also seen on another registration');
+    }
+
+    public function test_pending_ocr_status_shows_a_neutral_placeholder(): void
+    {
+        $registration = PlayerRegistration::factory()->create(['ocr_status' => 'pending', 'ocr_transaction_id' => null]);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.show', $registration));
+
+        $response->assertOk();
+        $response->assertSee('Pending');
+    }
+
     public function test_admin_can_update_editable_metadata(): void
     {
         $registration = PlayerRegistration::factory()->create(['payment_status' => 'pending']);

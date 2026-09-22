@@ -97,17 +97,21 @@ class InningsService
      * the match is still live, and the innings itself is still live.
      * This is a deliberately conservative, purely administrative
      * transition — it does not (and cannot yet) verify 10 wickets, overs
-     * exhausted, or a chased target, since no ball-by-ball scoring
-     * exists. A 0/0, zero-ball innings can legitimately be marked
-     * completed through this action for now; a future scoring engine
-     * will replace or constrain this once Delivery data exists.
+     * exhausted, or a chased target, since no automatic completion rule
+     * exists for a manual close. It DOES require at least one legal
+     * delivery to have been recorded: without that floor, an admin could
+     * complete an innings the instant it starts, producing an impossible
+     * 0/0, zero-ball "completed" innings (and, if done to both innings,
+     * a nonsensical tied/completed match with no scoring at all). A
+     * future scoring engine may replace or further constrain this.
      */
     public function canCompleteInnings(GameMatch $match, Innings $innings): bool
     {
         return $innings->match_id === $match->id
             && in_array($innings->innings_number, [1, 2], true)
             && $match->match_status === 'live'
-            && $innings->status === 'live';
+            && $innings->status === 'live'
+            && $innings->legal_balls > 0;
     }
 
     /**

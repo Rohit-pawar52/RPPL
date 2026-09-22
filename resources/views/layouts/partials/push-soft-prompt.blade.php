@@ -19,7 +19,7 @@
         </span>
         <div class="min-w-0 flex-1">
             <p id="rppl-push-soft-prompt-title" class="text-[13px] font-semibold text-neutral-900">
-                Never miss an RPPL update
+                Never miss an update from {{ $branding->shortName }}
             </p>
             <p id="rppl-push-soft-prompt-message" class="mt-0.5 text-xs text-neutral-500">
                 Get important match timings, postponements and tournament updates.

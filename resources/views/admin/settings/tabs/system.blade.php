@@ -28,7 +28,7 @@
     <x-form.input name="display_timezone" label="Display Timezone" :value="$settings->get('system.display_timezone')" required placeholder="Asia/Kolkata" />
 
     <p class="mb-3.5 text-[11px] text-neutral-400">
-        These are stored preferences only — nothing on the site currently reads or enforces maintenance mode, currency, or timezone from here yet.
+        Maintenance mode and display timezone are live — enabling maintenance mode immediately blocks the public website, and the display timezone controls how dates/times are shown across the site. Currency/currency symbol are currently stored preferences only; nothing on the site reads them yet.
     </p>
 
     <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">

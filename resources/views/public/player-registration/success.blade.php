@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Registration Successful &middot; RPPL')
+@section('title', 'Registration Successful &middot; '.$branding->shortName)
 
 @section('content')
     <div class="mx-auto max-w-lg rounded-lg border border-neutral-200 bg-white p-6 text-center">
@@ -32,14 +32,14 @@
         </dl>
 
         <p class="mt-5 text-xs text-neutral-500">
-            Your payment and documents will be manually verified by RPPL administration. This may take a few days.
+            Your payment and documents will be manually verified by {{ $branding->shortName }} administration. This may take a few days.
             You can return anytime and
             <a href="{{ route('public.player-registration.status') }}" class="font-medium theme-link hover:underline">Check Registration Status</a>
             using your Registration Number.
         </p>
 
         <a href="{{ route('public.home') }}" class="mt-5 inline-block text-xs font-medium theme-link hover:underline">
-            &larr; Back to RPPL home
+            &larr; Back to {{ $branding->shortName }} home
         </a>
     </div>
 @endsection

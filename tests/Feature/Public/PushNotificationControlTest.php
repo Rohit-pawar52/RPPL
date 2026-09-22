@@ -62,7 +62,7 @@ class PushNotificationControlTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('id="rppl-push-soft-prompt"', false);
-        $response->assertSee('Never miss an RPPL update');
+        $response->assertSee('Never miss an update from RPPL');
         $response->assertSee('id="rppl-push-soft-prompt-enable"', false);
         $response->assertSee('id="rppl-push-soft-prompt-dismiss"', false);
 

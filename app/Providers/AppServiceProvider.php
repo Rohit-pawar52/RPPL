@@ -131,9 +131,14 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Shares one $branding value object (App\Support\Branding) with the
-     * exact set of views that render presentation settings (Phase
-     * 3.44B3) — an explicit list, never a '*' wildcard, so
-     * SettingsService is only read for views that actually need it.
+     * views that render presentation settings (Phase 3.44B3; widened in
+     * the pre-UAT stabilization pass to 'public.*' so every public child
+     * view — not just the handful originally listed — can reference
+     * $branding in its own @section('title', ...), since a child view's
+     * sections execute in the child's own data scope before the parent
+     * layout's composer fires). 'public.*' already covers public.home,
+     * public.maintenance and public.content-page; those are kept
+     * explicit anyway since composer registration is idempotent.
      * Layout files pass $branding forward to their own @include'd
      * partials automatically (Blade's normal scope inheritance), so
      * partials are not listed here separately.
@@ -144,6 +149,7 @@ class AppServiceProvider extends ServiceProvider
             'layouts.public',
             'layouts.admin',
             'layouts.guest',
+            'public.*',
             'public.home',
             'public.maintenance',
             'public.content-page',

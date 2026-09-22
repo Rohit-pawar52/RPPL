@@ -11,9 +11,11 @@ use Illuminate\Database\Seeder;
  * three always exist, so this seeder is what makes that true, not a
  * runtime "create if missing" fallback anywhere else.
  *
- * The starter wording is deliberately generic, clearly-a-placeholder
- * demo content — never presented as legally reviewed — and fully
- * editable by an admin afterward.
+ * The starter wording is deliberately generic, non-legally-reviewed
+ * demo content, fully editable by an admin afterward — but does not
+ * itself announce "placeholder" in the visible copy, since a real
+ * site visitor would otherwise see that sentence on every page linked
+ * from the footer.
  */
 class DemoContentPageSeeder extends Seeder
 {
@@ -35,8 +37,6 @@ class DemoContentPageSeeder extends Seeder
                 ## Contact Us
 
                 Questions about this policy can be directed to the tournament committee using the contact details on this site.
-
-                *This is placeholder starter content — edit it here before publishing.*
                 MARKDOWN,
                 'is_active' => true,
                 'sort_order' => 0,
@@ -59,8 +59,6 @@ class DemoContentPageSeeder extends Seeder
                 ## 3. Code of Conduct
 
                 Players, teams, and spectators are expected to conduct themselves respectfully at all matches and venues.
-
-                *This is placeholder starter content — edit it here before publishing.*
                 MARKDOWN,
                 'is_active' => true,
                 'sort_order' => 1,
@@ -83,8 +81,6 @@ class DemoContentPageSeeder extends Seeder
                 ## How can I check my registration status?
 
                 Use the "Check Registration Status" page with your registration number.
-
-                *This is placeholder starter content — edit it here before publishing.*
                 MARKDOWN,
                 'is_active' => true,
                 'sort_order' => 2,

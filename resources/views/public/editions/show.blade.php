@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', $edition->name.' &middot; RPPL')
+@section('title', $edition->name.' &middot; '.$branding->shortName)
 
 @section('content')
     <div class="mb-4">
@@ -60,7 +60,7 @@
          position/name/photo_path. --}}
     @if(! empty($contributorRanking))
         <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-            <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Top RPPL Contributors</h3>
+            <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Top {{ $branding->shortName }} Contributors</h3>
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
                 @foreach($contributorRanking as $row)
                     @php
