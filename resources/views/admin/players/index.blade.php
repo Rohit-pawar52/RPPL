@@ -57,12 +57,21 @@
             @endif
         </form>
 
-        <a
-            href="{{ route('admin.players.create') }}"
-            class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
-        >
-            + New player
-        </a>
+        <div class="flex items-center gap-2">
+            <a
+                href="{{ route('admin.players.export', $filters) }}"
+                class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50"
+            >
+                <x-icon name="document-chart" class="h-4 w-4" />
+                Export
+            </a>
+            <a
+                href="{{ route('admin.players.create') }}"
+                class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
+            >
+                + New player
+            </a>
+        </div>
     </div>
 
     <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
@@ -70,12 +79,12 @@
             <thead class="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-400">
                 <tr>
                     <th class="px-4 py-2 font-medium">Photo</th>
-                    <th class="px-4 py-2 font-medium">Name</th>
+                    <th class="px-4 py-2 font-medium"><x-sortable-header column="name" :sort="$sort" :direction="$direction">Name</x-sortable-header></th>
                     <th class="px-4 py-2 font-medium">Status</th>
-                    <th class="px-4 py-2 font-medium">Role</th>
+                    <th class="px-4 py-2 font-medium"><x-sortable-header column="primary_role" :sort="$sort" :direction="$direction">Role</x-sortable-header></th>
                     <th class="hidden px-4 py-2 font-medium md:table-cell">Batting</th>
                     <th class="hidden px-4 py-2 font-medium md:table-cell">Bowling</th>
-                    <th class="hidden px-4 py-2 font-medium lg:table-cell">Registrations</th>
+                    <th class="hidden px-4 py-2 font-medium lg:table-cell"><x-sortable-header column="player_registrations_count" :sort="$sort" :direction="$direction">Registrations</x-sortable-header></th>
                     <th class="px-4 py-2 text-right font-medium">Actions</th>
                 </tr>
             </thead>

@@ -262,4 +262,53 @@ class ContributorManagementTest extends TestCase
         $this->assertDatabaseHas('contributors', ['id' => $contributor->id]);
         Storage::disk('public')->assertExists($photoPath);
     }
+
+    // ----- Sorting -----
+
+    public function test_sorting_ascending_and_descending_by_name(): void
+    {
+        $alpha = Contributor::factory()->create(['name' => 'Alpha Contributor']);
+        $zebra = Contributor::factory()->create(['name' => 'Zebra Contributor']);
+
+        $asc = $this->actingAs($this->admin())->get(route('admin.contributors.index', [
+            'sort' => 'name', 'direction' => 'asc',
+        ]));
+        $body = $asc->getContent();
+        $this->assertLessThan(strpos($body, $zebra->name), strpos($body, $alpha->name));
+
+        $desc = $this->actingAs($this->admin())->get(route('admin.contributors.index', [
+            'sort' => 'name', 'direction' => 'desc',
+        ]));
+        $body = $desc->getContent();
+        $this->assertLessThan(strpos($body, $alpha->name), strpos($body, $zebra->name));
+    }
+
+    public function test_sorting_by_contributions_count(): void
+    {
+        $quiet = Contributor::factory()->create(['name' => 'Quiet Contributor']);
+        $busy = Contributor::factory()->create(['name' => 'Busy Contributor']);
+        EditionContribution::factory()->count(3)->create(['contributor_id' => $busy->id, 'committee_member_id' => null]);
+
+        $asc = $this->actingAs($this->admin())->get(route('admin.contributors.index', [
+            'sort' => 'contributions_count', 'direction' => 'asc',
+        ]));
+        $body = $asc->getContent();
+        $this->assertLessThan(strpos($body, $busy->name), strpos($body, $quiet->name));
+
+        $desc = $this->actingAs($this->admin())->get(route('admin.contributors.index', [
+            'sort' => 'contributions_count', 'direction' => 'desc',
+        ]));
+        $body = $desc->getContent();
+        $this->assertLessThan(strpos($body, $quiet->name), strpos($body, $busy->name));
+    }
+
+    public function test_invalid_sort_column_falls_back_to_name_asc(): void
+    {
+        Contributor::factory()->create();
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.contributors.index', ['sort' => 'password']));
+
+        $response->assertOk();
+    }
 }

@@ -230,6 +230,159 @@ class CommitteeContributionTest extends TestCase
         $this->assertCount(2, $memberFiltered->viewData('contributions'));
     }
 
+    // ----- Date range -----
+
+    public function test_date_range_filters_by_contributed_at(): void
+    {
+        $inRange = EditionContribution::factory()->create(['contributed_at' => '2026-03-15']);
+        $before = EditionContribution::factory()->create(['contributed_at' => '2026-01-01']);
+        $after = EditionContribution::factory()->create(['contributed_at' => '2026-06-01']);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-contributions.index', [
+            'from_date' => '2026-03-01',
+            'to_date' => '2026-03-31',
+        ]));
+
+        $response->assertSee($inRange->receiptReference())
+            ->assertDontSee($before->receiptReference())
+            ->assertDontSee($after->receiptReference());
+    }
+
+    public function test_from_date_only_filters_open_ended(): void
+    {
+        $recent = EditionContribution::factory()->create(['contributed_at' => '2026-06-01']);
+        $old = EditionContribution::factory()->create(['contributed_at' => '2026-01-01']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.edition-contributions.index', ['from_date' => '2026-05-01']));
+
+        $response->assertSee($recent->receiptReference())->assertDontSee($old->receiptReference());
+    }
+
+    public function test_to_date_only_filters_open_started(): void
+    {
+        $old = EditionContribution::factory()->create(['contributed_at' => '2026-01-01']);
+        $recent = EditionContribution::factory()->create(['contributed_at' => '2026-06-01']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.edition-contributions.index', ['to_date' => '2026-02-01']));
+
+        $response->assertSee($old->receiptReference())->assertDontSee($recent->receiptReference());
+    }
+
+    public function test_to_date_before_from_date_is_rejected(): void
+    {
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-contributions.index', [
+            'from_date' => '2026-06-01',
+            'to_date' => '2026-01-01',
+        ]));
+
+        $response->assertSessionHasErrors('to_date');
+    }
+
+    // ----- Sorting -----
+
+    public function test_sorting_ascending_by_amount(): void
+    {
+        $small = EditionContribution::factory()->create(['amount' => '1000.00']);
+        $large = EditionContribution::factory()->create(['amount' => '9000.00']);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-contributions.index', [
+            'sort' => 'amount', 'direction' => 'asc',
+        ]));
+
+        $body = $response->getContent();
+        $this->assertLessThan(
+            strpos($body, $large->receiptReference()),
+            strpos($body, $small->receiptReference())
+        );
+    }
+
+    public function test_sorting_descending_by_amount(): void
+    {
+        $small = EditionContribution::factory()->create(['amount' => '1000.00']);
+        $large = EditionContribution::factory()->create(['amount' => '9000.00']);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-contributions.index', [
+            'sort' => 'amount', 'direction' => 'desc',
+        ]));
+
+        $body = $response->getContent();
+        $this->assertLessThan(
+            strpos($body, $small->receiptReference()),
+            strpos($body, $large->receiptReference())
+        );
+    }
+
+    public function test_invalid_sort_column_falls_back_to_default_safely(): void
+    {
+        EditionContribution::factory()->create();
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.edition-contributions.index', ['sort' => 'notes']));
+
+        $response->assertOk();
+    }
+
+    // ----- Selected-rows export -----
+
+    public function test_selected_export_contains_only_the_selected_contributions(): void
+    {
+        $selected = EditionContribution::factory()->create();
+        $notSelected = EditionContribution::factory()->create();
+
+        $response = $this->actingAs($this->admin())->post(route('admin.edition-contributions.export-selected'), [
+            'selected_ids' => [$selected->id],
+        ]);
+
+        $response->assertOk();
+        $content = $response->streamedContent();
+        $this->assertStringContainsString($selected->receiptReference(), $content);
+        $this->assertStringNotContainsString($notSelected->receiptReference(), $content);
+    }
+
+    public function test_selected_export_ignores_ambient_filters(): void
+    {
+        $editionOne = Edition::factory()->create();
+        $editionTwo = Edition::factory()->create();
+        $selected = EditionContribution::factory()->create(['edition_id' => $editionTwo->id]);
+
+        $response = $this->actingAs($this->admin())->post(
+            route('admin.edition-contributions.export-selected', ['edition_id' => $editionOne->id]),
+            ['selected_ids' => [$selected->id]]
+        );
+
+        $response->assertOk();
+        $this->assertStringContainsString($selected->receiptReference(), $response->streamedContent());
+    }
+
+    public function test_selected_export_rejects_a_nonexistent_id(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('admin.edition-contributions.export-selected'), [
+            'selected_ids' => [999999],
+        ]);
+
+        $response->assertSessionHasErrors('selected_ids.0');
+    }
+
+    public function test_selected_export_requires_at_least_one_id(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('admin.edition-contributions.export-selected'), [
+            'selected_ids' => [],
+        ]);
+
+        $response->assertSessionHasErrors('selected_ids');
+    }
+
+    public function test_scorer_cannot_use_selected_export(): void
+    {
+        $contribution = EditionContribution::factory()->create();
+
+        $this->actingAs($this->scorer())
+            ->post(route('admin.edition-contributions.export-selected'), ['selected_ids' => [$contribution->id]])
+            ->assertForbidden();
+    }
+
     public function test_edition_admin_page_shows_contribution_summary_and_link(): void
     {
         $edition = Edition::factory()->create();

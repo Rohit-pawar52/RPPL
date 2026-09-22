@@ -217,4 +217,157 @@ class EditionTransactionTest extends TestCase
         $response->assertSee('1,250.00'); // balance
         $response->assertSee(route('admin.edition-transactions.index', ['edition_id' => $edition->id]), false);
     }
+
+    // ----- Date range -----
+
+    public function test_date_range_filters_by_transaction_date(): void
+    {
+        $inRange = EditionTransaction::factory()->create(['category' => 'InRangeCategory', 'transaction_date' => '2026-03-15']);
+        $before = EditionTransaction::factory()->create(['category' => 'BeforeCategory', 'transaction_date' => '2026-01-01']);
+        $after = EditionTransaction::factory()->create(['category' => 'AfterCategory', 'transaction_date' => '2026-06-01']);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-transactions.index', [
+            'from_date' => '2026-03-01',
+            'to_date' => '2026-03-31',
+        ]));
+
+        $response->assertSee($inRange->category)
+            ->assertDontSee($before->category)
+            ->assertDontSee($after->category);
+    }
+
+    public function test_from_date_only_filters_open_ended(): void
+    {
+        $recent = EditionTransaction::factory()->create(['category' => 'RecentCategory', 'transaction_date' => '2026-06-01']);
+        $old = EditionTransaction::factory()->create(['category' => 'OldCategory', 'transaction_date' => '2026-01-01']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.edition-transactions.index', ['from_date' => '2026-05-01']));
+
+        $response->assertSee($recent->category)->assertDontSee($old->category);
+    }
+
+    public function test_to_date_only_filters_open_started(): void
+    {
+        $old = EditionTransaction::factory()->create(['category' => 'OldCategory', 'transaction_date' => '2026-01-01']);
+        $recent = EditionTransaction::factory()->create(['category' => 'RecentCategory', 'transaction_date' => '2026-06-01']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.edition-transactions.index', ['to_date' => '2026-02-01']));
+
+        $response->assertSee($old->category)->assertDontSee($recent->category);
+    }
+
+    public function test_to_date_before_from_date_is_rejected(): void
+    {
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-transactions.index', [
+            'from_date' => '2026-06-01',
+            'to_date' => '2026-01-01',
+        ]));
+
+        $response->assertSessionHasErrors('to_date');
+    }
+
+    // ----- Sorting -----
+
+    public function test_sorting_ascending_by_amount(): void
+    {
+        $cheap = EditionTransaction::factory()->create(['category' => 'CheapCategory', 'amount' => '100.00']);
+        $expensive = EditionTransaction::factory()->create(['category' => 'ExpensiveCategory', 'amount' => '900.00']);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-transactions.index', [
+            'sort' => 'amount', 'direction' => 'asc',
+        ]));
+
+        $body = $response->getContent();
+        $this->assertLessThan(
+            strpos($body, $expensive->category),
+            strpos($body, $cheap->category)
+        );
+    }
+
+    public function test_sorting_descending_by_amount(): void
+    {
+        $cheap = EditionTransaction::factory()->create(['category' => 'CheapCategory', 'amount' => '100.00']);
+        $expensive = EditionTransaction::factory()->create(['category' => 'ExpensiveCategory', 'amount' => '900.00']);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-transactions.index', [
+            'sort' => 'amount', 'direction' => 'desc',
+        ]));
+
+        $body = $response->getContent();
+        $this->assertLessThan(
+            strpos($body, $cheap->category),
+            strpos($body, $expensive->category)
+        );
+    }
+
+    public function test_invalid_sort_column_falls_back_to_default_safely(): void
+    {
+        EditionTransaction::factory()->create();
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.edition-transactions.index', ['sort' => 'created_by']));
+
+        $response->assertOk();
+    }
+
+    // ----- Selected-rows export -----
+
+    public function test_selected_export_contains_only_the_selected_transactions(): void
+    {
+        $selected = EditionTransaction::factory()->create(['category' => 'SelectedCategory']);
+        $notSelected = EditionTransaction::factory()->create(['category' => 'NotSelectedCategory']);
+
+        $response = $this->actingAs($this->admin())->post(route('admin.edition-transactions.export-selected'), [
+            'selected_ids' => [$selected->id],
+        ]);
+
+        $response->assertOk();
+        $content = $response->streamedContent();
+        $this->assertStringContainsString($selected->category, $content);
+        $this->assertStringNotContainsString($notSelected->category, $content);
+    }
+
+    public function test_selected_export_ignores_ambient_filters(): void
+    {
+        $editionOne = Edition::factory()->create();
+        $editionTwo = Edition::factory()->create();
+        $selected = EditionTransaction::factory()->create(['edition_id' => $editionTwo->id, 'category' => 'IgnoresFiltersCategory']);
+
+        $response = $this->actingAs($this->admin())->post(
+            route('admin.edition-transactions.export-selected', ['edition_id' => $editionOne->id]),
+            ['selected_ids' => [$selected->id]]
+        );
+
+        $response->assertOk();
+        $this->assertStringContainsString($selected->category, $response->streamedContent());
+    }
+
+    public function test_selected_export_rejects_a_nonexistent_id(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('admin.edition-transactions.export-selected'), [
+            'selected_ids' => [999999],
+        ]);
+
+        $response->assertSessionHasErrors('selected_ids.0');
+    }
+
+    public function test_selected_export_requires_at_least_one_id(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('admin.edition-transactions.export-selected'), [
+            'selected_ids' => [],
+        ]);
+
+        $response->assertSessionHasErrors('selected_ids');
+    }
+
+    public function test_scorer_cannot_use_selected_export(): void
+    {
+        $transaction = EditionTransaction::factory()->create();
+
+        $this->actingAs($this->scorer())
+            ->post(route('admin.edition-transactions.export-selected'), ['selected_ids' => [$transaction->id]])
+            ->assertForbidden();
+    }
 }

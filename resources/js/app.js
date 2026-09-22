@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { initFlashMessages, confirmAction } from './flash';
 import { initAdminSidebar } from './admin-nav';
 import { initConfirmDeleteForms, initConfirmActionForms } from './confirm-delete';
+import { initTableRowSelection } from './table-selection';
 
 window.Swal = Swal;
 window.confirmAction = confirmAction;
@@ -13,4 +14,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initAdminSidebar();
     initConfirmDeleteForms();
     initConfirmActionForms();
+    initTableRowSelection();
 });

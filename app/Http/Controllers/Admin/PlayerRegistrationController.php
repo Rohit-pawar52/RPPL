@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\FiltersAdminTables;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\PlayerRegistration\ImportPlayerRegistrationsRequest;
 use App\Http\Requests\Admin\PlayerRegistration\StorePlayerRegistrationRequest;
@@ -21,6 +22,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PlayerRegistrationController extends Controller
 {
+    use FiltersAdminTables;
+
+    private const ALLOWED_SORTS = ['registered_at', 'registration_number', 'registration_fee', 'player_name'];
+
     public function __construct(
         private readonly PlayerRegistrationService $registrations,
         private readonly PlayerRegistrationImportService $imports,
@@ -30,17 +35,20 @@ class PlayerRegistrationController extends Controller
     {
         $this->authorize('viewAny', PlayerRegistration::class);
 
-        $filters = $request->only(['search', 'edition_id', 'payment_status']);
+        $dateRange = $this->validateDateRange($request);
+        $filters = $request->only(['search', 'edition_id', 'payment_status']) + $dateRange;
+        [$sort, $direction] = $this->allowedSort($request, self::ALLOWED_SORTS, 'registered_at');
 
-        $registrations = $this->registrationQuery($filters)
+        $registrations = $this->applySort($this->registrationQuery($filters), $sort, $direction)
             ->with(['player', 'edition'])
-            ->latest('registered_at')
             ->paginate(15)
             ->withQueryString();
 
         return view('admin.player-registrations.index', [
             'registrations' => $registrations,
             'filters' => $filters,
+            'sort' => $sort,
+            'direction' => $direction,
             'editions' => Edition::orderByDesc('year')->get(['id', 'name']),
         ]);
     }
@@ -58,9 +66,44 @@ class PlayerRegistrationController extends Controller
     {
         $this->authorize('viewAny', PlayerRegistration::class);
 
-        $filters = $request->only(['search', 'edition_id', 'payment_status']);
+        $filters = $request->only(['search', 'edition_id', 'payment_status']) + $this->validateDateRange($request);
 
-        return response()->streamDownload(function () use ($filters) {
+        return $this->streamRegistrationsCsv(
+            $this->registrationQuery($filters)->with(['player', 'edition']),
+            $this->exportFilename($filters)
+        );
+    }
+
+    /**
+     * Exports exactly the rows explicitly checked on the current index
+     * page — never "every record matching the current filters" (that is
+     * what export() above already does). Ignores $filters entirely:
+     * selected_ids take precedence over the ambient filter set, but each
+     * id must still be a real registration (`exists:` rule below) so an
+     * authorized admin can only ever export rows that genuinely exist —
+     * viewAny is the same gate the index/export routes already use, so
+     * this doesn't open any access the admin didn't already have.
+     */
+    public function exportSelected(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', PlayerRegistration::class);
+
+        $validated = $request->validate([
+            'selected_ids' => ['required', 'array', 'min:1'],
+            'selected_ids.*' => ['integer', 'exists:player_registrations,id'],
+        ]);
+
+        return $this->streamRegistrationsCsv(
+            PlayerRegistration::query()
+                ->whereIn('id', $validated['selected_ids'])
+                ->with(['player', 'edition']),
+            'rppl-player-registrations-selected.csv'
+        );
+    }
+
+    private function streamRegistrationsCsv(Builder $query, string $filename): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($query) {
             $handle = fopen('php://output', 'w');
 
             // Excel-friendly UTF-8 BOM so accented player names render
@@ -72,27 +115,25 @@ class PlayerRegistrationController extends Controller
                 'Payment Status', 'Registration Fee', 'Registered At',
             ]);
 
-            $this->registrationQuery($filters)
-                ->with(['player', 'edition'])
-                ->chunkById(200, function ($registrations) use ($handle) {
-                    foreach ($registrations as $registration) {
-                        fputcsv($handle, [
-                            $registration->registration_number,
-                            $registration->edition->name,
-                            $registration->player->name,
-                            $registration->player->phone ?? '',
-                            $registration->player->email ?? '',
-                            ucfirst($registration->payment_status),
-                            $registration->registration_fee !== null
-                                ? number_format($registration->registration_fee, 2, '.', '')
-                                : '',
-                            $registration->registered_at?->format('Y-m-d') ?? '',
-                        ]);
-                    }
-                });
+            $query->chunkById(200, function ($registrations) use ($handle) {
+                foreach ($registrations as $registration) {
+                    fputcsv($handle, [
+                        $registration->registration_number,
+                        $registration->edition->name,
+                        $registration->player->name,
+                        $registration->player->phone ?? '',
+                        $registration->player->email ?? '',
+                        ucfirst($registration->payment_status),
+                        $registration->registration_fee !== null
+                            ? number_format($registration->registration_fee, 2, '.', '')
+                            : '',
+                        $registration->registered_at?->format('Y-m-d') ?? '',
+                    ]);
+                }
+            });
 
             fclose($handle);
-        }, $this->exportFilename($filters), [
+        }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
@@ -268,7 +309,25 @@ class PlayerRegistrationController extends Controller
             ->when(
                 in_array($filters['payment_status'] ?? null, PlayerRegistration::PAYMENT_STATUSES, true),
                 fn ($query) => $query->where('payment_status', $filters['payment_status'])
+            )
+            ->tap(fn ($query) => $this->dateRangeFilter($query, 'registered_at', $filters['from_date'] ?? null, $filters['to_date'] ?? null));
+    }
+
+    /**
+     * 'player_name' sorts by a related column, which orderBy() can't do
+     * directly — a scalar subquery is the simplest way that still lets
+     * the database do the sorting (no post-fetch Collection::sort()).
+     */
+    private function applySort(Builder $query, string $column, string $direction): Builder
+    {
+        if ($column === 'player_name') {
+            return $query->orderBy(
+                Player::select('name')->whereColumn('id', 'player_registrations.player_id'),
+                $direction
             );
+        }
+
+        return $query->orderBy($column, $direction);
     }
 
     /**

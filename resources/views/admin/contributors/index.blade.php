@@ -42,9 +42,10 @@
         <table class="w-full min-w-[560px] text-left text-[13px]">
             <thead class="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-400">
                 <tr>
-                    <th class="px-4 py-2 font-medium">Name</th>
+                    <th class="px-4 py-2 font-medium"><x-sortable-header column="name" :sort="$sort" :direction="$direction">Name</x-sortable-header></th>
                     <th class="px-4 py-2 font-medium">Status</th>
-                    <th class="hidden px-4 py-2 font-medium md:table-cell">Committee Link</th>
+                    <th class="hidden px-4 py-2 font-medium md:table-cell"><x-sortable-header column="contributions_count" :sort="$sort" :direction="$direction">Contributions</x-sortable-header></th>
+                    <th class="hidden px-4 py-2 font-medium lg:table-cell">Committee Link</th>
                     <th class="px-4 py-2 text-right font-medium">Actions</th>
                 </tr>
             </thead>
@@ -67,6 +68,9 @@
                             <x-status-badge :status="$contributor->is_active ? 'active' : 'inactive'" />
                         </td>
                         <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">
+                            {{ $contributor->contributions_count }}
+                        </td>
+                        <td class="hidden px-4 py-2 text-neutral-600 lg:table-cell">
                             {{ $contributor->committeeMember->name ?? '—' }}
                         </td>
                         <td class="px-4 py-2">
@@ -110,7 +114,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-4 py-8 text-center text-neutral-400">
+                        <td colspan="5" class="px-4 py-8 text-center text-neutral-400">
                             No contributors found.
                         </td>
                     </tr>

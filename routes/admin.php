@@ -63,6 +63,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('edition-teams', EditionTeamController::class)->only([
             'index', 'create', 'store', 'show', 'destroy',
         ]);
+        // Must precede the resource route below — otherwise "export"
+        // would be captured by the {match} wildcard.
+        Route::get('matches/export', [GameMatchController::class, 'export'])->name('matches.export');
+        Route::post('matches/export-selected', [GameMatchController::class, 'exportSelected'])->name('matches.export-selected');
         Route::resource('matches', GameMatchController::class);
         // Playing XI (MatchPlayer) is managed contextually from the match
         // show page, not as its own top-level admin module — no sidebar
@@ -108,10 +112,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
             // Read-only match scorecard (Phase 3.14) — no writes.
             Route::get('scorecard', [ScorecardController::class, 'show'])->name('scorecard');
         });
+        // Must precede the resource route below — otherwise "export"
+        // would be captured by the {player} wildcard.
+        Route::get('players/export', [PlayerController::class, 'export'])->name('players.export');
         Route::resource('players', PlayerController::class);
         // Must precede the resource route below — otherwise "export"/
         // "import" would be captured by the {player_registration} wildcard.
         Route::get('player-registrations/export', [PlayerRegistrationController::class, 'export'])->name('player-registrations.export');
+        Route::post('player-registrations/export-selected', [PlayerRegistrationController::class, 'exportSelected'])->name('player-registrations.export-selected');
         Route::get('player-registrations/import', [PlayerRegistrationController::class, 'import'])->name('player-registrations.import');
         Route::post('player-registrations/import', [PlayerRegistrationController::class, 'importStore'])->name('player-registrations.import.store');
         // Private document review (Phase 3.39D) — served through the
@@ -128,12 +136,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Must precede the resource route below — otherwise "export"
         // would be captured by the {edition_transaction} wildcard.
         Route::get('edition-transactions/export', [EditionTransactionController::class, 'export'])->name('edition-transactions.export');
+        Route::post('edition-transactions/export-selected', [EditionTransactionController::class, 'exportSelected'])->name('edition-transactions.export-selected');
         Route::resource('edition-transactions', EditionTransactionController::class);
         Route::resource('committee-members', CommitteeMemberController::class);
         Route::resource('contributors', ContributorController::class);
         // Must precede the resource route below — otherwise "export"
         // would be captured by the {edition_contribution} wildcard.
         Route::get('edition-contributions/export', [EditionContributionController::class, 'export'])->name('edition-contributions.export');
+        Route::post('edition-contributions/export-selected', [EditionContributionController::class, 'exportSelected'])->name('edition-contributions.export-selected');
+        Route::post('edition-contributions/receipts/selected', [EditionContributionController::class, 'receiptsSelectedPdf'])->name('edition-contributions.receipts.selected');
         // No edit/update: a contribution's financial history is never
         // silently rewritten (see EditionContributionController).
         Route::resource('edition-contributions', EditionContributionController::class)->only([

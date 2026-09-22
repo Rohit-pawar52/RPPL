@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\FiltersAdminTables;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\EditionTransaction\StoreEditionTransactionRequest;
 use App\Http\Requests\Admin\EditionTransaction\UpdateEditionTransactionRequest;
@@ -23,23 +24,31 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class EditionTransactionController extends Controller
 {
+    use FiltersAdminTables;
+
+    private const ALLOWED_SORTS = ['transaction_date', 'amount', 'type'];
+
     public function index(Request $request): View
     {
         $this->authorize('viewAny', EditionTransaction::class);
 
-        $filters = $request->only(['edition_id', 'type', 'search']);
+        $dateRange = $this->validateDateRange($request);
+        $filters = $request->only(['edition_id', 'type', 'search']) + $dateRange;
+        [$sort, $direction] = $this->allowedSort($request, self::ALLOWED_SORTS, 'transaction_date');
 
         $transactions = $this->transactionQuery($filters)
             ->with(['edition', 'createdBy'])
             ->withExists('contribution')
-            ->orderByDesc('transaction_date')
-            ->orderByDesc('id')
+            ->orderBy($sort, $direction)
+            ->orderBy('id', 'desc')
             ->paginate(15)
             ->withQueryString();
 
         return view('admin.edition-transactions.index', [
             'transactions' => $transactions,
             'filters' => $filters,
+            'sort' => $sort,
+            'direction' => $direction,
             'editions' => Edition::orderByDesc('year')->get(['id', 'name']),
             'summary' => $this->summaryFor($filters['edition_id'] ?? null),
         ]);
@@ -57,9 +66,45 @@ class EditionTransactionController extends Controller
     {
         $this->authorize('viewAny', EditionTransaction::class);
 
-        $filters = $request->only(['edition_id', 'type', 'search']);
+        $filters = $request->only(['edition_id', 'type', 'search']) + $this->validateDateRange($request);
 
-        return response()->streamDownload(function () use ($filters) {
+        return $this->streamTransactionsCsv(
+            $this->transactionQuery($filters)->with(['edition', 'createdBy'])->withExists('contribution'),
+            $this->exportFilename($filters)
+        );
+    }
+
+    /**
+     * Exports exactly the rows explicitly checked on the current index
+     * page — never "every record matching the current filters" (that is
+     * what export() above already does). Ignores $filters entirely:
+     * selected_ids take precedence over the ambient filter set, but each
+     * id must still be a real transaction (`exists:` rule below) so an
+     * authorized admin can only ever export rows that genuinely exist —
+     * viewAny is the same gate the index/export routes already use, so
+     * this doesn't open any access the admin didn't already have.
+     */
+    public function exportSelected(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', EditionTransaction::class);
+
+        $validated = $request->validate([
+            'selected_ids' => ['required', 'array', 'min:1'],
+            'selected_ids.*' => ['integer', 'exists:edition_transactions,id'],
+        ]);
+
+        return $this->streamTransactionsCsv(
+            EditionTransaction::query()
+                ->whereIn('id', $validated['selected_ids'])
+                ->with(['edition', 'createdBy'])
+                ->withExists('contribution'),
+            'rppl-finance-ledger-selected.csv'
+        );
+    }
+
+    private function streamTransactionsCsv(Builder $query, string $filename): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($query) {
             $handle = fopen('php://output', 'w');
 
             // Excel-friendly UTF-8 BOM so accented text renders
@@ -71,27 +116,24 @@ class EditionTransactionController extends Controller
                 'Description', 'Amount', 'Source', 'Created By',
             ]);
 
-            $this->transactionQuery($filters)
-                ->with(['edition', 'createdBy'])
-                ->withExists('contribution')
-                ->chunkById(200, function ($transactions) use ($handle) {
-                    foreach ($transactions as $transaction) {
-                        fputcsv($handle, [
-                            $transaction->id,
-                            $transaction->transaction_date->format('Y-m-d'),
-                            $transaction->edition->name,
-                            ucfirst($transaction->type),
-                            $transaction->category ?? '',
-                            $transaction->description ?? '',
-                            number_format($transaction->amount, 2, '.', ''),
-                            $transaction->contribution_exists ? 'Committee Contribution' : 'Manual',
-                            $transaction->createdBy->name,
-                        ]);
-                    }
-                });
+            $query->chunkById(200, function ($transactions) use ($handle) {
+                foreach ($transactions as $transaction) {
+                    fputcsv($handle, [
+                        $transaction->id,
+                        $transaction->transaction_date->format('Y-m-d'),
+                        $transaction->edition->name,
+                        ucfirst($transaction->type),
+                        $transaction->category ?? '',
+                        $transaction->description ?? '',
+                        number_format($transaction->amount, 2, '.', ''),
+                        $transaction->contribution_exists ? 'Committee Contribution' : 'Manual',
+                        $transaction->createdBy->name,
+                    ]);
+                }
+            });
 
             fclose($handle);
-        }, $this->exportFilename($filters), [
+        }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
@@ -218,7 +260,8 @@ class EditionTransactionController extends Controller
                     $query->where('category', 'like', '%'.$search.'%')
                         ->orWhere('description', 'like', '%'.$search.'%');
                 })
-            );
+            )
+            ->tap(fn ($query) => $this->dateRangeFilter($query, 'transaction_date', $filters['from_date'] ?? null, $filters['to_date'] ?? null));
     }
 
     /**

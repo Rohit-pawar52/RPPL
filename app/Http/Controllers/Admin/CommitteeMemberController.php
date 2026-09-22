@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\FiltersAdminTables;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CommitteeMember\StoreCommitteeMemberRequest;
 use App\Http\Requests\Admin\CommitteeMember\UpdateCommitteeMemberRequest;
@@ -19,11 +20,16 @@ use Illuminate\View\View;
  */
 class CommitteeMemberController extends Controller
 {
+    use FiltersAdminTables;
+
+    private const ALLOWED_SORTS = ['name', 'contributions_count'];
+
     public function index(Request $request): View
     {
         $this->authorize('viewAny', CommitteeMember::class);
 
         $filters = $request->only(['search', 'status']);
+        [$sort, $direction] = $this->allowedSort($request, self::ALLOWED_SORTS, 'name', 'asc');
 
         $members = CommitteeMember::query()
             // Deliberately NOT scoped to active() by default: this is
@@ -41,13 +47,15 @@ class CommitteeMemberController extends Controller
                 }
             })
             ->withCount('contributions')
-            ->orderBy('name')
+            ->orderBy($sort, $direction)
             ->paginate(15)
             ->withQueryString();
 
         return view('admin.committee-members.index', [
             'members' => $members,
             'filters' => $filters,
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
     }
 

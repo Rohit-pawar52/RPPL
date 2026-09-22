@@ -3,8 +3,8 @@
 @section('title', 'Finance')
 
 @section('content')
-    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <form method="GET" action="{{ route('admin.edition-transactions.index') }}" class="flex flex-wrap items-center gap-2">
+    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <x-table-filters :action="route('admin.edition-transactions.index')" :filters="$filters" :date-range="true">
             <input
                 type="text"
                 name="search"
@@ -30,19 +30,14 @@
                     </option>
                 @endforeach
             </select>
-
-            <button type="submit" class="rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
-                Filter
-            </button>
-
-            @if(array_filter($filters))
-                <a href="{{ route('admin.edition-transactions.index') }}" class="text-[13px] text-neutral-400 hover:text-neutral-600">
-                    Clear filters
-                </a>
-            @endif
-        </form>
+        </x-table-filters>
 
         <div class="flex items-center gap-2">
+            <x-selected-report-action
+                id="transactions-selected-export"
+                :action="route('admin.edition-transactions.export-selected')"
+                label="Export Selected ({count})"
+            />
             <a
                 href="{{ route('admin.edition-transactions.export', $filters) }}"
                 class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50"
@@ -65,22 +60,35 @@
         <x-stat-card label="Balance" :value="money($summary['balance'])" icon="currency" />
     </div>
 
-    <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+    <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white" data-row-selection="#transactions-selected-export-button">
         <table class="w-full min-w-[720px] text-left text-[13px]">
             <thead class="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-400">
                 <tr>
-                    <th class="px-4 py-2 font-medium">Date</th>
+                    <th class="w-8 px-4 py-2">
+                        <input type="checkbox" data-select-all aria-label="Select all transactions on this page" />
+                    </th>
+                    <th class="px-4 py-2 font-medium"><x-sortable-header column="transaction_date" :sort="$sort" :direction="$direction">Date</x-sortable-header></th>
                     <th class="px-4 py-2 font-medium">Edition</th>
-                    <th class="px-4 py-2 font-medium">Type</th>
+                    <th class="px-4 py-2 font-medium"><x-sortable-header column="type" :sort="$sort" :direction="$direction">Type</x-sortable-header></th>
                     <th class="hidden px-4 py-2 font-medium md:table-cell">Category</th>
                     <th class="hidden px-4 py-2 font-medium md:table-cell">Description</th>
-                    <th class="px-4 py-2 text-right font-medium">Amount</th>
+                    <th class="px-4 py-2 text-right font-medium"><x-sortable-header column="amount" :sort="$sort" :direction="$direction">Amount</x-sortable-header></th>
                     <th class="px-4 py-2 text-right font-medium">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
                 @forelse($transactions as $transaction)
                     <tr class="hover:bg-neutral-50">
+                        <td class="px-4 py-2">
+                            <input
+                                type="checkbox"
+                                data-row-checkbox
+                                form="transactions-selected-export"
+                                name="selected_ids[]"
+                                value="{{ $transaction->id }}"
+                                aria-label="Select transaction {{ $transaction->id }}"
+                            />
+                        </td>
                         <td class="whitespace-nowrap px-4 py-2 text-neutral-600">
                             {{ $transaction->transaction_date->format('d M Y') }}
                         </td>
@@ -145,7 +153,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-neutral-400">
+                        <td colspan="8" class="px-4 py-8 text-center text-neutral-400">
                             No transactions found.
                         </td>
                     </tr>

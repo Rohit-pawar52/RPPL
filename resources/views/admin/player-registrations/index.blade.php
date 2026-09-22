@@ -3,8 +3,8 @@
 @section('title', 'Player Registrations')
 
 @section('content')
-    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <form method="GET" action="{{ route('admin.player-registrations.index') }}" class="flex flex-wrap items-center gap-2">
+    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <x-table-filters :action="route('admin.player-registrations.index')" :filters="$filters" :date-range="true">
             <input
                 type="text"
                 name="search"
@@ -30,19 +30,14 @@
                     </option>
                 @endforeach
             </select>
-
-            <button type="submit" class="rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
-                Filter
-            </button>
-
-            @if(array_filter($filters))
-                <a href="{{ route('admin.player-registrations.index') }}" class="text-[13px] text-neutral-400 hover:text-neutral-600">
-                    Clear filters
-                </a>
-            @endif
-        </form>
+        </x-table-filters>
 
         <div class="flex items-center gap-2">
+            <x-selected-report-action
+                id="registrations-selected-export"
+                :action="route('admin.player-registrations.export-selected')"
+                label="Export Selected ({count})"
+            />
             <a
                 href="{{ route('admin.player-registrations.export', $filters) }}"
                 class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50"
@@ -66,22 +61,35 @@
         </div>
     </div>
 
-    <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+    <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white" data-row-selection="#registrations-selected-export-button">
         <table class="w-full min-w-[720px] text-left text-[13px]">
             <thead class="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-400">
                 <tr>
-                    <th class="px-4 py-2 font-medium">Registration #</th>
-                    <th class="px-4 py-2 font-medium">Player</th>
+                    <th class="w-8 px-4 py-2">
+                        <input type="checkbox" data-select-all aria-label="Select all registrations on this page" />
+                    </th>
+                    <th class="px-4 py-2 font-medium"><x-sortable-header column="registration_number" :sort="$sort" :direction="$direction">Registration #</x-sortable-header></th>
+                    <th class="px-4 py-2 font-medium"><x-sortable-header column="player_name" :sort="$sort" :direction="$direction">Player</x-sortable-header></th>
                     <th class="px-4 py-2 font-medium">Edition</th>
                     <th class="px-4 py-2 font-medium">Payment Status</th>
-                    <th class="hidden px-4 py-2 font-medium md:table-cell">Fee</th>
-                    <th class="hidden px-4 py-2 font-medium lg:table-cell">Registered</th>
+                    <th class="hidden px-4 py-2 font-medium md:table-cell"><x-sortable-header column="registration_fee" :sort="$sort" :direction="$direction">Fee</x-sortable-header></th>
+                    <th class="hidden px-4 py-2 font-medium lg:table-cell"><x-sortable-header column="registered_at" :sort="$sort" :direction="$direction">Registered</x-sortable-header></th>
                     <th class="px-4 py-2 text-right font-medium">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
                 @forelse($registrations as $registration)
                     <tr class="hover:bg-neutral-50">
+                        <td class="px-4 py-2">
+                            <input
+                                type="checkbox"
+                                data-row-checkbox
+                                form="registrations-selected-export"
+                                name="selected_ids[]"
+                                value="{{ $registration->id }}"
+                                aria-label="Select registration {{ $registration->registration_number }}"
+                            />
+                        </td>
                         <td class="px-4 py-2 font-mono text-[12px] text-neutral-600">
                             <a href="{{ route('admin.player-registrations.show', $registration) }}" class="hover:underline">
                                 {{ $registration->registration_number }}
@@ -144,7 +152,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-neutral-400">
+                        <td colspan="8" class="px-4 py-8 text-center text-neutral-400">
                             No registrations found.
                         </td>
                     </tr>

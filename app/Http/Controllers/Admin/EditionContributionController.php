@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\FiltersAdminTables;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\EditionContribution\StoreEditionContributionRequest;
 use App\Models\CommitteeMember;
@@ -9,6 +10,7 @@ use App\Models\Contributor;
 use App\Models\Edition;
 use App\Models\EditionContribution;
 use App\Services\Finance\EditionContributionService;
+use App\View\Composers\BrandingComposer;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -25,13 +27,19 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class EditionContributionController extends Controller
 {
+    use FiltersAdminTables;
+
+    private const ALLOWED_SORTS = ['contributed_at', 'amount'];
+
     public function __construct(private readonly EditionContributionService $contributions) {}
 
     public function index(Request $request): View
     {
         $this->authorize('viewAny', EditionContribution::class);
 
-        $filters = $request->only(['edition_id', 'committee_member_id', 'search']);
+        $dateRange = $this->validateDateRange($request);
+        $filters = $request->only(['edition_id', 'committee_member_id', 'search']) + $dateRange;
+        [$sort, $direction] = $this->allowedSort($request, self::ALLOWED_SORTS, 'contributed_at');
 
         $query = $this->contributionQuery($filters);
 
@@ -39,14 +47,16 @@ class EditionContributionController extends Controller
 
         $contributions = $query
             ->with(['edition', 'committeeMember', 'contributor'])
-            ->orderByDesc('contributed_at')
-            ->orderByDesc('id')
+            ->orderBy($sort, $direction)
+            ->orderBy('id', 'desc')
             ->paginate(15)
             ->withQueryString();
 
         return view('admin.edition-contributions.index', [
             'contributions' => $contributions,
             'filters' => $filters,
+            'sort' => $sort,
+            'direction' => $direction,
             'editions' => Edition::orderByDesc('year')->get(['id', 'name']),
             'members' => CommitteeMember::orderBy('name')->get(['id', 'name']),
             'totalContributions' => $totalContributions,
@@ -68,9 +78,45 @@ class EditionContributionController extends Controller
     {
         $this->authorize('viewAny', EditionContribution::class);
 
-        $filters = $request->only(['edition_id', 'committee_member_id', 'search']);
+        $filters = $request->only(['edition_id', 'committee_member_id', 'search']) + $this->validateDateRange($request);
 
-        return response()->streamDownload(function () use ($filters) {
+        return $this->streamContributionsCsv(
+            $this->contributionQuery($filters)->with(['committeeMember', 'contributor', 'createdBy']),
+            $this->exportFilename($filters)
+        );
+    }
+
+    /**
+     * Exports exactly the rows explicitly checked on the current index
+     * page — never "every record matching the current filters" (that is
+     * what export() above already does). Ignores $filters entirely:
+     * selected_ids take precedence over the ambient filter set, but each
+     * id must still be a real contribution (`exists:` rule below) so an
+     * authorized admin can only ever export rows that genuinely exist —
+     * viewAny is the same gate the index/export routes already use, so
+     * this doesn't open any access the admin didn't already have. Same
+     * pattern as PlayerRegistrationController::exportSelected().
+     */
+    public function exportSelected(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', EditionContribution::class);
+
+        $validated = $request->validate([
+            'selected_ids' => ['required', 'array', 'min:1'],
+            'selected_ids.*' => ['integer', 'exists:edition_contributions,id'],
+        ]);
+
+        return $this->streamContributionsCsv(
+            EditionContribution::query()
+                ->whereIn('id', $validated['selected_ids'])
+                ->with(['committeeMember', 'contributor', 'createdBy']),
+            'rppl-contributions-selected.csv'
+        );
+    }
+
+    private function streamContributionsCsv(Builder $query, string $filename): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($query) {
             $handle = fopen('php://output', 'w');
 
             fwrite($handle, "\xEF\xBB\xBF");
@@ -80,25 +126,23 @@ class EditionContributionController extends Controller
                 'Contribution Date', 'Notes', 'Recorded By', 'Transaction ID',
             ]);
 
-            $this->contributionQuery($filters)
-                ->with(['committeeMember', 'contributor', 'createdBy'])
-                ->chunkById(200, function ($contributions) use ($handle) {
-                    foreach ($contributions as $contribution) {
-                        fputcsv($handle, [
-                            $contribution->receiptReference(),
-                            $contribution->contributorName(),
-                            $contribution->sourceLabel(),
-                            number_format($contribution->amount, 2, '.', ''),
-                            $contribution->contributed_at->format('Y-m-d'),
-                            $contribution->notes ?? '',
-                            $contribution->createdBy->name,
-                            $contribution->edition_transaction_id,
-                        ]);
-                    }
-                });
+            $query->chunkById(200, function ($contributions) use ($handle) {
+                foreach ($contributions as $contribution) {
+                    fputcsv($handle, [
+                        $contribution->receiptReference(),
+                        $contribution->contributorName(),
+                        $contribution->sourceLabel(),
+                        number_format($contribution->amount, 2, '.', ''),
+                        $contribution->contributed_at->format('Y-m-d'),
+                        $contribution->notes ?? '',
+                        $contribution->createdBy->name,
+                        $contribution->edition_transaction_id,
+                    ]);
+                }
+            });
 
             fclose($handle);
-        }, $this->exportFilename($filters), [
+        }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
@@ -176,6 +220,44 @@ class EditionContributionController extends Controller
     }
 
     /**
+     * One combined PDF (one A4 page per contribution, via CSS
+     * page-break-after in receipts-batch.blade.php) for exactly the rows
+     * explicitly checked on the current index page — same selected_ids
+     * contract and viewAny gate as exportSelected() above, just rendered
+     * as receipts instead of CSV rows.
+     *
+     * receipts-batch.blade.php (unlike receipt.blade.php) is not in
+     * AppServiceProvider::configureBranding()'s explicit view list, so
+     * $branding is composed onto it manually here rather than widening
+     * that shared list for one new view.
+     */
+    public function receiptsSelectedPdf(Request $request): Response
+    {
+        $this->authorize('viewAny', EditionContribution::class);
+
+        $validated = $request->validate([
+            'selected_ids' => ['required', 'array', 'min:1'],
+            'selected_ids.*' => ['integer', 'exists:edition_contributions,id'],
+        ]);
+
+        $contributions = EditionContribution::query()
+            ->whereIn('id', $validated['selected_ids'])
+            ->with(['edition', 'committeeMember', 'contributor'])
+            ->orderBy('contributed_at')
+            ->get();
+
+        $view = view('admin.edition-contributions.receipts-batch', [
+            'contributions' => $contributions,
+        ]);
+
+        app(BrandingComposer::class)->compose($view);
+
+        $pdf = Pdf::loadHTML($view->render())->setPaper('a4');
+
+        return $pdf->download('rppl-contribution-receipts-selected.pdf');
+    }
+
+    /**
      * The single source of truth for contribution filtering, shared by
      * index() and export() so the two can never quietly diverge — same
      * pattern as PlayerRegistrationController::registrationQuery() and
@@ -194,7 +276,8 @@ class EditionContributionController extends Controller
                     $query->whereHas('committeeMember', fn ($query) => $query->where('name', 'like', '%'.$search.'%'))
                         ->orWhereHas('contributor', fn ($query) => $query->where('name', 'like', '%'.$search.'%'));
                 })
-            );
+            )
+            ->tap(fn ($query) => $this->dateRangeFilter($query, 'contributed_at', $filters['from_date'] ?? null, $filters['to_date'] ?? null));
     }
 
     /**

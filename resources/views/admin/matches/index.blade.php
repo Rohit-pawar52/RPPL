@@ -3,8 +3,8 @@
 @section('title', 'Matches')
 
 @section('content')
-    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <form method="GET" action="{{ route('admin.matches.index') }}" class="flex flex-wrap items-center gap-2">
+    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <x-table-filters :action="route('admin.matches.index')" :filters="$filters" :date-range="true">
             <input
                 type="text"
                 name="search"
@@ -30,44 +30,61 @@
                     </option>
                 @endforeach
             </select>
+        </x-table-filters>
 
-            <button type="submit" class="rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
-                Filter
-            </button>
-
-            @if(array_filter($filters))
-                <a href="{{ route('admin.matches.index') }}" class="text-[13px] text-neutral-400 hover:text-neutral-600">
-                    Clear filters
-                </a>
-            @endif
-        </form>
-
-        @can('create', \App\Models\GameMatch::class)
+        <div class="flex items-center gap-2">
+            <x-selected-report-action
+                id="matches-selected-export"
+                :action="route('admin.matches.export-selected')"
+                label="Export Selected ({count})"
+            />
             <a
-                href="{{ route('admin.matches.create') }}"
-                class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
+                href="{{ route('admin.matches.export', $filters) }}"
+                class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50"
             >
-                + Schedule match
+                <x-icon name="document-chart" class="h-4 w-4" />
+                Export
             </a>
-        @endcan
+            @can('create', \App\Models\GameMatch::class)
+                <a
+                    href="{{ route('admin.matches.create') }}"
+                    class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
+                >
+                    + Schedule match
+                </a>
+            @endcan
+        </div>
     </div>
 
-    <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+    <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white" data-row-selection="#matches-selected-export-button">
         <table class="w-full min-w-[720px] text-left text-[13px]">
             <thead class="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-400">
                 <tr>
+                    <th class="w-8 px-4 py-2">
+                        <input type="checkbox" data-select-all aria-label="Select all matches on this page" />
+                    </th>
                     <th class="hidden px-4 py-2 font-medium md:table-cell">#</th>
                     <th class="hidden px-4 py-2 font-medium lg:table-cell">Edition</th>
                     <th class="px-4 py-2 font-medium">Teams</th>
                     <th class="hidden px-4 py-2 font-medium md:table-cell">Venue</th>
-                    <th class="hidden px-4 py-2 font-medium lg:table-cell">Scheduled</th>
-                    <th class="px-4 py-2 font-medium">Status</th>
+                    <th class="hidden px-4 py-2 font-medium lg:table-cell"><x-sortable-header column="scheduled_at" :sort="$sort" :direction="$direction">Scheduled</x-sortable-header></th>
+                    <th class="px-4 py-2 font-medium"><x-sortable-header column="match_status" :sort="$sort" :direction="$direction">Status</x-sortable-header></th>
                     <th class="px-4 py-2 text-right font-medium">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
                 @forelse($matches as $match)
                     <tr class="hover:bg-neutral-50">
+                        <td class="px-4 py-2">
+                            <input
+                                type="checkbox"
+                                data-row-checkbox
+                                form="matches-selected-export"
+                                name="selected_ids[]"
+                                value="{{ $match->id }}"
+                                aria-label="Select match {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}"
+                            />
+                        </td>
                         <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">{{ $match->match_number ?? '—' }}</td>
                         <td class="hidden px-4 py-2 text-neutral-600 lg:table-cell">{{ $match->edition->name }}</td>
                         <td class="px-4 py-2 font-medium text-neutral-800">
@@ -127,7 +144,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-neutral-400">
+                        <td colspan="8" class="px-4 py-8 text-center text-neutral-400">
                             No matches scheduled yet.
                         </td>
                     </tr>

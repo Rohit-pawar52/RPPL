@@ -557,6 +557,159 @@ class PlayerRegistrationManagementTest extends TestCase
         $response->assertSee('edition_id='.$edition->id, false);
     }
 
+    // ----- Date range -----
+
+    public function test_date_range_filters_by_registered_at(): void
+    {
+        $inRange = PlayerRegistration::factory()->create(['registered_at' => '2026-03-15']);
+        $before = PlayerRegistration::factory()->create(['registered_at' => '2026-01-01']);
+        $after = PlayerRegistration::factory()->create(['registered_at' => '2026-06-01']);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.player-registrations.index', [
+            'from_date' => '2026-03-01',
+            'to_date' => '2026-03-31',
+        ]));
+
+        $response->assertSee($inRange->registration_number)
+            ->assertDontSee($before->registration_number)
+            ->assertDontSee($after->registration_number);
+    }
+
+    public function test_from_date_only_filters_open_ended(): void
+    {
+        $recent = PlayerRegistration::factory()->create(['registered_at' => '2026-06-01']);
+        $old = PlayerRegistration::factory()->create(['registered_at' => '2026-01-01']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.index', ['from_date' => '2026-05-01']));
+
+        $response->assertSee($recent->registration_number)->assertDontSee($old->registration_number);
+    }
+
+    public function test_to_date_only_filters_open_started(): void
+    {
+        $old = PlayerRegistration::factory()->create(['registered_at' => '2026-01-01']);
+        $recent = PlayerRegistration::factory()->create(['registered_at' => '2026-06-01']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.index', ['to_date' => '2026-02-01']));
+
+        $response->assertSee($old->registration_number)->assertDontSee($recent->registration_number);
+    }
+
+    public function test_to_date_before_from_date_is_rejected(): void
+    {
+        $response = $this->actingAs($this->admin())->get(route('admin.player-registrations.index', [
+            'from_date' => '2026-06-01',
+            'to_date' => '2026-01-01',
+        ]));
+
+        $response->assertSessionHasErrors('to_date');
+    }
+
+    // ----- Sorting -----
+
+    public function test_sorting_ascending_by_registration_fee(): void
+    {
+        $cheap = PlayerRegistration::factory()->create(['registration_fee' => 100]);
+        $expensive = PlayerRegistration::factory()->create(['registration_fee' => 900]);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.player-registrations.index', [
+            'sort' => 'registration_fee', 'direction' => 'asc',
+        ]));
+
+        $body = $response->getContent();
+        $this->assertLessThan(
+            strpos($body, $expensive->registration_number),
+            strpos($body, $cheap->registration_number)
+        );
+    }
+
+    public function test_sorting_descending_by_registration_fee(): void
+    {
+        $cheap = PlayerRegistration::factory()->create(['registration_fee' => 100]);
+        $expensive = PlayerRegistration::factory()->create(['registration_fee' => 900]);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.player-registrations.index', [
+            'sort' => 'registration_fee', 'direction' => 'desc',
+        ]));
+
+        $body = $response->getContent();
+        $this->assertLessThan(
+            strpos($body, $cheap->registration_number),
+            strpos($body, $expensive->registration_number)
+        );
+    }
+
+    public function test_invalid_sort_column_falls_back_to_default_safely(): void
+    {
+        PlayerRegistration::factory()->create();
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.index', ['sort' => 'password']));
+
+        $response->assertOk();
+    }
+
+    // ----- Selected-rows export -----
+
+    public function test_selected_export_contains_only_the_selected_registrations(): void
+    {
+        $selected = PlayerRegistration::factory()->create();
+        $notSelected = PlayerRegistration::factory()->create();
+
+        $response = $this->actingAs($this->admin())->post(route('admin.player-registrations.export-selected'), [
+            'selected_ids' => [$selected->id],
+        ]);
+
+        $response->assertOk();
+        $content = $response->streamedContent();
+        $this->assertStringContainsString($selected->registration_number, $content);
+        $this->assertStringNotContainsString($notSelected->registration_number, $content);
+    }
+
+    public function test_selected_export_ignores_ambient_filters(): void
+    {
+        $editionOne = Edition::factory()->create();
+        $editionTwo = Edition::factory()->create();
+        $selected = PlayerRegistration::factory()->create(['edition_id' => $editionTwo->id]);
+
+        $response = $this->actingAs($this->admin())->post(
+            route('admin.player-registrations.export-selected', ['edition_id' => $editionOne->id]),
+            ['selected_ids' => [$selected->id]]
+        );
+
+        $response->assertOk();
+        $this->assertStringContainsString($selected->registration_number, $response->streamedContent());
+    }
+
+    public function test_selected_export_rejects_a_nonexistent_id(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('admin.player-registrations.export-selected'), [
+            'selected_ids' => [999999],
+        ]);
+
+        $response->assertSessionHasErrors('selected_ids.0');
+    }
+
+    public function test_selected_export_requires_at_least_one_id(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('admin.player-registrations.export-selected'), [
+            'selected_ids' => [],
+        ]);
+
+        $response->assertSessionHasErrors('selected_ids');
+    }
+
+    public function test_scorer_cannot_use_selected_export(): void
+    {
+        $registration = PlayerRegistration::factory()->create();
+
+        $this->actingAs($this->scorer())
+            ->post(route('admin.player-registrations.export-selected'), ['selected_ids' => [$registration->id]])
+            ->assertForbidden();
+    }
+
     // ----- UI -----
 
     public function test_admin_sidebar_contains_registrations_link(): void

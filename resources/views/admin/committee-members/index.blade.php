@@ -50,9 +50,9 @@
         <table class="w-full min-w-[560px] text-left text-[13px]">
             <thead class="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-400">
                 <tr>
-                    <th class="px-4 py-2 font-medium">Name</th>
+                    <th class="px-4 py-2 font-medium"><x-sortable-header column="name" :sort="$sort" :direction="$direction">Name</x-sortable-header></th>
                     <th class="px-4 py-2 font-medium">Status</th>
-                    <th class="hidden px-4 py-2 font-medium md:table-cell">Contributions</th>
+                    <th class="hidden px-4 py-2 font-medium md:table-cell"><x-sortable-header column="contributions_count" :sort="$sort" :direction="$direction">Contributions</x-sortable-header></th>
                     <th class="px-4 py-2 text-right font-medium">Actions</th>
                 </tr>
             </thead>

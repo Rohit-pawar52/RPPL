@@ -3,8 +3,8 @@
 @section('title', 'Contributions')
 
 @section('content')
-    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <form method="GET" action="{{ route('admin.edition-contributions.index') }}" class="flex flex-wrap items-center gap-2">
+    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <x-table-filters :action="route('admin.edition-contributions.index')" :filters="$filters" :date-range="true">
             <input
                 type="text"
                 name="search"
@@ -30,19 +30,19 @@
                     </option>
                 @endforeach
             </select>
-
-            <button type="submit" class="rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
-                Filter
-            </button>
-
-            @if(array_filter($filters))
-                <a href="{{ route('admin.edition-contributions.index') }}" class="text-[13px] text-neutral-400 hover:text-neutral-600">
-                    Clear filters
-                </a>
-            @endif
-        </form>
+        </x-table-filters>
 
         <div class="flex items-center gap-2">
+            <x-selected-report-action
+                id="contributions-selected-export"
+                :action="route('admin.edition-contributions.export-selected')"
+                label="Export Selected ({count})"
+            />
+            <x-selected-report-action
+                id="contributions-selected-receipts"
+                :action="route('admin.edition-contributions.receipts.selected')"
+                label="Print Receipts ({count})"
+            />
             <a
                 href="{{ route('admin.edition-contributions.export', $filters) }}"
                 class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50"
@@ -63,21 +63,34 @@
         <x-stat-card label="Total Contributions" :value="money($totalContributions)" icon="currency" />
     </div>
 
-    <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+    <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white" data-row-selection="#contributions-selected-export-button">
         <table class="w-full min-w-[640px] text-left text-[13px]">
             <thead class="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-400">
                 <tr>
-                    <th class="px-4 py-2 font-medium">Date</th>
+                    <th class="w-8 px-4 py-2">
+                        <input type="checkbox" data-select-all aria-label="Select all contributions on this page" />
+                    </th>
+                    <th class="px-4 py-2 font-medium"><x-sortable-header column="contributed_at" :sort="$sort" :direction="$direction">Date</x-sortable-header></th>
                     <th class="px-4 py-2 font-medium">Edition</th>
                     <th class="px-4 py-2 font-medium">Contributor</th>
                     <th class="hidden px-4 py-2 font-medium md:table-cell">Source</th>
-                    <th class="px-4 py-2 text-right font-medium">Amount</th>
+                    <th class="px-4 py-2 text-right font-medium"><x-sortable-header column="amount" :sort="$sort" :direction="$direction">Amount</x-sortable-header></th>
                     <th class="px-4 py-2 text-right font-medium">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
                 @forelse($contributions as $contribution)
                     <tr class="hover:bg-neutral-50">
+                        <td class="px-4 py-2">
+                            <input
+                                type="checkbox"
+                                data-row-checkbox
+                                form="contributions-selected-export"
+                                name="selected_ids[]"
+                                value="{{ $contribution->id }}"
+                                aria-label="Select contribution {{ $contribution->receiptReference() }}"
+                            />
+                        </td>
                         <td class="whitespace-nowrap px-4 py-2 text-neutral-600">
                             {{ $contribution->contributed_at->format('d M Y') }}
                         </td>
@@ -141,7 +154,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-neutral-400">
+                        <td colspan="7" class="px-4 py-8 text-center text-neutral-400">
                             No contributions found.
                         </td>
                     </tr>
@@ -153,4 +166,65 @@
     <div class="mt-3">
         {{ $contributions->links() }}
     </div>
+
+    {{--
+        table-selection.js (shared/off-limits) drives ONE action button
+        per data-row-selection root via document.querySelector — it only
+        wires up the "Export Selected" button above. The row checkboxes
+        are natively associated (form="contributions-selected-export")
+        with that same button/form, exactly like every other module.
+
+        The second button ("Print Receipts") reads the SAME checkboxes
+        but has no native HTML form association to them (an <input> can
+        only declare one `form`), so this page-local script drives it
+        directly: mirrors table-selection.js's show/hide-with-count
+        logic for visibility, and — since the checkboxes aren't wired to
+        its form — copies the currently-checked ids into hidden inputs
+        on that form immediately before it submits.
+    --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const receiptsButton = document.getElementById('contributions-selected-receipts-button');
+            const receiptsForm = document.getElementById('contributions-selected-receipts');
+            const rowCheckboxes = () => document.querySelectorAll('[data-row-checkbox]');
+
+            const updateReceiptsButton = () => {
+                if (! receiptsButton) return;
+
+                const checkedCount = Array.from(rowCheckboxes()).filter((checkbox) => checkbox.checked).length;
+
+                if (checkedCount > 0) {
+                    receiptsButton.hidden = false;
+                    receiptsButton.textContent = receiptsButton.dataset.label.replace('{count}', checkedCount);
+                } else {
+                    receiptsButton.hidden = true;
+                }
+            };
+
+            rowCheckboxes().forEach((checkbox) => checkbox.addEventListener('change', updateReceiptsButton));
+
+            const selectAll = document.querySelector('[data-select-all]');
+            if (selectAll) {
+                selectAll.addEventListener('change', updateReceiptsButton);
+            }
+
+            updateReceiptsButton();
+
+            if (receiptsForm) {
+                receiptsForm.addEventListener('submit', () => {
+                    receiptsForm.querySelectorAll('input[name="selected_ids[]"]').forEach((input) => input.remove());
+
+                    rowCheckboxes().forEach((checkbox) => {
+                        if (! checkbox.checked) return;
+
+                        const hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.name = 'selected_ids[]';
+                        hidden.value = checkbox.value;
+                        receiptsForm.appendChild(hidden);
+                    });
+                });
+            }
+        });
+    </script>
 @endsection

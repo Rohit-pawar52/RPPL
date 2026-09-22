@@ -130,4 +130,84 @@ class EditionContributionReceiptTest extends TestCase
         $this->assertEquals($originalUpdatedAt, $contribution->updated_at);
         $this->assertSame(1, EditionTransaction::count()); // no extra ledger entry created
     }
+
+    /**
+     * Regression guard for the _receipt.blade.php extraction: the
+     * single-receipt HTML preview must still render exactly the same
+     * visible content it did before receipt.blade.php was rewritten to
+     * include the new partial — a pure extraction, not a redesign.
+     * Mirrors test_receipt_shows_correct_member_edition_date_amount_and_reference()
+     * above so a regression in the shared partial fails both.
+     */
+    public function test_receipt_preview_still_renders_identical_content_after_partial_extraction(): void
+    {
+        $edition = Edition::factory()->create(['name' => 'RPPL 2026']);
+        $member = CommitteeMember::factory()->create(['name' => 'Extraction Check Member']);
+        $contribution = EditionContribution::factory()->create([
+            'edition_id' => $edition->id,
+            'committee_member_id' => $member->id,
+            'amount' => '2750.00',
+            'contributed_at' => '2026-04-10',
+        ]);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.edition-contributions.receipt', $contribution));
+
+        $response->assertOk();
+        $response->assertSee('Extraction Check Member');
+        $response->assertSee('RPPL 2026');
+        $response->assertSee('10 Apr 2026');
+        $response->assertSee('2,750.00');
+        $response->assertSee($contribution->receiptReference());
+        $response->assertSee('Contribution Receipt');
+        $response->assertSee('Thank you for your contribution to RPPL.');
+    }
+
+    // ----- Bulk (selected-rows) receipts PDF -----
+
+    public function test_receipts_selected_pdf_returns_a_combined_pdf_for_multiple_contributions(): void
+    {
+        $one = EditionContribution::factory()->create();
+        $two = EditionContribution::factory()->create();
+
+        $response = $this->actingAs($this->admin())
+            ->post(route('admin.edition-contributions.receipts.selected'), [
+                'selected_ids' => [$one->id, $two->id],
+            ]);
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/pdf');
+        $this->assertStringStartsWith('%PDF-', $response->getContent());
+    }
+
+    public function test_receipts_selected_pdf_requires_at_least_one_id(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->post(route('admin.edition-contributions.receipts.selected'), [
+                'selected_ids' => [],
+            ]);
+
+        $response->assertSessionHasErrors('selected_ids');
+    }
+
+    public function test_receipts_selected_pdf_rejects_a_nonexistent_id(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->post(route('admin.edition-contributions.receipts.selected'), [
+                'selected_ids' => [999999],
+            ]);
+
+        $response->assertSessionHasErrors('selected_ids.0');
+    }
+
+    public function test_scorer_is_forbidden_from_generating_selected_receipts_pdf(): void
+    {
+        $contribution = EditionContribution::factory()->create();
+
+        $this->actingAs($this->scorer())
+            ->post(route('admin.edition-contributions.receipts.selected'), [
+                'selected_ids' => [$contribution->id],
+            ])
+            ->assertForbidden();
+    }
 }

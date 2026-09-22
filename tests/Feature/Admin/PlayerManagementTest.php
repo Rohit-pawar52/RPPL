@@ -558,6 +558,96 @@ class PlayerManagementTest extends TestCase
         $this->assertSame(1, $player->fresh()->playerRegistrations()->count());
     }
 
+    // ----- Sorting -----
+
+    public function test_players_can_be_sorted_by_primary_role_ascending(): void
+    {
+        Player::factory()->create(['name' => 'Zed Bowler', 'primary_role' => 'bowler']);
+        Player::factory()->create(['name' => 'Abe Batter', 'primary_role' => 'batter']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.players.index', ['sort' => 'primary_role', 'direction' => 'asc']));
+
+        $response->assertOk();
+        $content = $response->getContent();
+
+        // 'batter' sorts before 'bowler' alphabetically, so Abe Batter's
+        // row must appear before Zed Bowler's regardless of name order.
+        $this->assertLessThan(
+            strpos($content, 'Zed Bowler'),
+            strpos($content, 'Abe Batter')
+        );
+    }
+
+    public function test_players_can_be_sorted_by_primary_role_descending(): void
+    {
+        Player::factory()->create(['name' => 'Zed Bowler', 'primary_role' => 'bowler']);
+        Player::factory()->create(['name' => 'Abe Batter', 'primary_role' => 'batter']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.players.index', ['sort' => 'primary_role', 'direction' => 'desc']));
+
+        $response->assertOk();
+        $content = $response->getContent();
+
+        $this->assertLessThan(
+            strpos($content, 'Abe Batter'),
+            strpos($content, 'Zed Bowler')
+        );
+    }
+
+    public function test_invalid_sort_column_falls_back_to_name_ascending(): void
+    {
+        Player::factory()->create(['name' => 'Zed Player']);
+        Player::factory()->create(['name' => 'Abe Player']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.players.index', ['sort' => 'email', 'direction' => 'asc']));
+
+        $response->assertOk();
+        $content = $response->getContent();
+
+        // 'email' isn't an allowed sort column, so it must silently fall
+        // back to the default (name asc) rather than erroring or sorting
+        // by an arbitrary column.
+        $this->assertLessThan(
+            strpos($content, 'Zed Player'),
+            strpos($content, 'Abe Player')
+        );
+    }
+
+    // ----- Export -----
+
+    public function test_export_returns_filtered_players_as_csv(): void
+    {
+        Player::factory()->create(['name' => 'Export Batter', 'primary_role' => 'batter']);
+        Player::factory()->create(['name' => 'Export Bowler', 'primary_role' => 'bowler']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.players.export', ['primary_role' => 'batter']));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $content = $response->streamedContent();
+
+        $this->assertStringContainsString('Export Batter', $content);
+        $this->assertStringNotContainsString('Export Bowler', $content);
+    }
+
+    public function test_scorer_cannot_export_players(): void
+    {
+        $this->actingAs($this->scorer())
+            ->get(route('admin.players.export'))
+            ->assertForbidden();
+    }
+
+    public function test_guest_cannot_export_players(): void
+    {
+        $this->get(route('admin.players.export'))
+            ->assertRedirect(route('admin.login'));
+    }
+
     // ----- Scopes -----
 
     public function test_player_active_scope_returns_only_active_players(): void

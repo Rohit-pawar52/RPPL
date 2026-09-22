@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Receipt {{ $contribution->receiptReference() }}</title>
+    <title>Contribution Receipts ({{ $contributions->count() }})</title>
     <style>
         body {
             font-family: DejaVu Sans, Helvetica, Arial, sans-serif;
@@ -99,6 +99,11 @@
     </style>
 </head>
 <body>
-    @include('admin.edition-contributions._receipt', ['contribution' => $contribution])
+    @foreach($contributions as $contribution)
+        @include('admin.edition-contributions._receipt', ['contribution' => $contribution])
+        @unless($loop->last)
+            <div style="page-break-after: always;"></div>
+        @endunless
+    @endforeach
 </body>
 </html>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\FiltersAdminTables;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Player\StorePlayerRequest;
 use App\Http\Requests\Admin\Player\UpdatePlayerRequest;
@@ -9,12 +10,18 @@ use App\Models\Edition;
 use App\Models\Player;
 use App\Services\Player\PlayerService;
 use App\Services\Statistics\PlayerStatisticsService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PlayerController extends Controller
 {
+    use FiltersAdminTables;
+
+    private const ALLOWED_SORTS = ['name', 'primary_role', 'player_registrations_count'];
+
     public function __construct(
         private readonly PlayerService $players,
         private readonly PlayerStatisticsService $statistics,
@@ -25,48 +32,71 @@ class PlayerController extends Controller
         $this->authorize('viewAny', Player::class);
 
         $filters = $request->only(['search', 'primary_role', 'batting_style', 'bowling_style', 'status']);
+        [$sort, $direction] = $this->allowedSort($request, self::ALLOWED_SORTS, 'name', 'asc');
 
-        $players = Player::query()
-            // Deliberately NOT scoped to active() by default: this is the
-            // admin management list, which must keep showing both active
-            // and inactive players unless the admin explicitly filters.
-            // Player::active() is reserved for future selection dropdowns
-            // (e.g. registrations), not this screen.
-            ->when(
-                $filters['search'] ?? null,
-                fn ($query, $search) => $query->where(function ($query) use ($search) {
-                    $query->where('name', 'like', '%'.$search.'%')
-                        ->orWhere('phone', 'like', '%'.$search.'%')
-                        ->orWhere('email', 'like', '%'.$search.'%');
-                })
-            )
-            ->when(
-                in_array($filters['primary_role'] ?? null, Player::PRIMARY_ROLES, true),
-                fn ($query) => $query->where('primary_role', $filters['primary_role'])
-            )
-            ->when(
-                in_array($filters['batting_style'] ?? null, Player::BATTING_STYLES, true),
-                fn ($query) => $query->where('batting_style', $filters['batting_style'])
-            )
-            ->when(
-                in_array($filters['bowling_style'] ?? null, Player::BOWLING_STYLES, true),
-                fn ($query) => $query->where('bowling_style', $filters['bowling_style'])
-            )
-            ->when($filters['status'] ?? null, function ($query, $status) {
-                if ($status === 'active') {
-                    $query->where('is_active', true);
-                } elseif ($status === 'inactive') {
-                    $query->where('is_active', false);
-                }
-            })
-            ->withCount('playerRegistrations')
-            ->orderBy('name')
+        $players = $this->playerQuery($filters)
+            ->orderBy($sort, $direction)
             ->paginate(15)
             ->withQueryString();
 
         return view('admin.players.index', [
             'players' => $players,
             'filters' => $filters,
+            'sort' => $sort,
+            'direction' => $direction,
+        ]);
+    }
+
+    /**
+     * Streamed UTF-8 CSV of the same filtered roster index() shows — no
+     * spreadsheet package exists in this project, and one row per player
+     * at RPPL's scale doesn't justify adding one. Honors exactly the same
+     * query string as the index (search/primary_role/batting_style/
+     * bowling_style/status), so there is only ever one place filter rules
+     * are defined. Players aren't edition-scoped, so unlike registrations
+     * this export needs no per-edition filename.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Player::class);
+
+        $filters = $request->only(['search', 'primary_role', 'batting_style', 'bowling_style', 'status']);
+
+        return $this->streamPlayersCsv($this->playerQuery($filters), 'rppl-players.csv');
+    }
+
+    private function streamPlayersCsv(Builder $query, string $filename): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($query) {
+            $handle = fopen('php://output', 'w');
+
+            // Excel-friendly UTF-8 BOM so accented player names render
+            // correctly when the file is opened directly in Excel.
+            fwrite($handle, "\xEF\xBB\xBF");
+
+            fputcsv($handle, [
+                'Name', 'Phone', 'Email', 'Primary Role', 'Batting Style',
+                'Bowling Style', 'Status', 'Registrations',
+            ]);
+
+            $query->chunkById(200, function ($players) use ($handle) {
+                foreach ($players as $player) {
+                    fputcsv($handle, [
+                        $player->name,
+                        $player->phone ?? '',
+                        $player->email ?? '',
+                        ucfirst($player->primary_role),
+                        $player->batting_style ? ucfirst(str_replace('_', ' ', $player->batting_style)) : '',
+                        $player->bowling_style ? ucfirst(str_replace('_', ' ', $player->bowling_style)) : '',
+                        $player->is_active ? 'Active' : 'Inactive',
+                        $player->player_registrations_count,
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
 
@@ -150,5 +180,56 @@ class PlayerController extends Controller
         return redirect()
             ->route('admin.players.index')
             ->with('success', 'Player deleted successfully.');
+    }
+
+    /**
+     * The single source of truth for player filtering, shared by index()
+     * and export() so the two can never quietly diverge. $filters values
+     * are whitelisted exactly as before: primary_role/batting_style/
+     * bowling_style must each be one of the real enum values, never an
+     * arbitrary column/value from the request.
+     *
+     * withCount('playerRegistrations') stays in this shared method (not
+     * just index()) because export()'s CSV also includes a Registrations
+     * column, and both callers should get it from one consistent place.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    private function playerQuery(array $filters): Builder
+    {
+        return Player::query()
+            // Deliberately NOT scoped to active() by default: this is the
+            // admin management list, which must keep showing both active
+            // and inactive players unless the admin explicitly filters.
+            // Player::active() is reserved for future selection dropdowns
+            // (e.g. registrations), not this screen.
+            ->when(
+                $filters['search'] ?? null,
+                fn ($query, $search) => $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('phone', 'like', '%'.$search.'%')
+                        ->orWhere('email', 'like', '%'.$search.'%');
+                })
+            )
+            ->when(
+                in_array($filters['primary_role'] ?? null, Player::PRIMARY_ROLES, true),
+                fn ($query) => $query->where('primary_role', $filters['primary_role'])
+            )
+            ->when(
+                in_array($filters['batting_style'] ?? null, Player::BATTING_STYLES, true),
+                fn ($query) => $query->where('batting_style', $filters['batting_style'])
+            )
+            ->when(
+                in_array($filters['bowling_style'] ?? null, Player::BOWLING_STYLES, true),
+                fn ($query) => $query->where('bowling_style', $filters['bowling_style'])
+            )
+            ->when($filters['status'] ?? null, function ($query, $status) {
+                if ($status === 'active') {
+                    $query->where('is_active', true);
+                } elseif ($status === 'inactive') {
+                    $query->where('is_active', false);
+                }
+            })
+            ->withCount('playerRegistrations');
     }
 }
