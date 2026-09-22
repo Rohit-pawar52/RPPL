@@ -35,13 +35,14 @@ class EditionTransactionController extends Controller
         $dateRange = $this->validateDateRange($request);
         $filters = $request->only(['edition_id', 'type', 'search']) + $dateRange;
         [$sort, $direction] = $this->allowedSort($request, self::ALLOWED_SORTS, 'transaction_date');
+        $perPage = $this->allowedPerPage($request);
 
         $transactions = $this->transactionQuery($filters)
             ->with(['edition', 'createdBy'])
             ->withExists('contribution')
             ->orderBy($sort, $direction)
             ->orderBy('id', 'desc')
-            ->paginate(15)
+            ->paginate($perPage)
             ->withQueryString();
 
         return view('admin.edition-transactions.index', [
@@ -49,6 +50,7 @@ class EditionTransactionController extends Controller
             'filters' => $filters,
             'sort' => $sort,
             'direction' => $direction,
+            'perPage' => $perPage,
             'editions' => Edition::orderByDesc('year')->get(['id', 'name']),
             'summary' => $this->summaryFor($filters['edition_id'] ?? null),
         ]);

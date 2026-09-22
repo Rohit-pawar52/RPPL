@@ -616,6 +616,51 @@ class PlayerManagementTest extends TestCase
         );
     }
 
+    public function test_sortable_header_renders_a_real_anchor_with_no_markdown_or_leaked_entities(): void
+    {
+        Player::factory()->create();
+
+        $html = $this->actingAs($this->admin())
+            ->get(route('admin.players.index', ['sort' => 'name', 'direction' => 'desc']))
+            ->getContent();
+
+        $this->assertMatchesRegularExpression('#<a href="[^"]*sort=name[^"]*"[^>]*>\s*Name\s*<span[^>]*>↓</span>\s*</a>#', $html);
+        $this->assertStringNotContainsString('&darr;', $html);
+        $this->assertStringNotContainsString('&amp;darr;', $html);
+        $this->assertStringNotContainsString('](http', $html);
+    }
+
+    // ----- Rows per page -----
+
+    public function test_default_per_page_is_20(): void
+    {
+        Player::factory()->count(5)->create();
+
+        $response = $this->actingAs($this->admin())->get(route('admin.players.index'));
+
+        $response->assertViewHas('players', fn ($paginator) => $paginator->perPage() === 20);
+    }
+
+    public function test_each_allowed_per_page_value_is_honored(): void
+    {
+        Player::factory()->count(5)->create();
+
+        foreach ([10, 20, 50, 100, 200] as $value) {
+            $response = $this->actingAs($this->admin())
+                ->get(route('admin.players.index', ['per_page' => $value]));
+
+            $response->assertViewHas('players', fn ($paginator) => $paginator->perPage() === $value);
+        }
+    }
+
+    public function test_invalid_per_page_falls_back_to_default(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.players.index', ['per_page' => 'lots']));
+
+        $response->assertViewHas('players', fn ($paginator) => $paginator->perPage() === 20);
+    }
+
     // ----- Export -----
 
     public function test_export_returns_filtered_players_as_csv(): void

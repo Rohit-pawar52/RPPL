@@ -40,11 +40,12 @@ class GameMatchController extends Controller
         $dateRange = $this->validateDateRange($request);
         $filters = $request->only(['search', 'edition_id', 'match_status']) + $dateRange;
         [$sort, $direction] = $this->allowedSort($request, self::ALLOWED_SORTS, 'scheduled_at');
+        $perPage = $this->allowedPerPage($request);
 
         $matches = $this->matchQuery($filters)
             ->with(['edition', 'teamA.team', 'teamB.team', 'venue'])
             ->orderBy($sort, $direction)
-            ->paginate(15)
+            ->paginate($perPage)
             ->withQueryString();
 
         return view('admin.matches.index', [
@@ -52,6 +53,7 @@ class GameMatchController extends Controller
             'filters' => $filters,
             'sort' => $sort,
             'direction' => $direction,
+            'perPage' => $perPage,
             'editions' => Edition::orderByDesc('year')->get(['id', 'name']),
         ]);
     }

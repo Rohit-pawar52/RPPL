@@ -38,10 +38,11 @@ class PlayerRegistrationController extends Controller
         $dateRange = $this->validateDateRange($request);
         $filters = $request->only(['search', 'edition_id', 'payment_status']) + $dateRange;
         [$sort, $direction] = $this->allowedSort($request, self::ALLOWED_SORTS, 'registered_at');
+        $perPage = $this->allowedPerPage($request);
 
         $registrations = $this->applySort($this->registrationQuery($filters), $sort, $direction)
             ->with(['player', 'edition'])
-            ->paginate(15)
+            ->paginate($perPage)
             ->withQueryString();
 
         return view('admin.player-registrations.index', [
@@ -49,6 +50,7 @@ class PlayerRegistrationController extends Controller
             'filters' => $filters,
             'sort' => $sort,
             'direction' => $direction,
+            'perPage' => $perPage,
             'editions' => Edition::orderByDesc('year')->get(['id', 'name']),
         ]);
     }

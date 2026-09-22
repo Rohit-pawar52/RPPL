@@ -30,6 +30,7 @@ class CommitteeMemberController extends Controller
 
         $filters = $request->only(['search', 'status']);
         [$sort, $direction] = $this->allowedSort($request, self::ALLOWED_SORTS, 'name', 'asc');
+        $perPage = $this->allowedPerPage($request);
 
         $members = CommitteeMember::query()
             // Deliberately NOT scoped to active() by default: this is
@@ -48,7 +49,7 @@ class CommitteeMemberController extends Controller
             })
             ->withCount('contributions')
             ->orderBy($sort, $direction)
-            ->paginate(15)
+            ->paginate($perPage)
             ->withQueryString();
 
         return view('admin.committee-members.index', [
@@ -56,6 +57,7 @@ class CommitteeMemberController extends Controller
             'filters' => $filters,
             'sort' => $sort,
             'direction' => $direction,
+            'perPage' => $perPage,
         ]);
     }
 

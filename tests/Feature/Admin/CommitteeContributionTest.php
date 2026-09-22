@@ -230,6 +230,57 @@ class CommitteeContributionTest extends TestCase
         $this->assertCount(2, $memberFiltered->viewData('contributions'));
     }
 
+    // ----- Rows per page -----
+
+    public function test_default_per_page_is_20(): void
+    {
+        EditionContribution::factory()->count(5)->create();
+
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-contributions.index'));
+
+        $response->assertViewHas('contributions', fn ($paginator) => $paginator->perPage() === 20);
+    }
+
+    public function test_each_allowed_per_page_value_is_honored(): void
+    {
+        EditionContribution::factory()->count(5)->create();
+
+        foreach ([10, 20, 50, 100, 200] as $value) {
+            $response = $this->actingAs($this->admin())
+                ->get(route('admin.edition-contributions.index', ['per_page' => $value]));
+
+            $response->assertViewHas('contributions', fn ($paginator) => $paginator->perPage() === $value);
+        }
+    }
+
+    public function test_invalid_per_page_falls_back_to_default(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.edition-contributions.index', ['per_page' => 'lots']));
+
+        $response->assertViewHas('contributions', fn ($paginator) => $paginator->perPage() === 20);
+    }
+
+    public function test_selected_report_actions_still_work_with_a_larger_page_size(): void
+    {
+        $contributions = EditionContribution::factory()->count(25)->create();
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.edition-contributions.index', ['per_page' => 100]));
+
+        $response->assertViewHas('contributions', fn ($paginator) => $paginator->perPage() === 100 && $paginator->count() === 25);
+
+        $selectedIds = $contributions->pluck('id')->all();
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.edition-contributions.export-selected'), ['selected_ids' => $selectedIds])
+            ->assertOk();
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.edition-contributions.receipts.selected'), ['selected_ids' => $selectedIds])
+            ->assertOk();
+    }
+
     // ----- Date range -----
 
     public function test_date_range_filters_by_contributed_at(): void
@@ -312,6 +363,20 @@ class CommitteeContributionTest extends TestCase
             strpos($body, $small->receiptReference()),
             strpos($body, $large->receiptReference())
         );
+    }
+
+    public function test_sortable_header_renders_a_real_anchor_with_no_markdown_or_leaked_entities(): void
+    {
+        EditionContribution::factory()->create();
+
+        $html = $this->actingAs($this->admin())
+            ->get(route('admin.edition-contributions.index', ['sort' => 'amount', 'direction' => 'desc']))
+            ->getContent();
+
+        $this->assertMatchesRegularExpression('#<a href="[^"]*sort=amount[^"]*"[^>]*>\s*Amount\s*<span[^>]*>↓</span>\s*</a>#', $html);
+        $this->assertStringNotContainsString('&darr;', $html);
+        $this->assertStringNotContainsString('&amp;darr;', $html);
+        $this->assertStringNotContainsString('](http', $html);
     }
 
     public function test_invalid_sort_column_falls_back_to_default_safely(): void

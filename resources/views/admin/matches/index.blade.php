@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <x-table-filters :action="route('admin.matches.index')" :filters="$filters" :date-range="true">
+        <x-table-filters :action="route('admin.matches.index')" :filters="$filters" :date-range="true" :per-page="$perPage">
             <input
                 type="text"
                 name="search"

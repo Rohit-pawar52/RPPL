@@ -5,10 +5,26 @@
     the optional date-range pair, and the Filter/Clear buttons so the
     markup stays identical across tables instead of being hand-copied.
 --}}
-@props(['action', 'filters' => [], 'dateRange' => false])
+@props(['action', 'filters' => [], 'dateRange' => false, 'perPage' => null])
 
 <form method="GET" action="{{ $action }}" class="flex flex-wrap items-end gap-2">
     {{ $slot }}
+
+    @if($perPage !== null)
+        <div class="flex flex-col gap-0.5">
+            <label class="text-[11px] font-medium text-neutral-500">Rows</label>
+            <select
+                name="per_page"
+                onchange="this.form.submit()"
+                aria-label="Rows per page"
+                class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
+            >
+                @foreach([10, 20, 50, 100, 200] as $option)
+                    <option value="{{ $option }}" @selected((int) $perPage === $option)>{{ $option }} / page</option>
+                @endforeach
+            </select>
+        </div>
+    @endif
 
     @if($dateRange)
         <div class="flex flex-col gap-0.5">

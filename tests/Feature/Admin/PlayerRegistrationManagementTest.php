@@ -557,6 +557,102 @@ class PlayerRegistrationManagementTest extends TestCase
         $response->assertSee('edition_id='.$edition->id, false);
     }
 
+    // ----- Rows per page -----
+
+    public function test_default_per_page_is_20(): void
+    {
+        PlayerRegistration::factory()->count(25)->create();
+
+        $response = $this->actingAs($this->admin())->get(route('admin.player-registrations.index'));
+
+        $response->assertViewHas('registrations', fn ($paginator) => $paginator->perPage() === 20);
+    }
+
+    public function test_each_allowed_per_page_value_is_honored(): void
+    {
+        PlayerRegistration::factory()->count(5)->create();
+
+        foreach ([10, 20, 50, 100, 200] as $value) {
+            $response = $this->actingAs($this->admin())
+                ->get(route('admin.player-registrations.index', ['per_page' => $value]));
+
+            $response->assertViewHas('registrations', fn ($paginator) => $paginator->perPage() === $value);
+        }
+    }
+
+    public function test_invalid_per_page_falls_back_to_default(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.index', ['per_page' => 999]));
+
+        $response->assertViewHas('registrations', fn ($paginator) => $paginator->perPage() === 20);
+    }
+
+    public function test_non_numeric_per_page_falls_back_to_default(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.index', ['per_page' => 'lots']));
+
+        $response->assertViewHas('registrations', fn ($paginator) => $paginator->perPage() === 20);
+    }
+
+    public function test_per_page_survives_filter_sort_and_pagination(): void
+    {
+        $edition = Edition::factory()->create();
+        PlayerRegistration::factory()->count(60)->create(['edition_id' => $edition->id]);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.player-registrations.index', [
+            'edition_id' => $edition->id,
+            'sort' => 'registration_fee',
+            'direction' => 'asc',
+            'per_page' => 50,
+        ]));
+
+        $response->assertOk();
+        $nextPageUrl = $response->viewData('registrations')->nextPageUrl();
+        $this->assertStringContainsString('per_page=50', $nextPageUrl);
+        $this->assertStringContainsString('edition_id='.$edition->id, $nextPageUrl);
+        $this->assertStringContainsString('sort=registration_fee', $nextPageUrl);
+        $this->assertStringContainsString('direction=asc', $nextPageUrl);
+    }
+
+    public function test_selected_export_still_works_with_a_larger_page_size(): void
+    {
+        $registrations = PlayerRegistration::factory()->count(30)->create();
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.index', ['per_page' => 100]));
+
+        $response->assertViewHas('registrations', fn ($paginator) => $paginator->perPage() === 100 && $paginator->count() === 30);
+
+        $selectedIds = $registrations->pluck('id')->all();
+        $exportResponse = $this->actingAs($this->admin())
+            ->post(route('admin.player-registrations.export-selected'), ['selected_ids' => $selectedIds]);
+
+        $exportResponse->assertOk();
+        $content = $exportResponse->streamedContent();
+        foreach ($registrations as $registration) {
+            $this->assertStringContainsString($registration->registration_number, $content);
+        }
+    }
+
+    public function test_changing_per_page_via_the_filter_form_drops_the_page_param(): void
+    {
+        // The per_page <select> lives inside the GET filter <form>, which
+        // has no `page` field — so submitting it (what changing the
+        // dropdown does) can never resubmit a stale page number. Confirmed
+        // structurally: no hidden `page` input exists inside that form.
+        $response = $this->actingAs($this->admin())->get(route('admin.player-registrations.index', ['page' => 2]));
+
+        $response->assertOk();
+        $formStart = strpos($response->getContent(), '<form method="GET"');
+        $formEnd = strpos($response->getContent(), '</form>', $formStart);
+        $formHtml = substr($response->getContent(), $formStart, $formEnd - $formStart);
+
+        $this->assertStringContainsString('name="per_page"', $formHtml);
+        $this->assertStringNotContainsString('name="page"', $formHtml);
+    }
+
     // ----- Date range -----
 
     public function test_date_range_filters_by_registered_at(): void

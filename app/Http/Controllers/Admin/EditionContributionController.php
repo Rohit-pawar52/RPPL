@@ -40,6 +40,7 @@ class EditionContributionController extends Controller
         $dateRange = $this->validateDateRange($request);
         $filters = $request->only(['edition_id', 'committee_member_id', 'search']) + $dateRange;
         [$sort, $direction] = $this->allowedSort($request, self::ALLOWED_SORTS, 'contributed_at');
+        $perPage = $this->allowedPerPage($request);
 
         $query = $this->contributionQuery($filters);
 
@@ -49,7 +50,7 @@ class EditionContributionController extends Controller
             ->with(['edition', 'committeeMember', 'contributor'])
             ->orderBy($sort, $direction)
             ->orderBy('id', 'desc')
-            ->paginate(15)
+            ->paginate($perPage)
             ->withQueryString();
 
         return view('admin.edition-contributions.index', [
@@ -57,6 +58,7 @@ class EditionContributionController extends Controller
             'filters' => $filters,
             'sort' => $sort,
             'direction' => $direction,
+            'perPage' => $perPage,
             'editions' => Edition::orderByDesc('year')->get(['id', 'name']),
             'members' => CommitteeMember::orderBy('name')->get(['id', 'name']),
             'totalContributions' => $totalContributions,

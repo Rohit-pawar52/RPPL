@@ -15,6 +15,13 @@ use Illuminate\Http\Request;
 trait FiltersAdminTables
 {
     /**
+     * The only page sizes an admin table's "Rows per page" control may
+     * request — never trust an arbitrary per_page value straight from
+     * the request into paginate().
+     */
+    private const ALLOWED_PER_PAGE = [10, 20, 50, 100, 200];
+
+    /**
      * @param  array<int, string>  $allowedColumns  real column names a caller may sort by
      * @return array{0: string, 1: string} [column, direction]
      */
@@ -27,6 +34,13 @@ trait FiltersAdminTables
         $direction = in_array($direction, ['asc', 'desc'], true) ? $direction : $defaultDirection;
 
         return [$column, $direction];
+    }
+
+    protected function allowedPerPage(Request $request, int $default = 20): int
+    {
+        $perPage = $request->integer('per_page');
+
+        return in_array($perPage, self::ALLOWED_PER_PAGE, true) ? $perPage : $default;
     }
 
     protected function dateRangeFilter(Builder $query, string $column, ?string $from, ?string $to): Builder

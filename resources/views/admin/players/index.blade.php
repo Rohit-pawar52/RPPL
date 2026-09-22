@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <form method="GET" action="{{ route('admin.players.index') }}" class="flex flex-wrap items-center gap-2">
+        <x-table-filters :action="route('admin.players.index')" :filters="$filters" :per-page="$perPage">
             <input
                 type="text"
                 name="search"
@@ -46,16 +46,7 @@
                 <option value="inactive" @selected(($filters['status'] ?? '') === 'inactive')>Inactive</option>
             </select>
 
-            <button type="submit" class="rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
-                Filter
-            </button>
-
-            @if(array_filter($filters))
-                <a href="{{ route('admin.players.index') }}" class="text-[13px] text-neutral-400 hover:text-neutral-600">
-                    Clear filters
-                </a>
-            @endif
-        </form>
+        </x-table-filters>
 
         <div class="flex items-center gap-2">
             <a

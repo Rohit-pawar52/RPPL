@@ -33,10 +33,11 @@ class PlayerController extends Controller
 
         $filters = $request->only(['search', 'primary_role', 'batting_style', 'bowling_style', 'status']);
         [$sort, $direction] = $this->allowedSort($request, self::ALLOWED_SORTS, 'name', 'asc');
+        $perPage = $this->allowedPerPage($request);
 
         $players = $this->playerQuery($filters)
             ->orderBy($sort, $direction)
-            ->paginate(15)
+            ->paginate($perPage)
             ->withQueryString();
 
         return view('admin.players.index', [
@@ -44,6 +45,7 @@ class PlayerController extends Controller
             'filters' => $filters,
             'sort' => $sort,
             'direction' => $direction,
+            'perPage' => $perPage,
         ]);
     }
 
