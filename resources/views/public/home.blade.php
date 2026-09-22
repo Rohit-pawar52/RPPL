@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', $branding->shortName.' &middot; '.$branding->applicationName)
+@section('title', $branding->shortName.' · '.$branding->applicationName)
 
 @section('content')
     <div class="rounded-lg border border-neutral-200 bg-white p-4">

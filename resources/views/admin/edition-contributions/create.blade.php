@@ -63,7 +63,7 @@
                 required
             />
             <p class="-mt-2.5 mb-3.5 text-xs text-neutral-400">
-                Committee contributions require at least ₹{{ number_format(\App\Models\EditionContribution::MINIMUM_AMOUNT) }}; general contributions may be any amount above ₹0.
+                Committee contributions require at least {{ money(\App\Models\EditionContribution::MINIMUM_AMOUNT, 0) }}; general contributions may be any amount above {{ money(0, 0) }}.
             </p>
 
             <x-form.input name="contributed_at" label="Date" type="date" required />

@@ -61,7 +61,7 @@
             <div>
                 <dt class="text-neutral-400">Registration fee</dt>
                 <dd class="mt-0.5 font-medium text-neutral-800">
-                    {{ $registration->registration_fee !== null ? '₹'.number_format($registration->registration_fee, 2) : '—' }}
+                    {{ $registration->registration_fee !== null ? money($registration->registration_fee) : '—' }}
                 </dd>
             </div>
             <div>

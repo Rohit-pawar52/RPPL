@@ -98,7 +98,7 @@
                         <td class="px-4 py-2 text-neutral-600">{{ $registration->edition->name }}</td>
                         <td class="px-4 py-2"><x-status-badge :status="$registration->payment_status" /></td>
                         <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">
-                            {{ $registration->registration_fee !== null ? '₹'.number_format($registration->registration_fee, 2) : '—' }}
+                            {{ $registration->registration_fee !== null ? money($registration->registration_fee) : '—' }}
                         </td>
                         <td class="hidden px-4 py-2 text-neutral-500 lg:table-cell">
                             {{ $registration->registered_at?->format('d M Y') ?? '—' }}

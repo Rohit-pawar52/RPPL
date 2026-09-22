@@ -79,7 +79,7 @@
         @forelse($player->playerRegistrations as $registration)
             <div class="flex items-center justify-between border-b border-neutral-100 py-2 text-[13px] last:border-b-0">
                 <span class="font-medium text-neutral-800">{{ $registration->edition->name }}</span>
-                <span class="capitalize text-neutral-500">{{ $registration->payment_status }}</span>
+                <x-status-badge :status="$registration->payment_status" />
             </div>
         @empty
             <p class="text-xs text-neutral-400">No edition registrations yet.</p>

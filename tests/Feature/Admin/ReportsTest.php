@@ -217,7 +217,7 @@ class ReportsTest extends TestCase
         $response->assertViewHas('paidRegistrationAmount', 0.0);
         $response->assertViewHas('contributionTotal', 0.0);
         $response->assertViewHas('contributionCount', 0);
-        $response->assertSee('&#8377;0.00', false);
+        $response->assertSee('₹0.00', false);
     }
 
     public function test_financial_summary_with_no_editions_shows_empty_state_without_error(): void

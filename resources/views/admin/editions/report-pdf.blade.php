@@ -133,7 +133,7 @@
                 {{ $registrationCounts->map(fn ($count, $status) => ucfirst($status).': '.$count)->implode(', ') }}
             </p>
             @if($paidRegistrationFees > 0)
-                <p class="summary-line"><span class="label">Paid Registration Fees:</span> &#8377;{{ number_format($paidRegistrationFees, 2) }}</p>
+                <p class="summary-line"><span class="label">Paid Registration Fees:</span> {{ money($paidRegistrationFees) }}</p>
             @endif
         @endif
     </div>

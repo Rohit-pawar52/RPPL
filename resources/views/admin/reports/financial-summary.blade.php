@@ -37,16 +37,16 @@
                 <dl class="grid grid-cols-3 gap-3 text-xs">
                     <div>
                         <dt class="text-neutral-400">Total Income</dt>
-                        <dd class="mt-0.5 text-sm font-semibold text-neutral-800">&#8377;{{ number_format($financeSummary['income'], 2) }}</dd>
+                        <dd class="mt-0.5 text-sm font-semibold text-neutral-800">{{ money($financeSummary['income']) }}</dd>
                     </div>
                     <div>
                         <dt class="text-neutral-400">Total Expenses</dt>
-                        <dd class="mt-0.5 text-sm font-semibold text-neutral-800">&#8377;{{ number_format($financeSummary['expense'], 2) }}</dd>
+                        <dd class="mt-0.5 text-sm font-semibold text-neutral-800">{{ money($financeSummary['expense']) }}</dd>
                     </div>
                     <div>
                         <dt class="text-neutral-400">Balance</dt>
                         <dd class="mt-0.5 text-sm font-semibold {{ $financeSummary['balance'] < 0 ? 'text-red-600' : 'text-neutral-800' }}">
-                            &#8377;{{ number_format($financeSummary['balance'], 2) }}
+                            {{ money($financeSummary['balance']) }}
                         </dd>
                     </div>
                 </dl>
@@ -61,7 +61,7 @@
                     </div>
                     <div>
                         <dt class="text-neutral-400">Paid Amount</dt>
-                        <dd class="mt-0.5 font-medium text-neutral-800">&#8377;{{ number_format($paidRegistrationAmount, 2) }}</dd>
+                        <dd class="mt-0.5 font-medium text-neutral-800">{{ money($paidRegistrationAmount) }}</dd>
                     </div>
                     <div>
                         <dt class="text-neutral-400">Pending Verification</dt>
@@ -86,7 +86,7 @@
                     </div>
                     <div>
                         <dt class="text-neutral-400">Total Contributions</dt>
-                        <dd class="mt-0.5 font-medium text-neutral-800">&#8377;{{ number_format($contributionTotal, 2) }}</dd>
+                        <dd class="mt-0.5 font-medium text-neutral-800">{{ money($contributionTotal) }}</dd>
                     </div>
                     <div>
                         <dt class="text-neutral-400">Recognized Contributors</dt>

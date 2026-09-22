@@ -60,7 +60,7 @@
     </div>
 
     <div class="mb-4">
-        <x-stat-card label="Total Contributions" :value="'₹'.number_format($totalContributions, 2)" icon="currency" />
+        <x-stat-card label="Total Contributions" :value="money($totalContributions)" icon="currency" />
     </div>
 
     <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
@@ -97,7 +97,7 @@
                             {{ $contribution->sourceLabel() }}
                         </td>
                         <td class="px-4 py-2 text-right font-medium text-neutral-800">
-                            &#8377;{{ number_format($contribution->amount, 2) }}
+                            {{ money($contribution->amount) }}
                         </td>
                         <td class="px-4 py-2">
                             <div class="flex items-center justify-end gap-1">

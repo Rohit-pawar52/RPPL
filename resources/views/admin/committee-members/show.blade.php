@@ -27,7 +27,7 @@
 
     <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <x-stat-card label="Contributions" :value="$member->contributions_count" icon="clipboard" />
-        <x-stat-card label="Total Contributed" :value="'₹'.number_format($totalContributed, 2)" icon="currency" />
+        <x-stat-card label="Total Contributed" :value="money($totalContributed)" icon="currency" />
     </div>
 
     <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
@@ -38,7 +38,7 @@
                 <span class="font-medium text-neutral-800">{{ $contribution->edition->name }}</span>
                 <span class="flex items-center gap-3 text-neutral-500">
                     {{ $contribution->contributed_at->format('d M Y') }}
-                    <span class="font-medium text-neutral-800">&#8377;{{ number_format($contribution->amount, 2) }}</span>
+                    <span class="font-medium text-neutral-800">{{ money($contribution->amount) }}</span>
                 </span>
             </div>
         @empty

@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Player Registration &middot; '.$branding->shortName)
+@section('title', 'Player Registration · '.$branding->shortName)
 
 @section('content')
     @if(! $edition)
@@ -17,7 +17,7 @@
         <div class="mb-4 rounded-lg border border-neutral-200 bg-white p-4">
             <h1 class="text-base font-semibold text-neutral-900">Player Registration &mdash; {{ $edition->name }}</h1>
             <p class="mt-1 text-xs text-neutral-500">
-                Registration fee: <span class="font-medium text-neutral-800">&#8377;{{ number_format($edition->registration_fee, 2) }}</span>
+                Registration fee: <span class="font-medium text-neutral-800">{{ money($edition->registration_fee) }}</span>
             </p>
             <p class="mt-2 text-xs text-neutral-500">
                 Pay the registration fee via UPI/bank transfer and upload your payment proof below. Payment and

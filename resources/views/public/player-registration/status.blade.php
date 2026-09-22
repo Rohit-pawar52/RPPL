@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Check Registration Status &middot; '.$branding->shortName)
+@section('title', 'Check Registration Status · '.$branding->shortName)
 
 @section('content')
     <div class="mx-auto max-w-lg rounded-lg border border-neutral-200 bg-white p-6">
@@ -58,7 +58,7 @@
                         <div>
                             <dt class="text-neutral-400">Registration Fee</dt>
                             <dd class="mt-0.5 font-medium text-neutral-800">
-                                {{ $result->registration_fee !== null ? '₹'.number_format($result->registration_fee, 2) : '—' }}
+                                {{ $result->registration_fee !== null ? money($result->registration_fee) : '—' }}
                             </dd>
                         </div>
                         <div>

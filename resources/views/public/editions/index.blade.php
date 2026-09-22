@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Editions &middot; '.$branding->shortName)
+@section('title', 'Editions · '.$branding->shortName)
 
 @section('content')
     <div class="mb-4">

@@ -129,7 +129,7 @@
 
         <div class="amount-box">
             <div class="label">Contribution Amount</div>
-            <div class="value">&#8377;{{ number_format($contribution->amount, 2) }}</div>
+            <div class="value">{{ money($contribution->amount) }}</div>
         </div>
 
         <div class="footer">

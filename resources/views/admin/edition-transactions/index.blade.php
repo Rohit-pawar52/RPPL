@@ -60,9 +60,9 @@
     </div>
 
     <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <x-stat-card label="Total Income" :value="'₹'.number_format($summary['income'], 2)" icon="currency" />
-        <x-stat-card label="Total Expense" :value="'₹'.number_format($summary['expense'], 2)" icon="currency" />
-        <x-stat-card label="Balance" :value="'₹'.number_format($summary['balance'], 2)" icon="currency" />
+        <x-stat-card label="Total Income" :value="money($summary['income'])" icon="currency" />
+        <x-stat-card label="Total Expense" :value="money($summary['expense'])" icon="currency" />
+        <x-stat-card label="Balance" :value="money($summary['balance'])" icon="currency" />
     </div>
 
     <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
@@ -100,7 +100,7 @@
                         <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">{{ $transaction->category ?? '—' }}</td>
                         <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">{{ $transaction->description ?? '—' }}</td>
                         <td class="px-4 py-2 text-right font-medium text-neutral-800">
-                            &#8377;{{ number_format($transaction->amount, 2) }}
+                            {{ money($transaction->amount) }}
                         </td>
                         <td class="px-4 py-2">
                             <div class="flex items-center justify-end gap-1">

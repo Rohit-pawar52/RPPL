@@ -281,7 +281,7 @@ class DashboardTest extends TestCase
         $this->assertSame(0.0, $financeSummary['balance']);
         $response->assertViewHas('contributionTotal', 0.0);
         $response->assertViewHas('contributionCount', 0);
-        $response->assertSee('&#8377;0.00', false);
+        $response->assertSee('₹0.00', false);
     }
 
     /**

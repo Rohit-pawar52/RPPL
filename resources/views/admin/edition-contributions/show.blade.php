@@ -12,7 +12,7 @@
     <div class="rounded-lg border border-neutral-200 bg-white p-4">
         <div class="flex items-center justify-between gap-3">
             <h2 class="text-base font-semibold text-neutral-900">
-                &#8377;{{ number_format($contribution->amount, 2) }}
+                {{ money($contribution->amount) }}
             </h2>
             @if($contribution->committeeMember)
                 <a href="{{ route('admin.committee-members.show', $contribution->committeeMember) }}" class="text-xs font-medium theme-link hover:underline">
