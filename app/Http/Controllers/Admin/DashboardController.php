@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Edition;
+use App\Models\EditionContribution;
 use App\Models\EditionTeam;
+use App\Models\EditionTransaction;
 use App\Models\GameMatch;
 use App\Models\PlayerRegistration;
 use App\Models\TeamPlayer;
+use App\Services\Finance\ContributorRankingService;
 use Illuminate\View\View;
 
 /**
@@ -16,9 +19,16 @@ use Illuminate\View\View;
  * existing tables — no new aggregation engine, no recalculated
  * results (match_result is read as MatchResultService already wrote
  * it, standings/statistics are intentionally out of scope here).
+ *
+ * Phase 3.42 added the payment-verification/finance/contribution
+ * figures below, reusing existing data exactly as the Finance,
+ * Contributions, and Player Registration admin screens already
+ * calculate it — this controller never redefines those semantics.
  */
 class DashboardController extends Controller
 {
+    public function __construct(private readonly ContributorRankingService $contributorRanking) {}
+
     public function __invoke(): View
     {
         $edition = $this->currentEdition();
@@ -26,6 +36,9 @@ class DashboardController extends Controller
         $registeredPlayers = 0;
         $paidRegistrations = 0;
         $pendingRegistrations = 0;
+        $failedRegistrations = 0;
+        $refundedRegistrations = 0;
+        $paidRegistrationAmount = 0.0;
         $teamsCount = 0;
         $squadPlayersCount = 0;
         $matchesCount = 0;
@@ -34,17 +47,45 @@ class DashboardController extends Controller
         $completedMatchesCount = 0;
         $matchesNeedingAttention = collect();
         $recentResults = collect();
+        $financeSummary = ['income' => 0.0, 'expense' => 0.0, 'balance' => 0.0];
+        $contributionTotal = 0.0;
+        $contributionCount = 0;
+        $recognizedContributorsCount = 0;
 
         if ($edition) {
+            // One grouped query for both counts and the paid-amount
+            // total — registration_fee is summed in SQL from each row's
+            // own stored value, never edition->registration_fee times a
+            // count, since historical rows may have charged a different
+            // fee than the edition's current one.
             $registrationsByStatus = PlayerRegistration::query()
                 ->where('edition_id', $edition->id)
-                ->selectRaw('payment_status, count(*) as total')
+                ->selectRaw('payment_status, count(*) as total, COALESCE(SUM(registration_fee), 0) as fee_total')
                 ->groupBy('payment_status')
-                ->pluck('total', 'payment_status');
+                ->get()
+                ->keyBy('payment_status');
 
-            $registeredPlayers = $registrationsByStatus->sum();
-            $paidRegistrations = $registrationsByStatus->get('paid', 0);
-            $pendingRegistrations = $registrationsByStatus->get('pending', 0);
+            $registeredPlayers = (int) $registrationsByStatus->sum('total');
+            $paidRegistrations = (int) ($registrationsByStatus->get('paid')->total ?? 0);
+            $pendingRegistrations = (int) ($registrationsByStatus->get('pending')->total ?? 0);
+            $failedRegistrations = (int) ($registrationsByStatus->get('failed')->total ?? 0);
+            $refundedRegistrations = (int) ($registrationsByStatus->get('refunded')->total ?? 0);
+            $paidRegistrationAmount = (float) ($registrationsByStatus->get('paid')->fee_total ?? 0);
+
+            $financeSummary = EditionTransaction::summaryForEdition($edition->id);
+
+            $contributionStats = EditionContribution::query()
+                ->where('edition_id', $edition->id)
+                ->selectRaw('count(*) as total, COALESCE(SUM(amount), 0) as amount_total')
+                ->first();
+            $contributionCount = (int) $contributionStats->total;
+            $contributionTotal = (float) $contributionStats->amount_total;
+
+            // Reuses the existing canonical-identity ranking rather than
+            // a plain distinct-count of committee_member_id/contributor_id,
+            // so a CommitteeMember explicitly linked to a Contributor is
+            // counted once, exactly like the public leaderboard.
+            $recognizedContributorsCount = count($this->contributorRanking->getEditionRanking($edition));
 
             $teamsCount = EditionTeam::query()->where('edition_id', $edition->id)->count();
 
@@ -101,6 +142,13 @@ class DashboardController extends Controller
             'completedMatchesCount' => $completedMatchesCount,
             'matchesNeedingAttention' => $matchesNeedingAttention,
             'recentResults' => $recentResults,
+            'failedRegistrations' => $failedRegistrations,
+            'refundedRegistrations' => $refundedRegistrations,
+            'paidRegistrationAmount' => $paidRegistrationAmount,
+            'financeSummary' => $financeSummary,
+            'contributionTotal' => $contributionTotal,
+            'contributionCount' => $contributionCount,
+            'recognizedContributorsCount' => $recognizedContributorsCount,
         ]);
     }
 

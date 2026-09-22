@@ -4,35 +4,26 @@
 
 @section('content')
     <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <form method="GET" action="{{ route('admin.contributors.index') }}" class="flex flex-wrap items-center gap-2">
+        <x-table-filters :action="route('admin.contributors.index')" :filters="$filters" :per-page="$perPage">
             <input
                 type="text"
                 name="search"
                 value="{{ $filters['search'] ?? '' }}"
                 placeholder="Search name&hellip;"
-                class="w-full max-w-[220px] rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-100"
+                class="w-full max-w-[220px] rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
             />
 
-            <select name="status" class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-100">
+            <select name="status" class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring">
                 <option value="">All statuses</option>
                 <option value="active" @selected(($filters['status'] ?? '') === 'active')>Active</option>
                 <option value="inactive" @selected(($filters['status'] ?? '') === 'inactive')>Inactive</option>
             </select>
 
-            <button type="submit" class="rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
-                Filter
-            </button>
-
-            @if(array_filter($filters))
-                <a href="{{ route('admin.contributors.index') }}" class="text-[13px] text-neutral-400 hover:text-neutral-600">
-                    Clear filters
-                </a>
-            @endif
-        </form>
+        </x-table-filters>
 
         <a
             href="{{ route('admin.contributors.create') }}"
-            class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-blue-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-blue-500"
+            class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
         >
             + New contributor
         </a>
@@ -42,9 +33,10 @@
         <table class="w-full min-w-[560px] text-left text-[13px]">
             <thead class="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-400">
                 <tr>
-                    <th class="px-4 py-2 font-medium">Name</th>
+                    <th class="px-4 py-2 font-medium"><x-sortable-header column="name" :sort="$sort" :direction="$direction">Name</x-sortable-header></th>
                     <th class="px-4 py-2 font-medium">Status</th>
-                    <th class="hidden px-4 py-2 font-medium md:table-cell">Committee Link</th>
+                    <th class="hidden px-4 py-2 font-medium md:table-cell"><x-sortable-header column="contributions_count" :sort="$sort" :direction="$direction">Contributions</x-sortable-header></th>
+                    <th class="hidden px-4 py-2 font-medium lg:table-cell">Committee Link</th>
                     <th class="px-4 py-2 text-right font-medium">Actions</th>
                 </tr>
             </thead>
@@ -67,6 +59,9 @@
                             <x-status-badge :status="$contributor->is_active ? 'active' : 'inactive'" />
                         </td>
                         <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">
+                            {{ $contributor->contributions_count }}
+                        </td>
+                        <td class="hidden px-4 py-2 text-neutral-600 lg:table-cell">
                             {{ $contributor->committeeMember->name ?? '—' }}
                         </td>
                         <td class="px-4 py-2">
@@ -83,7 +78,7 @@
                                     href="{{ route('admin.contributors.edit', $contributor) }}"
                                     title="Edit"
                                     aria-label="Edit {{ $contributor->name }}"
-                                    class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-blue-600"
+                                    class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 theme-hover-primary"
                                 >
                                     <x-icon name="pencil" class="h-4 w-4" />
                                 </a>
@@ -110,7 +105,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-4 py-8 text-center text-neutral-400">
+                        <td colspan="5" class="px-4 py-8 text-center text-neutral-400">
                             No contributors found.
                         </td>
                     </tr>

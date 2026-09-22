@@ -53,7 +53,7 @@
             </div>
             <div>
                 <dt class="text-neutral-400">Scheduled</dt>
-                <dd class="mt-0.5 font-medium text-neutral-800">{{ $match->scheduled_at->format('d M Y, h:i A') }}</dd>
+                <dd class="mt-0.5 font-medium text-neutral-800">{{ display_datetime($match->scheduled_at, 'd M Y, h:i A') }}</dd>
             </div>
             <div>
                 <dt class="text-neutral-400">Overs per innings</dt>
@@ -125,7 +125,7 @@
                     @csrf
                     <button
                         type="submit"
-                        class="rounded-md bg-blue-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-neutral-300"
+                        class="rounded-md theme-button px-3 py-1.5 text-[13px] font-medium disabled:cursor-not-allowed disabled:bg-neutral-300"
                         @disabled(! $canStartToss)
                     >
                         Start Toss
@@ -178,7 +178,7 @@
                             :value="$match->toss_decision"
                         />
                     </div>
-                    <button type="submit" class="mb-3.5 rounded-md bg-blue-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-blue-500">
+                    <button type="submit" class="mb-3.5 rounded-md theme-button px-3 py-1.5 text-[13px] font-medium">
                         Save Toss
                     </button>
                 </form>
@@ -283,7 +283,7 @@
                     @csrf
                     <button
                         type="submit"
-                        class="rounded-md bg-blue-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-neutral-300"
+                        class="rounded-md theme-button px-3 py-1.5 text-[13px] font-medium disabled:cursor-not-allowed disabled:bg-neutral-300"
                         @disabled(! $canStartFirstInnings)
                     >
                         Start First Innings
@@ -306,7 +306,7 @@
                         onsubmit="event.preventDefault(); window.confirmAction({title: 'Complete this innings?', confirmButtonText: 'Yes, complete'}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
                     >
                         @csrf
-                        <button type="submit" class="rounded-md bg-blue-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-blue-500">
+                        <button type="submit" class="rounded-md theme-button px-3 py-1.5 text-[13px] font-medium">
                             Complete Innings
                         </button>
                     </form>
@@ -318,7 +318,7 @@
                         @csrf
                         <button
                             type="submit"
-                            class="rounded-md bg-blue-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-neutral-300"
+                            class="rounded-md theme-button px-3 py-1.5 text-[13px] font-medium disabled:cursor-not-allowed disabled:bg-neutral-300"
                             @disabled(! $canStartSecondInnings)
                         >
                             Start Second Innings
@@ -332,7 +332,7 @@
                         onsubmit="event.preventDefault(); window.confirmAction({title: 'Complete this innings?', confirmButtonText: 'Yes, complete'}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
                     >
                         @csrf
-                        <button type="submit" class="rounded-md bg-blue-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-blue-500">
+                        <button type="submit" class="rounded-md theme-button px-3 py-1.5 text-[13px] font-medium">
                             Complete Innings
                         </button>
                     </form>

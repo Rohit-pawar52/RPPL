@@ -2,6 +2,7 @@
 
 namespace App\Services\Registration;
 
+use App\Jobs\ProcessPaymentProofOcr;
 use App\Models\Edition;
 use App\Models\Player;
 use App\Models\PlayerRegistration;
@@ -79,7 +80,7 @@ class GuestPlayerRegistrationService
         $paymentProofPath = $paymentProof->store(self::PAYMENT_PROOF_DIRECTORY, self::DISK);
 
         try {
-            return DB::transaction(function () use ($edition, $data, $phone, $email, $player, $aadhaarPath, $paymentProofPath) {
+            $registration = DB::transaction(function () use ($edition, $data, $phone, $email, $player, $aadhaarPath, $paymentProofPath) {
                 // Authoritative re-check, locked: registration_open/
                 // status/fee may have changed between GET and this POST,
                 // or even between the pre-check above and right now.
@@ -106,6 +107,22 @@ class GuestPlayerRegistrationService
 
             throw $e;
         }
+
+        // Dispatched only now that the transaction above has actually
+        // committed — a worker must never be able to pick up a job
+        // referencing a row that doesn't exist yet. Deliberately a
+        // SEPARATE try/catch from the one above: a queue-connection
+        // failure here must never delete the just-stored files or throw
+        // in place of the registration that has already, successfully,
+        // been created. OCR is best-effort post-commit work only (see
+        // ProcessPaymentProofOcr) — it can never affect this response.
+        try {
+            ProcessPaymentProofOcr::dispatch($registration);
+        } catch (Throwable $e) {
+            report($e);
+        }
+
+        return $registration;
     }
 
     /**

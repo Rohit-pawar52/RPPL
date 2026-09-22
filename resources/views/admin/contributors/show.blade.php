@@ -43,7 +43,7 @@
         <p class="mt-3 text-xs text-neutral-500">
             <span class="font-medium text-neutral-600">Linked committee member:</span>
             @if($contributor->committeeMember)
-                <a href="{{ route('admin.committee-members.show', $contributor->committeeMember) }}" class="text-blue-600 hover:underline">
+                <a href="{{ route('admin.committee-members.show', $contributor->committeeMember) }}" class="theme-link hover:underline">
                     {{ $contributor->committeeMember->name }}
                 </a>
             @else

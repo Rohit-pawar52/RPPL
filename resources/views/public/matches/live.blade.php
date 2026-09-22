@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Live &middot; '.$match->teamA->team->name.' vs '.$match->teamB->team->name)
+@section('title', 'Live · '.$match->teamA->team->name.' vs '.$match->teamB->team->name)
 
 @section('content')
     <div class="mb-4 flex items-center justify-between">
@@ -34,7 +34,7 @@
                 @if($match->venue)
                     &middot; {{ $match->venue->name }}
                 @endif
-                &middot; {{ $match->scheduled_at->format('d M Y, h:i A') }}
+                &middot; {{ display_datetime($match->scheduled_at, 'd M Y, h:i A') }}
             </p>
 
             @if($match->tossWinner)

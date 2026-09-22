@@ -2,7 +2,7 @@
 
 <div class="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-3.5">
     @if($icon)
-        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+        <span class="theme-primary-soft-bg theme-primary-text flex h-9 w-9 shrink-0 items-center justify-center rounded-md">
             <x-icon :name="$icon" class="h-5 w-5" />
         </span>
     @endif

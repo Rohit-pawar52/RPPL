@@ -16,7 +16,7 @@
             @include('admin.edition-transactions._form')
 
             <div class="mt-2 flex items-center gap-2">
-                <button type="submit" class="rounded-md bg-blue-600 px-3 py-2 text-[13px] font-medium text-white hover:bg-blue-500">
+                <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
                     Save transaction
                 </button>
                 <a href="{{ route('admin.edition-transactions.index') }}" class="rounded-md border border-neutral-200 px-3 py-2 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">

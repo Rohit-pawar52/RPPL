@@ -196,6 +196,43 @@ class PlayerRegistrationManagementTest extends TestCase
             ->assertSee($registration->player->name);
     }
 
+    /**
+     * Pre-UAT audit fix: ocr_transaction_id/ocr_status were captured by
+     * the OCR job but never surfaced anywhere in the admin UI, so an
+     * admin had no way to compare the extracted candidate against the
+     * payment reference they enter. A duplicate-warning badge should
+     * also appear when hasDuplicateOcrTransactionId() is true.
+     */
+    public function test_admin_can_see_the_ocr_suggestion_and_duplicate_warning(): void
+    {
+        PlayerRegistration::factory()->create([
+            'ocr_status' => 'extracted',
+            'ocr_transaction_id' => 'TXN12345',
+        ]);
+        $registration = PlayerRegistration::factory()->create([
+            'ocr_status' => 'extracted',
+            'ocr_transaction_id' => 'TXN12345',
+        ]);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.show', $registration));
+
+        $response->assertOk();
+        $response->assertSee('TXN12345');
+        $response->assertSee('also seen on another registration');
+    }
+
+    public function test_pending_ocr_status_shows_a_neutral_placeholder(): void
+    {
+        $registration = PlayerRegistration::factory()->create(['ocr_status' => 'pending', 'ocr_transaction_id' => null]);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.show', $registration));
+
+        $response->assertOk();
+        $response->assertSee('Pending');
+    }
+
     public function test_admin_can_update_editable_metadata(): void
     {
         $registration = PlayerRegistration::factory()->create(['payment_status' => 'pending']);
@@ -518,6 +555,255 @@ class PlayerRegistrationManagementTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('edition_id='.$edition->id, false);
+    }
+
+    // ----- Rows per page -----
+
+    public function test_default_per_page_is_20(): void
+    {
+        PlayerRegistration::factory()->count(25)->create();
+
+        $response = $this->actingAs($this->admin())->get(route('admin.player-registrations.index'));
+
+        $response->assertViewHas('registrations', fn ($paginator) => $paginator->perPage() === 20);
+    }
+
+    public function test_each_allowed_per_page_value_is_honored(): void
+    {
+        PlayerRegistration::factory()->count(5)->create();
+
+        foreach ([10, 20, 50, 100, 200] as $value) {
+            $response = $this->actingAs($this->admin())
+                ->get(route('admin.player-registrations.index', ['per_page' => $value]));
+
+            $response->assertViewHas('registrations', fn ($paginator) => $paginator->perPage() === $value);
+        }
+    }
+
+    public function test_invalid_per_page_falls_back_to_default(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.index', ['per_page' => 999]));
+
+        $response->assertViewHas('registrations', fn ($paginator) => $paginator->perPage() === 20);
+    }
+
+    public function test_non_numeric_per_page_falls_back_to_default(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.index', ['per_page' => 'lots']));
+
+        $response->assertViewHas('registrations', fn ($paginator) => $paginator->perPage() === 20);
+    }
+
+    public function test_per_page_survives_filter_sort_and_pagination(): void
+    {
+        $edition = Edition::factory()->create();
+        PlayerRegistration::factory()->count(60)->create(['edition_id' => $edition->id]);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.player-registrations.index', [
+            'edition_id' => $edition->id,
+            'sort' => 'registration_fee',
+            'direction' => 'asc',
+            'per_page' => 50,
+        ]));
+
+        $response->assertOk();
+        $nextPageUrl = $response->viewData('registrations')->nextPageUrl();
+        $this->assertStringContainsString('per_page=50', $nextPageUrl);
+        $this->assertStringContainsString('edition_id='.$edition->id, $nextPageUrl);
+        $this->assertStringContainsString('sort=registration_fee', $nextPageUrl);
+        $this->assertStringContainsString('direction=asc', $nextPageUrl);
+    }
+
+    public function test_selected_export_still_works_with_a_larger_page_size(): void
+    {
+        $registrations = PlayerRegistration::factory()->count(30)->create();
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.index', ['per_page' => 100]));
+
+        $response->assertViewHas('registrations', fn ($paginator) => $paginator->perPage() === 100 && $paginator->count() === 30);
+
+        $selectedIds = $registrations->pluck('id')->all();
+        $exportResponse = $this->actingAs($this->admin())
+            ->post(route('admin.player-registrations.export-selected'), ['selected_ids' => $selectedIds]);
+
+        $exportResponse->assertOk();
+        $content = $exportResponse->streamedContent();
+        foreach ($registrations as $registration) {
+            $this->assertStringContainsString($registration->registration_number, $content);
+        }
+    }
+
+    public function test_changing_per_page_via_the_filter_form_drops_the_page_param(): void
+    {
+        // The per_page <select> lives inside the GET filter <form>, which
+        // has no `page` field — so submitting it (what changing the
+        // dropdown does) can never resubmit a stale page number. Confirmed
+        // structurally: no hidden `page` input exists inside that form.
+        $response = $this->actingAs($this->admin())->get(route('admin.player-registrations.index', ['page' => 2]));
+
+        $response->assertOk();
+        $formStart = strpos($response->getContent(), '<form method="GET"');
+        $formEnd = strpos($response->getContent(), '</form>', $formStart);
+        $formHtml = substr($response->getContent(), $formStart, $formEnd - $formStart);
+
+        $this->assertStringContainsString('name="per_page"', $formHtml);
+        $this->assertStringNotContainsString('name="page"', $formHtml);
+    }
+
+    // ----- Date range -----
+
+    public function test_date_range_filters_by_registered_at(): void
+    {
+        $inRange = PlayerRegistration::factory()->create(['registered_at' => '2026-03-15']);
+        $before = PlayerRegistration::factory()->create(['registered_at' => '2026-01-01']);
+        $after = PlayerRegistration::factory()->create(['registered_at' => '2026-06-01']);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.player-registrations.index', [
+            'from_date' => '2026-03-01',
+            'to_date' => '2026-03-31',
+        ]));
+
+        $response->assertSee($inRange->registration_number)
+            ->assertDontSee($before->registration_number)
+            ->assertDontSee($after->registration_number);
+    }
+
+    public function test_from_date_only_filters_open_ended(): void
+    {
+        $recent = PlayerRegistration::factory()->create(['registered_at' => '2026-06-01']);
+        $old = PlayerRegistration::factory()->create(['registered_at' => '2026-01-01']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.index', ['from_date' => '2026-05-01']));
+
+        $response->assertSee($recent->registration_number)->assertDontSee($old->registration_number);
+    }
+
+    public function test_to_date_only_filters_open_started(): void
+    {
+        $old = PlayerRegistration::factory()->create(['registered_at' => '2026-01-01']);
+        $recent = PlayerRegistration::factory()->create(['registered_at' => '2026-06-01']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.index', ['to_date' => '2026-02-01']));
+
+        $response->assertSee($old->registration_number)->assertDontSee($recent->registration_number);
+    }
+
+    public function test_to_date_before_from_date_is_rejected(): void
+    {
+        $response = $this->actingAs($this->admin())->get(route('admin.player-registrations.index', [
+            'from_date' => '2026-06-01',
+            'to_date' => '2026-01-01',
+        ]));
+
+        $response->assertSessionHasErrors('to_date');
+    }
+
+    // ----- Sorting -----
+
+    public function test_sorting_ascending_by_registration_fee(): void
+    {
+        $cheap = PlayerRegistration::factory()->create(['registration_fee' => 100]);
+        $expensive = PlayerRegistration::factory()->create(['registration_fee' => 900]);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.player-registrations.index', [
+            'sort' => 'registration_fee', 'direction' => 'asc',
+        ]));
+
+        $body = $response->getContent();
+        $this->assertLessThan(
+            strpos($body, $expensive->registration_number),
+            strpos($body, $cheap->registration_number)
+        );
+    }
+
+    public function test_sorting_descending_by_registration_fee(): void
+    {
+        $cheap = PlayerRegistration::factory()->create(['registration_fee' => 100]);
+        $expensive = PlayerRegistration::factory()->create(['registration_fee' => 900]);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.player-registrations.index', [
+            'sort' => 'registration_fee', 'direction' => 'desc',
+        ]));
+
+        $body = $response->getContent();
+        $this->assertLessThan(
+            strpos($body, $cheap->registration_number),
+            strpos($body, $expensive->registration_number)
+        );
+    }
+
+    public function test_invalid_sort_column_falls_back_to_default_safely(): void
+    {
+        PlayerRegistration::factory()->create();
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.index', ['sort' => 'password']));
+
+        $response->assertOk();
+    }
+
+    // ----- Selected-rows export -----
+
+    public function test_selected_export_contains_only_the_selected_registrations(): void
+    {
+        $selected = PlayerRegistration::factory()->create();
+        $notSelected = PlayerRegistration::factory()->create();
+
+        $response = $this->actingAs($this->admin())->post(route('admin.player-registrations.export-selected'), [
+            'selected_ids' => [$selected->id],
+        ]);
+
+        $response->assertOk();
+        $content = $response->streamedContent();
+        $this->assertStringContainsString($selected->registration_number, $content);
+        $this->assertStringNotContainsString($notSelected->registration_number, $content);
+    }
+
+    public function test_selected_export_ignores_ambient_filters(): void
+    {
+        $editionOne = Edition::factory()->create();
+        $editionTwo = Edition::factory()->create();
+        $selected = PlayerRegistration::factory()->create(['edition_id' => $editionTwo->id]);
+
+        $response = $this->actingAs($this->admin())->post(
+            route('admin.player-registrations.export-selected', ['edition_id' => $editionOne->id]),
+            ['selected_ids' => [$selected->id]]
+        );
+
+        $response->assertOk();
+        $this->assertStringContainsString($selected->registration_number, $response->streamedContent());
+    }
+
+    public function test_selected_export_rejects_a_nonexistent_id(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('admin.player-registrations.export-selected'), [
+            'selected_ids' => [999999],
+        ]);
+
+        $response->assertSessionHasErrors('selected_ids.0');
+    }
+
+    public function test_selected_export_requires_at_least_one_id(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('admin.player-registrations.export-selected'), [
+            'selected_ids' => [],
+        ]);
+
+        $response->assertSessionHasErrors('selected_ids');
+    }
+
+    public function test_scorer_cannot_use_selected_export(): void
+    {
+        $registration = PlayerRegistration::factory()->create();
+
+        $this->actingAs($this->scorer())
+            ->post(route('admin.player-registrations.export-selected'), ['selected_ids' => [$registration->id]])
+            ->assertForbidden();
     }
 
     // ----- UI -----

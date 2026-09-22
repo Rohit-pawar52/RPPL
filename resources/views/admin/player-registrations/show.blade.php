@@ -61,12 +61,36 @@
             <div>
                 <dt class="text-neutral-400">Registration fee</dt>
                 <dd class="mt-0.5 font-medium text-neutral-800">
-                    {{ $registration->registration_fee !== null ? '₹'.number_format($registration->registration_fee, 2) : '—' }}
+                    {{ $registration->registration_fee !== null ? money($registration->registration_fee) : '—' }}
                 </dd>
             </div>
             <div>
                 <dt class="text-neutral-400">Payment reference</dt>
                 <dd class="mt-0.5 font-medium text-neutral-800">{{ $registration->payment_reference ?? 'Not provided' }}</dd>
+            </div>
+            <div>
+                <dt class="text-neutral-400">
+                    OCR suggestion
+                    <span class="text-neutral-300" title="Extracted automatically from the payment-proof upload — advisory only, never authoritative. Compare against Payment reference above before relying on it.">(?)</span>
+                </dt>
+                <dd class="mt-0.5 font-medium text-neutral-800">
+                    @if($registration->ocr_status === 'extracted' && $registration->ocr_transaction_id)
+                        {{ $registration->ocr_transaction_id }}
+                        @if($registration->hasDuplicateOcrTransactionId())
+                            <span class="ml-1 inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-inset ring-amber-200">
+                                also seen on another registration
+                            </span>
+                        @endif
+                    @elseif($registration->ocr_status === 'pending')
+                        <span class="text-neutral-400">Pending&hellip;</span>
+                    @elseif($registration->ocr_status === 'not_found')
+                        <span class="text-neutral-400">No reference found in proof</span>
+                    @elseif($registration->ocr_status === 'failed')
+                        <span class="text-neutral-400">Extraction failed</span>
+                    @else
+                        <span class="text-neutral-400">—</span>
+                    @endif
+                </dd>
             </div>
             <div>
                 <dt class="text-neutral-400">Registered at</dt>
@@ -97,7 +121,7 @@
                     <a
                         href="{{ route('admin.player-registrations.aadhaar', $registration) }}"
                         target="_blank" rel="noopener"
-                        class="inline-flex items-center gap-1 rounded-md border border-neutral-200 px-2 py-1 font-medium text-blue-600 hover:bg-blue-50"
+                        class="inline-flex items-center gap-1 rounded-md border border-neutral-200 px-2 py-1 font-medium theme-link theme-hover-primary-soft-bg"
                     >
                         View / Download
                     </a>
@@ -111,7 +135,7 @@
                     <a
                         href="{{ route('admin.player-registrations.payment-proof', $registration) }}"
                         target="_blank" rel="noopener"
-                        class="inline-flex items-center gap-1 rounded-md border border-neutral-200 px-2 py-1 font-medium text-blue-600 hover:bg-blue-50"
+                        class="inline-flex items-center gap-1 rounded-md border border-neutral-200 px-2 py-1 font-medium theme-link theme-hover-primary-soft-bg"
                     >
                         View
                     </a>

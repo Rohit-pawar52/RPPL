@@ -580,4 +580,319 @@ class GameMatchManagementTest extends TestCase
         $response->assertOk();
         $response->assertSee('edition_id='.$edition->id, false);
     }
+
+    // ----- Rows per page -----
+
+    public function test_default_per_page_is_20(): void
+    {
+        GameMatch::factory()->count(5)->create();
+
+        $response = $this->actingAs($this->admin())->get(route('admin.matches.index'));
+
+        $response->assertViewHas('matches', fn ($paginator) => $paginator->perPage() === 20);
+    }
+
+    public function test_each_allowed_per_page_value_is_honored(): void
+    {
+        GameMatch::factory()->count(5)->create();
+
+        foreach ([10, 20, 50, 100, 200] as $value) {
+            $response = $this->actingAs($this->admin())
+                ->get(route('admin.matches.index', ['per_page' => $value]));
+
+            $response->assertViewHas('matches', fn ($paginator) => $paginator->perPage() === $value);
+        }
+    }
+
+    public function test_invalid_per_page_falls_back_to_default(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.matches.index', ['per_page' => 'lots']));
+
+        $response->assertViewHas('matches', fn ($paginator) => $paginator->perPage() === 20);
+    }
+
+    public function test_selected_export_still_works_with_a_larger_page_size(): void
+    {
+        $matches = GameMatch::factory()->count(25)->create();
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.matches.index', ['per_page' => 100]));
+
+        $response->assertViewHas('matches', fn ($paginator) => $paginator->perPage() === 100 && $paginator->count() === 25);
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.matches.export-selected'), ['selected_ids' => $matches->pluck('id')->all()])
+            ->assertOk();
+    }
+
+    // ----- Date range -----
+
+    public function test_date_range_filters_by_scheduled_at(): void
+    {
+        $inRangeTeam = Team::factory()->create(['name' => 'In Range Match Team']);
+        $beforeTeam = Team::factory()->create(['name' => 'Before Range Match Team']);
+        $afterTeam = Team::factory()->create(['name' => 'After Range Match Team']);
+        GameMatch::factory()->create([
+            'scheduled_at' => '2026-03-15 10:00:00',
+            'edition_team_a_id' => EditionTeam::factory()->create(['team_id' => $inRangeTeam->id]),
+        ]);
+        GameMatch::factory()->create([
+            'scheduled_at' => '2026-01-01 10:00:00',
+            'edition_team_a_id' => EditionTeam::factory()->create(['team_id' => $beforeTeam->id]),
+        ]);
+        GameMatch::factory()->create([
+            'scheduled_at' => '2026-06-01 10:00:00',
+            'edition_team_a_id' => EditionTeam::factory()->create(['team_id' => $afterTeam->id]),
+        ]);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.matches.index', [
+            'from_date' => '2026-03-01',
+            'to_date' => '2026-03-31',
+        ]));
+
+        $response->assertSee('In Range Match Team')
+            ->assertDontSee('Before Range Match Team')
+            ->assertDontSee('After Range Match Team');
+    }
+
+    public function test_from_date_only_filters_open_ended(): void
+    {
+        $recentTeam = Team::factory()->create(['name' => 'Recent Match Team']);
+        $oldTeam = Team::factory()->create(['name' => 'Old Match Team']);
+        GameMatch::factory()->create([
+            'scheduled_at' => '2026-06-01 10:00:00',
+            'edition_team_a_id' => EditionTeam::factory()->create(['team_id' => $recentTeam->id]),
+        ]);
+        GameMatch::factory()->create([
+            'scheduled_at' => '2026-01-01 10:00:00',
+            'edition_team_a_id' => EditionTeam::factory()->create(['team_id' => $oldTeam->id]),
+        ]);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.matches.index', ['from_date' => '2026-05-01']));
+
+        $response->assertSee('Recent Match Team')->assertDontSee('Old Match Team');
+    }
+
+    public function test_to_date_only_filters_open_started(): void
+    {
+        $oldTeam = Team::factory()->create(['name' => 'Old To-Date Match Team']);
+        $recentTeam = Team::factory()->create(['name' => 'Recent To-Date Match Team']);
+        GameMatch::factory()->create([
+            'scheduled_at' => '2026-01-01 10:00:00',
+            'edition_team_a_id' => EditionTeam::factory()->create(['team_id' => $oldTeam->id]),
+        ]);
+        GameMatch::factory()->create([
+            'scheduled_at' => '2026-06-01 10:00:00',
+            'edition_team_a_id' => EditionTeam::factory()->create(['team_id' => $recentTeam->id]),
+        ]);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.matches.index', ['to_date' => '2026-02-01']));
+
+        $response->assertSee('Old To-Date Match Team')->assertDontSee('Recent To-Date Match Team');
+    }
+
+    public function test_to_date_before_from_date_is_rejected(): void
+    {
+        $response = $this->actingAs($this->admin())->get(route('admin.matches.index', [
+            'from_date' => '2026-06-01',
+            'to_date' => '2026-01-01',
+        ]));
+
+        $response->assertSessionHasErrors('to_date');
+    }
+
+    // ----- Sorting -----
+
+    public function test_sorting_ascending_by_scheduled_at(): void
+    {
+        $earlyTeam = Team::factory()->create(['name' => 'Early Sort Match Team']);
+        $lateTeam = Team::factory()->create(['name' => 'Late Sort Match Team']);
+        GameMatch::factory()->create([
+            'scheduled_at' => now()->addDays(10),
+            'edition_team_a_id' => EditionTeam::factory()->create(['team_id' => $lateTeam->id]),
+        ]);
+        GameMatch::factory()->create([
+            'scheduled_at' => now()->addDays(1),
+            'edition_team_a_id' => EditionTeam::factory()->create(['team_id' => $earlyTeam->id]),
+        ]);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.matches.index', [
+            'sort' => 'scheduled_at', 'direction' => 'asc',
+        ]));
+
+        $body = $response->getContent();
+        $this->assertLessThan(
+            strpos($body, 'Late Sort Match Team'),
+            strpos($body, 'Early Sort Match Team')
+        );
+    }
+
+    public function test_sorting_descending_by_scheduled_at(): void
+    {
+        $earlyTeam = Team::factory()->create(['name' => 'Early Desc Match Team']);
+        $lateTeam = Team::factory()->create(['name' => 'Late Desc Match Team']);
+        GameMatch::factory()->create([
+            'scheduled_at' => now()->addDays(10),
+            'edition_team_a_id' => EditionTeam::factory()->create(['team_id' => $lateTeam->id]),
+        ]);
+        GameMatch::factory()->create([
+            'scheduled_at' => now()->addDays(1),
+            'edition_team_a_id' => EditionTeam::factory()->create(['team_id' => $earlyTeam->id]),
+        ]);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.matches.index', [
+            'sort' => 'scheduled_at', 'direction' => 'desc',
+        ]));
+
+        $body = $response->getContent();
+        $this->assertLessThan(
+            strpos($body, 'Early Desc Match Team'),
+            strpos($body, 'Late Desc Match Team')
+        );
+    }
+
+    public function test_sortable_header_renders_a_real_anchor_with_no_markdown_or_leaked_entities(): void
+    {
+        GameMatch::factory()->create();
+
+        $html = $this->actingAs($this->admin())
+            ->get(route('admin.matches.index', ['sort' => 'scheduled_at', 'direction' => 'desc']))
+            ->getContent();
+
+        $this->assertMatchesRegularExpression('#<a href="[^"]*sort=scheduled_at[^"]*"[^>]*>\s*Scheduled\s*<span[^>]*>↓</span>\s*</a>#', $html);
+        $this->assertStringNotContainsString('&darr;', $html);
+        $this->assertStringNotContainsString('&amp;darr;', $html);
+        $this->assertStringNotContainsString('](http', $html);
+    }
+
+    public function test_invalid_sort_column_falls_back_to_default_safely(): void
+    {
+        GameMatch::factory()->create();
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.matches.index', ['sort' => 'password']));
+
+        $response->assertOk();
+    }
+
+    // ----- Export -----
+
+    public function test_export_contains_only_filtered_matches(): void
+    {
+        $editionOne = Edition::factory()->create();
+        $editionTwo = Edition::factory()->create();
+        $includedTeam = Team::factory()->create(['name' => 'Exported Match Team']);
+        $excludedTeam = Team::factory()->create(['name' => 'Not Exported Match Team']);
+        GameMatch::factory()->create([
+            'edition_id' => $editionOne->id,
+            'edition_team_a_id' => EditionTeam::factory()->create(['edition_id' => $editionOne->id, 'team_id' => $includedTeam->id]),
+        ]);
+        GameMatch::factory()->create([
+            'edition_id' => $editionTwo->id,
+            'edition_team_a_id' => EditionTeam::factory()->create(['edition_id' => $editionTwo->id, 'team_id' => $excludedTeam->id]),
+        ]);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.matches.export', ['edition_id' => $editionOne->id]));
+
+        $response->assertOk();
+        $content = $response->streamedContent();
+        $this->assertStringContainsString('Exported Match Team', $content);
+        $this->assertStringNotContainsString('Not Exported Match Team', $content);
+    }
+
+    // ----- Selected-rows export -----
+
+    public function test_selected_export_contains_only_the_selected_matches(): void
+    {
+        $selectedTeam = Team::factory()->create(['name' => 'Selected Export Match Team']);
+        $notSelectedTeam = Team::factory()->create(['name' => 'Unselected Export Match Team']);
+        $selected = GameMatch::factory()->create([
+            'edition_team_a_id' => EditionTeam::factory()->create(['team_id' => $selectedTeam->id]),
+        ]);
+        GameMatch::factory()->create([
+            'edition_team_a_id' => EditionTeam::factory()->create(['team_id' => $notSelectedTeam->id]),
+        ]);
+
+        $response = $this->actingAs($this->admin())->post(route('admin.matches.export-selected'), [
+            'selected_ids' => [$selected->id],
+        ]);
+
+        $response->assertOk();
+        $content = $response->streamedContent();
+        $this->assertStringContainsString('Selected Export Match Team', $content);
+        $this->assertStringNotContainsString('Unselected Export Match Team', $content);
+    }
+
+    public function test_selected_export_ignores_ambient_filters(): void
+    {
+        $editionOne = Edition::factory()->create();
+        $editionTwo = Edition::factory()->create();
+        $team = Team::factory()->create(['name' => 'Ambient Filter Ignored Match Team']);
+        $selected = GameMatch::factory()->create([
+            'edition_id' => $editionTwo->id,
+            'edition_team_a_id' => EditionTeam::factory()->create(['edition_id' => $editionTwo->id, 'team_id' => $team->id]),
+        ]);
+
+        $response = $this->actingAs($this->admin())->post(
+            route('admin.matches.export-selected', ['edition_id' => $editionOne->id]),
+            ['selected_ids' => [$selected->id]]
+        );
+
+        $response->assertOk();
+        $this->assertStringContainsString('Ambient Filter Ignored Match Team', $response->streamedContent());
+    }
+
+    public function test_selected_export_rejects_a_nonexistent_id(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('admin.matches.export-selected'), [
+            'selected_ids' => [999999],
+        ]);
+
+        $response->assertSessionHasErrors('selected_ids.0');
+    }
+
+    public function test_selected_export_requires_at_least_one_id(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('admin.matches.export-selected'), [
+            'selected_ids' => [],
+        ]);
+
+        $response->assertSessionHasErrors('selected_ids');
+    }
+
+    /**
+     * Unlike PlayerRegistration, GameMatchPolicy::viewAny() deliberately
+     * allows both admin and scorer (scorers need to look up fixtures for
+     * scoring) — see the policy's own docblock. export()/exportSelected()
+     * reuse that identical viewAny gate, so a scorer is NOT forbidden
+     * here; only a guest (unauthenticated) is.
+     */
+    public function test_scorer_can_use_export_and_selected_export(): void
+    {
+        $scorer = $this->scorer();
+        $match = GameMatch::factory()->create();
+
+        $this->actingAs($scorer)->get(route('admin.matches.export'))->assertOk();
+        $this->actingAs($scorer)
+            ->post(route('admin.matches.export-selected'), ['selected_ids' => [$match->id]])
+            ->assertOk();
+    }
+
+    public function test_guest_cannot_export(): void
+    {
+        $this->get(route('admin.matches.export'))
+            ->assertRedirect(route('admin.login'));
+    }
+
+    public function test_guest_cannot_use_selected_export(): void
+    {
+        $match = GameMatch::factory()->create();
+
+        $this->post(route('admin.matches.export-selected'), ['selected_ids' => [$match->id]])
+            ->assertRedirect(route('admin.login'));
+    }
 }

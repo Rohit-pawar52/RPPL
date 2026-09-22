@@ -3,8 +3,8 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build",
-        "dev": "vite"
+        "build": "node resources/build/generate-firebase-sw.js && vite build",
+        "dev": "node resources/build/generate-firebase-sw.js && vite"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
@@ -17,6 +17,7 @@
         "vite": "^7.0.7"
     },
     "dependencies": {
+        "firebase": "^12.19.0",
         "sweetalert2": "^11.14.5"
     }
 }

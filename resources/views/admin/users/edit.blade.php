@@ -54,7 +54,7 @@
             <p class="-mt-2 mb-3.5 text-xs text-neutral-400">Leave password blank to keep the current password.</p>
 
             <div class="mt-2 flex items-center gap-2">
-                <button type="submit" class="rounded-md bg-blue-600 px-3 py-2 text-[13px] font-medium text-white hover:bg-blue-500">
+                <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
                     Save changes
                 </button>
                 <a href="{{ route('admin.users.index') }}" class="rounded-md border border-neutral-200 px-3 py-2 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">

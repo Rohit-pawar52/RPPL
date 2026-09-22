@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Players &middot; RPPL')
+@section('title', 'Players · '.$branding->shortName)
 
 @section('content')
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -12,7 +12,7 @@
                 name="search"
                 value="{{ $search }}"
                 placeholder="Search by name"
-                class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-100"
+                class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
             />
             <button type="submit" class="rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
                 Search

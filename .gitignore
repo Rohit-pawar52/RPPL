@@ -16,9 +16,11 @@
 /auth.json
 /node_modules
 /public/build
+/public/firebase-messaging-sw.js
 /public/hot
 /public/storage
 /storage/*.key
+/storage/app/firebase
 /storage/pail
 /vendor
 Homestead.json

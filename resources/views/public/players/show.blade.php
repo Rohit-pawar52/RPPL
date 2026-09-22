@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', $player->name.' &middot; RPPL')
+@section('title', $player->name.' · '.$branding->shortName)
 
 @section('content')
     <a href="{{ route('public.players.index') }}" class="mb-4 inline-block text-xs text-neutral-500 hover:text-neutral-700">
@@ -36,14 +36,14 @@
     <div class="mt-4 flex flex-wrap items-center gap-2">
         <a
             href="{{ route('public.players.show', $player) }}"
-            class="rounded-md border px-2.5 py-1 text-xs font-medium {{ ! $selectedEdition ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}"
+            class="rounded-md border px-2.5 py-1 text-xs font-medium {{ ! $selectedEdition ? 'theme-primary-border theme-primary-soft-bg theme-primary-text' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}"
         >
             Career / All Editions
         </a>
         @foreach($player->playerRegistrations as $registration)
             <a
                 href="{{ route('public.players.show', ['player' => $player, 'edition_id' => $registration->edition_id]) }}"
-                class="rounded-md border px-2.5 py-1 text-xs font-medium {{ $selectedEdition?->id === $registration->edition_id ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}"
+                class="rounded-md border px-2.5 py-1 text-xs font-medium {{ $selectedEdition?->id === $registration->edition_id ? 'theme-primary-border theme-primary-soft-bg theme-primary-text' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}"
             >
                 {{ $registration->edition->name }}
             </a>
@@ -148,7 +148,7 @@
                     @forelse($matchHistory as $row)
                         @php $match = $row['match']; @endphp
                         <tr>
-                            <td class="whitespace-nowrap px-2 py-1.5 text-neutral-500">{{ $match->scheduled_at->format('d M Y') }}</td>
+                            <td class="whitespace-nowrap px-2 py-1.5 text-neutral-500">{{ display_datetime($match->scheduled_at, 'd M Y') }}</td>
                             <td class="px-2 py-1.5 text-neutral-800">
                                 <a href="{{ route('public.matches.show', $match) }}" class="hover:underline">
                                     {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}

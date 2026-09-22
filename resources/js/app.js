@@ -3,7 +3,8 @@ import './bootstrap';
 import Swal from 'sweetalert2';
 import { initFlashMessages, confirmAction } from './flash';
 import { initAdminSidebar } from './admin-nav';
-import { initConfirmDeleteForms } from './confirm-delete';
+import { initConfirmDeleteForms, initConfirmActionForms } from './confirm-delete';
+import { initTableRowSelection } from './table-selection';
 
 window.Swal = Swal;
 window.confirmAction = confirmAction;
@@ -12,4 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initFlashMessages();
     initAdminSidebar();
     initConfirmDeleteForms();
+    initConfirmActionForms();
+    initTableRowSelection();
 });

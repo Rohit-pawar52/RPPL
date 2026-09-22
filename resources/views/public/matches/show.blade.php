@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', $match->teamA->team->name.' vs '.$match->teamB->team->name.' &middot; RPPL')
+@section('title', $match->teamA->team->name.' vs '.$match->teamB->team->name.' · '.$branding->shortName)
 
 @section('content')
     <div class="mb-4 flex items-center justify-between">
@@ -52,7 +52,7 @@
             </div>
             <div>
                 <dt class="text-neutral-400">Scheduled</dt>
-                <dd class="mt-0.5 font-medium text-neutral-800">{{ $match->scheduled_at->format('d M Y, h:i A') }}</dd>
+                <dd class="mt-0.5 font-medium text-neutral-800">{{ display_datetime($match->scheduled_at, 'd M Y, h:i A') }}</dd>
             </div>
             <div>
                 <dt class="text-neutral-400">Overs</dt>

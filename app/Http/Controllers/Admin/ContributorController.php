@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\FiltersAdminTables;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Contributor\StoreContributorRequest;
 use App\Http\Requests\Admin\Contributor\UpdateContributorRequest;
@@ -22,6 +23,10 @@ use Illuminate\View\View;
  */
 class ContributorController extends Controller
 {
+    use FiltersAdminTables;
+
+    private const ALLOWED_SORTS = ['name', 'contributions_count'];
+
     public function __construct(private readonly ContributorService $contributors) {}
 
     public function index(Request $request): View
@@ -29,6 +34,8 @@ class ContributorController extends Controller
         $this->authorize('viewAny', Contributor::class);
 
         $filters = $request->only(['search', 'status']);
+        [$sort, $direction] = $this->allowedSort($request, self::ALLOWED_SORTS, 'name', 'asc');
+        $perPage = $this->allowedPerPage($request);
 
         $contributors = Contributor::query()
             // Deliberately NOT scoped to active() by default: this is
@@ -46,13 +53,20 @@ class ContributorController extends Controller
                 }
             })
             ->with('committeeMember')
-            ->orderBy('name')
-            ->paginate(15)
+            // Relation is named `contributions` (same as CommitteeMember),
+            // so withCount() already produces `contributions_count` — no
+            // aliasing needed to match CommitteeMemberController's column.
+            ->withCount('contributions')
+            ->orderBy($sort, $direction)
+            ->paginate($perPage)
             ->withQueryString();
 
         return view('admin.contributors.index', [
             'contributors' => $contributors,
             'filters' => $filters,
+            'sort' => $sort,
+            'direction' => $direction,
+            'perPage' => $perPage,
         ]);
     }
 

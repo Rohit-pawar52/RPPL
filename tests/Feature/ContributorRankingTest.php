@@ -260,7 +260,7 @@ class ContributorRankingTest extends TestCase
         $response->assertSee('Top Contributor');
         $response->assertDontSee('2,500');
         $response->assertDontSee('2500');
-        $response->assertDontSee('&#8377;', false);
+        $response->assertDontSee('₹', false);
         $response->assertDontSee('9998887771');
         $response->assertDontSee('SECRET_INTERNAL_NOTE');
         $response->assertDontSee('Committee Member');

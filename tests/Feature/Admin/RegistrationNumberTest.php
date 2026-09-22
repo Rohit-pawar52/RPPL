@@ -7,6 +7,7 @@ use App\Models\Player;
 use App\Models\PlayerRegistration;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Settings\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
@@ -156,5 +157,20 @@ class RegistrationNumberTest extends TestCase
         $this->assertSame('RPPL-2026-123456', PlayerRegistration::formatRegistrationNumber(2026, 123456));
         // Beyond the 6-digit padding width, the id is never truncated.
         $this->assertSame('RPPL-2026-1234567', PlayerRegistration::formatRegistrationNumber(2026, 1234567));
+    }
+
+    /**
+     * Phase 3.44B3 — general.short_name is a purely presentational
+     * Settings value now displayed in headers/titles. The
+     * "RPPL-" prefix in formatRegistrationNumber() is a hardcoded
+     * literal (see the model), never SettingsService::get(), so a
+     * historical registration number's identity can never drift just
+     * because an admin edits the site's display short name.
+     */
+    public function test_changing_the_settings_short_name_does_not_change_the_registration_number_prefix(): void
+    {
+        app(SettingsService::class)->set('general.short_name', 'Something Else Entirely');
+
+        $this->assertSame('RPPL-2026-000042', PlayerRegistration::formatRegistrationNumber(2026, 42));
     }
 }

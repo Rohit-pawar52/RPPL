@@ -262,4 +262,98 @@ class ContributorManagementTest extends TestCase
         $this->assertDatabaseHas('contributors', ['id' => $contributor->id]);
         Storage::disk('public')->assertExists($photoPath);
     }
+
+    // ----- Sorting -----
+
+    public function test_sorting_ascending_and_descending_by_name(): void
+    {
+        $alpha = Contributor::factory()->create(['name' => 'Alpha Contributor']);
+        $zebra = Contributor::factory()->create(['name' => 'Zebra Contributor']);
+
+        $asc = $this->actingAs($this->admin())->get(route('admin.contributors.index', [
+            'sort' => 'name', 'direction' => 'asc',
+        ]));
+        $body = $asc->getContent();
+        $this->assertLessThan(strpos($body, $zebra->name), strpos($body, $alpha->name));
+
+        $desc = $this->actingAs($this->admin())->get(route('admin.contributors.index', [
+            'sort' => 'name', 'direction' => 'desc',
+        ]));
+        $body = $desc->getContent();
+        $this->assertLessThan(strpos($body, $alpha->name), strpos($body, $zebra->name));
+    }
+
+    public function test_sorting_by_contributions_count(): void
+    {
+        $quiet = Contributor::factory()->create(['name' => 'Quiet Contributor']);
+        $busy = Contributor::factory()->create(['name' => 'Busy Contributor']);
+        EditionContribution::factory()->count(3)->create(['contributor_id' => $busy->id, 'committee_member_id' => null]);
+
+        $asc = $this->actingAs($this->admin())->get(route('admin.contributors.index', [
+            'sort' => 'contributions_count', 'direction' => 'asc',
+        ]));
+        $body = $asc->getContent();
+        $this->assertLessThan(strpos($body, $busy->name), strpos($body, $quiet->name));
+
+        $desc = $this->actingAs($this->admin())->get(route('admin.contributors.index', [
+            'sort' => 'contributions_count', 'direction' => 'desc',
+        ]));
+        $body = $desc->getContent();
+        $this->assertLessThan(strpos($body, $quiet->name), strpos($body, $busy->name));
+    }
+
+    public function test_invalid_sort_column_falls_back_to_name_asc(): void
+    {
+        Contributor::factory()->create();
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.contributors.index', ['sort' => 'password']));
+
+        $response->assertOk();
+    }
+
+    public function test_sortable_header_renders_a_real_anchor_with_no_markdown_or_leaked_entities(): void
+    {
+        Contributor::factory()->create();
+
+        $html = $this->actingAs($this->admin())
+            ->get(route('admin.contributors.index', ['sort' => 'name', 'direction' => 'desc']))
+            ->getContent();
+
+        $this->assertMatchesRegularExpression('#<a href="[^"]*sort=name[^"]*"[^>]*>\s*Name\s*<span[^>]*>↓</span>\s*</a>#', $html);
+        $this->assertStringNotContainsString('&darr;', $html);
+        $this->assertStringNotContainsString('&amp;darr;', $html);
+        $this->assertStringNotContainsString('](http', $html);
+    }
+
+    // ----- Rows per page -----
+
+    public function test_default_per_page_is_20(): void
+    {
+        Contributor::factory()->count(5)->create();
+
+        $response = $this->actingAs($this->admin())->get(route('admin.contributors.index'));
+
+        $response->assertViewHas('contributors', fn ($paginator) => $paginator->perPage() === 20);
+    }
+
+    public function test_each_allowed_per_page_value_is_honored(): void
+    {
+        Contributor::factory()->count(5)->create();
+
+        foreach ([10, 20, 50, 100, 200] as $value) {
+            $response = $this->actingAs($this->admin())
+                ->get(route('admin.contributors.index', ['per_page' => $value]));
+
+            $response->assertViewHas('contributors', fn ($paginator) => $paginator->perPage() === $value);
+        }
+    }
+
+    public function test_invalid_per_page_falls_back_to_default(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.contributors.index', ['per_page' => 'lots']));
+
+        $response->assertViewHas('contributors', fn ($paginator) => $paginator->perPage() === 20);
+    }
 }
