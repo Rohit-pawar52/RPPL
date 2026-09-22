@@ -20,7 +20,7 @@
                 @endif
             </div>
 
-            <label class="cursor-pointer text-[11px] font-medium text-blue-600 hover:text-blue-700">
+            <label class="cursor-pointer text-[11px] font-medium theme-link">
                 {{ $team?->logo_path ? 'Replace logo' : 'Upload logo' }}
                 <input
                     type="file"

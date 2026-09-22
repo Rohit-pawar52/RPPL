@@ -217,4 +217,308 @@ class EditionTransactionTest extends TestCase
         $response->assertSee('1,250.00'); // balance
         $response->assertSee(route('admin.edition-transactions.index', ['edition_id' => $edition->id]), false);
     }
+
+    // ----- Rows per page -----
+
+    public function test_default_per_page_is_20(): void
+    {
+        EditionTransaction::factory()->count(5)->create();
+
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-transactions.index'));
+
+        $response->assertViewHas('transactions', fn ($paginator) => $paginator->perPage() === 20);
+    }
+
+    public function test_each_allowed_per_page_value_is_honored(): void
+    {
+        EditionTransaction::factory()->count(5)->create();
+
+        foreach ([10, 20, 50, 100, 200] as $value) {
+            $response = $this->actingAs($this->admin())
+                ->get(route('admin.edition-transactions.index', ['per_page' => $value]));
+
+            $response->assertViewHas('transactions', fn ($paginator) => $paginator->perPage() === $value);
+        }
+    }
+
+    public function test_invalid_per_page_falls_back_to_default(): void
+    {
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.edition-transactions.index', ['per_page' => 'lots']));
+
+        $response->assertViewHas('transactions', fn ($paginator) => $paginator->perPage() === 20);
+    }
+
+    public function test_per_page_survives_filter_and_sort(): void
+    {
+        $edition = Edition::factory()->create();
+        EditionTransaction::factory()->count(5)->create(['edition_id' => $edition->id]);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-transactions.index', [
+            'edition_id' => $edition->id,
+            'sort' => 'amount',
+            'direction' => 'asc',
+            'per_page' => 50,
+        ]));
+
+        $response->assertOk();
+        $response->assertViewHas('transactions', fn ($paginator) => $paginator->perPage() === 50);
+    }
+
+    public function test_selected_export_still_works_with_a_larger_page_size(): void
+    {
+        $transactions = EditionTransaction::factory()->count(25)->create();
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.edition-transactions.index', ['per_page' => 100]));
+
+        $response->assertViewHas('transactions', fn ($paginator) => $paginator->perPage() === 100 && $paginator->count() === 25);
+
+        $exportResponse = $this->actingAs($this->admin())->post(route('admin.edition-transactions.export-selected'), [
+            'selected_ids' => $transactions->pluck('id')->all(),
+        ]);
+
+        $exportResponse->assertOk();
+    }
+
+    // ----- Date range -----
+
+    public function test_date_range_filters_by_transaction_date(): void
+    {
+        $inRange = EditionTransaction::factory()->create(['category' => 'InRangeCategory', 'transaction_date' => '2026-03-15']);
+        $before = EditionTransaction::factory()->create(['category' => 'BeforeCategory', 'transaction_date' => '2026-01-01']);
+        $after = EditionTransaction::factory()->create(['category' => 'AfterCategory', 'transaction_date' => '2026-06-01']);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-transactions.index', [
+            'from_date' => '2026-03-01',
+            'to_date' => '2026-03-31',
+        ]));
+
+        $response->assertSee($inRange->category)
+            ->assertDontSee($before->category)
+            ->assertDontSee($after->category);
+    }
+
+    public function test_from_date_only_filters_open_ended(): void
+    {
+        $recent = EditionTransaction::factory()->create(['category' => 'RecentCategory', 'transaction_date' => '2026-06-01']);
+        $old = EditionTransaction::factory()->create(['category' => 'OldCategory', 'transaction_date' => '2026-01-01']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.edition-transactions.index', ['from_date' => '2026-05-01']));
+
+        $response->assertSee($recent->category)->assertDontSee($old->category);
+    }
+
+    public function test_to_date_only_filters_open_started(): void
+    {
+        $old = EditionTransaction::factory()->create(['category' => 'OldCategory', 'transaction_date' => '2026-01-01']);
+        $recent = EditionTransaction::factory()->create(['category' => 'RecentCategory', 'transaction_date' => '2026-06-01']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.edition-transactions.index', ['to_date' => '2026-02-01']));
+
+        $response->assertSee($old->category)->assertDontSee($recent->category);
+    }
+
+    public function test_to_date_before_from_date_is_rejected(): void
+    {
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-transactions.index', [
+            'from_date' => '2026-06-01',
+            'to_date' => '2026-01-01',
+        ]));
+
+        $response->assertSessionHasErrors('to_date');
+    }
+
+    // ----- Sorting -----
+
+    public function test_sorting_ascending_by_amount(): void
+    {
+        $cheap = EditionTransaction::factory()->create(['category' => 'CheapCategory', 'amount' => '100.00']);
+        $expensive = EditionTransaction::factory()->create(['category' => 'ExpensiveCategory', 'amount' => '900.00']);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-transactions.index', [
+            'sort' => 'amount', 'direction' => 'asc',
+        ]));
+
+        $body = $response->getContent();
+        $this->assertLessThan(
+            strpos($body, $expensive->category),
+            strpos($body, $cheap->category)
+        );
+    }
+
+    public function test_sorting_descending_by_amount(): void
+    {
+        $cheap = EditionTransaction::factory()->create(['category' => 'CheapCategory', 'amount' => '100.00']);
+        $expensive = EditionTransaction::factory()->create(['category' => 'ExpensiveCategory', 'amount' => '900.00']);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-transactions.index', [
+            'sort' => 'amount', 'direction' => 'desc',
+        ]));
+
+        $body = $response->getContent();
+        $this->assertLessThan(
+            strpos($body, $cheap->category),
+            strpos($body, $expensive->category)
+        );
+    }
+
+    public function test_invalid_sort_column_falls_back_to_default_safely(): void
+    {
+        EditionTransaction::factory()->create();
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.edition-transactions.index', ['sort' => 'created_by']));
+
+        $response->assertOk();
+    }
+
+    // ----- Sortable header rendering (regression) -----
+    //
+    // A prior bug: the shared <x-sortable-header> component wrote its
+    // arrow as the HTML entity string '&uarr;'/'&darr;' inside a Blade
+    // {{ }} expression, which auto-escapes via e() — so the entity got
+    // double-escaped into literal on-page text ("&amp;darr;", visible as
+    // "&darr;") instead of an arrow glyph. These tests inspect the
+    // actual rendered HTML (not just DB ordering) so that regression,
+    // or any variant of it, can never land unnoticed again.
+
+    public function test_sortable_header_renders_as_a_real_anchor_tag(): void
+    {
+        EditionTransaction::factory()->create();
+
+        $html = $this->actingAs($this->admin())
+            ->get(route('admin.edition-transactions.index'))
+            ->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '#<a href="[^"]*sort=amount[^"]*"[^>]*>\s*Amount\s*</a>#',
+            $html
+        );
+    }
+
+    public function test_active_sortable_header_shows_label_and_a_real_arrow_glyph(): void
+    {
+        EditionTransaction::factory()->create();
+
+        $html = $this->actingAs($this->admin())
+            ->get(route('admin.edition-transactions.index', ['sort' => 'amount', 'direction' => 'desc']))
+            ->getContent();
+
+        // The real ↓ glyph must appear...
+        $this->assertStringContainsString('↓', $html);
+        // ...and never as an escaped/unescaped HTML entity string.
+        $this->assertStringNotContainsString('&darr;', $html);
+        $this->assertStringNotContainsString('&amp;darr;', $html);
+        $this->assertStringNotContainsString('&uarr;', $html);
+        $this->assertStringNotContainsString('&amp;uarr;', $html);
+    }
+
+    public function test_sortable_header_never_renders_markdown_link_syntax(): void
+    {
+        EditionTransaction::factory()->create();
+
+        $html = $this->actingAs($this->admin())
+            ->get(route('admin.edition-transactions.index', ['sort' => 'amount', 'direction' => 'desc']))
+            ->getContent();
+
+        $this->assertDoesNotMatchRegularExpression('/\[Amount[^\]]*\]\(https?:\/\/[^)]*\)/', $html);
+        $this->assertStringNotContainsString('](http', $html);
+    }
+
+    public function test_sortable_header_toggle_url_switches_direction_and_preserves_filters(): void
+    {
+        $edition = Edition::factory()->create();
+        EditionTransaction::factory()->create(['edition_id' => $edition->id]);
+
+        $html = $this->actingAs($this->admin())->get(route('admin.edition-transactions.index', [
+            'edition_id' => $edition->id,
+            'sort' => 'amount',
+            'direction' => 'asc',
+        ]))->getContent();
+
+        preg_match('#<a href="([^"]*sort=amount[^"]*)"[^>]*>\s*Amount#', $html, $matches);
+        $this->assertNotEmpty($matches, 'Expected to find the Amount sortable header link in the response.');
+
+        $toggleUrl = html_entity_decode($matches[1]);
+        $this->assertStringContainsString('direction=desc', $toggleUrl);
+        $this->assertStringContainsString('edition_id='.$edition->id, $toggleUrl);
+    }
+
+    public function test_switching_to_a_different_sort_column_uses_its_own_default_direction(): void
+    {
+        EditionTransaction::factory()->create();
+
+        $html = $this->actingAs($this->admin())
+            ->get(route('admin.edition-transactions.index', ['sort' => 'amount', 'direction' => 'asc']))
+            ->getContent();
+
+        // The Type header is currently inactive (sort=amount is active),
+        // so clicking it must propose 'asc' (its own default first click),
+        // not whatever direction the currently-active column happens to be in.
+        preg_match('#<a href="([^"]*sort=type[^"]*)"[^>]*>\s*Type#', $html, $matches);
+        $this->assertNotEmpty($matches, 'Expected to find the Type sortable header link in the response.');
+        $this->assertStringContainsString('direction=asc', html_entity_decode($matches[1]));
+    }
+
+    // ----- Selected-rows export -----
+
+    public function test_selected_export_contains_only_the_selected_transactions(): void
+    {
+        $selected = EditionTransaction::factory()->create(['category' => 'SelectedCategory']);
+        $notSelected = EditionTransaction::factory()->create(['category' => 'NotSelectedCategory']);
+
+        $response = $this->actingAs($this->admin())->post(route('admin.edition-transactions.export-selected'), [
+            'selected_ids' => [$selected->id],
+        ]);
+
+        $response->assertOk();
+        $content = $response->streamedContent();
+        $this->assertStringContainsString($selected->category, $content);
+        $this->assertStringNotContainsString($notSelected->category, $content);
+    }
+
+    public function test_selected_export_ignores_ambient_filters(): void
+    {
+        $editionOne = Edition::factory()->create();
+        $editionTwo = Edition::factory()->create();
+        $selected = EditionTransaction::factory()->create(['edition_id' => $editionTwo->id, 'category' => 'IgnoresFiltersCategory']);
+
+        $response = $this->actingAs($this->admin())->post(
+            route('admin.edition-transactions.export-selected', ['edition_id' => $editionOne->id]),
+            ['selected_ids' => [$selected->id]]
+        );
+
+        $response->assertOk();
+        $this->assertStringContainsString($selected->category, $response->streamedContent());
+    }
+
+    public function test_selected_export_rejects_a_nonexistent_id(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('admin.edition-transactions.export-selected'), [
+            'selected_ids' => [999999],
+        ]);
+
+        $response->assertSessionHasErrors('selected_ids.0');
+    }
+
+    public function test_selected_export_requires_at_least_one_id(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('admin.edition-transactions.export-selected'), [
+            'selected_ids' => [],
+        ]);
+
+        $response->assertSessionHasErrors('selected_ids');
+    }
+
+    public function test_scorer_cannot_use_selected_export(): void
+    {
+        $transaction = EditionTransaction::factory()->create();
+
+        $this->actingAs($this->scorer())
+            ->post(route('admin.edition-transactions.export-selected'), ['selected_ids' => [$transaction->id]])
+            ->assertForbidden();
+    }
 }

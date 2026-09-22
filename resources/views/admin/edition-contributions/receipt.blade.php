@@ -27,11 +27,11 @@
         .header .brand {
             font-size: 18px;
             font-weight: bold;
-            color: #1d4ed8;
+            color: {{ $branding->primaryColor }};
         }
         .header .subtitle {
             font-size: 12px;
-            color: #6b7280;
+            color: {{ $branding->secondaryColor }};
             margin-top: 2px;
         }
         .meta {
@@ -99,43 +99,6 @@
     </style>
 </head>
 <body>
-    <div class="receipt">
-        <div class="header">
-            <div class="brand">RPPL Tournament</div>
-            <div class="subtitle">Contribution Receipt</div>
-        </div>
-
-        <table class="meta">
-            <tr>
-                <td class="label">Receipt No.</td>
-                <td class="value">{{ $contribution->receiptReference() }}</td>
-            </tr>
-            <tr>
-                <td class="label">Date</td>
-                <td class="value">{{ $contribution->contributed_at->format('d M Y') }}</td>
-            </tr>
-        </table>
-
-        <table class="details">
-            <tr>
-                <td class="label">Received From</td>
-                <td class="value">{{ $contribution->contributorName() }}</td>
-            </tr>
-            <tr>
-                <td class="label">Edition</td>
-                <td class="value">{{ $contribution->edition->name }}</td>
-            </tr>
-        </table>
-
-        <div class="amount-box">
-            <div class="label">Contribution Amount</div>
-            <div class="value">&#8377;{{ number_format($contribution->amount, 2) }}</div>
-        </div>
-
-        <div class="footer">
-            <p>Thank you for your contribution to RPPL.</p>
-            <p>This is a computer-generated receipt.</p>
-        </div>
-    </div>
+    @include('admin.edition-contributions._receipt', ['contribution' => $contribution])
 </body>
 </html>

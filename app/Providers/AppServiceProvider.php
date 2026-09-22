@@ -3,10 +3,14 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\View\Composers\AnnouncementTickerComposer;
+use App\View\Composers\BrandingComposer;
+use App\View\Composers\ContentPageFooterComposer;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 
@@ -27,6 +31,10 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureRateLimiting();
         $this->configureAuthorization();
+        $this->configureFirebaseCredentialsFallback();
+        $this->configureBranding();
+        $this->configureAnnouncementTicker();
+        $this->configureContentPageFooter();
     }
 
     /**
@@ -57,6 +65,14 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('player-registration-status', function (Request $request) {
             return Limit::perMinute(10)->by($request->ip());
         });
+
+        // Called only after an explicit browser "Enable Notifications"
+        // opt-in (Phase B1 audit) — generous enough for a real visitor's
+        // own retry/token-refresh, without leaving the endpoint open to
+        // bulk abuse.
+        RateLimiter::for('fcm-subscribe', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip());
+        });
     }
 
     /**
@@ -82,5 +98,86 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-tournament', function (User $user) {
             return $user->role?->slug === 'admin';
         });
+    }
+
+    /**
+     * kreait/laravel-firebase's own default config already supports
+     * FIREBASE_CREDENTIALS as an env-provided path — but requiring an
+     * absolute, machine-specific path in .env is a real portability
+     * problem: it works on exactly one developer's machine and breaks
+     * the moment the app is deployed anywhere else (a different OS, a
+     * different directory, a different developer's checkout).
+     *
+     * Instead, when FIREBASE_CREDENTIALS is left blank, fall back to
+     * storage_path('app/firebase/firebase-service-account.json') —
+     * resolved fresh, relative to wherever THIS app instance actually
+     * lives, on every machine (dev, staging, production) alike. The
+     * credential file only ever needs to exist at that one conventional
+     * location; nothing environment-specific goes in .env at all. This
+     * runs in boot() (not register()) specifically so it applies AFTER
+     * kreait/laravel-firebase's own ServiceProvider has already merged
+     * its default config in register() — Laravel guarantees every
+     * provider's register() runs before any provider's boot(),
+     * regardless of registration order, so this is safe either way.
+     * An explicit FIREBASE_CREDENTIALS value, if ever set, still wins
+     * (e.g. a hosting platform that mounts the secret somewhere else).
+     */
+    private function configureFirebaseCredentialsFallback(): void
+    {
+        if (blank(config('firebase.projects.app.credentials'))) {
+            config(['firebase.projects.app.credentials' => storage_path('app/firebase/firebase-service-account.json')]);
+        }
+    }
+
+    /**
+     * Shares one $branding value object (App\Support\Branding) with the
+     * views that render presentation settings (Phase 3.44B3; widened in
+     * the pre-UAT stabilization pass to 'public.*' so every public child
+     * view — not just the handful originally listed — can reference
+     * $branding in its own @section('title', ...), since a child view's
+     * sections execute in the child's own data scope before the parent
+     * layout's composer fires). 'public.*' already covers public.home,
+     * public.maintenance and public.content-page; those are kept
+     * explicit anyway since composer registration is idempotent.
+     * Layout files pass $branding forward to their own @include'd
+     * partials automatically (Blade's normal scope inheritance), so
+     * partials are not listed here separately.
+     */
+    private function configureBranding(): void
+    {
+        View::composer([
+            'layouts.public',
+            'layouts.admin',
+            'layouts.guest',
+            'public.*',
+            'public.home',
+            'public.maintenance',
+            'public.content-page',
+            'admin.editions.report-pdf',
+            'admin.edition-contributions.receipt',
+            'public.matches.scorecard-pdf',
+        ], BrandingComposer::class);
+    }
+
+    /**
+     * The public ticker's currently-active announcements (Phase 3.45) —
+     * bound only to its own partial view, included exactly once from
+     * layouts.public, so this query never runs for admin/guest/
+     * maintenance pages (none of which include that partial).
+     */
+    private function configureAnnouncementTicker(): void
+    {
+        View::composer('layouts.partials.announcement-ticker', AnnouncementTickerComposer::class);
+    }
+
+    /**
+     * The public footer's active content-page links (Phase 3.46) —
+     * bound only to its own partial view, so this never runs for
+     * admin/guest/maintenance pages (none of which include the public
+     * footer).
+     */
+    private function configureContentPageFooter(): void
+    {
+        View::composer('layouts.partials.public-footer', ContentPageFooterComposer::class);
     }
 }

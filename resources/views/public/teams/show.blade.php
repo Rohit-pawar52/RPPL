@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', $team->name.' &middot; RPPL')
+@section('title', $team->name.' · '.$branding->shortName)
 
 @section('content')
     <a href="{{ route('public.teams.index') }}" class="mb-4 inline-block text-xs text-neutral-500 hover:text-neutral-700">
@@ -32,7 +32,7 @@
         @forelse($editionTeams as $editionTeam)
             <a
                 href="{{ route('public.teams.show', ['team' => $team, 'edition_id' => $editionTeam->edition_id]) }}"
-                class="rounded-md border px-2.5 py-1 text-xs font-medium {{ $selectedEditionTeam?->id === $editionTeam->id ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}"
+                class="rounded-md border px-2.5 py-1 text-xs font-medium {{ $selectedEditionTeam?->id === $editionTeam->id ? 'theme-primary-border theme-primary-soft-bg theme-primary-text' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}"
             >
                 {{ $editionTeam->edition->name }}
             </a>
@@ -112,7 +112,7 @@
                         vs {{ $opponent->team->name }}
                     </a>
                     <p class="text-[11px] text-neutral-500">
-                        {{ $match->scheduled_at->format('d M Y') }}
+                        {{ display_datetime($match->scheduled_at, 'd M Y') }}
                         @if($match->venue)
                             &middot; {{ $match->venue->name }}
                         @endif

@@ -88,7 +88,7 @@ class RealtimeMatchUpdateDispatchTest extends TestCase
             ->get();
     }
 
-    private function addInnings(GameMatch $match, int $number, int $battingTeamId, int $bowlingTeamId, string $status, int $runs = 0, int $wickets = 0): Innings
+    private function addInnings(GameMatch $match, int $number, int $battingTeamId, int $bowlingTeamId, string $status, int $runs = 0, int $wickets = 0, int $legalBalls = 0): Innings
     {
         return Innings::create([
             'match_id' => $match->id,
@@ -98,6 +98,7 @@ class RealtimeMatchUpdateDispatchTest extends TestCase
             'status' => $status,
             'total_runs' => $runs,
             'total_wickets' => $wickets,
+            'legal_balls' => $legalBalls,
         ]);
     }
 
@@ -258,7 +259,10 @@ class RealtimeMatchUpdateDispatchTest extends TestCase
     public function test_manually_completing_an_innings_dispatches_exactly_one_event(): void
     {
         $match = $this->liveMatchWithSquads();
-        $innings = $this->addInnings($match, 1, $match->edition_team_a_id, $match->edition_team_b_id, 'live');
+        // legal_balls must be non-zero — InningsService::canCompleteInnings()
+        // requires at least one legal delivery before an innings may be
+        // manually completed (pre-UAT audit fix).
+        $innings = $this->addInnings($match, 1, $match->edition_team_a_id, $match->edition_team_b_id, 'live', legalBalls: 1);
 
         $this->actingAs($this->admin())
             ->post(route('admin.matches.innings.complete', [$match, $innings]))

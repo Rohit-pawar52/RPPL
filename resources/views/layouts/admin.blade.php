@@ -3,7 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Dashboard') &middot; RPPL Admin</title>
+    <title>@yield('title', 'Dashboard') &middot; {{ $branding->shortName }} Admin</title>
+    @if($branding->faviconUrl)
+        <link rel="icon" href="{{ $branding->faviconUrl }}">
+    @endif
+    @include('layouts.partials.theme-vars')
 
     @php
         $flash = [

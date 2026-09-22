@@ -65,13 +65,29 @@ class PlayerRegistrationService
 
     /**
      * Deletes a registration only when it has not been assigned to a
-     * squad. Returns false instead of letting the FK constraint fail,
-     * so the controller can show a friendly message.
+     * squad. Returns false instead of letting the delete silently
+     * cascade, so the controller can show a friendly message.
      *
-     * No lockForUpdate() here: squad assignment (TeamPlayer) has no
-     * admin UI yet in this phase, so there is no real concurrent writer
-     * that could race this check — adding a lock now would guard
-     * against a scenario that cannot currently happen.
+     * Locks the registration row and rechecks hasSquadAssignment()
+     * against fresh data before writing (Phase 3.41), mirroring
+     * TeamPlayerService::deleteTeamPlayer()'s exact pattern for the
+     * same class of race. This matters here specifically because
+     * team_players.player_registration_id is CASCADE ON DELETE (see the
+     * team_players migration) — unlike a RESTRICT constraint, an
+     * unguarded delete() would not fail loudly on a squad-assigned
+     * registration, it would silently destroy the TeamPlayer row too.
+     * A bare "check then delete" without a lock leaves a window where a
+     * concurrent TeamPlayerController::store() could create that squad
+     * assignment between the check and the delete.
+     *
+     * No corresponding change was needed on the TeamPlayer creation
+     * side: TeamPlayer::create() inserts a row with a foreign key to
+     * this same player_registrations row, and InnoDB's FK-check
+     * mechanism takes an implicit shared lock on the referenced parent
+     * row for the life of that insert's transaction — the same row this
+     * lockForUpdate() call holds exclusively. The two writers are
+     * already forced to serialize through that shared parent row,
+     * without TeamPlayer's own code needing to participate explicitly.
      *
      * File cleanup (Phase 3.39D) happens strictly AFTER the DB row is
      * confirmed deleted, never before: if delete() somehow returns
@@ -81,24 +97,28 @@ class PlayerRegistrationService
      */
     public function deleteRegistration(PlayerRegistration $registration): bool
     {
-        if ($this->hasSquadAssignment($registration)) {
-            return false;
-        }
+        return DB::transaction(function () use ($registration) {
+            $locked = PlayerRegistration::whereKey($registration->getKey())->lockForUpdate()->firstOrFail();
 
-        $ownedPaths = array_filter([
-            $registration->aadhaar_document_path,
-            $registration->payment_proof_path,
-        ]);
+            if ($this->hasSquadAssignment($locked)) {
+                return false;
+            }
 
-        if (! $registration->delete()) {
-            return false;
-        }
+            $ownedPaths = array_filter([
+                $locked->aadhaar_document_path,
+                $locked->payment_proof_path,
+            ]);
 
-        if ($ownedPaths !== []) {
-            Storage::disk('local')->delete($ownedPaths);
-        }
+            if (! $locked->delete()) {
+                return false;
+            }
 
-        return true;
+            if ($ownedPaths !== []) {
+                Storage::disk('local')->delete($ownedPaths);
+            }
+
+            return true;
+        });
     }
 
     public function hasSquadAssignment(PlayerRegistration $registration): bool

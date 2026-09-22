@@ -6,6 +6,10 @@ use App\Models\Player;
 use App\Models\PlayerRegistration;
 use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\Demo\DemoEditionSeeder;
+use Database\Seeders\Demo\DemoPlayerSeeder;
+use Database\Seeders\Demo\DemoRegistrationSeeder;
+use Database\Seeders\Demo\DemoTeamSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -252,5 +256,48 @@ class PlayerRegistrationDocumentTest extends TestCase
             ->get(route('admin.player-registrations.index'))
             ->assertOk()
             ->assertSee($registration->registration_number);
+    }
+
+    // ----- Demo dataset: DemoRegistrationSeeder's one document-bearing row -----
+
+    /**
+     * Pre-UAT audit finding: no seeded registration had any document, so
+     * the admin document-review workflow had nothing to demonstrate.
+     * DemoRegistrationSeeder now attaches a synthetic, non-identifying
+     * payment-proof placeholder to exactly one demo registration — this
+     * proves that row is real, downloadable through the SAME authorized
+     * route/policy every other registration's documents go through, and
+     * that re-running the seeder stays idempotent (no duplicate files,
+     * no exception) — the requirement `migrate:fresh --seed` depends on.
+     */
+    public function test_demo_registration_seeder_attaches_exactly_one_downloadable_payment_proof(): void
+    {
+        Storage::fake('local');
+
+        $this->seed(DemoTeamSeeder::class);
+        $this->seed(DemoPlayerSeeder::class);
+        $this->seed(DemoEditionSeeder::class);
+        $this->seed(DemoRegistrationSeeder::class);
+
+        $withProof = PlayerRegistration::whereNotNull('payment_proof_path')->get();
+        $this->assertCount(1, $withProof);
+        $this->assertSame(0, PlayerRegistration::whereNotNull('aadhaar_document_path')->count());
+
+        $registration = $withProof->first();
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.payment-proof', $registration));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'image/png');
+
+        // Re-running the seeder must not duplicate the row/file or throw.
+        $this->seed(DemoRegistrationSeeder::class);
+
+        $this->assertCount(1, PlayerRegistration::whereNotNull('payment_proof_path')->get());
+        $this->assertSame(
+            $registration->payment_proof_path,
+            $registration->fresh()->payment_proof_path
+        );
     }
 }

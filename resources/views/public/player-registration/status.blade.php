@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Check Registration Status &middot; RPPL')
+@section('title', 'Check Registration Status · '.$branding->shortName)
 
 @section('content')
     <div class="mx-auto max-w-lg rounded-lg border border-neutral-200 bg-white p-6">
@@ -25,7 +25,7 @@
                 autocomplete="tel"
                 required
             />
-            <button type="submit" class="w-full rounded-md bg-blue-600 px-3 py-2 text-[13px] font-medium text-white hover:bg-blue-500">
+            <button type="submit" class="w-full rounded-md theme-button px-3 py-2 text-[13px] font-medium">
                 Check Status
             </button>
         </form>
@@ -36,7 +36,7 @@
                     $labels = [
                         'pending' => ['Pending Verification', 'Your payment proof is awaiting manual verification.'],
                         'paid' => ['Paid', 'Your payment has been verified.'],
-                        'failed' => ['Payment Verification Failed', 'Your payment could not be verified. Please contact RPPL administration.'],
+                        'failed' => ['Payment Verification Failed', 'Your payment could not be verified. Please contact '.$branding->shortName.' administration.'],
                         'refunded' => ['Refunded', 'Your payment is marked as refunded.'],
                     ];
                     [$paymentLabel, $paymentMessage] = $labels[$result->payment_status] ?? [ucfirst($result->payment_status), ''];
@@ -58,7 +58,7 @@
                         <div>
                             <dt class="text-neutral-400">Registration Fee</dt>
                             <dd class="mt-0.5 font-medium text-neutral-800">
-                                {{ $result->registration_fee !== null ? '₹'.number_format($result->registration_fee, 2) : '—' }}
+                                {{ $result->registration_fee !== null ? money($result->registration_fee) : '—' }}
                             </dd>
                         </div>
                         <div>
@@ -81,7 +81,7 @@
             @endif
         @endisset
 
-        <a href="{{ route('public.player-registration.create') }}" class="mt-5 inline-block text-xs font-medium text-blue-600 hover:underline">
+        <a href="{{ route('public.player-registration.create') }}" class="mt-5 inline-block text-xs font-medium theme-link hover:underline">
             &larr; Back to Player Registration
         </a>
     </div>

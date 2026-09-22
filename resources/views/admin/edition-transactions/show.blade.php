@@ -27,7 +27,7 @@
     <div class="rounded-lg border border-neutral-200 bg-white p-4">
         <div class="flex items-center justify-between gap-3">
             <h2 class="text-base font-semibold text-neutral-900">
-                &#8377;{{ number_format($transaction->amount, 2) }}
+                {{ money($transaction->amount) }}
             </h2>
             <x-status-badge :status="$transaction->type" />
         </div>

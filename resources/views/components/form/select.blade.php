@@ -10,7 +10,7 @@
         name="{{ $name }}"
         {{ $attributes->merge([
             'class' => 'w-full rounded-md border bg-white px-3 py-2 text-[13px] focus:outline-none focus:ring-2 '
-                . ($errors->has($name) ? 'border-red-400 focus:ring-red-100' : 'border-neutral-300 focus:ring-blue-100'),
+                . ($errors->has($name) ? 'border-red-400 focus:ring-red-100' : 'border-neutral-300 theme-focus-ring'),
         ]) }}
     >
         @if($placeholder)

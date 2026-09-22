@@ -3,11 +3,16 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'RPPL')</title>
-    @vite(['resources/css/app.css'])
+    <title>@yield('title', $branding->applicationName)</title>
+    @if($branding->faviconUrl)
+        <link rel="icon" href="{{ $branding->faviconUrl }}">
+    @endif
+    @include('layouts.partials.theme-vars')
+    @vite(['resources/css/app.css', 'resources/js/push-notifications.js'])
 </head>
 <body class="h-full text-[13px] text-neutral-800 antialiased">
     <div class="flex min-h-full flex-col">
+        @include('layouts.partials.announcement-ticker')
         @include('layouts.partials.public-header')
 
         <main class="mx-auto w-full max-w-5xl flex-1 p-4 lg:p-6">
@@ -27,6 +32,7 @@
         </main>
 
         @include('layouts.partials.public-footer')
+        @include('layouts.partials.push-soft-prompt')
     </div>
 </body>
 </html>

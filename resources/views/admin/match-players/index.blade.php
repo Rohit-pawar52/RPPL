@@ -19,7 +19,7 @@
         <p class="mt-1 text-xs text-neutral-500">
             {{ $match->edition->name }}
             &middot;
-            {{ $match->scheduled_at->format('d M Y, h:i A') }}
+            {{ display_datetime($match->scheduled_at, 'd M Y, h:i A') }}
         </p>
     </div>
 

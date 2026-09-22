@@ -28,7 +28,7 @@
 
         <button
             type="submit"
-            class="mt-2 w-full rounded-md bg-blue-600 px-3 py-2 text-[13px] font-medium text-white hover:bg-blue-500"
+            class="mt-2 w-full rounded-md theme-button px-3 py-2 text-[13px] font-medium"
         >
             Sign in
         </button>

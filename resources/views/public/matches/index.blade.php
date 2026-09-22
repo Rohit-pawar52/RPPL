@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Matches &middot; RPPL')
+@section('title', 'Matches · '.$branding->shortName)
 
 @section('content')
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -9,7 +9,7 @@
         <form method="GET" action="{{ route('public.matches.index') }}" class="flex items-center gap-2">
             <select
                 name="edition_id"
-                class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-100"
+                class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
             >
                 <option value="">All editions</option>
                 @foreach($editions as $edition)
@@ -40,7 +40,7 @@
                         {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
                     </a>
                     <p class="text-[11px] text-neutral-500">
-                        {{ $match->scheduled_at->format('d M Y') }}
+                        {{ display_datetime($match->scheduled_at, 'd M Y') }}
                         @if($match->venue)
                             &middot; {{ $match->venue->name }}
                         @endif

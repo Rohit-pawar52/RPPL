@@ -9,3 +9,223 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/*
+ * Runtime theme colors (Phase 3.44B4) — a static fallback only.
+ * The real values come from resources/views/layouts/partials/
+ * theme-vars.blade.php, rendered fresh on every request from the
+ * admin-configured general.primary_color/secondary_color/button_color
+ * settings, so an admin's change takes effect on the very next page
+ * load with no npm rebuild. These :root defaults (matching
+ * SettingsRegistry's own registry defaults) only apply if that partial
+ * is ever missing from a page, so the app never renders with a blank
+ * CSS variable.
+ *
+ * These are plain CSS custom properties, never Tailwind @theme tokens:
+ * a @theme value is baked into generated utility classes at BUILD
+ * time, which is exactly what a runtime, admin-editable color cannot
+ * use.
+ */
+:root {
+    --rppl-primary: #2563eb;
+    --rppl-primary-hover: color-mix(in srgb, var(--rppl-primary) 85%, black);
+    --rppl-primary-soft: color-mix(in srgb, var(--rppl-primary) 12%, white);
+    --rppl-primary-fg: #ffffff;
+    --rppl-secondary: #737373;
+    --rppl-button: #2563eb;
+    --rppl-button-hover: color-mix(in srgb, var(--rppl-button) 85%, black);
+    --rppl-button-fg: #ffffff;
+    --rppl-announcement-bg: #2563eb;
+    --rppl-announcement-text: #ffffff;
+}
+
+/*
+ * Small, reusable theme classes — components/pages consume these
+ * instead of querying settings themselves (see BrandingComposer).
+ * Only brand/action colors live here; semantic colors (destructive,
+ * success, warning, status badges) intentionally stay as ordinary
+ * Tailwind utilities, never routed through this file.
+ */
+.theme-button {
+    background-color: var(--rppl-button);
+    color: var(--rppl-button-fg);
+}
+.theme-button:hover {
+    background-color: var(--rppl-button-hover);
+}
+
+.theme-primary-bg {
+    background-color: var(--rppl-primary);
+    color: var(--rppl-primary-fg);
+}
+
+.theme-primary-soft-bg {
+    background-color: var(--rppl-primary-soft);
+}
+
+.theme-primary-text {
+    color: var(--rppl-primary);
+}
+
+.theme-primary-border {
+    border-color: var(--rppl-primary);
+}
+
+.theme-secondary-text {
+    color: var(--rppl-secondary);
+}
+
+.theme-link {
+    color: var(--rppl-primary);
+}
+.theme-link:hover {
+    color: var(--rppl-primary-hover);
+}
+
+.theme-hover-primary:hover {
+    color: var(--rppl-primary);
+}
+
+.theme-hover-primary-soft-bg:hover {
+    background-color: var(--rppl-primary-soft);
+}
+
+.theme-focus-ring:focus {
+    --tw-ring-color: var(--rppl-primary-soft);
+}
+
+/*
+ * Public announcement ticker (Phase 3.45) — CSS-only continuous
+ * marquee, never <marquee>, never a JS animation loop. The rendered
+ * content is duplicated once in the Blade partial so a plain
+ * translateX(-50%) loop has no visible seam; .rppl-ticker-track's own
+ * width is intrinsic (max-content), so this works for one message or
+ * many without any JS measuring anything. prefers-reduced-motion
+ * disables the animation and makes the (now single-copy) content
+ * horizontally scrollable instead of removing it.
+ */
+.rppl-ticker {
+    background-color: var(--rppl-announcement-bg);
+    color: var(--rppl-announcement-text);
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.rppl-ticker-track {
+    display: inline-flex;
+    width: max-content;
+    animation: rppl-ticker-scroll var(--rppl-ticker-duration, 30s) linear infinite;
+}
+
+.rppl-ticker-content {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.rppl-ticker-item {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.rppl-ticker-separator {
+    font-size: 0.75rem;
+    line-height: 1;
+    opacity: 0.6;
+}
+
+@keyframes rppl-ticker-scroll {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rppl-ticker {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .rppl-ticker-track {
+        animation: none;
+    }
+    .rppl-ticker-content-duplicate {
+        display: none;
+    }
+}
+
+/*
+ * Rendered Markdown body for the fixed content pages (Phase 3.46) —
+ * Privacy Policy / Terms & Conditions / FAQs. A small, hand-written
+ * rule set rather than pulling in @tailwindcss/typography for three
+ * pages; matches the compact, neutral look already used everywhere
+ * else in the public site.
+ */
+.content-page-body {
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: #404040;
+}
+.content-page-body h2 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #171717;
+}
+.content-page-body h2:first-child {
+    margin-top: 0;
+}
+.content-page-body h3 {
+    margin-top: 1.25rem;
+    margin-bottom: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #171717;
+}
+.content-page-body p {
+    margin-bottom: 0.75rem;
+}
+.content-page-body ul,
+.content-page-body ol {
+    margin: 0 0 0.75rem 1.25rem;
+}
+.content-page-body ul {
+    list-style-type: disc;
+}
+.content-page-body ol {
+    list-style-type: decimal;
+}
+.content-page-body li {
+    margin-bottom: 0.25rem;
+}
+.content-page-body a {
+    color: var(--rppl-primary);
+    text-decoration: underline;
+}
+.content-page-body strong {
+    font-weight: 600;
+    color: #171717;
+}
+
+/*
+ * Push-notification bell state indicator (Phase 3.47) — a small static
+ * dot, never an animation/pulse. Hidden entirely for the default
+ * (not-yet-decided) state; resources/js/push-notifications.js sets
+ * data-state to "enabled" or "denied" to reveal it.
+ */
+.rppl-notify-indicator {
+    display: none;
+}
+.rppl-notify-indicator[data-state='enabled'] {
+    display: block;
+    background-color: #16a34a;
+}
+.rppl-notify-indicator[data-state='denied'] {
+    display: block;
+    background-color: #a3a3a3;
+}

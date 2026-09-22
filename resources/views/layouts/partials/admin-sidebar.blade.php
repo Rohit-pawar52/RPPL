@@ -14,7 +14,6 @@
         <x-nav-item :route="route('admin.matches.index')" icon="trophy" :active="request()->routeIs('admin.matches.*')">
             Matches
         </x-nav-item>
-        <x-nav-item icon="chart-bar" disabled>Scoring</x-nav-item>
 
         @can('manage-tournament')
             <p class="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Tournament</p>
@@ -57,8 +56,24 @@
             <x-nav-item :route="route('admin.users.index')" icon="user" :active="request()->routeIs('admin.users.*')">
                 Users
             </x-nav-item>
-            <x-nav-item icon="document-chart" disabled>Reports</x-nav-item>
-            <x-nav-item icon="cog" disabled>Settings</x-nav-item>
+            <x-nav-item :route="route('admin.notifications.index')" icon="bell" :active="request()->routeIs('admin.notifications.*')">
+                Notifications
+            </x-nav-item>
+            <x-nav-item :route="route('admin.announcements.index')" icon="megaphone" :active="request()->routeIs('admin.announcements.*')">
+                Announcements
+            </x-nav-item>
+            <x-nav-item :route="route('admin.reports.index')" icon="document-chart" :active="request()->routeIs('admin.reports.*')">
+                Reports
+            </x-nav-item>
+            <x-nav-item :route="route('admin.data-cleanup.index')" icon="trash" :active="request()->routeIs('admin.data-cleanup.*')">
+                Data Cleanup
+            </x-nav-item>
+            <x-nav-item :route="route('admin.content-pages.index')" icon="clipboard" :active="request()->routeIs('admin.content-pages.*')">
+                Content Pages
+            </x-nav-item>
+            <x-nav-item :route="route('admin.settings.index')" icon="cog" :active="request()->routeIs('admin.settings.*')">
+                Settings
+            </x-nav-item>
         @endcan
     </nav>
 </aside>

@@ -6,18 +6,30 @@
 
     Expects: $card (one entry from ScorecardService::getMatchScorecard())
 --}}
-@php $innings = $card['innings']; @endphp
+@php
+    $innings = $card['innings'];
+    // The match can be abandoned/cancelled without ever touching Innings
+    // rows (MatchFlowService intentionally leaves scoring history exactly
+    // as it was), so a still-'live' innings under such a match is correct
+    // data, not a bug — only the badge shown here needs to reflect the
+    // match outcome instead of contradicting it.
+    $inningsInterrupted = $innings->status === 'live' && in_array($match->match_status, ['abandoned', 'cancelled'], true);
+@endphp
 <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
     <div class="flex items-center justify-between gap-3">
         <h3 class="text-sm font-semibold text-neutral-900">
             Innings {{ $innings->innings_number }} &mdash; {{ $innings->battingTeam->team->name }}
         </h3>
-        <x-status-badge :status="$innings->status" />
+        <x-status-badge :status="$inningsInterrupted ? $match->match_status : $innings->status" />
     </div>
     <p class="mt-1 text-lg font-semibold text-neutral-900">
         {{ $innings->total_runs }}/{{ $innings->total_wickets }}
         <span class="text-xs font-normal text-neutral-500">({{ $innings->oversDisplay() }} overs)</span>
     </p>
+
+    @if($inningsInterrupted)
+        <p class="mt-1 text-xs text-neutral-500">Innings in progress when the match was {{ $match->match_status }}.</p>
+    @endif
 
     @if($innings->status === 'live' && $card['lastDelivery'])
         <p class="mt-1 text-xs text-neutral-500">

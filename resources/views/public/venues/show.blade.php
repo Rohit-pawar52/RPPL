@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', $venue->name.' &middot; RPPL')
+@section('title', $venue->name.' · '.$branding->shortName)
 
 @section('content')
     <a href="{{ route('public.venues.index') }}" class="mb-4 inline-block text-xs text-neutral-500 hover:text-neutral-700">

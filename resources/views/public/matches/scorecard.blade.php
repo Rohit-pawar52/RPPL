@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Scorecard &middot; '.$match->teamA->team->name.' vs '.$match->teamB->team->name)
+@section('title', 'Scorecard · '.$match->teamA->team->name.' vs '.$match->teamB->team->name)
 
 @section('content')
     <div class="mb-4 flex items-center justify-between gap-3">

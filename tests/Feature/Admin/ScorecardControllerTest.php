@@ -134,4 +134,22 @@ class ScorecardControllerTest extends TestCase
         $response->assertOk();
         $response->assertDontSee(route('admin.matches.scorecard', $match), false);
     }
+
+    /**
+     * Abandoning a match never touches Innings rows (MatchFlowService
+     * intentionally leaves scoring history exactly as it was), so a
+     * still-'live' innings under an abandoned match is correct data, not
+     * a bug — the scorecard badge just needs to stop contradicting it.
+     */
+    public function test_scorecard_shows_match_outcome_not_live_for_an_interrupted_innings(): void
+    {
+        [$match] = $this->matchWithScoredInnings();
+        $match->update(['match_status' => 'abandoned']);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.matches.scorecard', $match));
+
+        $response->assertOk();
+        $response->assertSee('Innings in progress when the match was abandoned.');
+        $response->assertDontSee('>live<', false);
+    }
 }

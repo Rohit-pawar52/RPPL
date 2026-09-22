@@ -57,7 +57,7 @@
             <h3 class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Finance</h3>
             <a
                 href="{{ route('admin.edition-transactions.index', ['edition_id' => $edition->id]) }}"
-                class="text-xs font-medium text-blue-600 hover:underline"
+                class="text-xs font-medium theme-link hover:underline"
             >
                 View Transactions
             </a>
@@ -65,15 +65,15 @@
         <dl class="grid grid-cols-3 gap-3 text-xs">
             <div>
                 <dt class="text-neutral-400">Income</dt>
-                <dd class="mt-0.5 font-medium text-neutral-800">&#8377;{{ number_format($financeSummary['income'], 2) }}</dd>
+                <dd class="mt-0.5 font-medium text-neutral-800">{{ money($financeSummary['income']) }}</dd>
             </div>
             <div>
                 <dt class="text-neutral-400">Expense</dt>
-                <dd class="mt-0.5 font-medium text-neutral-800">&#8377;{{ number_format($financeSummary['expense'], 2) }}</dd>
+                <dd class="mt-0.5 font-medium text-neutral-800">{{ money($financeSummary['expense']) }}</dd>
             </div>
             <div>
                 <dt class="text-neutral-400">Balance</dt>
-                <dd class="mt-0.5 font-medium text-neutral-800">&#8377;{{ number_format($financeSummary['balance'], 2) }}</dd>
+                <dd class="mt-0.5 font-medium text-neutral-800">{{ money($financeSummary['balance']) }}</dd>
             </div>
         </dl>
     </div>
@@ -83,7 +83,7 @@
             <h3 class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Contributions</h3>
             <a
                 href="{{ route('admin.edition-contributions.index', ['edition_id' => $edition->id]) }}"
-                class="text-xs font-medium text-blue-600 hover:underline"
+                class="text-xs font-medium theme-link hover:underline"
             >
                 View Contributions
             </a>
@@ -95,7 +95,7 @@
             </div>
             <div>
                 <dt class="text-neutral-400">Total Contributions</dt>
-                <dd class="mt-0.5 font-medium text-neutral-800">&#8377;{{ number_format($contributionSummary['total'], 2) }}</dd>
+                <dd class="mt-0.5 font-medium text-neutral-800">{{ money($contributionSummary['total']) }}</dd>
             </div>
         </dl>
     </div>

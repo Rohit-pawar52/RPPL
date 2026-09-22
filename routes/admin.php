@@ -1,9 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\Auth\LoginController;
 use App\Http\Controllers\Admin\CommitteeMemberController;
+use App\Http\Controllers\Admin\ContentPageController;
 use App\Http\Controllers\Admin\ContributorController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DataCleanupController;
 use App\Http\Controllers\Admin\EditionContributionController;
 use App\Http\Controllers\Admin\EditionController;
 use App\Http\Controllers\Admin\EditionTeamController;
@@ -12,10 +15,13 @@ use App\Http\Controllers\Admin\GameMatchController;
 use App\Http\Controllers\Admin\InningsController;
 use App\Http\Controllers\Admin\MatchFlowController;
 use App\Http\Controllers\Admin\MatchPlayerController;
+use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PlayerController;
 use App\Http\Controllers\Admin\PlayerRegistrationController;
+use App\Http\Controllers\Admin\ReportsController;
 use App\Http\Controllers\Admin\ScorecardController;
 use App\Http\Controllers\Admin\ScoringController;
+use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\TeamPlayerController;
 use App\Http\Controllers\Admin\UserController;
@@ -38,6 +44,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
         Route::get('dashboard', DashboardController::class)->name('dashboard');
 
+        // Read-side reporting/navigation hub (Phase 3.43) — links to
+        // existing exports/PDFs, plus one new print-friendly Financial
+        // Summary. No writes, no new tables.
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('/', [ReportsController::class, 'index'])->name('index');
+            Route::get('/financial-summary', [ReportsController::class, 'financialSummary'])->name('financial-summary');
+        });
+
         // EditionController and PlayerController additionally enforce their
         // policies (admin-only) via explicit $this->authorize() calls in
         // each controller method (authorizeResource() is incompatible with
@@ -49,6 +63,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('edition-teams', EditionTeamController::class)->only([
             'index', 'create', 'store', 'show', 'destroy',
         ]);
+        // Must precede the resource route below — otherwise "export"
+        // would be captured by the {match} wildcard.
+        Route::get('matches/export', [GameMatchController::class, 'export'])->name('matches.export');
+        Route::post('matches/export-selected', [GameMatchController::class, 'exportSelected'])->name('matches.export-selected');
         Route::resource('matches', GameMatchController::class);
         // Playing XI (MatchPlayer) is managed contextually from the match
         // show page, not as its own top-level admin module — no sidebar
@@ -94,10 +112,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
             // Read-only match scorecard (Phase 3.14) — no writes.
             Route::get('scorecard', [ScorecardController::class, 'show'])->name('scorecard');
         });
+        // Must precede the resource route below — otherwise "export"
+        // would be captured by the {player} wildcard.
+        Route::get('players/export', [PlayerController::class, 'export'])->name('players.export');
         Route::resource('players', PlayerController::class);
         // Must precede the resource route below — otherwise "export"/
         // "import" would be captured by the {player_registration} wildcard.
         Route::get('player-registrations/export', [PlayerRegistrationController::class, 'export'])->name('player-registrations.export');
+        Route::post('player-registrations/export-selected', [PlayerRegistrationController::class, 'exportSelected'])->name('player-registrations.export-selected');
         Route::get('player-registrations/import', [PlayerRegistrationController::class, 'import'])->name('player-registrations.import');
         Route::post('player-registrations/import', [PlayerRegistrationController::class, 'importStore'])->name('player-registrations.import.store');
         // Private document review (Phase 3.39D) — served through the
@@ -114,9 +136,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Must precede the resource route below — otherwise "export"
         // would be captured by the {edition_transaction} wildcard.
         Route::get('edition-transactions/export', [EditionTransactionController::class, 'export'])->name('edition-transactions.export');
+        Route::post('edition-transactions/export-selected', [EditionTransactionController::class, 'exportSelected'])->name('edition-transactions.export-selected');
         Route::resource('edition-transactions', EditionTransactionController::class);
         Route::resource('committee-members', CommitteeMemberController::class);
         Route::resource('contributors', ContributorController::class);
+        // Must precede the resource route below — otherwise "export"
+        // would be captured by the {edition_contribution} wildcard.
+        Route::get('edition-contributions/export', [EditionContributionController::class, 'export'])->name('edition-contributions.export');
+        Route::post('edition-contributions/export-selected', [EditionContributionController::class, 'exportSelected'])->name('edition-contributions.export-selected');
+        Route::post('edition-contributions/receipts/selected', [EditionContributionController::class, 'receiptsSelectedPdf'])->name('edition-contributions.receipts.selected');
         // No edit/update: a contribution's financial history is never
         // silently rewritten (see EditionContributionController).
         Route::resource('edition-contributions', EditionContributionController::class)->only([
@@ -125,9 +153,54 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // No destroy: accounts are deactivated (is_active), never
         // deleted — see UserController's docblock.
         Route::resource('users', UserController::class)->except(['destroy']);
+        // No per-item destroy: a broadcast's content is never deleted
+        // individually — see NotificationController's docblock. Bulk,
+        // date-based retention cleanup exists separately below
+        // (DataCleanupController), never a single-record delete action.
+        Route::resource('notifications', NotificationController::class)->except(['destroy']);
+        // One explicit action for both Send and Resend (Phase B4) — the
+        // backend semantics are identical either way (always the
+        // notification's CURRENT content, always a new NotificationSend
+        // row); only the button label differs based on send history.
+        Route::post('notifications/{notification}/send', [NotificationController::class, 'send'])->name('notifications.send');
+        // Bulk retention/cleanup for notifications/notification_sends/
+        // fcm_tokens (Phase B5) — always an explicit, confirmed admin
+        // action, never automatic.
+        Route::prefix('data-cleanup')->name('data-cleanup.')->group(function () {
+            Route::get('/', [DataCleanupController::class, 'index'])->name('index');
+            Route::delete('notifications', [DataCleanupController::class, 'destroyNotifications'])->name('notifications.destroy');
+            Route::delete('notification-sends', [DataCleanupController::class, 'destroyNotificationSends'])->name('notification-sends.destroy');
+            Route::delete('fcm-tokens', [DataCleanupController::class, 'destroyFcmTokens'])->name('fcm-tokens.destroy');
+        });
         Route::prefix('edition-contributions/{edition_contribution}')->name('edition-contributions.')->group(function () {
             Route::get('receipt', [EditionContributionController::class, 'receipt'])->name('receipt');
             Route::get('receipt/pdf', [EditionContributionController::class, 'receiptPdf'])->name('receipt.pdf');
+        });
+
+        // Global Settings admin UI (Phase 3.44B2) — one tabbed page, one
+        // update action per tab so each FormRequest can allow-list only
+        // its own tab's fields. Never a single generic "update settings"
+        // action that would accept any field from any tab.
+        Route::prefix('settings')->name('settings.')->group(function () {
+            Route::get('/', [SettingsController::class, 'index'])->name('index');
+            Route::put('general', [SettingsController::class, 'updateGeneral'])->name('general.update');
+            Route::put('contact', [SettingsController::class, 'updateContact'])->name('contact.update');
+            Route::put('system', [SettingsController::class, 'updateSystem'])->name('system.update');
+            Route::put('payments', [SettingsController::class, 'updatePayments'])->name('payments.update');
+            Route::put('public-website', [SettingsController::class, 'updatePublicWebsite'])->name('public-website.update');
+        });
+
+        // Public notice-ticker announcements (Phase 3.45) — no show():
+        // there's no separate detail view, only manage/edit in place.
+        Route::resource('announcements', AnnouncementController::class)->except(['show']);
+
+        // Fixed content pages — Privacy Policy/Terms/FAQs (Phase 3.46).
+        // One tabbed index (mirrors Settings) and one update action;
+        // no create/store/destroy — the three canonical rows always
+        // exist via DemoContentPageSeeder.
+        Route::prefix('content-pages')->name('content-pages.')->group(function () {
+            Route::get('/', [ContentPageController::class, 'index'])->name('index');
+            Route::put('{content_page}', [ContentPageController::class, 'update'])->name('update');
         });
     });
 });

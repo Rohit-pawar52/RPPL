@@ -101,7 +101,7 @@
             </div>
             <button
                 type="submit"
-                class="mb-3.5 shrink-0 rounded-md bg-blue-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-neutral-300"
+                class="mb-3.5 shrink-0 rounded-md theme-button px-3 py-1.5 text-[13px] font-medium disabled:cursor-not-allowed disabled:bg-neutral-300"
                 @disabled($eligible->isEmpty())
             >
                 Add
