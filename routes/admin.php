@@ -2,15 +2,16 @@
 
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\Auth\LoginController;
-use App\Http\Controllers\Admin\CommitteeMemberController;
 use App\Http\Controllers\Admin\ContentPageController;
 use App\Http\Controllers\Admin\ContributorController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DataCleanupController;
+use App\Http\Controllers\Admin\EditionCommitteeMemberController;
 use App\Http\Controllers\Admin\EditionContributionController;
 use App\Http\Controllers\Admin\EditionController;
 use App\Http\Controllers\Admin\EditionTeamController;
 use App\Http\Controllers\Admin\EditionTransactionController;
+use App\Http\Controllers\Admin\FinanceController;
 use App\Http\Controllers\Admin\GameMatchController;
 use App\Http\Controllers\Admin\InningsController;
 use App\Http\Controllers\Admin\MatchFlowController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\TeamPlayerController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VenueController;
+use App\Models\CommitteeMember;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -138,13 +140,35 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('edition-transactions/export', [EditionTransactionController::class, 'export'])->name('edition-transactions.export');
         Route::post('edition-transactions/export-selected', [EditionTransactionController::class, 'exportSelected'])->name('edition-transactions.export-selected');
         Route::resource('edition-transactions', EditionTransactionController::class);
-        Route::resource('committee-members', CommitteeMemberController::class);
+
+        // Phase 3.48 — Finance is one consolidated admin area (Overview/
+        // Contributions/Ledger/Contributors/Committee tabs); "committee
+        // member" is no longer a separate identity/CRUD, it is a
+        // Contributor's edition-specific membership (see
+        // EditionCommitteeMember). committee-members/* below are kept
+        // only as compatibility redirects for any old bookmark/link —
+        // there is no CommitteeMemberController any more.
+        Route::prefix('finance')->name('finance.')->group(function () {
+            Route::get('/', [FinanceController::class, 'overview'])->name('overview');
+            Route::get('committee', [EditionCommitteeMemberController::class, 'index'])->name('committee');
+            Route::post('committee', [EditionCommitteeMemberController::class, 'store'])->name('committee.store');
+            Route::delete('committee/{edition_committee_member}', [EditionCommitteeMemberController::class, 'destroy'])->name('committee.destroy');
+            Route::post('committee/copy-previous', [EditionCommitteeMemberController::class, 'copyPrevious'])->name('committee.copy-previous');
+        });
+        Route::get('committee-members', fn () => redirect()->route('admin.finance.committee'))->name('committee-members.index');
+        Route::get('committee-members/{committee_member}', function (CommitteeMember $committee_member) {
+            return $committee_member->contributor
+                ? redirect()->route('admin.contributors.show', $committee_member->contributor)
+                : redirect()->route('admin.finance.committee');
+        })->name('committee-members.show');
+
         Route::resource('contributors', ContributorController::class);
         // Must precede the resource route below — otherwise "export"
         // would be captured by the {edition_contribution} wildcard.
         Route::get('edition-contributions/export', [EditionContributionController::class, 'export'])->name('edition-contributions.export');
         Route::post('edition-contributions/export-selected', [EditionContributionController::class, 'exportSelected'])->name('edition-contributions.export-selected');
         Route::post('edition-contributions/receipts/selected', [EditionContributionController::class, 'receiptsSelectedPdf'])->name('edition-contributions.receipts.selected');
+        Route::get('edition-contributions/dues-preview', [EditionContributionController::class, 'duesPreview'])->name('edition-contributions.dues-preview');
         // No edit/update: a contribution's financial history is never
         // silently rewritten (see EditionContributionController).
         Route::resource('edition-contributions', EditionContributionController::class)->only([

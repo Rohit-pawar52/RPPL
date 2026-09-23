@@ -38,18 +38,12 @@
             <x-nav-item :route="route('admin.venues.index')" icon="map-pin" :active="request()->routeIs('admin.venues.*')">
                 Venues
             </x-nav-item>
-            <x-nav-item :route="route('admin.edition-transactions.index')" icon="currency" :active="request()->routeIs('admin.edition-transactions.*')">
-                Finance
-            </x-nav-item>
             <x-nav-item
-                :route="route('admin.committee-members.index')"
-                icon="users"
-                :active="request()->routeIs('admin.committee-members.*') || request()->routeIs('admin.edition-contributions.*')"
+                :route="route('admin.finance.overview')"
+                icon="currency"
+                :active="request()->routeIs('admin.finance.*') || request()->routeIs('admin.edition-transactions.*') || request()->routeIs('admin.edition-contributions.*') || request()->routeIs('admin.contributors.*')"
             >
-                Committee
-            </x-nav-item>
-            <x-nav-item :route="route('admin.contributors.index')" icon="users" :active="request()->routeIs('admin.contributors.*')">
-                Contributors
+                Finance
             </x-nav-item>
 
             <p class="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">System</p>

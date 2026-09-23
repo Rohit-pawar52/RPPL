@@ -19,8 +19,14 @@
     </div>
 
     @if($transaction->contribution)
-        <div class="mb-4 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
-            This transaction is managed by a committee contribution and cannot be modified directly.
+        <div class="mb-4 flex items-center justify-between gap-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
+            <span>
+                <span class="font-medium text-neutral-800">Created from contribution.</span>
+                It is locked from manual editing/deletion here — a contribution and its ledger transaction are always changed together, only via the contribution itself.
+            </span>
+            <a href="{{ route('admin.edition-contributions.show', $transaction->contribution) }}" class="shrink-0 whitespace-nowrap font-medium theme-link hover:underline">
+                View Contribution
+            </a>
         </div>
     @endif
 

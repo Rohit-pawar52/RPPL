@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Models\CommitteeMember;
+use App\Models\Contributor;
 use App\Models\Edition;
 use App\Models\EditionContribution;
 use App\Models\EditionTransaction;
@@ -57,10 +57,10 @@ class EditionContributionReceiptTest extends TestCase
     public function test_receipt_shows_correct_member_edition_date_amount_and_reference(): void
     {
         $edition = Edition::factory()->create(['name' => 'RPPL 2026']);
-        $member = CommitteeMember::factory()->create(['name' => 'Kavita Sharma', 'phone' => '9998887776']);
+        $member = Contributor::factory()->create(['name' => 'Kavita Sharma', 'phone' => '9998887776']);
         $contribution = EditionContribution::factory()->create([
             'edition_id' => $edition->id,
-            'committee_member_id' => $member->id,
+            'contributor_id' => $member->id,
             'amount' => '4500.00',
             'contributed_at' => '2026-03-15',
             'notes' => 'INTERNAL_NOTE_ABC',
@@ -82,9 +82,9 @@ class EditionContributionReceiptTest extends TestCase
     public function test_receipt_never_exposes_private_or_internal_fields(): void
     {
         $creator = $this->admin();
-        $member = CommitteeMember::factory()->create(['name' => 'Private Member', 'phone' => '9123456780']);
+        $member = Contributor::factory()->create(['name' => 'Private Member', 'phone' => '9123456780']);
         $contribution = EditionContribution::factory()->create([
-            'committee_member_id' => $member->id,
+            'contributor_id' => $member->id,
             'notes' => 'SECRET_NOTES_XYZ',
             'created_by' => $creator->id,
         ]);
@@ -142,10 +142,10 @@ class EditionContributionReceiptTest extends TestCase
     public function test_receipt_preview_still_renders_identical_content_after_partial_extraction(): void
     {
         $edition = Edition::factory()->create(['name' => 'RPPL 2026']);
-        $member = CommitteeMember::factory()->create(['name' => 'Extraction Check Member']);
+        $member = Contributor::factory()->create(['name' => 'Extraction Check Member']);
         $contribution = EditionContribution::factory()->create([
             'edition_id' => $edition->id,
-            'committee_member_id' => $member->id,
+            'contributor_id' => $member->id,
             'amount' => '2750.00',
             'contributed_at' => '2026-04-10',
         ]);

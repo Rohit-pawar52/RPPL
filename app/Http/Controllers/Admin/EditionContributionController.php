@@ -5,14 +5,15 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Admin\Concerns\FiltersAdminTables;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\EditionContribution\StoreEditionContributionRequest;
-use App\Models\CommitteeMember;
 use App\Models\Contributor;
 use App\Models\Edition;
 use App\Models\EditionContribution;
+use App\Services\Finance\CommitteeDuesService;
 use App\Services\Finance\EditionContributionService;
 use App\View\Composers\BrandingComposer;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -20,9 +21,11 @@ use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Committee contribution ledger. No edit/update: a contribution's
- * financial history is never silently rewritten — a mistaken entry is
- * deleted (which atomically removes its linked finance transaction via
+ * Contribution ledger — every contribution belongs to exactly one
+ * Contributor (Phase 3.48; there is no separate "committee" identity
+ * any more). No edit/update: a contribution's financial history is
+ * never silently rewritten — a mistaken entry is deleted (which
+ * atomically removes its linked finance transaction via
  * EditionContributionService) and re-recorded correctly.
  */
 class EditionContributionController extends Controller
@@ -31,14 +34,17 @@ class EditionContributionController extends Controller
 
     private const ALLOWED_SORTS = ['contributed_at', 'amount'];
 
-    public function __construct(private readonly EditionContributionService $contributions) {}
+    public function __construct(
+        private readonly EditionContributionService $contributions,
+        private readonly CommitteeDuesService $dues,
+    ) {}
 
     public function index(Request $request): View
     {
         $this->authorize('viewAny', EditionContribution::class);
 
         $dateRange = $this->validateDateRange($request);
-        $filters = $request->only(['edition_id', 'committee_member_id', 'search']) + $dateRange;
+        $filters = $request->only(['edition_id', 'contributor_id', 'search']) + $dateRange;
         [$sort, $direction] = $this->allowedSort($request, self::ALLOWED_SORTS, 'contributed_at');
         $perPage = $this->allowedPerPage($request);
 
@@ -47,7 +53,7 @@ class EditionContributionController extends Controller
         $totalContributions = (clone $query)->sum('amount');
 
         $contributions = $query
-            ->with(['edition', 'committeeMember', 'contributor'])
+            ->with(['edition', 'contributor.committeeMemberships'])
             ->orderBy($sort, $direction)
             ->orderBy('id', 'desc')
             ->paginate($perPage)
@@ -60,7 +66,7 @@ class EditionContributionController extends Controller
             'direction' => $direction,
             'perPage' => $perPage,
             'editions' => Edition::orderByDesc('year')->get(['id', 'name']),
-            'members' => CommitteeMember::orderBy('name')->get(['id', 'name']),
+            'contributors' => Contributor::orderBy('name')->get(['id', 'name']),
             'totalContributions' => $totalContributions,
         ]);
     }
@@ -80,10 +86,10 @@ class EditionContributionController extends Controller
     {
         $this->authorize('viewAny', EditionContribution::class);
 
-        $filters = $request->only(['edition_id', 'committee_member_id', 'search']) + $this->validateDateRange($request);
+        $filters = $request->only(['edition_id', 'contributor_id', 'search']) + $this->validateDateRange($request);
 
         return $this->streamContributionsCsv(
-            $this->contributionQuery($filters)->with(['committeeMember', 'contributor', 'createdBy']),
+            $this->contributionQuery($filters)->with(['contributor.committeeMemberships', 'createdBy']),
             $this->exportFilename($filters)
         );
     }
@@ -111,7 +117,7 @@ class EditionContributionController extends Controller
         return $this->streamContributionsCsv(
             EditionContribution::query()
                 ->whereIn('id', $validated['selected_ids'])
-                ->with(['committeeMember', 'contributor', 'createdBy']),
+                ->with(['contributor.committeeMemberships', 'createdBy']),
             'rppl-contributions-selected.csv'
         );
     }
@@ -155,8 +161,7 @@ class EditionContributionController extends Controller
 
         return view('admin.edition-contributions.create', [
             'editions' => Edition::orderByDesc('year')->get(['id', 'name']),
-            'members' => CommitteeMember::active()->orderBy('name')->get(['id', 'name']),
-            'generalContributors' => Contributor::active()->orderBy('name')->get(['id', 'name']),
+            'contributors' => Contributor::active()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -171,11 +176,54 @@ class EditionContributionController extends Controller
             ->with('success', 'Contribution recorded successfully.');
     }
 
+    /**
+     * Backs the create-contribution form's live "Committee Member"
+     * badge/target/paid/remaining preview (Phase 3.48) — a small,
+     * purpose-built JSON endpoint in the same spirit as this project's
+     * other lightweight AJAX reads (e.g. the public live-match-data
+     * endpoint), not a general-purpose API. Read-only, same viewAny
+     * gate as the rest of this controller.
+     */
+    public function duesPreview(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', EditionContribution::class);
+
+        $validated = $request->validate([
+            'edition_id' => ['required', 'integer', 'exists:editions,id'],
+            'contributor_id' => ['required', 'integer', 'exists:contributors,id'],
+        ]);
+
+        $edition = Edition::findOrFail($validated['edition_id']);
+        $contributor = Contributor::findOrFail($validated['contributor_id']);
+
+        $isCommitteeMember = $contributor->isCommitteeMemberOf($edition);
+
+        if (! $isCommitteeMember) {
+            return response()->json(['is_committee_member' => false]);
+        }
+
+        $dues = $this->dues->duesFor($contributor, $edition);
+
+        return response()->json([
+            'is_committee_member' => true,
+            // Pre-formatted with money() server-side (currency symbol,
+            // decimals) so the JS side only ever inserts trusted, already
+            // -escaped-by-construction display strings — no client-side
+            // currency formatting/duplication of that rule.
+            'dues' => [
+                'target' => money($dues['target']),
+                'paid' => money($dues['paid']),
+                'remaining' => money($dues['remaining']),
+                'status' => $dues['status'],
+            ],
+        ]);
+    }
+
     public function show(EditionContribution $editionContribution): View
     {
         $this->authorize('view', $editionContribution);
 
-        $editionContribution->load(['edition', 'committeeMember', 'contributor', 'transaction', 'createdBy']);
+        $editionContribution->load(['edition', 'contributor.committeeMemberships', 'transaction', 'createdBy']);
 
         return view('admin.edition-contributions.show', [
             'contribution' => $editionContribution,
@@ -201,7 +249,7 @@ class EditionContributionController extends Controller
     {
         $this->authorize('view', $editionContribution);
 
-        $editionContribution->load(['edition', 'committeeMember', 'contributor']);
+        $editionContribution->load(['edition', 'contributor']);
 
         return view('admin.edition-contributions.receipt', [
             'contribution' => $editionContribution,
@@ -212,7 +260,7 @@ class EditionContributionController extends Controller
     {
         $this->authorize('view', $editionContribution);
 
-        $editionContribution->load(['edition', 'committeeMember', 'contributor']);
+        $editionContribution->load(['edition', 'contributor']);
 
         $pdf = Pdf::loadView('admin.edition-contributions.receipt', [
             'contribution' => $editionContribution,
@@ -244,7 +292,7 @@ class EditionContributionController extends Controller
 
         $contributions = EditionContribution::query()
             ->whereIn('id', $validated['selected_ids'])
-            ->with(['edition', 'committeeMember', 'contributor'])
+            ->with(['edition', 'contributor'])
             ->orderBy('contributed_at')
             ->get();
 
@@ -271,13 +319,10 @@ class EditionContributionController extends Controller
     {
         return EditionContribution::query()
             ->when($filters['edition_id'] ?? null, fn ($query, $id) => $query->where('edition_id', $id))
-            ->when($filters['committee_member_id'] ?? null, fn ($query, $id) => $query->where('committee_member_id', $id))
+            ->when($filters['contributor_id'] ?? null, fn ($query, $id) => $query->where('contributor_id', $id))
             ->when(
                 $filters['search'] ?? null,
-                fn ($query, $search) => $query->where(function ($query) use ($search) {
-                    $query->whereHas('committeeMember', fn ($query) => $query->where('name', 'like', '%'.$search.'%'))
-                        ->orWhereHas('contributor', fn ($query) => $query->where('name', 'like', '%'.$search.'%'));
-                })
+                fn ($query, $search) => $query->whereHas('contributor', fn ($query) => $query->where('name', 'like', '%'.$search.'%'))
             )
             ->tap(fn ($query) => $this->dateRangeFilter($query, 'contributed_at', $filters['from_date'] ?? null, $filters['to_date'] ?? null));
     }

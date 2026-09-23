@@ -28,6 +28,10 @@
         // — 'active'/'scheduled' above are reused as-is.
         'expired' => 'bg-neutral-100 text-neutral-500 ring-neutral-200',
         'disabled' => 'bg-neutral-100 text-neutral-500 ring-neutral-200',
+        // Committee dues status (CommitteeDuesService, Phase 3.48).
+        'paid in full' => 'bg-green-50 text-green-700 ring-green-200',
+        'partially paid' => 'bg-amber-50 text-amber-700 ring-amber-200',
+        'not paid' => 'bg-red-50 text-red-700 ring-red-200',
     ];
     $style = $styles[$status] ?? 'bg-neutral-100 text-neutral-600 ring-neutral-200';
 @endphp

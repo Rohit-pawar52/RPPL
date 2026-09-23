@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Admin\Contributor;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StoreContributorRequest extends FormRequest
 {
@@ -19,12 +18,10 @@ class StoreContributorRequest extends FormRequest
 
     /**
      * is_active is deliberately absent — a newly created contributor
-     * simply takes the column's DB default (active), matching
-     * CommitteeMember's own convention. committee_member_id is optional
-     * explicit identity linkage: if provided, it must reference a real
-     * CommitteeMember (active or not — historical/inactive committee
-     * identity can still represent the same person) and must not already
-     * be linked to a different Contributor.
+     * simply takes the column's DB default (active). committee_member_id
+     * is deliberately absent too (Phase 3.48) — a Contributor is added
+     * to a specific edition's committee from the Finance "Committee"
+     * tab, never linked via this form.
      *
      * @return array<string, mixed>
      */
@@ -33,12 +30,6 @@ class StoreContributorRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'committee_member_id' => [
-                'nullable',
-                'integer',
-                'exists:committee_members,id',
-                Rule::unique('contributors', 'committee_member_id'),
-            ],
             'photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
         ];
     }

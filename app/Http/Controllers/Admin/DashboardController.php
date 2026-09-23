@@ -81,10 +81,9 @@ class DashboardController extends Controller
             $contributionCount = (int) $contributionStats->total;
             $contributionTotal = (float) $contributionStats->amount_total;
 
-            // Reuses the existing canonical-identity ranking rather than
-            // a plain distinct-count of committee_member_id/contributor_id,
-            // so a CommitteeMember explicitly linked to a Contributor is
-            // counted once, exactly like the public leaderboard.
+            // Reuses the existing ranking rather than a plain distinct
+            // count of contributor_id, so this always agrees with the
+            // public leaderboard's own contributor count exactly.
             $recognizedContributorsCount = count($this->contributorRanking->getEditionRanking($edition));
 
             $teamsCount = EditionTeam::query()->where('edition_id', $edition->id)->count();

@@ -2,15 +2,28 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Models\CommitteeMember;
+use App\Models\Contributor;
 use App\Models\Edition;
+use App\Models\EditionCommitteeMember;
 use App\Models\EditionContribution;
 use App\Models\EditionTransaction;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Finance\CommitteeDuesService;
+use App\Services\Settings\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
+/**
+ * Phase 3.48 — committee membership (edition-specific, on a Contributor)
+ * and committee dues (target/paid/remaining/status), plus the
+ * contribution-recording/finance-integration behavior that applies to a
+ * committee member specifically. General (non-committee) contribution
+ * recording is covered by GeneralContributionTest; Table UX (pagination/
+ * sort/date-range/selected-export/header-rendering) on the Contributions
+ * index is unchanged from before this phase and stays in the sections
+ * below unmodified.
+ */
 class CommitteeContributionTest extends TestCase
 {
     use RefreshDatabase;
@@ -37,76 +50,230 @@ class CommitteeContributionTest extends TestCase
         return User::factory()->create(['role_id' => $this->scorerRole->id]);
     }
 
-    // ----- Committee member CRUD / authorization -----
+    // ----- Committee membership management -----
 
-    public function test_admin_can_manage_committee_members_and_scorer_is_forbidden(): void
-    {
-        $admin = $this->admin();
-
-        $this->actingAs($admin)
-            ->post(route('admin.committee-members.store'), ['name' => 'Ravi Kumar', 'phone' => '9876500001'])
-            ->assertRedirect(route('admin.committee-members.index'));
-
-        $member = CommitteeMember::firstWhere('name', 'Ravi Kumar');
-        $this->assertNotNull($member);
-        $this->assertTrue($member->is_active);
-
-        $this->actingAs($admin)->get(route('admin.committee-members.index'))->assertOk();
-
-        $scorer = $this->scorer();
-        $this->actingAs($scorer)->get(route('admin.committee-members.index'))->assertForbidden();
-        $this->actingAs($scorer)
-            ->post(route('admin.committee-members.store'), ['name' => 'Blocked', 'phone' => '1'])
-            ->assertForbidden();
-        $this->assertNull(CommitteeMember::firstWhere('name', 'Blocked'));
-    }
-
-    public function test_member_with_contribution_history_cannot_be_deleted_but_member_without_history_can(): void
-    {
-        $withHistory = CommitteeMember::factory()->create();
-        EditionContribution::factory()->create(['committee_member_id' => $withHistory->id]);
-        $withoutHistory = CommitteeMember::factory()->create();
-
-        $admin = $this->admin();
-
-        $this->actingAs($admin)
-            ->delete(route('admin.committee-members.destroy', $withHistory))
-            ->assertRedirect(route('admin.committee-members.index'))
-            ->assertSessionHas('error');
-        $this->assertDatabaseHas('committee_members', ['id' => $withHistory->id]);
-
-        $this->actingAs($admin)
-            ->delete(route('admin.committee-members.destroy', $withoutHistory))
-            ->assertRedirect(route('admin.committee-members.index'));
-        $this->assertDatabaseMissing('committee_members', ['id' => $withoutHistory->id]);
-    }
-
-    // ----- Contribution creation + finance integration -----
-
-    public function test_valid_contribution_creates_linked_income_transaction_and_enforces_minimum_amount(): void
+    public function test_admin_can_add_and_remove_a_committee_member_and_scorer_is_forbidden(): void
     {
         $edition = Edition::factory()->create();
-        $member = CommitteeMember::factory()->create(['name' => 'Sunita Rao', 'is_active' => true]);
+        $contributor = Contributor::factory()->create(['name' => 'Ravi Kumar']);
         $admin = $this->admin();
 
-        // Below the ₹1000 minimum must be rejected, and must create nothing.
         $this->actingAs($admin)
-            ->post(route('admin.edition-contributions.store'), [
-                'edition_id' => $edition->id,
-                'source' => 'committee:'.$member->id,
-                'amount' => '999.99',
-                'contributed_at' => '2026-01-10',
-            ])
-            ->assertSessionHasErrors('amount');
-        $this->assertSame(0, EditionContribution::count());
-        $this->assertSame(0, EditionTransaction::count());
+            ->post(route('admin.finance.committee.store'), ['edition_id' => $edition->id, 'contributor_id' => $contributor->id])
+            ->assertRedirect(route('admin.finance.committee', ['edition_id' => $edition->id]));
 
-        // A valid contribution creates both rows, linked, with the
-        // amount/date mirrored onto the finance transaction.
+        $this->assertDatabaseHas('edition_committee_members', ['edition_id' => $edition->id, 'contributor_id' => $contributor->id]);
+
+        $membership = EditionCommitteeMember::first();
+
+        $this->actingAs($admin)
+            ->delete(route('admin.finance.committee.destroy', $membership))
+            ->assertRedirect(route('admin.finance.committee', ['edition_id' => $edition->id]));
+
+        $this->assertDatabaseMissing('edition_committee_members', ['id' => $membership->id]);
+
+        $scorer = $this->scorer();
+        $this->actingAs($scorer)->get(route('admin.finance.committee'))->assertForbidden();
+        $this->actingAs($scorer)
+            ->post(route('admin.finance.committee.store'), ['edition_id' => $edition->id, 'contributor_id' => $contributor->id])
+            ->assertForbidden();
+    }
+
+    public function test_adding_an_already_current_member_is_idempotent(): void
+    {
+        $edition = Edition::factory()->create();
+        $contributor = Contributor::factory()->create();
+
+        $this->actingAs($this->admin())->post(route('admin.finance.committee.store'), [
+            'edition_id' => $edition->id, 'contributor_id' => $contributor->id,
+        ]);
+        $this->actingAs($this->admin())->post(route('admin.finance.committee.store'), [
+            'edition_id' => $edition->id, 'contributor_id' => $contributor->id,
+        ]);
+
+        $this->assertSame(1, EditionCommitteeMember::where('edition_id', $edition->id)->where('contributor_id', $contributor->id)->count());
+    }
+
+    public function test_removing_a_member_with_contribution_history_for_that_edition_is_blocked(): void
+    {
+        $edition = Edition::factory()->create();
+        $contributor = Contributor::factory()->create();
+        EditionCommitteeMember::create(['edition_id' => $edition->id, 'contributor_id' => $contributor->id]);
+        EditionContribution::factory()->create(['edition_id' => $edition->id, 'contributor_id' => $contributor->id]);
+
+        $membership = EditionCommitteeMember::first();
+
+        $this->actingAs($this->admin())
+            ->delete(route('admin.finance.committee.destroy', $membership))
+            ->assertRedirect(route('admin.finance.committee', ['edition_id' => $edition->id]))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('edition_committee_members', ['id' => $membership->id]);
+    }
+
+    public function test_removing_membership_never_touches_the_contributor_or_their_history_in_other_editions(): void
+    {
+        $editionOne = Edition::factory()->create();
+        $editionTwo = Edition::factory()->create();
+        $contributor = Contributor::factory()->create();
+        EditionCommitteeMember::create(['edition_id' => $editionOne->id, 'contributor_id' => $contributor->id]);
+        EditionCommitteeMember::create(['edition_id' => $editionTwo->id, 'contributor_id' => $contributor->id]);
+
+        $membership = EditionCommitteeMember::where('edition_id', $editionOne->id)->first();
+
+        $this->actingAs($this->admin())->delete(route('admin.finance.committee.destroy', $membership));
+
+        $this->assertDatabaseHas('contributors', ['id' => $contributor->id]);
+        $this->assertDatabaseHas('edition_committee_members', ['edition_id' => $editionTwo->id, 'contributor_id' => $contributor->id]);
+    }
+
+    public function test_copy_previous_edition_committee_is_idempotent_and_reports_counts(): void
+    {
+        $previous = Edition::factory()->create(['year' => 2025]);
+        $current = Edition::factory()->create(['year' => 2026]);
+
+        $alreadyOnBoth = Contributor::factory()->create();
+        $onlyPrevious1 = Contributor::factory()->create();
+        $onlyPrevious2 = Contributor::factory()->create();
+
+        EditionCommitteeMember::create(['edition_id' => $previous->id, 'contributor_id' => $alreadyOnBoth->id]);
+        EditionCommitteeMember::create(['edition_id' => $previous->id, 'contributor_id' => $onlyPrevious1->id]);
+        EditionCommitteeMember::create(['edition_id' => $previous->id, 'contributor_id' => $onlyPrevious2->id]);
+        EditionCommitteeMember::create(['edition_id' => $current->id, 'contributor_id' => $alreadyOnBoth->id]);
+
+        $response = $this->actingAs($this->admin())
+            ->post(route('admin.finance.committee.copy-previous'), ['edition_id' => $current->id])
+            ->assertRedirect(route('admin.finance.committee', ['edition_id' => $current->id]));
+
+        $response->assertSessionHas('success', '2 committee member(s) added, 1 already existed.');
+        $this->assertSame(3, EditionCommitteeMember::where('edition_id', $current->id)->count());
+
+        // Running it again adds nothing further.
+        $this->actingAs($this->admin())->post(route('admin.finance.committee.copy-previous'), ['edition_id' => $current->id]);
+        $this->assertSame(3, EditionCommitteeMember::where('edition_id', $current->id)->count());
+    }
+
+    public function test_copy_previous_never_copies_contributions_only_membership(): void
+    {
+        $previous = Edition::factory()->create(['year' => 2025]);
+        $current = Edition::factory()->create(['year' => 2026]);
+        $contributor = Contributor::factory()->create();
+        EditionCommitteeMember::create(['edition_id' => $previous->id, 'contributor_id' => $contributor->id]);
+        EditionContribution::factory()->create(['edition_id' => $previous->id, 'contributor_id' => $contributor->id, 'amount' => '5000.00']);
+
+        $this->actingAs($this->admin())->post(route('admin.finance.committee.copy-previous'), ['edition_id' => $current->id]);
+
+        $this->assertSame(0, EditionContribution::where('edition_id', $current->id)->count());
+    }
+
+    public function test_the_oldest_edition_has_no_previous_edition_to_copy_from(): void
+    {
+        $edition = Edition::factory()->create(['year' => 2020]);
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.finance.committee.copy-previous'), ['edition_id' => $edition->id])
+            ->assertRedirect(route('admin.finance.committee', ['edition_id' => $edition->id]))
+            ->assertSessionHas('error');
+    }
+
+    // ----- Committee dues -----
+
+    public function test_dues_status_reflects_installments_up_to_and_beyond_the_target(): void
+    {
+        app(SettingsService::class)->set('finance.committee_minimum_contribution', 1000.00);
+        $edition = Edition::factory()->create();
+
+        $notPaid = Contributor::factory()->create(['name' => 'Not Paid']);
+        EditionCommitteeMember::create(['edition_id' => $edition->id, 'contributor_id' => $notPaid->id]);
+
+        $partial = Contributor::factory()->create(['name' => 'Partial Payer']);
+        EditionCommitteeMember::create(['edition_id' => $edition->id, 'contributor_id' => $partial->id]);
+        EditionContribution::factory()->create(['edition_id' => $edition->id, 'contributor_id' => $partial->id, 'amount' => '300.00']);
+        EditionContribution::factory()->create(['edition_id' => $edition->id, 'contributor_id' => $partial->id, 'amount' => '200.00']);
+
+        $fullPayer = Contributor::factory()->create(['name' => 'Full Payer']);
+        EditionCommitteeMember::create(['edition_id' => $edition->id, 'contributor_id' => $fullPayer->id]);
+        EditionContribution::factory()->create(['edition_id' => $edition->id, 'contributor_id' => $fullPayer->id, 'amount' => '1000.00']);
+
+        $overPayer = Contributor::factory()->create(['name' => 'Over Payer']);
+        EditionCommitteeMember::create(['edition_id' => $edition->id, 'contributor_id' => $overPayer->id]);
+        EditionContribution::factory()->create(['edition_id' => $edition->id, 'contributor_id' => $overPayer->id, 'amount' => '1500.00']);
+
+        $dues = app(CommitteeDuesService::class)->duesForEdition($edition);
+        $byName = collect($dues)->keyBy(fn ($row) => $row['contributor']->name);
+
+        $this->assertSame('not paid', $byName['Not Paid']['status']);
+        $this->assertSame(0.0, $byName['Not Paid']['paid']);
+        $this->assertSame(1000.0, $byName['Not Paid']['remaining']);
+
+        $this->assertSame('partially paid', $byName['Partial Payer']['status']);
+        $this->assertSame(500.0, $byName['Partial Payer']['paid']);
+        $this->assertSame(500.0, $byName['Partial Payer']['remaining']);
+
+        $this->assertSame('paid in full', $byName['Full Payer']['status']);
+        $this->assertSame(0.0, $byName['Full Payer']['remaining']);
+
+        // Overpayment is never an error — remaining floors at 0, still "paid in full".
+        $this->assertSame('paid in full', $byName['Over Payer']['status']);
+        $this->assertSame(1500.0, $byName['Over Payer']['paid']);
+        $this->assertSame(0.0, $byName['Over Payer']['remaining']);
+    }
+
+    public function test_changing_the_global_target_changes_every_editions_displayed_dues(): void
+    {
+        $settings = app(SettingsService::class);
+        $settings->set('finance.committee_minimum_contribution', 1000.00);
+
+        $edition = Edition::factory()->create();
+        $contributor = Contributor::factory()->create();
+        EditionCommitteeMember::create(['edition_id' => $edition->id, 'contributor_id' => $contributor->id]);
+        EditionContribution::factory()->create(['edition_id' => $edition->id, 'contributor_id' => $contributor->id, 'amount' => '600.00']);
+
+        $before = app(CommitteeDuesService::class)->duesFor($contributor, $edition);
+        $this->assertSame('partially paid', $before['status']);
+
+        $settings->set('finance.committee_minimum_contribution', 500.00);
+
+        $after = app(CommitteeDuesService::class)->duesFor($contributor, $edition);
+        $this->assertSame('paid in full', $after['status']);
+        $this->assertSame(500.0, $after['target']);
+    }
+
+    public function test_dues_preview_endpoint_reports_committee_status_and_figures(): void
+    {
+        app(SettingsService::class)->set('finance.committee_minimum_contribution', 1000.00);
+        $edition = Edition::factory()->create();
+        $member = Contributor::factory()->create();
+        EditionCommitteeMember::create(['edition_id' => $edition->id, 'contributor_id' => $member->id]);
+        EditionContribution::factory()->create(['edition_id' => $edition->id, 'contributor_id' => $member->id, 'amount' => '400.00']);
+
+        $nonMember = Contributor::factory()->create();
+
+        $memberResponse = $this->actingAs($this->admin())
+            ->getJson(route('admin.edition-contributions.dues-preview', ['edition_id' => $edition->id, 'contributor_id' => $member->id]));
+
+        $memberResponse->assertOk()->assertJson(['is_committee_member' => true]);
+        $memberResponse->assertJsonPath('dues.status', 'partially paid');
+
+        $nonMemberResponse = $this->actingAs($this->admin())
+            ->getJson(route('admin.edition-contributions.dues-preview', ['edition_id' => $edition->id, 'contributor_id' => $nonMember->id]));
+
+        $nonMemberResponse->assertOk()->assertJson(['is_committee_member' => false]);
+    }
+
+    // ----- Contribution creation + finance integration for a committee member -----
+
+    public function test_valid_committee_contribution_creates_linked_income_transaction_with_committee_category(): void
+    {
+        $edition = Edition::factory()->create();
+        $member = Contributor::factory()->create(['name' => 'Sunita Rao']);
+        EditionCommitteeMember::create(['edition_id' => $edition->id, 'contributor_id' => $member->id]);
+        $admin = $this->admin();
+
         $this->actingAs($admin)
             ->post(route('admin.edition-contributions.store'), [
                 'edition_id' => $edition->id,
-                'source' => 'committee:'.$member->id,
+                'contributor_id' => $member->id,
                 'amount' => '1000',
                 'contributed_at' => '2026-01-10',
                 'notes' => 'First contribution',
@@ -116,6 +283,7 @@ class CommitteeContributionTest extends TestCase
         $contribution = EditionContribution::first();
         $this->assertNotNull($contribution);
         $this->assertSame($admin->id, $contribution->created_by);
+        $this->assertSame($member->id, $contribution->contributor_id);
 
         $transaction = EditionTransaction::first();
         $this->assertNotNull($transaction);
@@ -124,32 +292,34 @@ class CommitteeContributionTest extends TestCase
         $this->assertSame('1000.00', $transaction->amount);
         $this->assertSame($contribution->edition_transaction_id, $transaction->id);
 
-        // The same member may contribute again later — no uniqueness rule.
+        // Any positive amount is accepted as an installment — no fixed
+        // per-payment floor any more (Phase 3.48).
         $this->actingAs($admin)
             ->post(route('admin.edition-contributions.store'), [
                 'edition_id' => $edition->id,
-                'source' => 'committee:'.$member->id,
-                'amount' => '5000',
+                'contributor_id' => $member->id,
+                'amount' => '50',
                 'contributed_at' => '2026-02-01',
             ])
             ->assertRedirect(route('admin.edition-contributions.index'));
 
-        $this->assertSame(2, EditionContribution::where('committee_member_id', $member->id)->count());
+        $this->assertSame(2, EditionContribution::where('contributor_id', $member->id)->count());
     }
 
-    public function test_inactive_member_cannot_receive_a_new_contribution(): void
+    public function test_inactive_committee_member_cannot_receive_a_new_contribution(): void
     {
         $edition = Edition::factory()->create();
-        $inactiveMember = CommitteeMember::factory()->create(['is_active' => false]);
+        $inactiveMember = Contributor::factory()->create(['is_active' => false]);
+        EditionCommitteeMember::create(['edition_id' => $edition->id, 'contributor_id' => $inactiveMember->id]);
 
         $this->actingAs($this->admin())
             ->post(route('admin.edition-contributions.store'), [
                 'edition_id' => $edition->id,
-                'source' => 'committee:'.$inactiveMember->id,
+                'contributor_id' => $inactiveMember->id,
                 'amount' => '2000',
                 'contributed_at' => '2026-01-10',
             ])
-            ->assertSessionHasErrors('source_id');
+            ->assertSessionHasErrors('contributor_id');
 
         $this->assertSame(0, EditionContribution::count());
     }
@@ -211,12 +381,12 @@ class CommitteeContributionTest extends TestCase
     {
         $editionA = Edition::factory()->create();
         $editionB = Edition::factory()->create();
-        $memberA = CommitteeMember::factory()->create(['name' => 'Alpha Member']);
-        $memberB = CommitteeMember::factory()->create(['name' => 'Beta Member']);
+        $contributorA = Contributor::factory()->create(['name' => 'Alpha Member']);
+        $contributorB = Contributor::factory()->create(['name' => 'Beta Member']);
 
-        EditionContribution::factory()->create(['edition_id' => $editionA->id, 'committee_member_id' => $memberA->id, 'amount' => '1000.00']);
-        EditionContribution::factory()->create(['edition_id' => $editionA->id, 'committee_member_id' => $memberB->id, 'amount' => '2000.00']);
-        EditionContribution::factory()->create(['edition_id' => $editionB->id, 'committee_member_id' => $memberA->id, 'amount' => '9000.00']);
+        EditionContribution::factory()->create(['edition_id' => $editionA->id, 'contributor_id' => $contributorA->id, 'amount' => '1000.00']);
+        EditionContribution::factory()->create(['edition_id' => $editionA->id, 'contributor_id' => $contributorB->id, 'amount' => '2000.00']);
+        EditionContribution::factory()->create(['edition_id' => $editionB->id, 'contributor_id' => $contributorA->id, 'amount' => '9000.00']);
 
         $response = $this->actingAs($this->admin())
             ->get(route('admin.edition-contributions.index', ['edition_id' => $editionA->id]));
@@ -225,9 +395,9 @@ class CommitteeContributionTest extends TestCase
         $this->assertCount(2, $response->viewData('contributions'));
         $this->assertEquals(3000.0, (float) $response->viewData('totalContributions'));
 
-        $memberFiltered = $this->actingAs($this->admin())
-            ->get(route('admin.edition-contributions.index', ['committee_member_id' => $memberA->id]));
-        $this->assertCount(2, $memberFiltered->viewData('contributions'));
+        $contributorFiltered = $this->actingAs($this->admin())
+            ->get(route('admin.edition-contributions.index', ['contributor_id' => $contributorA->id]));
+        $this->assertCount(2, $contributorFiltered->viewData('contributions'));
     }
 
     // ----- Rows per page -----
@@ -451,8 +621,8 @@ class CommitteeContributionTest extends TestCase
     public function test_edition_admin_page_shows_contribution_summary_and_link(): void
     {
         $edition = Edition::factory()->create();
-        $member = CommitteeMember::factory()->create();
-        EditionContribution::factory()->create(['edition_id' => $edition->id, 'committee_member_id' => $member->id, 'amount' => '4000.00']);
+        $contributor = Contributor::factory()->create();
+        EditionContribution::factory()->create(['edition_id' => $edition->id, 'contributor_id' => $contributor->id, 'amount' => '4000.00']);
 
         $response = $this->actingAs($this->admin())->get(route('admin.editions.show', $edition));
 
@@ -464,35 +634,34 @@ class CommitteeContributionTest extends TestCase
     // ----- Public privacy -----
 
     /**
-     * As of Phase 3.38B3 the public edition page shows a combined
-     * contributor leaderboard (name, rank, and — deliberately, per that
-     * phase's requirement — total contribution amount). This test
+     * The public edition page shows a combined contributor leaderboard
+     * (name, rank, and — deliberately, per an earlier phase's
+     * requirement before Phase 3.40 hid amounts — a total). This test
      * confirms names are aggregated (not repeated per row) and that
-     * private fields never leak; the ranking algorithm itself (identity
-     * combination, sorting, isolation) is covered by
-     * ContributorRankingTest.
+     * private fields never leak; the ranking algorithm itself is
+     * covered by ContributorRankingTest.
      */
     public function test_public_edition_page_shows_aggregated_contributor_totals_without_private_data(): void
     {
         $edition = Edition::factory()->create();
-        $memberA = CommitteeMember::factory()->create(['name' => 'Public Contributor One', 'phone' => '9876543210']);
-        $memberB = CommitteeMember::factory()->create(['name' => 'Public Contributor Two']);
+        $contributorA = Contributor::factory()->create(['name' => 'Public Contributor One', 'phone' => '9876543210']);
+        $contributorB = Contributor::factory()->create(['name' => 'Public Contributor Two']);
 
         EditionContribution::factory()->create([
             'edition_id' => $edition->id,
-            'committee_member_id' => $memberA->id,
+            'contributor_id' => $contributorA->id,
             'amount' => '5432.10',
             'notes' => 'PRIVATE_NOTE_XYZ',
         ]);
-        // Same member contributes again — name/total must appear once, combined.
+        // Same contributor contributes again — name/total must appear once, combined.
         EditionContribution::factory()->create([
             'edition_id' => $edition->id,
-            'committee_member_id' => $memberA->id,
+            'contributor_id' => $contributorA->id,
             'amount' => '1500.00',
         ]);
         EditionContribution::factory()->create([
             'edition_id' => $edition->id,
-            'committee_member_id' => $memberB->id,
+            'contributor_id' => $contributorB->id,
             'amount' => '3000.00',
         ]);
 
@@ -503,12 +672,12 @@ class CommitteeContributionTest extends TestCase
         $response->assertSee('Public Contributor Two');
         // Phase 3.40 superseded this: the public leaderboard no longer
         // renders any contribution amount at all (5432.10 + 1500.00 =
-        // 6932.10 combined total is still used internally to RANK member
-        // A first — see the position assertion below — but never shown).
+        // 6932.10 combined total is still used internally to RANK
+        // contributor A first, but never shown).
         $response->assertDontSee('6,932');
         $response->assertDontSee('3,000');
 
-        // Name appears exactly once, even though member A contributed twice.
+        // Name appears exactly once, even though contributor A contributed twice.
         $this->assertSame(1, substr_count($response->getContent(), 'Public Contributor One'));
 
         $response->assertDontSee('9876543210');

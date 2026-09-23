@@ -6,20 +6,19 @@ use App\Http\Controllers\Admin\Concerns\FiltersAdminTables;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Contributor\StoreContributorRequest;
 use App\Http\Requests\Admin\Contributor\UpdateContributorRequest;
-use App\Models\CommitteeMember;
 use App\Models\Contributor;
+use App\Models\Edition;
 use App\Services\Contributor\ContributorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * General RPPL contributor ("Chanda") directory — master identity data
- * only (Phase 3.38B1), extended with an optional public profile photo
- * (Phase 3.40). Mirrors CommitteeMemberController's shape closely, with
- * ContributorService added purely to own the photo store/replace/
- * delete lifecycle (see PlayerService for the identical pattern) — no
- * other business rule beyond delete-history protection exists here.
+ * THE master people list for anyone who contributes money to RPPL
+ * (Phase 3.48) — a general "Chanda" contributor and a committee member
+ * are the same kind of record here; committee membership is managed
+ * separately, per edition, from the Finance "Committee" tab (see
+ * EditionCommitteeMemberController), never from this form.
  */
 class ContributorController extends Controller
 {
@@ -37,6 +36,8 @@ class ContributorController extends Controller
         [$sort, $direction] = $this->allowedSort($request, self::ALLOWED_SORTS, 'name', 'asc');
         $perPage = $this->allowedPerPage($request);
 
+        $currentEdition = $this->currentEdition();
+
         $contributors = Contributor::query()
             // Deliberately NOT scoped to active() by default: this is
             // the admin management list, which must keep showing both
@@ -52,11 +53,10 @@ class ContributorController extends Controller
                     $query->where('is_active', false);
                 }
             })
-            ->with('committeeMember')
-            // Relation is named `contributions` (same as CommitteeMember),
-            // so withCount() already produces `contributions_count` — no
-            // aliasing needed to match CommitteeMemberController's column.
             ->withCount('contributions')
+            ->when($currentEdition, fn ($query) => $query->with([
+                'committeeMemberships' => fn ($query) => $query->where('edition_id', $currentEdition->id),
+            ]))
             ->orderBy($sort, $direction)
             ->paginate($perPage)
             ->withQueryString();
@@ -67,6 +67,7 @@ class ContributorController extends Controller
             'sort' => $sort,
             'direction' => $direction,
             'perPage' => $perPage,
+            'currentEdition' => $currentEdition,
         ]);
     }
 
@@ -74,9 +75,7 @@ class ContributorController extends Controller
     {
         $this->authorize('create', Contributor::class);
 
-        return view('admin.contributors.create', [
-            'committeeMembers' => $this->linkableCommitteeMembers(),
-        ]);
+        return view('admin.contributors.create');
     }
 
     public function store(StoreContributorRequest $request): RedirectResponse
@@ -94,11 +93,14 @@ class ContributorController extends Controller
     {
         $this->authorize('view', $contributor);
 
-        $contributor->load('committeeMember');
         $contributor->loadCount('contributions');
+
+        $currentEdition = $this->currentEdition();
 
         return view('admin.contributors.show', [
             'contributor' => $contributor,
+            'currentEdition' => $currentEdition,
+            'isCurrentCommitteeMember' => $currentEdition ? $contributor->isCommitteeMemberOf($currentEdition) : false,
         ]);
     }
 
@@ -108,7 +110,6 @@ class ContributorController extends Controller
 
         return view('admin.contributors.edit', [
             'contributor' => $contributor,
-            'committeeMembers' => $this->linkableCommitteeMembers($contributor),
         ]);
     }
 
@@ -127,13 +128,12 @@ class ContributorController extends Controller
     {
         $this->authorize('delete', $contributor);
 
-        // Same historical-protection philosophy as CommitteeMember: once
-        // contribution history exists, the record is deactivated, not
-        // deleted. Deleting a Contributor never touches its linked
-        // CommitteeMember either way; the FK direction already prevents
-        // that regardless of this guard. ContributorService only removes
-        // the owned photo file after the row delete has actually
-        // succeeded, so a blocked deletion always leaves it in place.
+        // Once contribution history exists, the record is deactivated,
+        // not deleted. ContributorService only removes the owned photo
+        // file after the row delete has actually succeeded, so a
+        // blocked deletion always leaves it in place. Historical
+        // Contributors are never deleted merely for not being on any
+        // current committee.
         if (! $this->contributors->deleteContributor($contributor)) {
             return redirect()
                 ->route('admin.contributors.index')
@@ -146,21 +146,16 @@ class ContributorController extends Controller
     }
 
     /**
-     * Committee members selectable as an identity link: already-linked
-     * members are excluded (the DB unique constraint would reject them
-     * anyway), except the contributor's own current link when editing,
-     * so the form doesn't need special-casing to keep its current value
-     * selectable.
+     * Same deterministic rule as the admin dashboard/public homepage:
+     * active edition, else soonest upcoming, else most recently
+     * completed, else none. Duplicated locally rather than extracted
+     * into a shared service, matching this project's existing
+     * convention (see DashboardController's own copy of this method).
      */
-    private function linkableCommitteeMembers(?Contributor $contributor = null)
+    private function currentEdition(): ?Edition
     {
-        return CommitteeMember::query()
-            ->whereDoesntHave('contributor', function ($query) use ($contributor) {
-                if ($contributor) {
-                    $query->where('id', '!=', $contributor->id);
-                }
-            })
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        return Edition::where('status', 'active')->latest('year')->first()
+            ?? Edition::where('status', 'upcoming')->orderBy('year')->first()
+            ?? Edition::where('status', 'completed')->latest('year')->first();
     }
 }

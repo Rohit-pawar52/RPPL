@@ -117,6 +117,7 @@ class PushNotificationControlTest extends TestCase
             'currency' => 'INR',
             'currency_symbol' => '₹',
             'display_timezone' => 'Asia/Kolkata',
+            'committee_minimum_contribution' => '1000',
         ]);
 
         $response = $this->get(route('public.home'));

@@ -303,6 +303,7 @@ class SettingsManagementTest extends TestCase
             'currency' => 'USD',
             'currency_symbol' => '$',
             'display_timezone' => 'America/New_York',
+            'committee_minimum_contribution' => '1500',
         ]);
 
         $response->assertRedirect(route('admin.settings.index', ['tab' => 'system']));
@@ -311,6 +312,7 @@ class SettingsManagementTest extends TestCase
         $this->assertTrue($settings->boolean('system.maintenance_mode'));
         $this->assertSame('USD', $settings->get('system.currency'));
         $this->assertSame('America/New_York', $settings->get('system.display_timezone'));
+        $this->assertSame(1500.0, $settings->get('finance.committee_minimum_contribution'));
     }
 
     public function test_invalid_timezone_is_rejected(): void
@@ -319,10 +321,26 @@ class SettingsManagementTest extends TestCase
             'currency' => 'INR',
             'currency_symbol' => '₹',
             'display_timezone' => 'Not/ARealZone',
+            'committee_minimum_contribution' => '1000',
         ]);
 
         $response->assertSessionHasErrors('display_timezone');
         $this->assertSame('Asia/Kolkata', app(SettingsService::class)->get('system.display_timezone'));
+    }
+
+    public function test_committee_minimum_contribution_default_and_negative_rejection(): void
+    {
+        $this->assertSame(1000.0, app(SettingsService::class)->get('finance.committee_minimum_contribution'));
+
+        $response = $this->actingAs($this->admin())->put(route('admin.settings.system.update'), [
+            'currency' => 'INR',
+            'currency_symbol' => '₹',
+            'display_timezone' => 'Asia/Kolkata',
+            'committee_minimum_contribution' => '-5',
+        ]);
+
+        $response->assertSessionHasErrors('committee_minimum_contribution');
+        $this->assertSame(1000.0, app(SettingsService::class)->get('finance.committee_minimum_contribution'));
     }
 
     // ----- Payments tab -----

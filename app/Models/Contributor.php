@@ -9,14 +9,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A general RPPL contributor/"Chanda" identity — not a committee member,
- * not a User, no login. Deliberately global (not edition-scoped), same
- * reasoning as CommitteeMember: this is a reusable person identity;
- * their actual contribution payments will be edition-scoped rows
- * elsewhere (Phase 3.38B2+). committee_member_id is an explicit,
- * admin-set identity link only — it never means "this contributor is
- * automatically a committee contributor", and it never migrates or
- * implies any existing contribution history.
+ * THE single person identity for anyone who contributes money to RPPL
+ * (Phase 3.48) — a general "Chanda" contributor and a committee member
+ * are the same kind of record; "committee member" is now an
+ * edition-specific membership (see EditionCommitteeMember), never a
+ * second identity. Deliberately global (not edition-scoped) — the same
+ * person can be a committee member of one edition and not another,
+ * or contribute without ever being on any committee.
+ *
+ * committee_member_id is LEGACY ONLY (Phase 3.38B1-era identity link,
+ * pre-3.48) — it survives purely as a traceability breadcrumb back to
+ * the old committee_members table for rows created by the Phase 3.48
+ * data migration; no application code reads it for identity/authorization
+ * purposes any more. Whether a Contributor is "on the committee" is
+ * always answered by isCommitteeMemberOf($edition), never by this
+ * column.
  */
 class Contributor extends Model
 {
@@ -37,9 +44,31 @@ class Contributor extends Model
         ];
     }
 
+    /**
+     * @deprecated Legacy identity link only — see class docblock. Kept
+     * for the handful of historical rows the Phase 3.48 migration
+     * populated; do not use this to decide committee status.
+     */
     public function committeeMember(): BelongsTo
     {
         return $this->belongsTo(CommitteeMember::class);
+    }
+
+    public function committeeMemberships(): HasMany
+    {
+        return $this->hasMany(EditionCommitteeMember::class);
+    }
+
+    /**
+     * The only correct way to ask "is this person a committee member of
+     * this edition?" (Phase 3.48) — never contributor.committee_member_id,
+     * which is legacy identity-link data, not membership.
+     */
+    public function isCommitteeMemberOf(Edition $edition): bool
+    {
+        return $this->relationLoaded('committeeMemberships')
+            ? $this->committeeMemberships->contains('edition_id', $edition->id)
+            : $this->committeeMemberships()->where('edition_id', $edition->id)->exists();
     }
 
     /**
