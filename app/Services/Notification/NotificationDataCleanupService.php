@@ -16,9 +16,20 @@ use Illuminate\Support\Facades\DB;
  * uninstalled without ever formally unsubscribing (RPPL has no
  * unsubscribe endpoint — see FcmTokenSubscriptionService). An admin
  * triggers each operation explicitly; nothing here runs automatically.
+ *
+ * Every delete*() method has a matching count*() method using the
+ * EXACT same criteria, so a preview shown to the admin can never drift
+ * from what the delete actually removes — the controller calls
+ * count*() for the preview and delete*() for the real action
+ * separately, never trusting a number the browser sends back.
  */
 class NotificationDataCleanupService
 {
+    public function countNotificationsBefore(Carbon $before): int
+    {
+        return Notification::where('created_at', '<', $before)->count();
+    }
+
     /**
      * Deletes every Notification created before $before, along with its
      * NotificationSend history first — notification_sends.notification_id
@@ -45,11 +56,16 @@ class NotificationDataCleanupService
         });
     }
 
+    public function countNotificationSendsBefore(Carbon $before): int
+    {
+        return NotificationSend::where('created_at', '<', $before)->count();
+    }
+
     /**
      * Deletes NotificationSend history rows older than $before,
      * independently of their parent Notification (which is left
-     * untouched either way — only this phase's date-based Notification
-     * cleanup above ever removes a Notification itself).
+     * untouched either way — only deleteNotificationsBefore() above
+     * ever removes a Notification itself).
      *
      * @return int number of NotificationSend rows deleted
      */
@@ -58,26 +74,42 @@ class NotificationDataCleanupService
         return NotificationSend::where('created_at', '<', $before)->delete();
     }
 
+    public function countInactiveFcmTokens(): int
+    {
+        return FcmToken::where('is_active', false)->count();
+    }
+
     /**
-     * Keeps only the $keepCount most recently active FcmToken rows
-     * (ordered by last_seen_at, newest first — ties broken by id so the
-     * result is deterministic) and deletes everything beyond that. This
-     * naturally tends to remove long-stale/abandoned tokens first, since
-     * those already have the oldest last_seen_at values — but if
-     * $keepCount is set lower than the number of genuinely active
-     * subscribers, some currently-valid tokens ARE deleted; the admin
-     * UI makes that consequence explicit before this runs.
+     * Every token Firebase has already told us is permanently invalid/
+     * unregistered (see SendNotificationJob, the only writer that ever
+     * flips is_active to false, based on Firebase's own
+     * "invalid_tokens" response) — these can never receive a
+     * notification again, so there is no meaningful reason to keep them.
      *
      * @return int number of FcmToken rows deleted
      */
-    public function keepLatestFcmTokens(int $keepCount): int
+    public function deleteInactiveFcmTokens(): int
     {
-        $idsToKeep = FcmToken::query()
-            ->orderByDesc('last_seen_at')
-            ->orderByDesc('id')
-            ->limit($keepCount)
-            ->pluck('id');
+        return FcmToken::where('is_active', false)->delete();
+    }
 
-        return FcmToken::query()->whereNotIn('id', $idsToKeep)->delete();
+    public function countStaleFcmTokens(Carbon $before): int
+    {
+        return FcmToken::where('last_seen_at', '<', $before)->count();
+    }
+
+    /**
+     * Tokens not seen (no delivery attempt/heartbeat) since $before —
+     * last_seen_at is the only field this schema has that represents
+     * genuine last-activity (see FcmToken's own docblock); this
+     * deliberately does NOT touch is_active, so an active-but-quiet
+     * token past the threshold is still removed regardless of its
+     * status, and a recently-active token is kept regardless of status.
+     *
+     * @return int number of FcmToken rows deleted
+     */
+    public function deleteStaleFcmTokens(Carbon $before): int
+    {
+        return FcmToken::where('last_seen_at', '<', $before)->delete();
     }
 }

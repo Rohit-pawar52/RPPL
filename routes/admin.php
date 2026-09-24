@@ -187,14 +187,21 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // notification's CURRENT content, always a new NotificationSend
         // row); only the button label differs based on send history.
         Route::post('notifications/{notification}/send', [NotificationController::class, 'send'])->name('notifications.send');
-        // Bulk retention/cleanup for notifications/notification_sends/
-        // fcm_tokens (Phase B5) — always an explicit, confirmed admin
-        // action, never automatic.
+        // Bulk retention/cleanup — the ONE centralized destructive-
+        // cleanup module (Phase B5, expanded in Phase 3.49 to also
+        // cover registration documents and failed queue jobs). Always
+        // an explicit, confirmed admin action, never automatic.
         Route::prefix('data-cleanup')->name('data-cleanup.')->group(function () {
             Route::get('/', [DataCleanupController::class, 'index'])->name('index');
+            Route::get('preview/cutoff', [DataCleanupController::class, 'previewCutoff'])->name('preview.cutoff');
+            Route::get('preview/stale-fcm-tokens', [DataCleanupController::class, 'previewStaleFcmTokens'])->name('preview.stale-fcm-tokens');
+            Route::get('preview/registration-documents', [DataCleanupController::class, 'previewRegistrationDocuments'])->name('preview.registration-documents');
             Route::delete('notifications', [DataCleanupController::class, 'destroyNotifications'])->name('notifications.destroy');
             Route::delete('notification-sends', [DataCleanupController::class, 'destroyNotificationSends'])->name('notification-sends.destroy');
-            Route::delete('fcm-tokens', [DataCleanupController::class, 'destroyFcmTokens'])->name('fcm-tokens.destroy');
+            Route::delete('fcm-tokens/inactive', [DataCleanupController::class, 'destroyInactiveFcmTokens'])->name('fcm-tokens.destroy-inactive');
+            Route::delete('fcm-tokens/stale', [DataCleanupController::class, 'destroyStaleFcmTokens'])->name('fcm-tokens.destroy-stale');
+            Route::delete('registration-documents', [DataCleanupController::class, 'destroyRegistrationDocuments'])->name('registration-documents.destroy');
+            Route::delete('failed-jobs', [DataCleanupController::class, 'destroyFailedJobs'])->name('failed-jobs.destroy');
         });
         Route::prefix('edition-contributions/{edition_contribution}')->name('edition-contributions.')->group(function () {
             Route::get('receipt', [EditionContributionController::class, 'receipt'])->name('receipt');
