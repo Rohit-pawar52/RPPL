@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Seeders;
 
-use App\Models\CommitteeMember;
 use App\Models\Contributor;
 use App\Models\Edition;
+use App\Models\EditionCommitteeMember;
 use App\Models\EditionContribution;
 use App\Models\EditionTeam;
 use App\Models\EditionTransaction;
@@ -161,7 +161,7 @@ class DemoDataSeederTest extends TestCase
             $this->assertEquals((float) $contribution->amount, (float) $transaction->amount);
         });
 
-        $this->assertGreaterThanOrEqual(10, CommitteeMember::count());
+        $this->assertGreaterThanOrEqual(10, EditionCommitteeMember::where('edition_id', $active->id)->count());
         $this->assertGreaterThanOrEqual(12, Contributor::count());
     }
 

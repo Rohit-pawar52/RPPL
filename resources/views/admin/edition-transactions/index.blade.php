@@ -1,8 +1,10 @@
 @extends('layouts.admin')
 
-@section('title', 'Finance')
+@section('title', 'Finance — Ledger')
 
 @section('content')
+    @include('admin.finance._tabs')
+
     <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <x-table-filters :action="route('admin.edition-transactions.index')" :filters="$filters" :date-range="true" :per-page="$perPage">
             <input

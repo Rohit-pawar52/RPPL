@@ -36,14 +36,6 @@
 <x-form.input name="name" label="Name" :value="$contributor->name ?? ''" required autofocus />
 <x-form.input name="phone" label="Phone" :value="$contributor->phone ?? ''" />
 
-<x-form.select
-    name="committee_member_id"
-    label="Linked Committee Member (optional)"
-    placeholder="Not linked to a committee member"
-    :options="$committeeMembers->pluck('name', 'id')"
-    :value="$contributor->committee_member_id ?? null"
-/>
-
 @if($contributor)
     {{-- Only shown on edit: a newly added contributor defaults to
          active without the admin having to choose it explicitly. --}}

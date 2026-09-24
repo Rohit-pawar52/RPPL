@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Models\CommitteeMember;
 use App\Models\Contributor;
 use App\Models\Edition;
+use App\Models\EditionCommitteeMember;
 use App\Models\EditionContribution;
 use App\Models\EditionTransaction;
 use App\Models\PlayerRegistration;
@@ -129,10 +129,11 @@ class ReportsTest extends TestCase
     public function test_contribution_csv_is_edition_scoped_and_contains_correct_rows(): void
     {
         $edition = Edition::factory()->create();
-        $member = CommitteeMember::factory()->create(['name' => 'Suresh Patil']);
+        $member = Contributor::factory()->create(['name' => 'Suresh Patil']);
+        EditionCommitteeMember::create(['edition_id' => $edition->id, 'contributor_id' => $member->id]);
         EditionContribution::factory()->create([
             'edition_id' => $edition->id,
-            'committee_member_id' => $member->id,
+            'contributor_id' => $member->id,
             'amount' => 1500,
             'contributed_at' => '2026-01-15',
             'notes' => 'Cash at ground',
@@ -142,7 +143,6 @@ class ReportsTest extends TestCase
         $otherContributor = Contributor::factory()->create(['name' => 'Other Edition Person']);
         EditionContribution::factory()->create([
             'edition_id' => $otherEdition->id,
-            'committee_member_id' => null,
             'contributor_id' => $otherContributor->id,
             'amount' => 999,
         ]);
@@ -181,8 +181,8 @@ class ReportsTest extends TestCase
         EditionTransaction::factory()->create(['edition_id' => $edition->id, 'type' => 'income', 'amount' => 5000]);
         EditionTransaction::factory()->create(['edition_id' => $edition->id, 'type' => 'expense', 'amount' => 1200]);
 
-        $member = CommitteeMember::factory()->create();
-        EditionContribution::factory()->create(['edition_id' => $edition->id, 'committee_member_id' => $member->id, 'amount' => 1000]);
+        $member = Contributor::factory()->create();
+        EditionContribution::factory()->create(['edition_id' => $edition->id, 'contributor_id' => $member->id, 'amount' => 1000]);
 
         $response = $this->actingAs($this->admin())->get(route('admin.reports.financial-summary', ['edition_id' => $edition->id]));
 

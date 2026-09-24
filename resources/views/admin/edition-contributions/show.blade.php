@@ -14,15 +14,9 @@
             <h2 class="text-base font-semibold text-neutral-900">
                 {{ money($contribution->amount) }}
             </h2>
-            @if($contribution->committeeMember)
-                <a href="{{ route('admin.committee-members.show', $contribution->committeeMember) }}" class="text-xs font-medium theme-link hover:underline">
-                    {{ $contribution->contributorName() }}
-                </a>
-            @else
-                <a href="{{ route('admin.contributors.show', $contribution->contributor) }}" class="text-xs font-medium theme-link hover:underline">
-                    {{ $contribution->contributorName() }}
-                </a>
-            @endif
+            <a href="{{ route('admin.contributors.show', $contribution->contributor) }}" class="text-xs font-medium theme-link hover:underline">
+                {{ $contribution->contributorName() }}
+            </a>
         </div>
 
         <dl class="mt-3 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">

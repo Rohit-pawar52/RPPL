@@ -52,6 +52,19 @@ class Edition extends Model
         return $this->hasMany(EditionContribution::class);
     }
 
+    /**
+     * Phase 3.48 — this edition's committee membership rows (see
+     * EditionCommitteeMember). Not a belongsToMany to Contributor
+     * directly: callers that need the Contributor rows themselves go
+     * through ->with('committeeMemberships.contributor') so the pivot
+     * row (and its own id/timestamps) stays a first-class, addressable
+     * record rather than disappearing into an implicit pivot table.
+     */
+    public function committeeMemberships(): HasMany
+    {
+        return $this->hasMany(EditionCommitteeMember::class);
+    }
+
     public function matches(): HasMany
     {
         return $this->hasMany(GameMatch::class);

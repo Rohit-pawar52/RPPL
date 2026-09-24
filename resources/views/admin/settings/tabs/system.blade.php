@@ -27,8 +27,21 @@
     <x-form.input name="currency_symbol" label="Currency Symbol" :value="$settings->get('system.currency_symbol')" required maxlength="10" />
     <x-form.input name="display_timezone" label="Display Timezone" :value="$settings->get('system.display_timezone')" required placeholder="Asia/Kolkata" />
 
+    <x-form.input
+        name="committee_minimum_contribution"
+        label="Committee Minimum Contribution"
+        type="number"
+        step="0.01"
+        min="0"
+        :value="$settings->get('finance.committee_minimum_contribution')"
+        required
+    />
+    <p class="-mt-3 mb-3.5 text-[11px] text-neutral-400">
+        Target total contribution expected from each committee member — reachable across several smaller payments (installments), not a minimum per payment. Changing this changes the displayed dues target for every edition, including past ones; already-recorded contribution amounts are never affected.
+    </p>
+
     <p class="mb-3.5 text-[11px] text-neutral-400">
-        Maintenance mode and display timezone are live — enabling maintenance mode immediately blocks the public website, and the display timezone controls how dates/times are shown across the site. Currency/currency symbol are currently stored preferences only; nothing on the site reads them yet.
+        Maintenance mode and display timezone are live — enabling maintenance mode immediately blocks the public website, and the display timezone controls how dates/times are shown across the site. Currency/currency symbol are consumed application-wide via the <code>money()</code> helper (dashboard, reports, PDFs, the public registration flow).
     </p>
 
     <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">

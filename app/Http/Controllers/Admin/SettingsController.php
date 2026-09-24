@@ -115,6 +115,7 @@ class SettingsController extends Controller
             'system.currency' => $data['currency'],
             'system.currency_symbol' => $data['currency_symbol'],
             'system.display_timezone' => $data['display_timezone'],
+            'finance.committee_minimum_contribution' => $data['committee_minimum_contribution'],
         ]);
 
         return redirect()->route('admin.settings.index', ['tab' => 'system'])

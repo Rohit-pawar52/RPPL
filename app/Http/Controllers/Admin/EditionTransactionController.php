@@ -128,7 +128,7 @@ class EditionTransactionController extends Controller
                         $transaction->category ?? '',
                         $transaction->description ?? '',
                         number_format($transaction->amount, 2, '.', ''),
-                        $transaction->contribution_exists ? 'Committee Contribution' : 'Manual',
+                        $transaction->contribution_exists ? 'Contribution' : 'Manual',
                         $transaction->createdBy->name,
                     ]);
                 }

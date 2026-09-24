@@ -4,6 +4,8 @@ namespace Tests\Feature\Admin;
 
 use App\Models\CommitteeMember;
 use App\Models\Contributor;
+use App\Models\Edition;
+use App\Models\EditionCommitteeMember;
 use App\Models\EditionContribution;
 use App\Models\Role;
 use App\Models\User;
@@ -69,7 +71,16 @@ class ContributorManagementTest extends TestCase
         $this->assertNull(Contributor::firstWhere('name', 'Blocked'));
     }
 
-    public function test_a_contributor_can_be_optionally_linked_to_a_committee_member(): void
+    /**
+     * Phase 3.48 — committee_member_id is no longer an accepted field on
+     * this form at all (committee membership is edition-specific now,
+     * managed from the Finance "Committee" tab — see
+     * EditionCommitteeMemberController/CommitteeContributionTest); a
+     * request that sends it anyway must be silently ignored, never
+     * validated or persisted, and must never fail merely because a
+     * committee_members row happens to exist.
+     */
+    public function test_committee_member_id_in_the_request_is_silently_ignored_on_create_and_update(): void
     {
         $member = CommitteeMember::factory()->create();
 
@@ -81,51 +92,34 @@ class ContributorManagementTest extends TestCase
             ->assertRedirect(route('admin.contributors.index'));
 
         $contributor = Contributor::firstWhere('name', 'Suresh Deshmukh');
-        $this->assertSame($member->id, $contributor->committee_member_id);
-        $this->assertTrue($member->fresh()->contributor->is($contributor));
-    }
-
-    public function test_the_same_committee_member_cannot_be_linked_to_two_contributors(): void
-    {
-        $member = CommitteeMember::factory()->create();
-        Contributor::factory()->create(['committee_member_id' => $member->id]);
+        $this->assertNotNull($contributor);
+        $this->assertNull($contributor->committee_member_id);
 
         $this->actingAs($this->admin())
-            ->post(route('admin.contributors.store'), [
-                'name' => 'Second Link Attempt',
+            ->put(route('admin.contributors.update', $contributor), [
+                'name' => $contributor->name,
+                'is_active' => 1,
                 'committee_member_id' => $member->id,
             ])
-            ->assertSessionHasErrors('committee_member_id');
-
-        $this->assertNull(Contributor::firstWhere('name', 'Second Link Attempt'));
+            ->assertRedirect(route('admin.contributors.index'));
+        $this->assertNull($contributor->fresh()->committee_member_id);
     }
 
-    public function test_update_can_change_the_committee_link_and_can_keep_its_own_existing_link(): void
+    public function test_committee_badge_on_show_reflects_edition_specific_membership(): void
     {
-        $memberA = CommitteeMember::factory()->create();
-        $memberB = CommitteeMember::factory()->create();
-        $contributor = Contributor::factory()->create(['committee_member_id' => $memberA->id]);
+        $edition = Edition::factory()->create(['status' => 'active']);
+        $contributor = Contributor::factory()->create();
 
-        // Re-saving with its OWN current link must not trip the
-        // uniqueness rule against itself.
-        $this->actingAs($this->admin())
-            ->put(route('admin.contributors.update', $contributor), [
-                'name' => $contributor->name,
-                'committee_member_id' => $memberA->id,
-                'is_active' => 1,
-            ])
-            ->assertRedirect(route('admin.contributors.index'));
-        $this->assertSame($memberA->id, $contributor->fresh()->committee_member_id);
+        $response = $this->actingAs($this->admin())->get(route('admin.contributors.show', $contributor));
+        $response->assertOk();
+        $response->assertDontSee('Committee Member', false);
 
-        // Changing to a different, unlinked member succeeds.
+        EditionCommitteeMember::create(['edition_id' => $edition->id, 'contributor_id' => $contributor->id]);
+
         $this->actingAs($this->admin())
-            ->put(route('admin.contributors.update', $contributor), [
-                'name' => $contributor->name,
-                'committee_member_id' => $memberB->id,
-                'is_active' => 1,
-            ])
-            ->assertRedirect(route('admin.contributors.index'));
-        $this->assertSame($memberB->id, $contributor->fresh()->committee_member_id);
+            ->get(route('admin.contributors.show', $contributor))
+            ->assertOk()
+            ->assertSee('Committee Member');
     }
 
     public function test_inactive_status_can_be_stored_via_update(): void

@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\CommitteeMember;
+use App\Models\Contributor;
 use App\Models\Edition;
 use App\Models\EditionContribution;
 use App\Models\EditionTransaction;
@@ -30,12 +30,12 @@ class EditionContributionFactory extends Factory
     {
         return [
             'edition_id' => Edition::factory(),
-            'committee_member_id' => CommitteeMember::factory(),
+            'contributor_id' => Contributor::factory(),
             'amount' => fake()->randomFloat(2, EditionContribution::MINIMUM_AMOUNT, 20000),
             'edition_transaction_id' => fn (array $attributes) => EditionTransaction::factory()->create([
                 'edition_id' => $attributes['edition_id'],
                 'type' => 'income',
-                'category' => 'Committee Contribution',
+                'category' => 'Contribution',
                 'amount' => $attributes['amount'],
             ])->id,
             'contributed_at' => fake()->dateTimeBetween('-3 months', 'now')->format('Y-m-d'),

@@ -62,6 +62,18 @@ final class SettingsRegistry
         'contact.whatsapp' => ['type' => Setting::TYPE_STRING, 'default' => null],
         'contact.address' => ['type' => Setting::TYPE_TEXT, 'default' => null],
 
+        // Finance — Phase 3.48. This is a per-edition TARGET total
+        // expected from each committee member, reached across any number
+        // of installment payments — never a minimum enforced on a single
+        // payment. Deliberately a GLOBAL setting, not stored per Edition
+        // (an explicit product decision that overrode the original
+        // roadmap proposal): changing it changes the displayed dues
+        // target for every edition's committee dues calculation the next
+        // time it's viewed, including past editions — there is no
+        // per-edition historical snapshot of this value. Contribution
+        // AMOUNTS already recorded are never affected either way.
+        'finance.committee_minimum_contribution' => ['type' => Setting::TYPE_DECIMAL, 'default' => 1000.00],
+
         // Payment — inert configuration only. No Razorpay package is
         // installed and nothing reads these yet.
         'payment.razorpay_enabled' => ['type' => Setting::TYPE_BOOLEAN, 'default' => false],
