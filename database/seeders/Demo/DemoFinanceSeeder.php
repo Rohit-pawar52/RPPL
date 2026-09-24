@@ -2,62 +2,53 @@
 
 namespace Database\Seeders\Demo;
 
-use App\Models\CommitteeMember;
 use App\Models\Contributor;
 use App\Models\Edition;
+use App\Models\EditionCommitteeMember;
 use App\Models\EditionTransaction;
 use App\Models\User;
 use App\Services\Finance\EditionContributionService;
 use Illuminate\Database\Seeder;
 
 /**
- * Committee members, general "Chanda" contributors, their contributions,
- * and the additional manual finance-ledger entries beyond what
- * contributions already create. All contributions go through
- * EditionContributionService::createContribution() — the one place that
- * keeps a contribution and its linked EditionTransaction income row in
- * sync — never a direct EditionContribution::create() call. Registration
- * fees are deliberately never linked into this ledger (see Edition
- * Transactions' existing design note); only contributions and these
- * standalone manual entries ever create an EditionTransaction here.
+ * Phase 3.48 — general "Chanda" contributors, committee contributors
+ * (an edition-specific EditionCommitteeMember membership on the SAME
+ * Contributor identity, not a separate person type), their
+ * contributions, and the additional manual finance-ledger entries
+ * beyond what contributions already create. All contributions go
+ * through EditionContributionService::createContribution() — the one
+ * place that keeps a contribution and its linked EditionTransaction
+ * income row in sync — never a direct EditionContribution::create()
+ * call. Registration fees are deliberately never linked into this
+ * ledger (see Edition Transactions' existing design note); only
+ * contributions and these standalone manual entries ever create an
+ * EditionTransaction here.
+ *
+ * The active edition's committee is deliberately seeded with every dues
+ * status the Finance "Committee" tab can show (not paid / partially
+ * paid / paid in full / over target) against the default
+ * finance.committee_minimum_contribution (₹1000) — see
+ * seedActiveFinance()'s per-member comments for exactly which is which.
  */
 class DemoFinanceSeeder extends Seeder
 {
     /**
      * @var list<string>
      */
-    private const COMMITTEE_MEMBERS = [
+    private const COMMITTEE_CONTRIBUTORS = [
         'Ashwini Deshpande', 'Baban Kale', 'Chandrakant Salunkhe', 'Dattatray Bhoir', 'Eknath Wagh',
         'Fakir Shaikh', 'Govind Thorat', 'Hemant Raut', 'Ishwar Nikam', 'Jayram Bhagat',
     ];
 
     /**
-     * A mix of standalone general contributors and a few explicitly
-     * linked to a committee member (Phase 3.38B2's identity link) — index
-     * positions in LINKED_TO_COMMITTEE_INDEX below reference
-     * self::COMMITTEE_MEMBERS by position.
+     * General/"Chanda" contributors — never on any committee.
      *
      * @var list<string>
      */
-    private const CONTRIBUTORS = [
+    private const GENERAL_CONTRIBUTORS = [
         'Meera Kulkarni', 'Nandini Rane', 'Om Prakash Sharma', 'Pallavi Joshi', 'Qasim Sheikh',
         'Rukmini Bhosale', 'Shalini Patil', 'Tanaji Gaikwad', 'Uttam Kadam', 'Vaishali Mane',
         'Waman Pisal', 'Yamini Chavan', 'Zaheer Pathan', 'Anjali Kamble',
-    ];
-
-    /**
-     * Contributor index => CommitteeMember index it is explicitly linked
-     * to. These contributions collapse into the committee member's own
-     * canonical leaderboard identity (ContributorRankingService) —
-     * demonstrating that linkage, not just standalone contributors.
-     *
-     * @var array<int, int>
-     */
-    private const LINKED_TO_COMMITTEE_INDEX = [
-        0 => 0, // Meera Kulkarni -> Ashwini Deshpande
-        1 => 2, // Nandini Rane -> Chandrakant Salunkhe
-        2 => 4, // Om Prakash Sharma -> Eknath Wagh
-        3 => 6, // Pallavi Joshi -> Govind Thorat
     ];
 
     public function __construct(private readonly EditionContributionService $contributions) {}
@@ -66,8 +57,8 @@ class DemoFinanceSeeder extends Seeder
     {
         $admin = User::where('email', 'admin@rppl.test')->firstOrFail();
 
-        $committeeMembers = $this->seedCommitteeMembers();
-        $contributors = $this->seedContributors($committeeMembers);
+        $committeeContributors = $this->seedContributors(self::COMMITTEE_CONTRIBUTORS, 98);
+        $generalContributors = $this->seedContributors(self::GENERAL_CONTRIBUTORS, 97);
 
         $historical = Edition::where('year', DemoEditionSeeder::HISTORICAL_YEAR)->firstOrFail();
         $active = Edition::where('year', DemoEditionSeeder::ACTIVE_YEAR)->firstOrFail();
@@ -76,54 +67,40 @@ class DemoFinanceSeeder extends Seeder
             return;
         }
 
-        $this->seedHistoricalFinance($historical, $committeeMembers, $contributors, $admin);
-        $this->seedActiveFinance($active, $committeeMembers, $contributors, $admin);
+        $this->seedHistoricalFinance($historical, $committeeContributors, $generalContributors, $admin);
+        $this->seedActiveFinance($active, $committeeContributors, $generalContributors, $admin);
     }
 
     /**
-     * @return list<CommitteeMember>
+     * @param  list<string>  $names
+     * @return list<Contributor>
      */
-    private function seedCommitteeMembers(): array
+    private function seedContributors(array $names, int $phonePrefix): array
     {
-        return collect(self::COMMITTEE_MEMBERS)
-            ->map(fn (string $name, int $index) => CommitteeMember::firstOrCreate(
+        return collect($names)
+            ->map(fn (string $name, int $index) => Contributor::firstOrCreate(
                 ['name' => $name],
-                ['phone' => sprintf('98%08d', 10000000 + $index), 'is_active' => $index !== 9]
+                ['phone' => sprintf('%d%08d', $phonePrefix, 10000000 + $index), 'is_active' => true]
             ))
             ->all();
     }
 
     /**
-     * @param  list<CommitteeMember>  $committeeMembers
-     * @return list<Contributor>
+     * @param  list<Contributor>  $committeeContributors
+     * @param  list<Contributor>  $generalContributors
      */
-    private function seedContributors(array $committeeMembers): array
+    private function seedHistoricalFinance(Edition $edition, array $committeeContributors, array $generalContributors, User $admin): void
     {
-        return collect(self::CONTRIBUTORS)
-            ->map(function (string $name, int $index) use ($committeeMembers) {
-                $linkedCommitteeIndex = self::LINKED_TO_COMMITTEE_INDEX[$index] ?? null;
+        // Only the two who actually contributed become committee members
+        // of this edition — membership is reconstructed from
+        // contribution evidence, same rule the Phase 3.48 data migration
+        // uses for real historical data.
+        $this->addToCommittee($edition, $committeeContributors[0]);
+        $this->addToCommittee($edition, $committeeContributors[1]);
 
-                return Contributor::firstOrCreate(
-                    ['name' => $name],
-                    [
-                        'phone' => sprintf('97%08d', 20000000 + $index),
-                        'committee_member_id' => $linkedCommitteeIndex !== null ? $committeeMembers[$linkedCommitteeIndex]->id : null,
-                        'is_active' => true,
-                    ]
-                );
-            })
-            ->all();
-    }
-
-    /**
-     * @param  list<CommitteeMember>  $committeeMembers
-     * @param  list<Contributor>  $contributors
-     */
-    private function seedHistoricalFinance(Edition $edition, array $committeeMembers, array $contributors, User $admin): void
-    {
-        $this->contribute($edition, 'committee', $committeeMembers[0]->id, 1500, '-13 months', $admin);
-        $this->contribute($edition, 'committee', $committeeMembers[1]->id, 2000, '-13 months', $admin);
-        $this->contribute($edition, 'contributor', $contributors[5]->id, 500, '-12 months', $admin);
+        $this->contribute($edition, $committeeContributors[0], 1500, '-13 months', $admin);
+        $this->contribute($edition, $committeeContributors[1], 2000, '-13 months', $admin);
+        $this->contribute($edition, $generalContributors[5], 500, '-12 months', $admin);
 
         $this->manualTransaction($edition, 'income', 'Sponsorship', 8000, '-14 months', $admin);
         $this->manualTransaction($edition, 'expense', 'Ground Preparation', 3000, '-13 months', $admin);
@@ -131,38 +108,58 @@ class DemoFinanceSeeder extends Seeder
     }
 
     /**
-     * @param  list<CommitteeMember>  $committeeMembers
-     * @param  list<Contributor>  $contributors
+     * @param  list<Contributor>  $committeeContributors
+     * @param  list<Contributor>  $generalContributors
      */
-    private function seedActiveFinance(Edition $edition, array $committeeMembers, array $contributors, User $admin): void
+    private function seedActiveFinance(Edition $edition, array $committeeContributors, array $generalContributors, User $admin): void
     {
-        // Every committee member contributes at least once (>= the
-        // committee minimum) — several contribute twice, to exercise
-        // ContributorRankingService's multi-payment aggregation.
-        foreach ($committeeMembers as $index => $member) {
-            if (! $member->is_active) {
-                continue;
-            }
-
-            $this->contribute($edition, 'committee', $member->id, 1000 + ($index * 250), sprintf('-%d weeks', 10 - $index), $admin);
+        // Every committee contributor is a member of THIS edition's
+        // committee (added before any contribution, exactly like the
+        // admin would do from the Finance "Committee" tab) — deliberately
+        // covering every dues status against the default ₹1000 target:
+        foreach ($committeeContributors as $contributor) {
+            $this->addToCommittee($edition, $contributor);
         }
 
-        $this->contribute($edition, 'committee', $committeeMembers[0]->id, 1200, '-2 weeks', $admin);
-        $this->contribute($edition, 'committee', $committeeMembers[1]->id, 1000, '-1 week', $admin);
+        // index 0: NOT PAID — no contribution at all this edition.
 
-        // Standalone (unlinked) general contributors and the linked ones
-        // both appear — together these give the public leaderboard enough
-        // distinct canonical identities (10 committee + 10 standalone) to
-        // demonstrate every badge tier (Top Contributor / 2nd / 3rd /
-        // Top 10 / outside Top 10).
-        foreach ($contributors as $index => $contributor) {
-            $this->contribute($edition, 'contributor', $contributor->id, 200 + ($index * 75), sprintf('-%d days', 60 - ($index * 3)), $admin);
+        // index 1: PARTIALLY PAID — two installments summing to less than the target.
+        $this->contribute($edition, $committeeContributors[1], 300, '-9 weeks', $admin);
+        $this->contribute($edition, $committeeContributors[1], 200, '-2 weeks', $admin);
+
+        // index 2: PAID IN FULL — one payment exactly at the target.
+        $this->contribute($edition, $committeeContributors[2], 1000, '-8 weeks', $admin);
+
+        // index 3: PAID IN FULL via installments summing exactly to the target.
+        $this->contribute($edition, $committeeContributors[3], 600, '-7 weeks', $admin);
+        $this->contribute($edition, $committeeContributors[3], 400, '-1 week', $admin);
+
+        // index 4: OVER TARGET — a single payment above the target;
+        // remaining floors at 0, never treated as an error.
+        $this->contribute($edition, $committeeContributors[4], 1500, '-6 weeks', $admin);
+
+        // index 5-8: PAID IN FULL with a mix of amounts above the target,
+        // some contributing twice — exercises multi-payment aggregation
+        // for the public leaderboard/ranking too.
+        foreach (array_slice($committeeContributors, 5, 4) as $offset => $contributor) {
+            $this->contribute($edition, $contributor, 1000 + ($offset * 250), sprintf('-%d weeks', 5 - $offset), $admin);
+        }
+        $this->contribute($edition, $committeeContributors[5], 200, '-1 week', $admin);
+
+        // index 9: NOT PAID — a second not-paid member, so the Committee
+        // tab's "Not Paid" count is never just a single-row coincidence.
+
+        // General (non-committee) contributors — standalone identities,
+        // enough distinct people for every public leaderboard badge tier
+        // (Top Contributor / 2nd / 3rd / Top 10 / outside Top 10).
+        foreach ($generalContributors as $index => $contributor) {
+            $this->contribute($edition, $contributor, 200 + ($index * 75), sprintf('-%d days', 60 - ($index * 3)), $admin);
         }
 
-        // Anjali Kamble (the last standalone contributor) also gives a
-        // second, larger payment — multi-payment aggregation for an
-        // unlinked contributor too, not just committee members.
-        $this->contribute($edition, 'contributor', $contributors[array_key_last($contributors)]->id, 900, '-5 days', $admin);
+        // The last general contributor also gives a second, larger
+        // payment — multi-payment aggregation for a non-committee
+        // contributor too, not just committee members.
+        $this->contribute($edition, $generalContributors[array_key_last($generalContributors)], 900, '-5 days', $admin);
 
         $this->manualTransaction($edition, 'income', 'Sponsorship', 15000, '-2 months', $admin);
         $this->manualTransaction($edition, 'income', 'Registration Support Grant', 5000, '-6 weeks', $admin);
@@ -174,12 +171,16 @@ class DemoFinanceSeeder extends Seeder
         $this->manualTransaction($edition, 'expense', 'Printing', 900, '-10 days', $admin);
     }
 
-    private function contribute(Edition $edition, string $sourceType, int $sourceId, float $amount, string $contributedAt, User $admin): void
+    private function addToCommittee(Edition $edition, Contributor $contributor): void
+    {
+        EditionCommitteeMember::firstOrCreate(['edition_id' => $edition->id, 'contributor_id' => $contributor->id]);
+    }
+
+    private function contribute(Edition $edition, Contributor $contributor, float $amount, string $contributedAt, User $admin): void
     {
         $this->contributions->createContribution([
             'edition_id' => $edition->id,
-            'source_type' => $sourceType,
-            'source_id' => $sourceId,
+            'contributor_id' => $contributor->id,
             'amount' => $amount,
             'contributed_at' => now()->modify($contributedAt)->format('Y-m-d'),
         ], $admin->id);

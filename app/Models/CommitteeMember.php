@@ -9,8 +9,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
- * A tournament/community person who may contribute funds to an
- * edition. Deliberately not a User — no login, no roles/permissions.
+ * @deprecated Phase 3.48 — LEGACY identity table only, kept solely for
+ * historical data preservation (no row is deleted, no column dropped).
+ * "Committee member" is no longer a separate person identity: it is now
+ * Contributor + an edition-specific EditionCommitteeMember row. No
+ * admin UI creates/edits a CommitteeMember any more, and no application
+ * code should query this model to determine anyone's current committee
+ * status — use Contributor::isCommitteeMemberOf($edition) instead. See
+ * the Phase 3.48 report for the full rationale and the data migration
+ * that moved every existing CommitteeMember into a Contributor.
  */
 class CommitteeMember extends Model
 {

@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Admin\Contributor;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateContributorRequest extends FormRequest
 {
@@ -18,9 +17,10 @@ class UpdateContributorRequest extends FormRequest
     }
 
     /**
-     * The uniqueness check on committee_member_id must ignore this
-     * contributor's own current row, or a no-op re-save of an already
-     * linked contributor would fail validation against itself.
+     * committee_member_id is deliberately absent (Phase 3.48) —
+     * committee membership is now edition-specific (see
+     * EditionCommitteeMember/the Finance "Committee" tab), never a
+     * field on the Contributor form.
      *
      * @return array<string, mixed>
      */
@@ -29,12 +29,6 @@ class UpdateContributorRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'committee_member_id' => [
-                'nullable',
-                'integer',
-                'exists:committee_members,id',
-                Rule::unique('contributors', 'committee_member_id')->ignore($this->route('contributor')),
-            ],
             'is_active' => ['required', 'boolean'],
             'photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
         ];

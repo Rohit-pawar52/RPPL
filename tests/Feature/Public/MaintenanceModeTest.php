@@ -123,6 +123,7 @@ class MaintenanceModeTest extends TestCase
             'currency' => 'INR',
             'currency_symbol' => '₹',
             'display_timezone' => 'Asia/Kolkata',
+            'committee_minimum_contribution' => '1000',
         ])->assertRedirect(route('admin.settings.index', ['tab' => 'system']));
 
         $this->assertFalse(app(SettingsService::class)->boolean('system.maintenance_mode'));
@@ -139,6 +140,7 @@ class MaintenanceModeTest extends TestCase
             'currency' => 'INR',
             'currency_symbol' => '₹',
             'display_timezone' => 'Asia/Kolkata',
+            'committee_minimum_contribution' => '1000',
         ]);
 
         // No new request-scoped cache/container reset between these two
@@ -158,6 +160,7 @@ class MaintenanceModeTest extends TestCase
             'currency' => 'INR',
             'currency_symbol' => '₹',
             'display_timezone' => 'Asia/Kolkata',
+            'committee_minimum_contribution' => '1000',
         ]);
 
         $this->get(route('public.home'))->assertStatus(503);

@@ -1,8 +1,10 @@
 @extends('layouts.admin')
 
-@section('title', 'Contributors')
+@section('title', 'Finance — Contributors')
 
 @section('content')
+    @include('admin.finance._tabs')
+
     <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <x-table-filters :action="route('admin.contributors.index')" :filters="$filters" :per-page="$perPage">
             <input
@@ -36,7 +38,7 @@
                     <th class="px-4 py-2 font-medium"><x-sortable-header column="name" :sort="$sort" :direction="$direction">Name</x-sortable-header></th>
                     <th class="px-4 py-2 font-medium">Status</th>
                     <th class="hidden px-4 py-2 font-medium md:table-cell"><x-sortable-header column="contributions_count" :sort="$sort" :direction="$direction">Contributions</x-sortable-header></th>
-                    <th class="hidden px-4 py-2 font-medium lg:table-cell">Committee Link</th>
+                    <th class="hidden px-4 py-2 font-medium lg:table-cell">Committee{{ $currentEdition ? ' ('.$currentEdition->name.')' : '' }}</th>
                     <th class="px-4 py-2 text-right font-medium">Actions</th>
                 </tr>
             </thead>
@@ -61,8 +63,14 @@
                         <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">
                             {{ $contributor->contributions_count }}
                         </td>
-                        <td class="hidden px-4 py-2 text-neutral-600 lg:table-cell">
-                            {{ $contributor->committeeMember->name ?? '—' }}
+                        <td class="hidden px-4 py-2 lg:table-cell">
+                            @if($currentEdition && $contributor->committeeMemberships->isNotEmpty())
+                                <span class="inline-flex items-center whitespace-nowrap rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
+                                    Committee Member
+                                </span>
+                            @else
+                                <span class="text-neutral-400">—</span>
+                            @endif
                         </td>
                         <td class="px-4 py-2">
                             <div class="flex items-center justify-end gap-1">

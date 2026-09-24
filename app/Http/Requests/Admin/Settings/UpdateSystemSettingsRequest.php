@@ -34,6 +34,7 @@ class UpdateSystemSettingsRequest extends FormRequest
             // is never used to change config('app.timezone') or the
             // runtime timezone in this phase.
             'display_timezone' => ['required', 'timezone'],
+            'committee_minimum_contribution' => ['required', 'numeric', 'min:0'],
         ];
     }
 }

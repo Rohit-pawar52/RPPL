@@ -70,6 +70,7 @@ For every item currently marked `NOT TESTED`:
 13. [Stakeholder Demo Dataset](#13-stakeholder-demo-dataset)
 14. [Push Notifications (Firebase) — Manual Check](#14-push-notifications-firebase--manual-check)
 15. [Current Automated Verification — Table UX / Reporting Phase](#15-current-automated-verification--table-ux--reporting-phase)
+16. [Finance / Committee Redesign — Phase 3.48](#16-finance--committee-redesign--phase-348)
 
 ---
 
@@ -1082,7 +1083,9 @@ Repeat with `slug => 'scorer'` for a scorer account.
 #### UAT-COMM-01 — Create a Committee Member
 **Area:** Committee Members · **Role:** Admin · **Status:** NOT TESTED
 
-**Steps:**
+> **⚠ Superseded by Phase 3.48** (see §16): `admin.committee-members.create` no longer exists — committee membership is now edition-specific, added to an existing Contributor from the Finance "Committee" tab (`admin.finance.committee`), not a standalone person-creation form. Re-author these steps before this batch is ever executed: (1) create a Contributor from `admin.contributors.create` if one doesn't already exist, (2) open `admin.finance.committee` for the target edition, (3) add that Contributor via the "Add committee member" form.
+
+**Steps (original, now superseded — see note above):**
 1. Open `admin.committee-members.create`.
 2. Enter details and save.
 
@@ -1109,9 +1112,9 @@ Repeat with `slug => 'scorer'` for a scorer account.
 #### UAT-CONTRIB-02 — Committee contribution at/above the enforced minimum
 **Area:** Contributions · **Role:** Admin · **Status:** NOT TESTED
 
-**Preconditions:** The Committee Member from UAT-COMM-01 exists.
+> **⚠ Superseded by Phase 3.48** (see §16): there is no longer a fixed per-payment minimum for a committee contribution — `finance.committee_minimum_contribution` (Settings → System, default ₹1000) is a per-edition TARGET a committee member reaches across any number of installment payments, shown live on the contribution form as a Target/Paid So Far/Remaining preview. Re-author: record any positive amount for a Contributor who is a committee member of the edition, and instead verify the dues preview/target/status (Not Paid → Partially Paid → Paid in Full) on the Finance "Committee" tab.
 
-**Steps:**
+**Steps (original, now superseded — see note above):**
 1. Open `admin.edition-contributions.create`.
 2. Select the Committee Member as source, an amount at/above the enforced committee minimum, and the UAT Edition.
 3. Save.
@@ -1846,6 +1849,24 @@ A dated addendum, added after a large automated-only work phase (dynamic currenc
 - Batches 5–6 of the original manual UAT plan (Finance/Contributions/Reports; Responsive/Privacy/Final Smoke) — unchanged, still NOT TESTED, per §11.
 - A **live browser spot-check of the new table UX** (sorting, `per_page=50`, and checkbox row-selection) on Edition Transactions, Player Registrations, and Edition Contributions was **attempted but not completed** in this phase — the documented demo admin credentials (`admin@rppl.test` / `password`) no longer matched the real dev database's stored password (changed at some unknown point outside this session), and the password was deliberately **not** reset without authorization. What stands in for it: the automated suite renders the identical controller→Blade path and asserts directly on the raw HTML output (real anchor tags, real arrow glyphs, absence of Markdown-link syntax) — a strong but not equivalent substitute for an actual click-through. This item should be the first thing manually verified before a stakeholder demo that showcases the new table controls.
 - The real-device Firebase push flow (UAT-FCM-01/02/03) — unchanged from §14, still requires a real browser + real Firebase Web config.
+
+---
+
+## 16. Finance / Committee Redesign — Phase 3.48
+
+Another dated addendum — does **not** change the §11 manual UAT accounting (still 62 PASS / 37 NOT TESTED / 99 total). This phase collapsed the CommitteeMember + Contributor dual-identity system into one Contributor identity, with committee membership becoming edition-specific (`edition_committee_members`), and added a global committee-dues target setting.
+
+**What changed:**
+- `admin/committee-members/create|edit|update|destroy` no longer exist. `admin/committee-members/index` and `/{id}` now redirect (to `admin.finance.committee` and `admin.contributors.show` respectively) rather than 404ing.
+- Committee membership is managed from the new Finance "Committee" tab (`admin/finance/committee`) — add/remove a Contributor per edition, plus "Copy Previous Edition Committee".
+- A new global Settings value, `finance.committee_minimum_contribution` (System tab, default ₹1000), is a per-edition **target** reachable via installments — not a per-payment minimum. See UAT-COMM-01/UAT-CONTRIB-02 above, both marked superseded with re-authored steps.
+- The Contributions/Ledger/Contributors table-UX work from §15 is **unchanged and unregressed** — same pagination/sort/date-range/selected-export behavior, just reading/writing the new single-identity data shape underneath.
+
+**Data migration (real dev DB):** applied via `php artisan migrate` (never `migrate:fresh`) — purely additive. Verified before/after on the real dev database: `committee_members` unchanged (10 rows), `contributors` grew from 14 to 20 (6 new rows created for previously-unlinked committee members, 0 merged by name), all 29 `edition_contributions` rows gained a `contributor_id` with zero rows created/deleted, total contribution amount unchanged (₹34,725.00), `edition_transactions` unchanged (40 rows), and 11 `edition_committee_members` rows were reconstructed from existing committee-sourced contribution history (2 for the historical edition, 9 for the active edition).
+
+**Automated coverage:** `tests/Feature/Migrations/CommitteeMemberDataMigrationTest.php` (7 tests — explicit-link reuse, unlinked-creates-new-and-is-idempotent, no name-based merge, membership reconstruction, no-membership-without-contribution-evidence, amount/date/transaction-link preservation, ranking-total preservation) plus rewritten `CommitteeContributionTest`, `GeneralContributionTest`, `ContributorManagementTest`, `ContributorRankingTest`, `CommitteeMemberManagementTest` (now just the redirect-compatibility tests), and updates to `DashboardTest`/`ReportsTest`/`EditionContributionReceiptTest`/`DemoDataSeederTest`/`SettingsManagementTest` for the new single-identity shape. Full application test suite was **not** run for this phase by design (see the Phase 3.48 report) — a consolidated related-suite run (199 tests across every genuinely affected file) passed with 0 failures instead.
+
+**Genuinely remaining:** the same live-browser table-UX spot-check gap noted in §15 also applies to the new Contributions-tab committee badge/dues-preview UI — not yet manually clicked through in a real browser.
 
 ---
 

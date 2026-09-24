@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\Contributor;
 use App\Models\Edition;
-use App\Models\EditionContribution;
+use App\Models\EditionCommitteeMember;
 use App\Models\EditionTransaction;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Finance\EditionContributionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -91,20 +93,62 @@ class EditionTransactionExportTest extends TestCase
         $this->assertStringStartsWith("\xEF\xBB\xBF", $csv);
     }
 
+    /**
+     * Phase 3.48: "Committee Contribution" vs "General Contribution" is
+     * now computed from edition-specific committee membership (see
+     * Contributor::isCommitteeMemberOf()), not a separate identity FK —
+     * so this test explicitly adds the contributor to the edition's
+     * committee and records the contribution through the real service,
+     * the same way the admin Committee tab / contribution form would.
+     */
     public function test_contribution_linked_transaction_appears_with_safe_source_label(): void
     {
-        $contribution = EditionContribution::factory()->create();
+        $edition = Edition::factory()->create();
+        $contributor = Contributor::factory()->create(['phone' => '9998887771']);
+        EditionCommitteeMember::create(['edition_id' => $edition->id, 'contributor_id' => $contributor->id]);
+
+        $contribution = app(EditionContributionService::class)->createContribution([
+            'edition_id' => $edition->id,
+            'contributor_id' => $contributor->id,
+            'amount' => '1000.00',
+            'contributed_at' => '2026-01-10',
+            'notes' => 'PRIVATE_NOTE',
+        ], $this->admin()->id);
         $transaction = $contribution->transaction;
-        $member = $contribution->committeeMember;
 
         $response = $this->actingAs($this->admin())->get(route('admin.edition-transactions.export'));
         $csv = $this->streamedCsv($response);
 
         $this->assertStringContainsString((string) $transaction->id, $csv);
         $this->assertStringContainsString('Committee Contribution', $csv);
-        // Never the committee member's private phone or contribution notes.
-        $this->assertStringNotContainsString($member->phone, $csv);
-        $this->assertStringNotContainsString($contribution->notes ?? '__no_notes__', $csv);
+        // Never the contributor's private phone or contribution notes.
+        $this->assertStringNotContainsString($contributor->phone, $csv);
+        $this->assertStringNotContainsString('PRIVATE_NOTE', $csv);
+    }
+
+    /**
+     * The same contribution-linked-transaction path, but for a
+     * contributor who is NOT a committee member of the edition — the
+     * ledger category must read "General Contribution", never leaking
+     * which branch of the (now-internal) category logic ran.
+     */
+    public function test_general_contribution_linked_transaction_shows_general_category(): void
+    {
+        $edition = Edition::factory()->create();
+        $contributor = Contributor::factory()->create();
+
+        $contribution = app(EditionContributionService::class)->createContribution([
+            'edition_id' => $edition->id,
+            'contributor_id' => $contributor->id,
+            'amount' => '250.00',
+            'contributed_at' => '2026-01-10',
+        ], $this->admin()->id);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.edition-transactions.export'));
+        $csv = $this->streamedCsv($response);
+
+        $this->assertStringContainsString((string) $contribution->transaction->id, $csv);
+        $this->assertStringContainsString('General Contribution', $csv);
     }
 
     public function test_edition_type_and_search_filters_are_honored(): void

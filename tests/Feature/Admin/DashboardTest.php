@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Models\CommitteeMember;
 use App\Models\Contributor;
 use App\Models\Edition;
 use App\Models\EditionContribution;
@@ -206,10 +205,10 @@ class DashboardTest extends TestCase
         EditionTransaction::factory()->create(['edition_id' => $edition->id, 'type' => 'income', 'amount' => 10000]);
         EditionTransaction::factory()->create(['edition_id' => $edition->id, 'type' => 'expense', 'amount' => 3000]);
 
-        $member = CommitteeMember::factory()->create();
-        EditionContribution::factory()->create(['edition_id' => $edition->id, 'committee_member_id' => $member->id, 'amount' => 1500]);
+        $memberContributor = Contributor::factory()->create();
+        EditionContribution::factory()->create(['edition_id' => $edition->id, 'contributor_id' => $memberContributor->id, 'amount' => 1500]);
         $contributor = Contributor::factory()->create();
-        EditionContribution::factory()->create(['edition_id' => $edition->id, 'committee_member_id' => null, 'contributor_id' => $contributor->id, 'amount' => 500]);
+        EditionContribution::factory()->create(['edition_id' => $edition->id, 'contributor_id' => $contributor->id, 'amount' => 500]);
 
         // Noise in a completely different edition — must never bleed in.
         $otherEdition = Edition::factory()->create(['status' => 'completed', 'year' => 2020]);

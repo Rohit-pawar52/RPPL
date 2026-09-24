@@ -1,8 +1,10 @@
 @extends('layouts.admin')
 
-@section('title', 'Contributions')
+@section('title', 'Finance — Contributions')
 
 @section('content')
+    @include('admin.finance._tabs')
+
     <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <x-table-filters :action="route('admin.edition-contributions.index')" :filters="$filters" :date-range="true" :per-page="$perPage">
             <input
@@ -22,11 +24,11 @@
                 @endforeach
             </select>
 
-            <select name="committee_member_id" class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring">
-                <option value="">All members</option>
-                @foreach($members as $member)
-                    <option value="{{ $member->id }}" @selected(($filters['committee_member_id'] ?? '') == $member->id)>
-                        {{ $member->name }}
+            <select name="contributor_id" class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring">
+                <option value="">All contributors</option>
+                @foreach($contributors as $contributor)
+                    <option value="{{ $contributor->id }}" @selected(($filters['contributor_id'] ?? '') == $contributor->id)>
+                        {{ $contributor->name }}
                     </option>
                 @endforeach
             </select>
@@ -96,15 +98,9 @@
                         </td>
                         <td class="px-4 py-2 text-neutral-700">{{ $contribution->edition->name }}</td>
                         <td class="px-4 py-2 font-medium text-neutral-800">
-                            @if($contribution->committeeMember)
-                                <a href="{{ route('admin.committee-members.show', $contribution->committeeMember) }}" class="hover:underline">
-                                    {{ $contribution->contributorName() }}
-                                </a>
-                            @else
-                                <a href="{{ route('admin.contributors.show', $contribution->contributor) }}" class="hover:underline">
-                                    {{ $contribution->contributorName() }}
-                                </a>
-                            @endif
+                            <a href="{{ route('admin.contributors.show', $contribution->contributor) }}" class="hover:underline">
+                                {{ $contribution->contributorName() }}
+                            </a>
                         </td>
                         <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">
                             {{ $contribution->sourceLabel() }}

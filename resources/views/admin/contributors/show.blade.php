@@ -41,13 +41,13 @@
         </div>
 
         <p class="mt-3 text-xs text-neutral-500">
-            <span class="font-medium text-neutral-600">Linked committee member:</span>
-            @if($contributor->committeeMember)
-                <a href="{{ route('admin.committee-members.show', $contributor->committeeMember) }}" class="theme-link hover:underline">
-                    {{ $contributor->committeeMember->name }}
-                </a>
+            <span class="font-medium text-neutral-600">Committee{{ $currentEdition ? ' ('.$currentEdition->name.')' : '' }}:</span>
+            @if($isCurrentCommitteeMember)
+                <span class="inline-flex items-center whitespace-nowrap rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
+                    Committee Member
+                </span>
             @else
-                Not linked
+                Not a committee member{{ $currentEdition ? " of {$currentEdition->name}" : '' }}
             @endif
         </p>
 
