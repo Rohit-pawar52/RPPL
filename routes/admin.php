@@ -110,6 +110,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('innings/{innings}/reopen', [InningsController::class, 'reopen'])->name('innings.reopen');
             Route::post('innings/second/start', [InningsController::class, 'startSecond'])->name('innings.second.start');
 
+            // Explicit Start Innings setup (S02 completion rule A) —
+            // confirms opening striker/non-striker/bowler; no Delivery.
+            Route::post('innings/{innings}/setup', [InningsController::class, 'setupOpeningState'])->name('innings.setup');
+
             // Ball-by-ball scoring (Phase 3.13) — no generic Delivery
             // resource controller; "undo" is the only correction path,
             // scoped to the latest delivery of this specific innings.
@@ -123,6 +127,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('innings/{innings}/change-strike', [ScoringController::class, 'changeStrike'])->name('innings.change-strike');
             Route::post('innings/{innings}/retire-batter', [ScoringController::class, 'retireBatter'])->name('innings.retire-batter');
             Route::post('innings/{innings}/penalty-runs', [ScoringController::class, 'awardPenaltyRuns'])->name('innings.penalty-runs');
+
+            // New Batter / New Over Bowler / Mid-Over Bowler Change (S02
+            // completion rules C/D/E) — normal-flow continuations (no
+            // reason) vs. an explicit, reasoned correction, respectively.
+            Route::post('innings/{innings}/select-new-batter', [ScoringController::class, 'selectNewBatter'])->name('innings.select-new-batter');
+            Route::post('innings/{innings}/select-over-bowler', [ScoringController::class, 'selectOverBowler'])->name('innings.select-over-bowler');
+            Route::post('innings/{innings}/change-bowler', [ScoringController::class, 'changeBowlerMidOver'])->name('innings.change-bowler');
 
             // Read-only match scorecard (Phase 3.14) — no writes.
             Route::get('scorecard', [ScorecardController::class, 'show'])->name('scorecard');

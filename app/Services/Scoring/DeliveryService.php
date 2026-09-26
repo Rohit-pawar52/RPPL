@@ -7,7 +7,6 @@ use App\Models\GameMatch;
 use App\Models\Innings;
 use App\Models\MatchPlayer;
 use App\Models\ScoringEvent;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -34,17 +33,23 @@ use Illuminate\Validation\ValidationException;
  * legal_balls-so-far and frozen at write time — never recomputed for
  * existing rows.
  *
- * Strike rotation: the expected striker/non-striker for the NEXT
- * delivery is normally derived entirely from the latest Delivery row
- * (see expectedBattingState()) — except when Innings.pending_state
- * holds an explicit override written by a non-delivery scoring event
- * (Change Strike, Retired Hurt/Out — see ScoringEventService), which
- * takes precedence until the next Delivery is recorded and clears it.
- * Strike-rotation parity is based on runs_off_bat + wide_running_runs +
- * bye_runs + leg_bye_runs (never the fixed wide/no-ball penalty runs),
- * or runs_physically_run when a scorer has explicitly recorded that the
- * physically-completed run count diverged from the credited total (a
- * short run, or an unusual run-out).
+ * Current state (frozen S02 completion rules A-D): Innings.pending_state
+ * is the server-authoritative record of who's on strike, who's the
+ * non-striker, who's bowling, and whether ball entry must pause for a
+ * new batter or a new over's bowler — see expectedBattingState(). It is
+ * established once by InningsService::setUpOpeningState() (the explicit
+ * Start Innings workflow — no Delivery is created merely by starting an
+ * innings) and then kept continuously current by recordDelivery() after
+ * every ball, and by ScoringEventService's non-delivery actions (Change
+ * Strike, Retired Hurt/Out, Select New Batter, Select Over Bowler,
+ * Change Bowler Mid-Over). Normal ball entry (StoreDeliveryRequest) no
+ * longer submits striker/non-striker/bowler at all — recordDelivery()
+ * derives them from this state when omitted; see
+ * resolveImplicitParticipants(). Strike-rotation parity is based on
+ * runs_off_bat + wide_running_runs + bye_runs + leg_bye_runs (never the
+ * fixed wide/no-ball penalty runs), or runs_physically_run when a scorer
+ * has explicitly recorded that the physically-completed run count
+ * diverged from the credited total (a short run, or an unusual run-out).
  */
 class DeliveryService
 {
@@ -216,6 +221,17 @@ class DeliveryService
      * over_number/ball_number/is_free_hit from the locked row's current
      * state, then writes the Delivery and rebuilds the cache — all
      * inside one transaction.
+     *
+     * Normal ball entry (frozen S02 completion rule B) no longer submits
+     * striker_match_player_id/non_striker_match_player_id/
+     * bowler_match_player_id at all — whichever of these three keys is
+     * missing (or explicitly null) is derived from the innings'
+     * server-authoritative current state (expectedBattingState()) — the
+     * scorer is never asked to re-tell the system facts it already
+     * knows. A direct caller may still supply any of the three
+     * explicitly (backward compatibility for existing direct-service
+     * callers/tests, and defense-in-depth) — when supplied, the existing
+     * full validation below still applies exactly as before.
      */
     public function recordDelivery(GameMatch $match, Innings $innings, array $data): Delivery
     {
@@ -230,6 +246,8 @@ class DeliveryService
                 ]);
             }
 
+            $data = $this->resolveImplicitParticipants($lockedInnings, $data);
+
             $isWide = (bool) ($data['is_wide'] ?? false);
             $isNoBall = (bool) ($data['is_no_ball'] ?? false);
             $isFreeHit = $this->isFreeHit($lockedInnings);
@@ -237,11 +255,6 @@ class DeliveryService
             $this->assertParticipantsValid($match, $lockedInnings, $data, $isWide, $isNoBall, $isFreeHit);
             $this->assertExpectedBattingEnds($lockedInnings, $data);
             $this->assertNoConsecutiveOverBowler($lockedInnings, (int) $data['bowler_match_player_id']);
-
-            $previousDelivery = Delivery::query()
-                ->where('innings_id', $lockedInnings->id)
-                ->orderByDesc('delivery_sequence')
-                ->first();
 
             $runs = $this->calculateDeliveryRuns(
                 $isWide,
@@ -285,23 +298,158 @@ class DeliveryService
                 'commentary' => $data['commentary'] ?? null,
             ]);
 
-            $this->logMidOverBowlerChangeIfNeeded($match, $lockedInnings, $previousDelivery, $delivery, $data);
-
-            // A recorded delivery is now the freshest source of truth for
-            // batting-end state — any pending override from Change
-            // Strike or a retirement is superseded and must not linger.
-            if ($lockedInnings->pending_state !== null) {
-                $lockedInnings->update(['pending_state' => null]);
-            }
-
             $this->recalculateInningsTotals($lockedInnings);
 
-            if ($this->hasReachedAutomaticCompletion($match, $lockedInnings)) {
+            $justCompleted = $this->hasReachedAutomaticCompletion($match, $lockedInnings);
+
+            if ($justCompleted) {
                 $lockedInnings->update(['status' => 'completed', 'completion_type' => 'automatic', 'completion_reason' => null]);
             }
 
+            // pending_state is now always kept current as the canonical
+            // "state for the next ball" (frozen S02 completion rules
+            // A/B/D) — a recorded delivery is the freshest fact, so this
+            // always overwrites whatever was there (a Change Strike/
+            // retirement override, or the previous ball's state), rather
+            // than merely clearing it as before. When this delivery just
+            // ended the innings (10th wicket/all-out, overs exhausted, or
+            // chase target reached), the computed "next ball" state is
+            // stored as-is but never acted on: canRecordDelivery() and
+            // every ScoringEventService action (selectNewBatter(),
+            // selectOverBowler()) independently require the innings to
+            // still be 'live' before doing anything with it (frozen S02
+            // completion rule C.8/D — no batter/bowler prompt after the
+            // innings ends).
+            $lockedInnings->update(['pending_state' => $this->deriveNextStateFromDelivery($lockedInnings->fresh(), $delivery)]);
+
             return $delivery;
         });
+    }
+
+    /**
+     * Fills in whichever of striker/non-striker/bowler the caller
+     * omitted (frozen S02 completion rule B: normal ball entry no longer
+     * submits them) from the innings' current server-authoritative
+     * state. Missing/null striker+non-striker while the innings isn't
+     * actually ready (not set up yet, or awaiting a new batter) and
+     * missing/null bowler while awaiting a new over's bowler are both
+     * rejected with a clear, specific message rather than falling
+     * through to the generic participant-validation errors below.
+     */
+    private function resolveImplicitParticipants(Innings $innings, array $data): array
+    {
+        if (! isset($data['striker_match_player_id']) || ! isset($data['non_striker_match_player_id'])) {
+            $state = $this->expectedBattingState($innings);
+
+            if ($state['first_ball']) {
+                throw ValidationException::withMessages([
+                    'delivery' => 'This innings has not been set up yet — select the opening striker, non-striker, and bowler first.',
+                ]);
+            }
+
+            if ($state['requires_replacement']) {
+                throw ValidationException::withMessages([
+                    'delivery' => 'A new batter must be selected for the vacant end before the next delivery.',
+                ]);
+            }
+
+            $data['striker_match_player_id'] = $state['striker_id'];
+            $data['non_striker_match_player_id'] = $state['non_striker_id'];
+        }
+
+        if (! isset($data['bowler_match_player_id'])) {
+            $state ??= $this->expectedBattingState($innings);
+
+            if ($state['awaiting_new_over_bowler'] || empty($state['bowler_id'])) {
+                throw ValidationException::withMessages([
+                    'delivery' => 'A bowler must be selected for this over before the next delivery.',
+                ]);
+            }
+
+            $data['bowler_match_player_id'] = $state['bowler_id'];
+        }
+
+        return $data;
+    }
+
+    /**
+     * The state for the NEXT delivery of this innings, computed from the
+     * delivery that was JUST recorded (or, in expectedBattingState()'s
+     * fallback for an innings that predates pending_state, from whatever
+     * the actual latest Delivery row is) — the single shared rotation-
+     * math implementation both call sites use, so they can never drift
+     * apart. $innings.legal_balls must already reflect this delivery
+     * (i.e. called after recalculateInningsTotals()).
+     *
+     * @return array{first_ball: bool, requires_replacement: bool, striker_id: int|null, non_striker_id: int|null, survivor_id: int|null, survivor_end: string|null, bowler_id: int|null, awaiting_new_over_bowler: bool}
+     */
+    private function deriveNextStateFromDelivery(Innings $innings, Delivery $delivery): array
+    {
+        // Physically-run runs off the bat, on a wide, or as byes/leg-byes
+        // all contribute to strike parity (frozen rule 10) — only the
+        // fixed wide/no-ball penalty runs are excluded. runs_physically_run,
+        // when the scorer explicitly recorded it (a short run, or an
+        // unusual run-out), overrides the credited total for this purpose.
+        $runningRuns = $delivery->runs_physically_run !== null
+            ? (int) $delivery->runs_physically_run
+            : $delivery->runs_off_bat + $delivery->wide_running_runs + $delivery->bye_runs + $delivery->leg_bye_runs;
+
+        $swapForRuns = $runningRuns % 2 === 1;
+        // This delivery completed an over (frozen S02 completion rule D):
+        // a wide/no-ball is never legal, so it can never itself complete
+        // one — the bowler for the new over must always be explicitly
+        // selected via ScoringEventService::selectOverBowler().
+        $swapForOver = $delivery->is_legal_delivery && $innings->legal_balls > 0 && $innings->legal_balls % 6 === 0;
+        $swap = $swapForRuns !== $swapForOver;
+
+        $preStriker = (int) $delivery->striker_match_player_id;
+        $preNonStriker = (int) $delivery->non_striker_match_player_id;
+
+        $nextStrikerSlot = $swap ? $preNonStriker : $preStriker;
+        $nextNonStrikerSlot = $swap ? $preStriker : $preNonStriker;
+
+        $bowlerId = (int) $delivery->bowler_match_player_id;
+        $awaitingNewOverBowler = $swapForOver;
+
+        if (! $delivery->is_wicket) {
+            return [
+                'first_ball' => false,
+                'requires_replacement' => false,
+                'striker_id' => $nextStrikerSlot,
+                'non_striker_id' => $nextNonStrikerSlot,
+                'survivor_id' => null,
+                'survivor_end' => null,
+                'bowler_id' => $awaitingNewOverBowler ? null : $bowlerId,
+                'awaiting_new_over_bowler' => $awaitingNewOverBowler,
+            ];
+        }
+
+        $dismissedId = (int) $delivery->dismissed_match_player_id;
+
+        if ($dismissedId === $nextStrikerSlot) {
+            $survivorId = $nextNonStrikerSlot;
+            $survivorEnd = 'non_striker';
+        } else {
+            $survivorId = $nextStrikerSlot;
+            $survivorEnd = 'striker';
+        }
+
+        // The scorer's explicit confirmation of the survivor's actual
+        // end (frozen rule 19) overrides the computed slot when given.
+        if ($delivery->confirmed_survivor_end !== null) {
+            $survivorEnd = $delivery->confirmed_survivor_end;
+        }
+
+        return [
+            'first_ball' => false,
+            'requires_replacement' => true,
+            'striker_id' => null,
+            'non_striker_id' => null,
+            'survivor_id' => $survivorId,
+            'survivor_end' => $survivorEnd,
+            'bowler_id' => $awaitingNewOverBowler ? null : $bowlerId,
+            'awaiting_new_over_bowler' => $awaitingNewOverBowler,
+        ];
     }
 
     /**
@@ -329,49 +477,6 @@ class DeliveryService
             'leg_bye' => array_merge($data, ['leg_bye_runs' => $extraAmount]),
             default => $data,
         };
-    }
-
-    /**
-     * A mid-over bowler change (frozen rule 23) is legal — already-
-     * bowled deliveries stay credited to whoever actually bowled them,
-     * since bowler_match_player_id is stored per-delivery and never
-     * rewritten. This only adds the audit trail: logged whenever the
-     * new delivery's bowler differs from the previous delivery's bowler
-     * within the SAME over (an over-boundary change is an ordinary new
-     * over, not a "change", and is separately validated/allowed by
-     * assertNoConsecutiveOverBowler()).
-     */
-    private function logMidOverBowlerChangeIfNeeded(GameMatch $match, Innings $innings, ?Delivery $previousDelivery, Delivery $newDelivery, array $data): void
-    {
-        if (! $previousDelivery || ! Auth::id()) {
-            // No authenticated actor (e.g. a direct service call from a
-            // console command or test harness, outside the normal HTTP
-            // scoring flow) — an audit entry with no "who" would be
-            // meaningless, and logging it must never be what breaks an
-            // otherwise-valid delivery from recording.
-            return;
-        }
-
-        if ((int) $previousDelivery->over_number !== (int) $newDelivery->over_number) {
-            return;
-        }
-
-        if ((int) $previousDelivery->bowler_match_player_id === (int) $newDelivery->bowler_match_player_id) {
-            return;
-        }
-
-        ScoringEvent::create([
-            'match_id' => $match->id,
-            'innings_id' => $innings->id,
-            'type' => ScoringEvent::TYPE_BOWLER_CHANGE_MID_OVER,
-            'reason' => $data['bowler_change_reason'] ?? 'No reason provided',
-            'performed_by' => Auth::id(),
-            'payload' => [
-                'old_bowler_match_player_id' => (int) $previousDelivery->bowler_match_player_id,
-                'new_bowler_match_player_id' => (int) $newDelivery->bowler_match_player_id,
-                'over_number' => (int) $newDelivery->over_number,
-            ],
-        ]);
     }
 
     /**
@@ -472,6 +577,16 @@ class DeliveryService
                 $lockedInnings->update(['status' => 'live', 'completion_type' => null, 'completion_reason' => null]);
             }
 
+            // pending_state was written for the ball that just got
+            // undone — it must never linger, or the next delivery/action
+            // would see a state one ball ahead of reality. Clearing it
+            // lets expectedBattingState() naturally re-derive from
+            // whatever is now the latest Delivery (or "first ball" if
+            // none remain) — the same "undo naturally restores the
+            // correct expected state" guarantee this method has always
+            // had, extended to the persisted-state model.
+            $lockedInnings->update(['pending_state' => null]);
+
             return true;
         });
     }
@@ -545,14 +660,30 @@ class DeliveryService
     }
 
     /**
-     * The expected striker/non-striker for the NEXT delivery of this
-     * innings. Checks Innings.pending_state FIRST — an explicit override
-     * written by ScoringEventService::changeStrike()/retireBatter() when
-     * one is active — and otherwise derives it entirely from the latest
-     * Delivery row, exactly as before. Also used by ScoringController to
-     * preselect the scoring form's batter fields.
+     * The innings' current server-authoritative state — canonical source
+     * for who's on strike, who's the non-striker, who's bowling, and
+     * whether ball entry must be interrupted for a new batter or a new
+     * over's bowler (frozen S02 completion rules A/B/C/D). Checks
+     * Innings.pending_state FIRST: for any innings that has gone through
+     * the explicit Start Innings setup (InningsService::
+     * setUpOpeningState()), or has ever had recordDelivery()/a
+     * ScoringEventService action run against it, this is always
+     * populated and is the single source of truth, kept continuously
+     * current rather than recomputed on every read.
      *
-     * @return array{first_ball: bool, requires_replacement: bool, striker_id: int|null, non_striker_id: int|null, survivor_id: int|null, survivor_end: string|null}
+     * Falls back to deriving from the latest Delivery row only for an
+     * innings that predates this mechanism (pending_state still null but
+     * Delivery rows already exist) — the exact same rotation math
+     * (deriveNextStateFromDelivery()) a fresh delivery would have
+     * written, so the two paths can never disagree. An innings with
+     * neither a pending_state nor any Delivery yet is genuinely awaiting
+     * its opening setup.
+     *
+     * Also used by ScoringController to decide which screen (setup / new
+     * batter / new bowler / normal ball entry) to render, and to display
+     * the current striker/non-striker/bowler read-only.
+     *
+     * @return array{first_ball: bool, requires_replacement: bool, striker_id: int|null, non_striker_id: int|null, survivor_id: int|null, survivor_end: string|null, bowler_id: int|null, awaiting_new_over_bowler: bool}
      */
     public function expectedBattingState(Innings $innings): array
     {
@@ -573,64 +704,12 @@ class DeliveryService
                 'non_striker_id' => null,
                 'survivor_id' => null,
                 'survivor_end' => null,
+                'bowler_id' => null,
+                'awaiting_new_over_bowler' => false,
             ];
         }
 
-        // Physically-run runs off the bat, on a wide, or as byes/leg-byes
-        // all now contribute to strike parity (frozen rule 10) — only
-        // the fixed wide/no-ball penalty runs are excluded, since they
-        // correspond to no physical running. runs_physically_run, when
-        // the scorer explicitly recorded it (a short run, or an unusual
-        // run-out), overrides the credited total for this purpose.
-        $runningRuns = $latest->runs_physically_run !== null
-            ? (int) $latest->runs_physically_run
-            : $latest->runs_off_bat + $latest->wide_running_runs + $latest->bye_runs + $latest->leg_bye_runs;
-
-        $swapForRuns = $runningRuns % 2 === 1;
-        $swapForOver = $latest->is_legal_delivery && $innings->legal_balls > 0 && $innings->legal_balls % 6 === 0;
-        $swap = $swapForRuns !== $swapForOver;
-
-        $preStriker = (int) $latest->striker_match_player_id;
-        $preNonStriker = (int) $latest->non_striker_match_player_id;
-
-        $nextStrikerSlot = $swap ? $preNonStriker : $preStriker;
-        $nextNonStrikerSlot = $swap ? $preStriker : $preNonStriker;
-
-        if (! $latest->is_wicket) {
-            return [
-                'first_ball' => false,
-                'requires_replacement' => false,
-                'striker_id' => $nextStrikerSlot,
-                'non_striker_id' => $nextNonStrikerSlot,
-                'survivor_id' => null,
-                'survivor_end' => null,
-            ];
-        }
-
-        $dismissedId = (int) $latest->dismissed_match_player_id;
-
-        if ($dismissedId === $nextStrikerSlot) {
-            $survivorId = $nextNonStrikerSlot;
-            $survivorEnd = 'non_striker';
-        } else {
-            $survivorId = $nextStrikerSlot;
-            $survivorEnd = 'striker';
-        }
-
-        // The scorer's explicit confirmation of the survivor's actual
-        // end (frozen rule 19) overrides the computed slot when given.
-        if ($latest->confirmed_survivor_end !== null) {
-            $survivorEnd = $latest->confirmed_survivor_end;
-        }
-
-        return [
-            'first_ball' => false,
-            'requires_replacement' => true,
-            'striker_id' => null,
-            'non_striker_id' => null,
-            'survivor_id' => $survivorId,
-            'survivor_end' => $survivorEnd,
-        ];
+        return $this->deriveNextStateFromDelivery($innings, $latest);
     }
 
     /**

@@ -51,10 +51,21 @@ class StoreDeliveryRequest extends FormRequest
     }
 
     /**
-     * S02: is_wide/is_no_ball are independent flags rather than a
-     * single mutually-exclusive extra_type — a no-ball may legitimately
-     * carry byes or leg-byes on the same delivery. bye_runs/leg_bye_runs
-     * are themselves mutually exclusive with each other and with
+     * S02 completion rule B: normal ball entry no longer submits
+     * striker_match_player_id/non_striker_match_player_id/
+     * bowler_match_player_id at all — the server already knows all
+     * three from the innings' current state (see DeliveryService::
+     * resolveImplicitParticipants()). All three are therefore optional
+     * here; when a value IS submitted (backward compatibility for any
+     * remaining direct caller, and defense-in-depth), the exact same
+     * eligibility validation as before still applies — this never
+     * weakens server-side validation, it only stops requiring the
+     * scorer to re-supply facts the server already has.
+     *
+     * is_wide/is_no_ball are independent flags rather than a single
+     * mutually-exclusive extra_type — a no-ball may legitimately carry
+     * byes or leg-byes on the same delivery. bye_runs/leg_bye_runs are
+     * themselves mutually exclusive with each other and with
      * runs_off_bat (real cricket: a ball is either hit for runs, or
      * missed entirely for byes, or off the body for leg-byes — never
      * more than one of those on the same ball), and none of the three
@@ -75,34 +86,34 @@ class StoreDeliveryRequest extends FormRequest
 
         return [
             'striker_match_player_id' => [
-                'required',
+                'nullable',
                 'integer',
                 function ($attribute, $value, $fail) use ($deliveries, $match, $innings) {
-                    if (! $deliveries->matchPlayerBelongsToTeam((int) $value, $match, $innings->batting_team_id)) {
+                    if ($value !== null && ! $deliveries->matchPlayerBelongsToTeam((int) $value, $match, $innings->batting_team_id)) {
                         $fail('The striker must be a selected player from the batting team.');
                     }
                 },
             ],
             'non_striker_match_player_id' => [
-                'required',
+                'nullable',
                 'integer',
                 'different:striker_match_player_id',
                 function ($attribute, $value, $fail) use ($deliveries, $match, $innings) {
-                    if (! $deliveries->matchPlayerBelongsToTeam((int) $value, $match, $innings->batting_team_id)) {
+                    if ($value !== null && ! $deliveries->matchPlayerBelongsToTeam((int) $value, $match, $innings->batting_team_id)) {
                         $fail('The non-striker must be a selected player from the batting team.');
                     }
                 },
             ],
             'bowler_match_player_id' => [
-                'required',
+                'nullable',
                 'integer',
                 function ($attribute, $value, $fail) use ($deliveries, $match, $innings) {
-                    if (! $deliveries->matchPlayerBelongsToTeam((int) $value, $match, $innings->bowling_team_id)) {
+                    if ($value !== null && ! $deliveries->matchPlayerBelongsToTeam((int) $value, $match, $innings->bowling_team_id)) {
                         $fail('The bowler must be a selected player from the bowling team.');
                     }
                 },
                 function ($attribute, $value, $fail) use ($deliveries, $innings) {
-                    if ($innings->legal_balls % 6 !== 0) {
+                    if ($value === null || $innings->legal_balls % 6 !== 0) {
                         return;
                     }
 
@@ -110,26 +121,6 @@ class StoreDeliveryRequest extends FormRequest
 
                     if ($previousBowlerId !== null && $previousBowlerId === (int) $value) {
                         $fail('The same bowler cannot bowl two overs in a row.');
-                    }
-                },
-            ],
-            'bowler_change_reason' => [
-                'nullable',
-                'string',
-                'max:500',
-                function ($attribute, $value, $fail) use ($innings) {
-                    $lastDelivery = $innings->deliveries()->orderByDesc('delivery_sequence')->first();
-
-                    if (! $lastDelivery || (int) $lastDelivery->over_number !== intdiv($innings->legal_balls, 6)) {
-                        return; // no delivery yet this over — not a "change"
-                    }
-
-                    if ((int) $lastDelivery->bowler_match_player_id === (int) $this->input('bowler_match_player_id')) {
-                        return; // same bowler continuing — not a change
-                    }
-
-                    if (! $value) {
-                        $fail('A reason is required when changing the bowler mid-over.');
                     }
                 },
             ],
@@ -203,8 +194,19 @@ class StoreDeliveryRequest extends FormRequest
                 'nullable',
                 'required_if:is_wicket,1',
                 'integer',
-                function ($attribute, $value, $fail) {
-                    if ($value && ! in_array((int) $value, [(int) $this->input('striker_match_player_id'), (int) $this->input('non_striker_match_player_id')], true)) {
+                function ($attribute, $value, $fail) use ($deliveries, $innings) {
+                    if (! $value) {
+                        return;
+                    }
+
+                    // Normal ball entry (frozen S02 completion rule B)
+                    // never submits striker/non-striker at all — fall
+                    // back to the server's own current state so this
+                    // still validates against who is ACTUALLY batting,
+                    // not against absent request input.
+                    [$strikerId, $nonStrikerId] = $this->effectiveStrikerAndNonStriker($deliveries, $innings);
+
+                    if (! in_array((int) $value, [$strikerId, $nonStrikerId], true)) {
                         $fail('The dismissed player must be the striker or non-striker on this delivery.');
                     }
                 },
@@ -248,5 +250,27 @@ class StoreDeliveryRequest extends FormRequest
             ],
             'commentary' => ['nullable', 'string', 'max:2000'],
         ];
+    }
+
+    /**
+     * The striker/non-striker this request will actually record against
+     * — the raw submitted values when BOTH are present (explicit/
+     * backward-compat path), otherwise the innings' own current state
+     * (frozen S02 completion rule B's server-derived normal ball entry).
+     * Never mixes one explicit value with one derived value, since
+     * DeliveryService::resolveImplicitParticipants() treats the pair as
+     * a unit the same way.
+     *
+     * @return array{0: int, 1: int}
+     */
+    private function effectiveStrikerAndNonStriker(DeliveryService $deliveries, Innings $innings): array
+    {
+        if ($this->filled('striker_match_player_id') && $this->filled('non_striker_match_player_id')) {
+            return [(int) $this->input('striker_match_player_id'), (int) $this->input('non_striker_match_player_id')];
+        }
+
+        $state = $deliveries->expectedBattingState($innings);
+
+        return [(int) $state['striker_id'], (int) $state['non_striker_id']];
     }
 }

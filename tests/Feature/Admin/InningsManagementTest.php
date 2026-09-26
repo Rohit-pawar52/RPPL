@@ -118,10 +118,10 @@ class InningsManagementTest extends TestCase
         $match = $this->matchWithSquadsAndToss();
 
         $this->actingAs($this->admin())
-            ->post(route('admin.matches.innings.first.start', $match))
-            ->assertRedirect(route('admin.matches.show', $match));
+            ->post(route('admin.matches.innings.first.start', $match));
 
-        $this->assertNotNull($match->fresh()->firstInnings);
+        $innings = $match->fresh()->firstInnings;
+        $this->assertNotNull($innings);
     }
 
     public function test_scorer_can_manage_innings(): void
@@ -129,8 +129,7 @@ class InningsManagementTest extends TestCase
         $match = $this->matchWithSquadsAndToss();
 
         $this->actingAs($this->scorer())
-            ->post(route('admin.matches.innings.first.start', $match))
-            ->assertRedirect(route('admin.matches.show', $match));
+            ->post(route('admin.matches.innings.first.start', $match));
 
         $this->assertNotNull($match->fresh()->firstInnings);
     }
@@ -177,11 +176,14 @@ class InningsManagementTest extends TestCase
     {
         $match = $this->matchWithSquadsAndToss();
 
-        $this->actingAs($this->admin())
-            ->post(route('admin.matches.innings.first.start', $match))
-            ->assertRedirect(route('admin.matches.show', $match));
+        $response = $this->actingAs($this->admin())
+            ->post(route('admin.matches.innings.first.start', $match));
 
-        $this->assertNotNull($match->fresh()->firstInnings);
+        $innings = $match->fresh()->firstInnings;
+        $this->assertNotNull($innings);
+        // Frozen S02 completion rule A: goes straight to the explicit
+        // opening setup screen, not back to the match page.
+        $response->assertRedirect(route('admin.matches.innings.score', [$match, $innings]));
     }
 
     public function test_toss_winner_choosing_bat_derives_correct_teams(): void
@@ -393,7 +395,7 @@ class InningsManagementTest extends TestCase
 
         $this->actingAs($this->admin())
             ->post(route('admin.matches.innings.second.start', $match))
-            ->assertRedirect(route('admin.matches.show', $match));
+            ->assertRedirect(route('admin.matches.innings.score', [$match, $match->fresh()->secondInnings]));
 
         $this->assertNotNull($match->fresh()->secondInnings);
     }

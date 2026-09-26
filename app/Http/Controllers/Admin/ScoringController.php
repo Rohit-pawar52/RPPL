@@ -5,14 +5,18 @@ namespace App\Http\Controllers\Admin;
 use App\Events\MatchScoreUpdated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Scoring\AwardPenaltyRunsRequest;
+use App\Http\Requests\Admin\Scoring\ChangeBowlerMidOverRequest;
 use App\Http\Requests\Admin\Scoring\ChangeStrikeRequest;
 use App\Http\Requests\Admin\Scoring\RetireBatterRequest;
+use App\Http\Requests\Admin\Scoring\SelectNewBatterRequest;
+use App\Http\Requests\Admin\Scoring\SelectOverBowlerRequest;
 use App\Http\Requests\Admin\Scoring\StoreDeliveryRequest;
 use App\Models\Delivery;
 use App\Models\EditionTeam;
 use App\Models\GameMatch;
 use App\Models\Innings;
 use App\Models\MatchPlayer;
+use App\Services\Innings\InningsService;
 use App\Services\Scoring\DeliveryService;
 use App\Services\Scoring\ScoringEventService;
 use Illuminate\Database\Eloquent\Collection;
@@ -30,6 +34,7 @@ class ScoringController extends Controller
     public function __construct(
         private readonly DeliveryService $deliveries,
         private readonly ScoringEventService $scoringEvents,
+        private readonly InningsService $inningsService,
     ) {}
 
     public function show(GameMatch $match, Innings $innings): View
@@ -52,7 +57,15 @@ class ScoringController extends Controller
             ->get();
 
         $expectedBattingState = $this->deliveries->expectedBattingState($innings);
-        $previousOverBowlerId = ($innings->legal_balls % 6 === 0) ? $this->deliveries->bowlerOfPreviousOver($innings) : null;
+        $previousOverBowlerId = $expectedBattingState['awaiting_new_over_bowler']
+            ? $this->deliveries->bowlerOfPreviousOver($innings)
+            : null;
+
+        // Frozen S02 completion rule A: an innings created but never
+        // given its explicit opening setup shows that setup screen
+        // instead of the ball-entry form — never implicitly bundled into
+        // the first delivery.
+        $awaitingSetup = $this->inningsService->canSetUpOpeningState($match, $innings);
 
         return view('admin.scoring.show', [
             'match' => $match,
@@ -62,6 +75,7 @@ class ScoringController extends Controller
             'recentDeliveries' => $recentDeliveries,
             'canRecordDelivery' => $this->deliveries->canRecordDelivery($match, $innings),
             'isOverLimitReached' => $this->deliveries->isOverLimitReached($match, $innings),
+            'awaitingSetup' => $awaitingSetup,
             'expectedBattingState' => $expectedBattingState,
             'isFreeHit' => $this->deliveries->isFreeHit($innings),
             'previousOverBowlerId' => $previousOverBowlerId,
@@ -151,6 +165,76 @@ class ScoringController extends Controller
         return redirect()
             ->route('admin.matches.innings.score', [$match, $innings])
             ->with('success', 'Penalty runs recorded.');
+    }
+
+    /**
+     * Select New Batter (frozen S02 completion rule C).
+     */
+    public function selectNewBatter(SelectNewBatterRequest $request, GameMatch $match, Innings $innings): RedirectResponse
+    {
+        abort_unless($innings->match_id === $match->id, 404);
+
+        $this->authorize('score', $match);
+
+        $this->scoringEvents->selectNewBatter(
+            $match,
+            $innings,
+            (int) $request->validated('match_player_id'),
+            $request->user(),
+        );
+
+        $this->broadcastMatchUpdated($match->id);
+
+        return redirect()
+            ->route('admin.matches.innings.score', [$match, $innings])
+            ->with('success', 'New batter selected.');
+    }
+
+    /**
+     * Select Over Bowler (frozen S02 completion rule D).
+     */
+    public function selectOverBowler(SelectOverBowlerRequest $request, GameMatch $match, Innings $innings): RedirectResponse
+    {
+        abort_unless($innings->match_id === $match->id, 404);
+
+        $this->authorize('score', $match);
+
+        $this->scoringEvents->selectOverBowler(
+            $match,
+            $innings,
+            (int) $request->validated('bowler_match_player_id'),
+            $request->user(),
+        );
+
+        $this->broadcastMatchUpdated($match->id);
+
+        return redirect()
+            ->route('admin.matches.innings.score', [$match, $innings])
+            ->with('success', 'Bowler selected for the new over.');
+    }
+
+    /**
+     * Change Bowler Mid-Over (frozen S02 completion rule E).
+     */
+    public function changeBowlerMidOver(ChangeBowlerMidOverRequest $request, GameMatch $match, Innings $innings): RedirectResponse
+    {
+        abort_unless($innings->match_id === $match->id, 404);
+
+        $this->authorize('score', $match);
+
+        $this->scoringEvents->changeBowlerMidOver(
+            $match,
+            $innings,
+            (int) $request->validated('bowler_match_player_id'),
+            $request->validated('reason'),
+            $request->user(),
+        );
+
+        $this->broadcastMatchUpdated($match->id);
+
+        return redirect()
+            ->route('admin.matches.innings.score', [$match, $innings])
+            ->with('success', 'Bowler changed mid-over.');
     }
 
     public function store(StoreDeliveryRequest $request, GameMatch $match, Innings $innings): RedirectResponse

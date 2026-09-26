@@ -9,6 +9,16 @@
         </a>
     </div>
 
+    @php
+        $battingOptions = $battingMatchPlayers->mapWithKeys(fn ($mp) => [
+            $mp->id => $mp->teamPlayer->playerRegistration->player->name . ($mp->teamPlayer->jersey_number ? ' (#'.$mp->teamPlayer->jersey_number.')' : ''),
+        ]);
+        $bowlingOptions = $bowlingMatchPlayers->mapWithKeys(fn ($mp) => [
+            $mp->id => $mp->teamPlayer->playerRegistration->player->name . ($mp->teamPlayer->jersey_number ? ' (#'.$mp->teamPlayer->jersey_number.')' : ''),
+        ]);
+        $playerName = fn ($id) => $battingOptions->get($id) ?? $bowlingOptions->get($id) ?? '—';
+    @endphp
+
     <div class="rounded-lg border border-neutral-200 bg-white p-4">
         <div class="flex items-center justify-between gap-3">
             <h2 class="text-base font-semibold text-neutral-900">
@@ -32,6 +42,16 @@
             {{ $innings->battingTeam->team->name }} batting &middot; {{ $innings->bowlingTeam->team->name }} bowling
         </p>
 
+        @if(! $awaitingSetup && ! $expectedBattingState['first_ball'] && ! $expectedBattingState['requires_replacement'])
+            <p class="mt-2 text-xs text-neutral-500">
+                On strike: <span class="font-medium text-neutral-800">{{ $playerName($expectedBattingState['striker_id']) }}</span>
+                &middot; Non-striker: <span class="font-medium text-neutral-800">{{ $playerName($expectedBattingState['non_striker_id']) }}</span>
+                @unless($expectedBattingState['awaiting_new_over_bowler'])
+                    &middot; Bowler: <span class="font-medium text-neutral-800">{{ $playerName($expectedBattingState['bowler_id']) }}</span>
+                @endunless
+            </p>
+        @endif
+
         @if($isFreeHit)
             <p class="mt-2 inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
                 Free Hit — only Run Out or Obstructing the Field may dismiss the batter
@@ -49,7 +69,71 @@
         </div>
     @endunless
 
-    @if($canRecordDelivery)
+    @if($canRecordDelivery && $awaitingSetup)
+        {{-- Explicit Start Innings setup (S02 completion rule A) — asked
+             ONCE per innings, before any ball can be recorded. --}}
+        <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
+            <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Start Innings</h3>
+            <p class="mb-3 text-xs text-neutral-500">Select the opening striker, non-striker, and first bowler. Ball entry begins once confirmed.</p>
+
+            <form method="POST" action="{{ route('admin.matches.innings.setup', [$match, $innings]) }}" novalidate>
+                @csrf
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <x-form.select name="striker_match_player_id" label="Striker" placeholder="Select striker" :options="$battingOptions" />
+                    <x-form.select name="non_striker_match_player_id" label="Non-striker" placeholder="Select non-striker" :options="$battingOptions" />
+                    <x-form.select name="bowler_match_player_id" label="First bowler" placeholder="Select bowler" :options="$bowlingOptions" />
+                </div>
+                <button type="submit" class="rounded-md theme-button px-4 py-2 text-[13px] font-medium">
+                    Confirm and Start Scoring
+                </button>
+            </form>
+        </div>
+    @elseif($canRecordDelivery && $expectedBattingState['requires_replacement'])
+        {{-- New Batter (S02 completion rule C) — a wicket, retirement, or
+             strike correction vacated an end; select the incoming batter
+             ONCE, never the whole pair again. --}}
+        @php
+            $eligibleNewBatters = $battingMatchPlayers
+                ->reject(fn ($mp) => $mp->id === $expectedBattingState['survivor_id'])
+                ->reject(fn ($mp) => in_array($mp->id, app(\App\Services\Scoring\DeliveryService::class)->dismissedMatchPlayerIds($innings), true))
+                ->mapWithKeys(fn ($mp) => [$mp->id => $battingOptions->get($mp->id)]);
+        @endphp
+        <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700">Select New Batter</h3>
+            <p class="mb-3 text-xs text-amber-700">
+                {{ $playerName($expectedBattingState['survivor_id']) }} continues at the {{ str_replace('_', '-', $expectedBattingState['survivor_end']) }}'s end. Choose the incoming batter for the other end.
+            </p>
+
+            <form method="POST" action="{{ route('admin.matches.innings.select-new-batter', [$match, $innings]) }}" novalidate>
+                @csrf
+                <x-form.select name="match_player_id" label="New batter" placeholder="Select batter" :options="$eligibleNewBatters" />
+                <button type="submit" class="rounded-md theme-button px-4 py-2 text-[13px] font-medium">
+                    Confirm New Batter
+                </button>
+            </form>
+        </div>
+    @elseif($canRecordDelivery && $expectedBattingState['awaiting_new_over_bowler'])
+        {{-- New Over Bowler (S02 completion rule D) — the previous over
+             just completed; select the bowler ONCE for the new over. The
+             previous over's bowler is hard-blocked server-side. --}}
+        @php
+            $eligibleOverBowlers = $bowlingMatchPlayers
+                ->reject(fn ($mp) => $previousOverBowlerId && $mp->id === $previousOverBowlerId)
+                ->mapWithKeys(fn ($mp) => [$mp->id => $bowlingOptions->get($mp->id)]);
+        @endphp
+        <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700">Select Bowler</h3>
+            <p class="mb-3 text-xs text-amber-700">A new over is starting. The previous over's bowler cannot bowl this one.</p>
+
+            <form method="POST" action="{{ route('admin.matches.innings.select-over-bowler', [$match, $innings]) }}" novalidate>
+                @csrf
+                <x-form.select name="bowler_match_player_id" label="Bowler" placeholder="Select bowler" :options="$eligibleOverBowlers" />
+                <button type="submit" class="rounded-md theme-button px-4 py-2 text-[13px] font-medium">
+                    Confirm Bowler
+                </button>
+            </form>
+        </div>
+    @elseif($canRecordDelivery)
         <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
             <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Record Delivery</h3>
 
@@ -59,52 +143,6 @@
 
             <form method="POST" action="{{ route('admin.matches.innings.deliveries.store', [$match, $innings]) }}" novalidate>
                 @csrf
-
-                @php
-                    $battingOptions = $battingMatchPlayers->mapWithKeys(fn ($mp) => [
-                        $mp->id => $mp->teamPlayer->playerRegistration->player->name . ($mp->teamPlayer->jersey_number ? ' (#'.$mp->teamPlayer->jersey_number.')' : ''),
-                    ]);
-                    $bowlingOptions = $bowlingMatchPlayers->mapWithKeys(fn ($mp) => [
-                        $mp->id => $mp->teamPlayer->playerRegistration->player->name . ($mp->teamPlayer->jersey_number ? ' (#'.$mp->teamPlayer->jersey_number.')' : ''),
-                    ]);
-
-                    // Server-rendered preselection only — no JS state
-                    // management. On a wicket/retirement, only the
-                    // surviving batter's end can be preselected; the
-                    // vacant end is left for the scorer to choose a new,
-                    // currently-eligible batter.
-                    $expectedStrikerId = null;
-                    $expectedNonStrikerId = null;
-
-                    if (! $expectedBattingState['first_ball']) {
-                        if ($expectedBattingState['requires_replacement']) {
-                            if ($expectedBattingState['survivor_end'] === 'striker') {
-                                $expectedStrikerId = $expectedBattingState['survivor_id'];
-                            } else {
-                                $expectedNonStrikerId = $expectedBattingState['survivor_id'];
-                            }
-                        } else {
-                            $expectedStrikerId = $expectedBattingState['striker_id'];
-                            $expectedNonStrikerId = $expectedBattingState['non_striker_id'];
-                        }
-                    }
-                @endphp
-
-                @if($expectedBattingState['requires_replacement'])
-                    <p class="mb-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                        A batter is out, retired, or the strike was corrected — select the batter for the vacant end below.
-                    </p>
-                @endif
-
-                <div class="grid gap-4 sm:grid-cols-3">
-                    <x-form.select name="striker_match_player_id" label="Striker" placeholder="Select striker" :options="$battingOptions" :value="old('striker_match_player_id', $expectedStrikerId)" />
-                    <x-form.select name="non_striker_match_player_id" label="Non-striker" placeholder="Select non-striker" :options="$battingOptions" :value="old('non_striker_match_player_id', $expectedNonStrikerId)" />
-                    <x-form.select name="bowler_match_player_id" label="Bowler" placeholder="Select bowler" :options="$bowlingOptions" />
-                </div>
-
-                @if($previousOverBowlerId)
-                    <p class="-mt-2 mb-3 text-xs text-neutral-400" id="consecutive-over-hint">The bowler of the previous over cannot bowl this one.</p>
-                @endif
 
                 <div class="grid gap-4 sm:grid-cols-3">
                     <x-form.input name="runs_off_bat" label="Runs off bat" type="number" min="0" max="11" :value="0" />
@@ -139,7 +177,15 @@
                 </label>
 
                 <div id="wicket-fields" class="grid gap-4 sm:grid-cols-3" hidden>
-                    <x-form.select name="dismissed_match_player_id" label="Dismissed player" placeholder="Select dismissed player" :options="$battingOptions" />
+                    <x-form.select
+                        name="dismissed_match_player_id"
+                        label="Dismissed player"
+                        placeholder="Select dismissed player"
+                        :options="[
+                            $expectedBattingState['striker_id'] => $playerName($expectedBattingState['striker_id']),
+                            $expectedBattingState['non_striker_id'] => $playerName($expectedBattingState['non_striker_id']),
+                        ]"
+                    />
                     <x-form.select
                         name="wicket_type"
                         label="Dismissal type"
@@ -159,14 +205,13 @@
                 </div>
 
                 <details class="mb-3.5 rounded-md border border-neutral-200 p-3">
-                    <summary class="cursor-pointer text-xs font-medium text-neutral-600">Advanced (short run, mid-over bowler change)</summary>
+                    <summary class="cursor-pointer text-xs font-medium text-neutral-600">Advanced (short run)</summary>
                     <div class="mt-3 grid gap-4 sm:grid-cols-3">
                         <label class="mb-3.5 flex items-center gap-2 text-xs font-medium text-neutral-700">
                             <input type="checkbox" name="is_short_run" value="1" class="rounded border-neutral-300" @checked(old('is_short_run')) />
                             Short run called
                         </label>
                         <x-form.input name="runs_physically_run" label="Runs physically completed (if different from credited)" type="number" min="0" max="11" />
-                        <x-form.input name="bowler_change_reason" label="Reason for mid-over bowler change (if applicable)" placeholder="e.g. Injury" />
                     </div>
                 </details>
 
@@ -189,7 +234,7 @@
             </form>
         </div>
 
-        <div class="mt-4 grid gap-4 sm:grid-cols-3">
+        <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div class="rounded-lg border border-neutral-200 bg-white p-4">
                 <h3 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Change Strike</h3>
                 <p class="mb-2 text-xs text-neutral-500">Corrects the actual ends — no delivery, runs, or wickets change.</p>
@@ -219,8 +264,26 @@
             </div>
 
             <div class="rounded-lg border border-neutral-200 bg-white p-4">
+                <h3 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Change Bowler Mid-Over</h3>
+                <p class="mb-2 text-xs text-neutral-500">For a genuine mid-over swap (e.g. injury). Balls already bowled keep their original bowler.</p>
+                <form method="POST" action="{{ route('admin.matches.innings.change-bowler', [$match, $innings]) }}">
+                    @csrf
+                    <x-form.select
+                        name="bowler_match_player_id"
+                        label="Replacement bowler"
+                        placeholder="Select bowler"
+                        :options="$bowlingOptions->except($expectedBattingState['bowler_id'])"
+                    />
+                    <x-form.input name="reason" label="Reason" placeholder="e.g. Injury" />
+                    <button type="submit" class="rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
+                        Change Bowler
+                    </button>
+                </form>
+            </div>
+
+            <div class="rounded-lg border border-neutral-200 bg-white p-4">
                 <h3 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Penalty Runs</h3>
-                <p class="mb-2 text-xs text-neutral-500">Standard 5-run award as Penalty extras — never affects ball count, strike, or batter/bowler figures. If the awarded team hasn't batted yet in this match, it is added to their innings total as soon as that innings starts.</p>
+                <p class="mb-2 text-xs text-neutral-500">Standard 5-run award as Penalty extras. If the awarded team hasn't batted yet, it's added to their innings total as soon as that innings starts.</p>
                 <form method="POST" action="{{ route('admin.matches.innings.penalty-runs', [$match, $innings]) }}">
                     @csrf
                     <x-form.select
@@ -364,16 +427,6 @@
                     refreshExtraFields();
                 });
                 refreshExtraFields();
-            }
-
-            // Consecutive-over bowler hard-block (frozen S02 rule 9): the
-            // server is authoritative — this only disables the option so
-            // the scorer isn't led into a rejected submission.
-            const previousOverBowlerId = @json($previousOverBowlerId);
-            const bowlerSelect = document.getElementById('bowler_match_player_id');
-            if (previousOverBowlerId && bowlerSelect) {
-                const option = bowlerSelect.querySelector(`option[value="${previousOverBowlerId}"]`);
-                if (option) option.disabled = true;
             }
         });
     </script>

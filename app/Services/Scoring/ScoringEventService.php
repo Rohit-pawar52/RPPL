@@ -161,6 +161,173 @@ class ScoringEventService
     }
 
     /**
+     * Select New Batter (frozen S02 completion rule C): resolves an
+     * already-vacant end (expectedBattingState()['requires_replacement']
+     * === true, set by a wicket, a Retired Hurt/Out, or Change Strike)
+     * with the incoming batter, chosen ONCE — never a full striker/non-
+     * striker pair re-selection. Places them at the correct end
+     * (whichever the survivor isn't occupying) and resumes normal ball
+     * entry. Never creates a Delivery. No reason required — this is a
+     * normal continuation of play, not a correction.
+     */
+    public function selectNewBatter(GameMatch $match, Innings $innings, int $newBatterId, User $performedBy): void
+    {
+        DB::transaction(function () use ($match, $innings, $newBatterId) {
+            $lockedInnings = Innings::query()->whereKey($innings->id)->lockForUpdate()->firstOrFail();
+
+            $this->assertInningsIsLive($match, $lockedInnings);
+
+            $state = $this->deliveries->expectedBattingState($lockedInnings);
+
+            if (! $state['requires_replacement']) {
+                throw ValidationException::withMessages([
+                    'match_player_id' => 'No new batter is currently required for this innings.',
+                ]);
+            }
+
+            if (! $this->deliveries->matchPlayerBelongsToTeam($newBatterId, $match, $lockedInnings->batting_team_id)) {
+                throw ValidationException::withMessages(['match_player_id' => 'The new batter must be a selected player from the batting team.']);
+            }
+
+            if ($newBatterId === $state['survivor_id']) {
+                throw ValidationException::withMessages(['match_player_id' => 'The new batter must be a different player from the surviving batter.']);
+            }
+
+            $dismissed = $this->deliveries->dismissedMatchPlayerIds($lockedInnings);
+
+            if (in_array($newBatterId, $dismissed, true)) {
+                throw ValidationException::withMessages(['match_player_id' => 'A player already dismissed or retired out in this innings cannot return to the crease.']);
+            }
+
+            $lockedInnings->update([
+                'pending_state' => [
+                    'first_ball' => false,
+                    'requires_replacement' => false,
+                    'striker_id' => $state['survivor_end'] === 'striker' ? $state['survivor_id'] : $newBatterId,
+                    'non_striker_id' => $state['survivor_end'] === 'striker' ? $newBatterId : $state['survivor_id'],
+                    'survivor_id' => null,
+                    'survivor_end' => null,
+                    'bowler_id' => $state['bowler_id'],
+                    'awaiting_new_over_bowler' => $state['awaiting_new_over_bowler'],
+                ],
+            ]);
+        });
+    }
+
+    /**
+     * Select Over Bowler (frozen S02 completion rule D): resolves
+     * expectedBattingState()['awaiting_new_over_bowler'] === true (set
+     * the moment the previous over's sixth legal ball is recorded),
+     * choosing the new over's bowler ONCE — never re-asked per ball.
+     * The previous over's bowler is hard-blocked server-side (frozen
+     * rule 9), reusing the exact same check recordDelivery() itself
+     * applies. No reason required — a normal continuation of play.
+     */
+    public function selectOverBowler(GameMatch $match, Innings $innings, int $bowlerId, User $performedBy): void
+    {
+        DB::transaction(function () use ($match, $innings, $bowlerId) {
+            $lockedInnings = Innings::query()->whereKey($innings->id)->lockForUpdate()->firstOrFail();
+
+            $this->assertInningsIsLive($match, $lockedInnings);
+
+            $state = $this->deliveries->expectedBattingState($lockedInnings);
+
+            if (! $state['awaiting_new_over_bowler']) {
+                throw ValidationException::withMessages([
+                    'bowler_match_player_id' => 'A new over bowler is not currently required for this innings.',
+                ]);
+            }
+
+            if (! $this->deliveries->matchPlayerBelongsToTeam($bowlerId, $match, $lockedInnings->bowling_team_id)) {
+                throw ValidationException::withMessages(['bowler_match_player_id' => 'The bowler must be a selected player from the bowling team.']);
+            }
+
+            $previousBowlerId = $this->deliveries->bowlerOfPreviousOver($lockedInnings);
+
+            if ($previousBowlerId !== null && $previousBowlerId === $bowlerId) {
+                throw ValidationException::withMessages(['bowler_match_player_id' => 'The same bowler cannot bowl two overs in a row.']);
+            }
+
+            $lockedInnings->update([
+                'pending_state' => array_merge($state, [
+                    'bowler_id' => $bowlerId,
+                    'awaiting_new_over_bowler' => false,
+                ]),
+            ]);
+        });
+    }
+
+    /**
+     * Change Bowler Mid-Over (frozen S02 completion rule E): an explicit,
+     * secondary action for a genuine mid-over swap (e.g. injury) — never
+     * inferred from a per-ball bowler submission, since normal ball
+     * entry no longer submits one at all. Deliveries already bowled this
+     * over keep their own stored bowler_match_player_id untouched;
+     * subsequent deliveries use the replacement, read from the updated
+     * current state. Mandatory reason, audited via ScoringEvent.
+     */
+    public function changeBowlerMidOver(GameMatch $match, Innings $innings, int $newBowlerId, string $reason, User $performedBy): void
+    {
+        DB::transaction(function () use ($match, $innings, $newBowlerId, $reason, $performedBy) {
+            $lockedInnings = Innings::query()->whereKey($innings->id)->lockForUpdate()->firstOrFail();
+
+            $this->assertInningsIsLive($match, $lockedInnings);
+
+            $state = $this->deliveries->expectedBattingState($lockedInnings);
+
+            if ($state['awaiting_new_over_bowler'] || empty($state['bowler_id'])) {
+                throw ValidationException::withMessages([
+                    'bowler_match_player_id' => 'There is no current-over bowler to change — select an over bowler first.',
+                ]);
+            }
+
+            if (! $this->deliveries->matchPlayerBelongsToTeam($newBowlerId, $match, $lockedInnings->bowling_team_id)) {
+                throw ValidationException::withMessages(['bowler_match_player_id' => 'The replacement bowler must be a selected player from the bowling team.']);
+            }
+
+            if ($newBowlerId === (int) $state['bowler_id']) {
+                throw ValidationException::withMessages(['bowler_match_player_id' => 'The replacement bowler must be a different player from the current bowler.']);
+            }
+
+            ScoringEvent::create([
+                'match_id' => $match->id,
+                'innings_id' => $lockedInnings->id,
+                'type' => ScoringEvent::TYPE_BOWLER_CHANGE_MID_OVER,
+                'reason' => $reason,
+                'performed_by' => $performedBy->id,
+                'payload' => [
+                    'old_bowler_match_player_id' => (int) $state['bowler_id'],
+                    'new_bowler_match_player_id' => $newBowlerId,
+                    'over_number' => intdiv($lockedInnings->legal_balls, 6),
+                ],
+            ]);
+
+            $lockedInnings->update([
+                'pending_state' => array_merge($state, ['bowler_id' => $newBowlerId]),
+            ]);
+        });
+    }
+
+    /**
+     * Defense-in-depth for the New Batter/New Over Bowler/Mid-Over
+     * Bowler Change actions: pending_state's requires_replacement/
+     * awaiting_new_over_bowler flags are never cleared just because an
+     * innings later ends (frozen S02 completion rule C.8/D relies on
+     * canRecordDelivery()/the UI gating instead — see DeliveryService::
+     * recordDelivery()'s docblock) — so these three actions must
+     * independently refuse to act on an innings that is no longer
+     * actually live, rather than trusting a stale flag.
+     */
+    private function assertInningsIsLive(GameMatch $match, Innings $innings): void
+    {
+        if ($match->match_status !== 'live' || $innings->status !== 'live') {
+            throw ValidationException::withMessages([
+                'delivery' => 'This innings can no longer be scored.',
+            ]);
+        }
+    }
+
+    /**
      * The standard international-law penalty award (frozen S02
      * correction rule 5) — RPPL has no established need for any other
      * amount, so this action deliberately does not accept an arbitrary

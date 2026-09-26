@@ -9,6 +9,7 @@ use App\Models\MatchPlayer;
 use App\Models\Role;
 use App\Models\TeamPlayer;
 use App\Models\User;
+use App\Services\Innings\InningsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
@@ -814,9 +815,28 @@ class ScoringTest extends TestCase
 
     // ----- UI -----
 
-    public function test_scoring_page_shows_delivery_form_when_eligible(): void
+    /**
+     * A fresh innings (frozen S02 completion rule A) shows the explicit
+     * Start Innings setup screen, not the ball-entry form, until opening
+     * striker/non-striker/bowler are confirmed.
+     */
+    public function test_scoring_page_shows_start_innings_setup_before_opening_state_is_confirmed(): void
     {
         [$match, $innings] = $this->matchWithLiveInnings();
+
+        $response = $this->actingAs($this->admin())->get(route('admin.matches.innings.score', [$match, $innings]));
+
+        $response->assertOk();
+        $response->assertSee('Start Innings');
+        $response->assertDontSee('Record Delivery');
+    }
+
+    public function test_scoring_page_shows_delivery_form_once_opening_state_is_confirmed(): void
+    {
+        [$match, $innings, $battingPlayers, $bowlingPlayers] = $this->matchWithLiveInnings();
+        app(InningsService::class)->setUpOpeningState(
+            $match, $innings, $battingPlayers[0]->id, $battingPlayers[1]->id, $bowlingPlayers[0]->id,
+        );
 
         $response = $this->actingAs($this->admin())->get(route('admin.matches.innings.score', [$match, $innings]));
 

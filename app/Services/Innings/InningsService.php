@@ -8,6 +8,7 @@ use App\Models\ScoringEvent;
 use App\Models\User;
 use App\Services\Scoring\DeliveryService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Innings lifecycle: which team bats/bowls first, creating Innings #1
@@ -253,6 +254,85 @@ class InningsService
             $this->deliveries->recalculateInningsTotals($innings);
 
             return true;
+        });
+    }
+
+    /**
+     * Whether this innings is genuinely awaiting its explicit opening
+     * setup (frozen S02 completion rule A) — created by
+     * startFirstInnings()/startSecondInnings() but not yet given its
+     * opening striker/non-striker/bowler. An innings that predates this
+     * mechanism (already has Delivery history but no pending_state) is
+     * NOT awaiting setup — it simply never used it; DeliveryService::
+     * expectedBattingState() derives its state from history instead. The
+     * second innings never becomes ready for ball entry merely because
+     * the first innings completed — it independently needs this same
+     * explicit setup once startSecondInnings() creates it.
+     */
+    public function canSetUpOpeningState(GameMatch $match, Innings $innings): bool
+    {
+        return $innings->match_id === $match->id
+            && in_array($innings->innings_number, [1, 2], true)
+            && $match->match_status === 'live'
+            && $innings->status === 'live'
+            && $innings->pending_state === null
+            && ! $innings->deliveries()->exists();
+    }
+
+    /**
+     * Confirms the opening striker, non-striker, and first bowler for
+     * this innings (frozen S02 completion rule A) — the single reusable
+     * action both startFirstInnings() and startSecondInnings() lead into.
+     * Never creates a Delivery; only establishes
+     * Innings.pending_state, which DeliveryService::recordDelivery()
+     * then reads for every subsequent ball. Persisted server-side (not
+     * temporary/browser-only state), so a page refresh never loses it.
+     */
+    public function setUpOpeningState(GameMatch $match, Innings $innings, int $strikerId, int $nonStrikerId, int $bowlerId): bool
+    {
+        return DB::transaction(function () use ($match, $innings, $strikerId, $nonStrikerId, $bowlerId) {
+            $locked = Innings::query()->whereKey($innings->id)->lockForUpdate()->firstOrFail();
+
+            if (! $this->canSetUpOpeningState($match, $locked)) {
+                return false;
+            }
+
+            if ($strikerId === $nonStrikerId) {
+                throw ValidationException::withMessages([
+                    'non_striker_match_player_id' => 'The striker and non-striker must be different players.',
+                ]);
+            }
+
+            if (! $this->deliveries->matchPlayerBelongsToTeam($strikerId, $match, $locked->batting_team_id)) {
+                throw ValidationException::withMessages([
+                    'striker_match_player_id' => 'The striker must be a selected player from the batting team.',
+                ]);
+            }
+
+            if (! $this->deliveries->matchPlayerBelongsToTeam($nonStrikerId, $match, $locked->batting_team_id)) {
+                throw ValidationException::withMessages([
+                    'non_striker_match_player_id' => 'The non-striker must be a selected player from the batting team.',
+                ]);
+            }
+
+            if (! $this->deliveries->matchPlayerBelongsToTeam($bowlerId, $match, $locked->bowling_team_id)) {
+                throw ValidationException::withMessages([
+                    'bowler_match_player_id' => 'The bowler must be a selected player from the bowling team.',
+                ]);
+            }
+
+            return (bool) $locked->update([
+                'pending_state' => [
+                    'first_ball' => false,
+                    'requires_replacement' => false,
+                    'striker_id' => $strikerId,
+                    'non_striker_id' => $nonStrikerId,
+                    'survivor_id' => null,
+                    'survivor_end' => null,
+                    'bowler_id' => $bowlerId,
+                    'awaiting_new_over_bowler' => false,
+                ],
+            ]);
         });
     }
 
