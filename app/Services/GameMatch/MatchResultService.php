@@ -2,9 +2,13 @@
 
 namespace App\Services\GameMatch;
 
+use App\Models\EditionTeam;
 use App\Models\GameMatch;
 use App\Models\Innings;
+use App\Models\ScoringEvent;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Derives and stores a normal two-innings match result from completed
@@ -16,15 +20,17 @@ use Illuminate\Support\Facades\DB;
  * concern: deriving and locking in the match's final outcome once both
  * innings are already done.
  *
- * The result is always server-derived from Innings.total_runs/
- * total_wickets — never a value the admin/scorer chooses. Only the
- * explicit "Finalize Match" action exists; there is no form for
- * winner/margin/result text.
+ * A won/lost/tied result is always server-derived from Innings.
+ * total_runs/total_wickets — never a value the admin/scorer chooses.
+ * recordSuperOverResult() is the one deliberate exception: a tied
+ * match's Super Over winner is a manual admin/scorer entry, since no
+ * ball-by-ball Super Over engine exists (frozen S02 rule 7) — see that
+ * method's docblock. reopenMatch() (admin-only) is the sole way to undo
+ * an already-finalized result for correction.
  *
- * Out of scope by design: tournament points/standings/NRR, super over,
- * DLS, and abandoned/no-result workflows. Those enum values
- * (abandoned/no_result on result_type, abandoned/cancelled on
- * match_status) are left untouched for a future phase.
+ * Still out of scope by design: tournament NRR and DLS. A full
+ * ball-by-ball Super Over engine, and abandoned/no-result workflows
+ * beyond StandingsService's 1-point-each treatment, remain future work.
  */
 class MatchResultService
 {
@@ -175,5 +181,129 @@ class MatchResultService
             && (int) $first->batting_team_id !== (int) $first->bowling_team_id
             && (int) $first->batting_team_id === (int) $second->bowling_team_id
             && (int) $first->bowling_team_id === (int) $second->batting_team_id;
+    }
+
+    /**
+     * Tied Match / Super Over (frozen S02 rule 7): only ball-by-ball-free
+     * — the admin/scorer manually records the Super Over's winner once
+     * the two main innings are already completed and tied. The main
+     * innings' scores are never touched. A full Super Over scoring
+     * engine is explicitly out of scope for this phase.
+     */
+    public function canRecordSuperOverResult(GameMatch $match): bool
+    {
+        $first = $match->firstInnings;
+        $second = $match->secondInnings;
+
+        if ($match->match_status !== 'live' || ! $first || ! $second
+            || $first->status !== 'completed' || $second->status !== 'completed'
+            || ! $this->areInningsConsistent($match, $first, $second)) {
+            return false;
+        }
+
+        $result = $this->calculateResult($first, $second);
+
+        return $result !== null && $result['result_type'] === 'tied';
+    }
+
+    /**
+     * Finalizes the match with the Super Over's winner: result_type
+     * stays 'won' (a winner was genuinely decided) while result_source
+     * records HOW, and result_note carries the mandatory reason/note
+     * (which may optionally include the Super Over's own score, kept as
+     * free text rather than structured columns — a full Super Over
+     * scoring engine is later work). No win_margin is fabricated for a
+     * Super Over result.
+     */
+    public function recordSuperOverResult(GameMatch $match, EditionTeam $winner, string $reason, User $performedBy): bool
+    {
+        return DB::transaction(function () use ($match, $winner, $reason, $performedBy) {
+            $locked = GameMatch::query()->whereKey($match->id)->lockForUpdate()->firstOrFail();
+
+            if (! $this->canRecordSuperOverResult($locked)) {
+                return false;
+            }
+
+            $participatingTeamIds = [(int) $locked->edition_team_a_id, (int) $locked->edition_team_b_id];
+
+            if (! in_array((int) $winner->id, $participatingTeamIds, true)) {
+                throw ValidationException::withMessages([
+                    'winner_team_id' => 'The Super Over winner must be one of the two teams in this match.',
+                ]);
+            }
+
+            $winner->loadMissing('team');
+
+            $locked->update([
+                'winner_team_id' => $winner->id,
+                'result_type' => 'won',
+                'result_source' => 'super_over',
+                'result_note' => $reason,
+                'win_margin_type' => null,
+                'win_margin' => null,
+                'match_result' => "Match tied — {$winner->team->name} won the Super Over.",
+                'match_status' => 'completed',
+                'completed_at' => now(),
+            ]);
+
+            ScoringEvent::create([
+                'match_id' => $locked->id,
+                'type' => ScoringEvent::TYPE_SUPER_OVER_RESULT,
+                'awarded_team_id' => $winner->id,
+                'reason' => $reason,
+                'performed_by' => $performedBy->id,
+            ]);
+
+            return true;
+        });
+    }
+
+    /**
+     * Reopen a finalized match (frozen S02 rule 17): ADMIN ONLY (see
+     * GameMatchPolicy::reopenResult()). Clears the previously-derived
+     * result so the admin can reopen/correct the relevant innings via
+     * InningsService::reopenInnings(), re-record or undo deliveries, and
+     * then re-run finalizeMatch() (or recordSuperOverResult()) as
+     * normal. Standings/stats need no separate update step — both are
+     * always derived fresh from current GameMatch/Innings state, never
+     * cached.
+     */
+    public function canReopenMatch(GameMatch $match): bool
+    {
+        return $match->match_status === 'completed';
+    }
+
+    public function reopenMatch(GameMatch $match, string $reason, User $performedBy): bool
+    {
+        return DB::transaction(function () use ($match, $reason, $performedBy) {
+            $locked = GameMatch::query()->whereKey($match->id)->lockForUpdate()->firstOrFail();
+
+            if (! $this->canReopenMatch($locked)) {
+                return false;
+            }
+
+            ScoringEvent::create([
+                'match_id' => $locked->id,
+                'type' => ScoringEvent::TYPE_MATCH_RESULT_REOPENED,
+                'reason' => $reason,
+                'performed_by' => $performedBy->id,
+                'payload' => [
+                    'previous_result_type' => $locked->result_type,
+                    'previous_winner_team_id' => $locked->winner_team_id,
+                ],
+            ]);
+
+            return (bool) $locked->update([
+                'match_status' => 'live',
+                'winner_team_id' => null,
+                'result_type' => null,
+                'result_source' => null,
+                'result_note' => null,
+                'win_margin_type' => null,
+                'win_margin' => null,
+                'match_result' => null,
+                'completed_at' => null,
+            ]);
+        });
     }
 }

@@ -41,21 +41,22 @@ class MatchFlowTest extends TestCase
 
     /**
      * A GameMatch with its two participating EditionTeams (as
-     * GameMatchFactory builds them by default), each with at least one
-     * selected MatchPlayer — i.e. ready to have its toss started.
+     * GameMatchFactory builds them by default), each with exactly 11
+     * selected MatchPlayers (frozen S02 rule 1) — i.e. ready to have its
+     * toss started.
      */
     private function matchReadyForToss(array $matchAttributes = []): GameMatch
     {
         $match = GameMatch::factory()->create(array_merge(['match_status' => 'scheduled'], $matchAttributes));
 
-        MatchPlayer::factory()->create([
-            'match_id' => $match->id,
-            'team_player_id' => TeamPlayer::factory()->create(['edition_team_id' => $match->edition_team_a_id])->id,
-        ]);
-        MatchPlayer::factory()->create([
-            'match_id' => $match->id,
-            'team_player_id' => TeamPlayer::factory()->create(['edition_team_id' => $match->edition_team_b_id])->id,
-        ]);
+        foreach ([$match->edition_team_a_id, $match->edition_team_b_id] as $editionTeamId) {
+            for ($i = 0; $i < 11; $i++) {
+                MatchPlayer::factory()->create([
+                    'match_id' => $match->id,
+                    'team_player_id' => TeamPlayer::factory()->create(['edition_team_id' => $editionTeamId])->id,
+                ]);
+            }
+        }
 
         return $match;
     }

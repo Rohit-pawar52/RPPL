@@ -6,45 +6,45 @@ use App\Models\Delivery;
 use App\Models\GameMatch;
 use App\Models\Innings;
 use App\Models\MatchPlayer;
+use App\Models\ScoringEvent;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
  * The ball-by-ball scoring engine. Delivery rows are the authoritative
  * historical record; Innings.total_runs/extras/legal_balls/total_wickets
- * are caches this service rebuilds by aggregating Delivery rows — they
- * are never written independently (see recalculateInningsTotals()).
+ * are caches this service rebuilds by aggregating Delivery rows PLUS
+ * certain ScoringEvent rows (penalty runs credited to the batting team,
+ * a retired-out batter) — see recalculateInningsTotals(). Neither cache
+ * is ever written independently of these two sources.
  *
- * Schema note: `deliveries` has four separate extra-run columns
- * (wide_runs/no_ball_runs/bye_runs/leg_bye_runs) rather than a single
- * extra_type+extra_runs pair, and no dedicated "extra_type" column.
- * Delivery::EXTRA_TYPES/the extra_type request field are a request/UI
- * convenience only — this service maps the scorer's single choice onto
- * the real columns; nothing invents a schema column that doesn't exist.
+ * S02 schema note: is_wide/is_no_ball are independent boolean flags, not
+ * a single mutually-exclusive extra_type — a no-ball can legitimately
+ * carry byes or leg-byes on the same delivery (bye_runs/leg_bye_runs
+ * were already independent columns), which a single-select could never
+ * represent. wide_runs is now always the fixed mandatory penalty (1)
+ * when is_wide; wide_running_runs separately holds any runs physically
+ * completed between the wickets on that wide.
  *
  * Ordering note: delivery_sequence (unique per innings, strictly
  * increasing, includes illegal deliveries) is the authoritative
  * chronological/ordering key. over_number/ball_number are a secondary,
  * purely presentational cricket-notation label derived from
- * legal_balls-so-far — they are NOT unique (by schema design: the
- * unique constraint is only on (innings_id, delivery_sequence)), so
- * consecutive illegal deliveries (e.g. two wides in a row) legitimately
- * share the same over_number/ball_number, exactly as a real scoreboard
- * would show "0.3, wide" then "0.3" again for the retry. This is not an
- * ambiguity bug — delivery_sequence still totally orders every ball.
+ * legal_balls-so-far and frozen at write time — never recomputed for
+ * existing rows.
  *
- * Strike rotation (Phase 3.33): the expected striker/non-striker for
- * the NEXT delivery is derived entirely from the latest Delivery row
- * (see expectedBattingState()) — never persisted on Innings, so undo
- * naturally restores the correct expected state simply by removing the
- * latest row. Bowler selection remains entirely manual; this project
- * has no bowler-quota/consecutive-over rule. Documented limitation: a
- * wide's total run value (wide_runs) is a single lumped column with no
- * way to tell a mandatory penalty run apart from additional runs
- * physically run between the wickets, so — per this phase's explicit
- * instruction not to invent behavior the schema cannot represent —
- * wide_runs never contributes to strike-rotation parity; only
- * runs_off_bat + bye_runs + leg_bye_runs do.
+ * Strike rotation: the expected striker/non-striker for the NEXT
+ * delivery is normally derived entirely from the latest Delivery row
+ * (see expectedBattingState()) — except when Innings.pending_state
+ * holds an explicit override written by a non-delivery scoring event
+ * (Change Strike, Retired Hurt/Out — see ScoringEventService), which
+ * takes precedence until the next Delivery is recorded and clears it.
+ * Strike-rotation parity is based on runs_off_bat + wide_running_runs +
+ * bye_runs + leg_bye_runs (never the fixed wide/no-ball penalty runs),
+ * or runs_physically_run when a scorer has explicitly recorded that the
+ * physically-completed run count diverged from the credited total (a
+ * short run, or an unusual run-out).
  */
 class DeliveryService
 {
@@ -62,16 +62,6 @@ class DeliveryService
         return $this->isInningsScorable($match, $innings) && ! $this->isOverLimitReached($match, $innings);
     }
 
-    /**
-     * Once legal_balls reaches overs_per_innings * 6, no further
-     * delivery may be recorded. In practice this guard is now redundant
-     * with hasReachedAutomaticCompletion() below (Phase 3.32): reaching
-     * the limit already transitions innings.status to 'completed' in
-     * the same recordDelivery() call that reached it, which independently
-     * makes canRecordDelivery() return false via isInningsScorable().
-     * Left in place as a harmless, cheap secondary check rather than
-     * removed, since no actual hole exists.
-     */
     public function isOverLimitReached(GameMatch $match, Innings $innings): bool
     {
         if (! $match->overs_per_innings) {
@@ -91,95 +81,146 @@ class DeliveryService
 
     /**
      * A wide or no-ball does not count toward the bowler's 6-ball over;
-     * everything else (a normal ball, or one scored as a bye/leg-bye)
-     * does. Centralized here so it is never left to client input.
+     * everything else (a normal ball, or one scored as a bye/leg-bye,
+     * including a no-ball's bye/leg-bye component) does.
      */
-    public function determineLegality(?string $extraType): bool
+    public function determineLegality(bool $isWide, bool $isNoBall): bool
     {
-        return ! in_array($extraType, ['wide', 'no_ball'], true);
+        return ! ($isWide || $isNoBall);
     }
 
     /**
-     * Maps the scorer's single extra-type choice (or none) onto the
-     * actual runs_off_bat/wide_runs/no_ball_runs/bye_runs/leg_bye_runs
-     * columns. A bat cannot touch the ball on a wide, and byes/leg-byes
-     * by definition did not come off the bat, so runs_off_bat is forced
-     * to 0 for those three; a no-ball's mandatory single penalty run is
-     * fixed at 1, with any runs the batter actually hit off it recorded
-     * separately in runs_off_bat (never folded into no_ball_runs).
+     * Maps the scorer's independent is_wide/is_no_ball/bye/leg-bye/
+     * runs-off-bat facts onto the real columns. A wide's total is always
+     * the fixed 1-run penalty (wide_runs) plus whatever was physically
+     * run (wide_running_runs) — no bat runs or byes/leg-byes are
+     * representable on a wide (real cricket: an unplayable ball that
+     * reaches the boundary is scored entirely as wide runs, never
+     * byes). A no-ball's mandatory single penalty run is fixed at 1,
+     * with bat runs and/or byes/leg-byes recorded independently and
+     * additively — never folded into no_ball_runs.
      *
-     * @return array{runs_off_bat: int, wide_runs: int, no_ball_runs: int, bye_runs: int, leg_bye_runs: int}
+     * @return array{runs_off_bat: int, wide_runs: int, wide_running_runs: int, no_ball_runs: int, bye_runs: int, leg_bye_runs: int}
      */
-    public function calculateDeliveryRuns(?string $extraType, int $extraAmount, int $runsOffBat): array
+    public function calculateDeliveryRuns(bool $isWide, bool $isNoBall, int $runsOffBat, int $wideRunningRuns, int $byeRuns, int $legByeRuns): array
     {
-        return match ($extraType) {
-            'wide' => ['runs_off_bat' => 0, 'wide_runs' => $extraAmount, 'no_ball_runs' => 0, 'bye_runs' => 0, 'leg_bye_runs' => 0],
-            'no_ball' => ['runs_off_bat' => $runsOffBat, 'wide_runs' => 0, 'no_ball_runs' => 1, 'bye_runs' => 0, 'leg_bye_runs' => 0],
-            'bye' => ['runs_off_bat' => 0, 'wide_runs' => 0, 'no_ball_runs' => 0, 'bye_runs' => $extraAmount, 'leg_bye_runs' => 0],
-            'leg_bye' => ['runs_off_bat' => 0, 'wide_runs' => 0, 'no_ball_runs' => 0, 'bye_runs' => 0, 'leg_bye_runs' => $extraAmount],
-            default => ['runs_off_bat' => $runsOffBat, 'wide_runs' => 0, 'no_ball_runs' => 0, 'bye_runs' => 0, 'leg_bye_runs' => 0],
-        };
+        if ($isWide) {
+            return ['runs_off_bat' => 0, 'wide_runs' => 1, 'wide_running_runs' => $wideRunningRuns, 'no_ball_runs' => 0, 'bye_runs' => 0, 'leg_bye_runs' => 0];
+        }
+
+        return [
+            'runs_off_bat' => $runsOffBat,
+            'wide_runs' => 0,
+            'wide_running_runs' => 0,
+            'no_ball_runs' => $isNoBall ? 1 : 0,
+            'bye_runs' => $byeRuns,
+            'leg_bye_runs' => $legByeRuns,
+        ];
     }
 
     /**
-     * Conservative, explicit combinations only — real cricket law has
-     * more nuance than this, but these are the two well-established
-     * rules the prompt itself calls out (a batter cannot be bowled/
-     * caught/lbw/hit-wicket off a delivery that was never fair), kept
-     * simple rather than modeling every edge case.
+     * A wide restricts dismissal to stumped/run_out. A no-ball, OR any
+     * delivery bowled during an active Free Hit (frozen rule 3 — the
+     * same restriction the law already applies to a no-ball itself),
+     * restricts dismissal to run_out/obstructing_field only. Otherwise
+     * every dismissal type this schema supports is available.
      *
      * @return list<string>
      */
-    public function validWicketTypesForExtraType(?string $extraType): array
+    public function validWicketTypesForDelivery(bool $isWide, bool $isNoBall, bool $isFreeHit): array
     {
-        return match ($extraType) {
-            'wide' => ['stumped', 'run_out'],
-            'no_ball' => ['run_out', 'obstructing_field'],
-            default => Delivery::WICKET_TYPES,
-        };
+        if ($isWide) {
+            return ['stumped', 'run_out'];
+        }
+
+        if ($isNoBall || $isFreeHit) {
+            return ['run_out', 'obstructing_field'];
+        }
+
+        return Delivery::WICKET_TYPES;
     }
 
+    /**
+     * Caught's fielder is now optional (frozen rule 41) — fast wicket
+     * entry must never be blocked purely because a fielder wasn't
+     * recorded. Stumped remains the only dismissal type this schema
+     * requires a fielder for.
+     */
     public function dismissalRequiresFielder(string $wicketType): bool
     {
-        return in_array($wicketType, ['caught', 'stumped'], true);
+        return $wicketType === 'stumped';
     }
 
     public function dismissalForbidsFielder(string $wicketType): bool
     {
         return in_array($wicketType, ['bowled', 'lbw', 'hit_wicket'], true);
     }
-    // run_out/obstructing_field: fielder is optional — neither required nor forbidden.
+    // run_out/obstructing_field/caught: fielder is optional — neither required nor forbidden.
 
-    /**
-     * Every wicket_type this schema supports (bowled, caught, lbw,
-     * stumped, hit_wicket, run_out, obstructing_field) is a genuine
-     * "batter is out" dismissal — there is no retirement-style type
-     * here that would need excluding from the wicket count. Still
-     * centralized rather than assumed inline, so recalculateInnings
-     * Totals() has one place to change if a non-out type is ever added.
-     */
     public function dismissalCountsAsWicket(string $wicketType): bool
     {
         return in_array($wicketType, Delivery::WICKET_TYPES, true);
     }
 
     /**
+     * Whether the NEXT delivery of this innings is a Free Hit (frozen
+     * rule 3): true when the latest delivery was a no-ball, or when the
+     * latest delivery was itself bowled during an active Free Hit and
+     * was illegal (wide/no-ball) — a Free Hit is only "used up" by a
+     * legal delivery. Always server-computed at record time; never
+     * client input.
+     */
+    public function isFreeHit(Innings $innings): bool
+    {
+        $latest = Delivery::query()
+            ->where('innings_id', $innings->id)
+            ->orderByDesc('delivery_sequence')
+            ->first();
+
+        if (! $latest) {
+            return false;
+        }
+
+        return (bool) $latest->is_no_ball || ((bool) $latest->is_free_hit && (bool) $latest->is_wide);
+    }
+
+    /**
+     * The bowler who bowled the last delivery of the over immediately
+     * before the one about to start (frozen rule 9/22) — null if there
+     * is no previous over yet. Uses the last row of that over_number
+     * group rather than assuming one bowler per over, so a mid-over
+     * change (frozen rule 23) is still correctly attributed to whoever
+     * actually finished the over.
+     */
+    public function bowlerOfPreviousOver(Innings $innings): ?int
+    {
+        $currentOverNumber = intdiv($innings->legal_balls, 6);
+
+        if ($currentOverNumber === 0) {
+            return null;
+        }
+
+        $bowlerId = Delivery::query()
+            ->where('innings_id', $innings->id)
+            ->where('over_number', $currentOverNumber - 1)
+            ->orderByDesc('delivery_sequence')
+            ->value('bowler_match_player_id');
+
+        return $bowlerId !== null ? (int) $bowlerId : null;
+    }
+
+    /**
      * Records one delivery and rebuilds the innings' cached totals,
-     * atomically. Locks the Innings row (the serialization point for
-     * all scoring on this innings), rechecks every eligibility
+     * atomically. Locks the Innings row, rechecks every eligibility
      * condition against fresh data, determines delivery_sequence/
-     * over_number/ball_number from the locked row's current state, then
-     * writes the Delivery and rebuilds the cache — all inside one
-     * transaction, so two concurrent "record delivery" requests for the
-     * same innings can never both succeed with an inconsistent result.
-     *
-     * $data is expected to already be validated by StoreDeliveryRequest
-     * (participant eligibility, wicket/extra shape). The core rules are
-     * re-verified here regardless — the same defense-in-depth pattern
-     * used by every other service in this project.
+     * over_number/ball_number/is_free_hit from the locked row's current
+     * state, then writes the Delivery and rebuilds the cache — all
+     * inside one transaction.
      */
     public function recordDelivery(GameMatch $match, Innings $innings, array $data): Delivery
     {
+        $data = $this->normalizeLegacyExtraShape($data);
+
         return DB::transaction(function () use ($match, $innings, $data) {
             $lockedInnings = Innings::query()->whereKey($innings->id)->lockForUpdate()->firstOrFail();
 
@@ -189,12 +230,28 @@ class DeliveryService
                 ]);
             }
 
-            $this->assertParticipantsValid($match, $lockedInnings, $data);
-            $this->assertExpectedBattingEnds($lockedInnings, $data);
+            $isWide = (bool) ($data['is_wide'] ?? false);
+            $isNoBall = (bool) ($data['is_no_ball'] ?? false);
+            $isFreeHit = $this->isFreeHit($lockedInnings);
 
-            $extraType = $data['extra_type'] ?? null;
-            $runs = $this->calculateDeliveryRuns($extraType, (int) ($data['extra_amount'] ?? 0), (int) ($data['runs_off_bat'] ?? 0));
-            $isLegal = $this->determineLegality($extraType);
+            $this->assertParticipantsValid($match, $lockedInnings, $data, $isWide, $isNoBall, $isFreeHit);
+            $this->assertExpectedBattingEnds($lockedInnings, $data);
+            $this->assertNoConsecutiveOverBowler($lockedInnings, (int) $data['bowler_match_player_id']);
+
+            $previousDelivery = Delivery::query()
+                ->where('innings_id', $lockedInnings->id)
+                ->orderByDesc('delivery_sequence')
+                ->first();
+
+            $runs = $this->calculateDeliveryRuns(
+                $isWide,
+                $isNoBall,
+                (int) ($data['runs_off_bat'] ?? 0),
+                (int) ($data['wide_running_runs'] ?? 0),
+                (int) ($data['bye_runs'] ?? 0),
+                (int) ($data['leg_bye_runs'] ?? 0),
+            );
+            $isLegal = $this->determineLegality($isWide, $isNoBall);
             $isWicket = (bool) ($data['is_wicket'] ?? false);
 
             $delivery = Delivery::create([
@@ -207,23 +264,40 @@ class DeliveryService
                 'bowler_match_player_id' => $data['bowler_match_player_id'],
                 'runs_off_bat' => $runs['runs_off_bat'],
                 'wide_runs' => $runs['wide_runs'],
+                'wide_running_runs' => $runs['wide_running_runs'],
                 'no_ball_runs' => $runs['no_ball_runs'],
                 'bye_runs' => $runs['bye_runs'],
                 'leg_bye_runs' => $runs['leg_bye_runs'],
                 'penalty_runs' => 0,
                 'total_runs' => array_sum($runs),
                 'is_legal_delivery' => $isLegal,
+                'is_free_hit' => $isFreeHit,
+                'no_ball_reason' => $isNoBall ? ($data['no_ball_reason'] ?? null) : null,
+                'is_wide' => $isWide,
+                'is_no_ball' => $isNoBall,
                 'is_wicket' => $isWicket,
+                'is_short_run' => (bool) ($data['is_short_run'] ?? false),
+                'runs_physically_run' => $data['runs_physically_run'] ?? null,
                 'wicket_type' => $isWicket ? $data['wicket_type'] : null,
                 'dismissed_match_player_id' => $isWicket ? $data['dismissed_match_player_id'] : null,
                 'fielder_match_player_id' => $isWicket ? ($data['fielder_match_player_id'] ?? null) : null,
+                'confirmed_survivor_end' => $isWicket ? ($data['confirmed_survivor_end'] ?? null) : null,
                 'commentary' => $data['commentary'] ?? null,
             ]);
+
+            $this->logMidOverBowlerChangeIfNeeded($match, $lockedInnings, $previousDelivery, $delivery, $data);
+
+            // A recorded delivery is now the freshest source of truth for
+            // batting-end state — any pending override from Change
+            // Strike or a retirement is superseded and must not linger.
+            if ($lockedInnings->pending_state !== null) {
+                $lockedInnings->update(['pending_state' => null]);
+            }
 
             $this->recalculateInningsTotals($lockedInnings);
 
             if ($this->hasReachedAutomaticCompletion($match, $lockedInnings)) {
-                $lockedInnings->update(['status' => 'completed']);
+                $lockedInnings->update(['status' => 'completed', 'completion_type' => 'automatic', 'completion_reason' => null]);
             }
 
             return $delivery;
@@ -231,16 +305,105 @@ class DeliveryService
     }
 
     /**
+     * Backward-compatibility shim for direct (non-HTTP) callers still
+     * passing the pre-S02 single-select extra_type/extra_amount shape
+     * (e.g. existing tests exercising the plain, single-extra-category
+     * case) — translates it into the new independent is_wide/is_no_ball/
+     * bye_runs/leg_bye_runs/wide_running_runs fields. StoreDeliveryRequest
+     * has the same shim for the HTTP path. A caller already using the
+     * new fields is completely unaffected — this only fires when
+     * extra_type is actually present in $data.
+     */
+    private function normalizeLegacyExtraShape(array $data): array
+    {
+        if (! array_key_exists('extra_type', $data)) {
+            return $data;
+        }
+
+        $extraAmount = (int) ($data['extra_amount'] ?? 0);
+
+        return match ($data['extra_type']) {
+            'wide' => array_merge($data, ['is_wide' => true, 'wide_running_runs' => max(0, $extraAmount - 1)]),
+            'no_ball' => array_merge($data, ['is_no_ball' => true]),
+            'bye' => array_merge($data, ['bye_runs' => $extraAmount]),
+            'leg_bye' => array_merge($data, ['leg_bye_runs' => $extraAmount]),
+            default => $data,
+        };
+    }
+
+    /**
+     * A mid-over bowler change (frozen rule 23) is legal — already-
+     * bowled deliveries stay credited to whoever actually bowled them,
+     * since bowler_match_player_id is stored per-delivery and never
+     * rewritten. This only adds the audit trail: logged whenever the
+     * new delivery's bowler differs from the previous delivery's bowler
+     * within the SAME over (an over-boundary change is an ordinary new
+     * over, not a "change", and is separately validated/allowed by
+     * assertNoConsecutiveOverBowler()).
+     */
+    private function logMidOverBowlerChangeIfNeeded(GameMatch $match, Innings $innings, ?Delivery $previousDelivery, Delivery $newDelivery, array $data): void
+    {
+        if (! $previousDelivery || ! Auth::id()) {
+            // No authenticated actor (e.g. a direct service call from a
+            // console command or test harness, outside the normal HTTP
+            // scoring flow) — an audit entry with no "who" would be
+            // meaningless, and logging it must never be what breaks an
+            // otherwise-valid delivery from recording.
+            return;
+        }
+
+        if ((int) $previousDelivery->over_number !== (int) $newDelivery->over_number) {
+            return;
+        }
+
+        if ((int) $previousDelivery->bowler_match_player_id === (int) $newDelivery->bowler_match_player_id) {
+            return;
+        }
+
+        ScoringEvent::create([
+            'match_id' => $match->id,
+            'innings_id' => $innings->id,
+            'type' => ScoringEvent::TYPE_BOWLER_CHANGE_MID_OVER,
+            'reason' => $data['bowler_change_reason'] ?? 'No reason provided',
+            'performed_by' => Auth::id(),
+            'payload' => [
+                'old_bowler_match_player_id' => (int) $previousDelivery->bowler_match_player_id,
+                'new_bowler_match_player_id' => (int) $newDelivery->bowler_match_player_id,
+                'over_number' => (int) $newDelivery->over_number,
+            ],
+        ]);
+    }
+
+    /**
+     * The same bowler must not bowl two overs in a row (frozen rule 9),
+     * checked only at the exact boundary where a new over is about to
+     * start (legal_balls is a clean multiple of 6) — a wide/no-ball
+     * retried at that same boundary is still checked against the same
+     * previous-over bowler, since the over hasn't actually started yet.
+     */
+    private function assertNoConsecutiveOverBowler(Innings $innings, int $bowlerMatchPlayerId): void
+    {
+        if ($innings->legal_balls % 6 !== 0) {
+            return;
+        }
+
+        $previousBowlerId = $this->bowlerOfPreviousOver($innings);
+
+        if ($previousBowlerId !== null && $previousBowlerId === $bowlerMatchPlayerId) {
+            throw ValidationException::withMessages([
+                'bowler_match_player_id' => 'The same bowler cannot bowl two overs in a row.',
+            ]);
+        }
+    }
+
+    /**
      * The three, and only three, objective conditions that end an
-     * innings automatically (Phase 3.32): all out, the match's
-     * configured legal-ball limit reached, or — second innings only —
-     * the chase target (first innings runs + 1) reached. Never requires
-     * the over to finish, never applies target logic to the first
-     * innings. Reused both to decide whether to auto-complete right
-     * after recording a delivery, and by undoLastDelivery() to safely
-     * tell an automatically-completed innings apart from a manually-
-     * completed one (see that method's docblock) — $innings is expected
-     * to already carry freshly recalculated totals.
+     * innings automatically: all out, the match's configured legal-ball
+     * limit reached, or — second innings only — the chase target (first
+     * innings runs + 1) reached. total_wickets/total_runs/legal_balls
+     * already include any ScoringEvent contributions (retired-out,
+     * penalty runs) via recalculateInningsTotals(), so a retirement can
+     * itself trigger all-out here exactly like a Delivery wicket would.
      */
     private function hasReachedAutomaticCompletion(GameMatch $match, Innings $innings): bool
     {
@@ -268,28 +431,17 @@ class DeliveryService
 
     /**
      * Removes ONLY the most recent Delivery (by delivery_sequence) of an
-     * undoable innings and rebuilds the cache from what remains.
-     * Deliberately the only correction mechanism in this phase — no
-     * generic Delivery edit/delete — because later deliveries may
-     * depend on the previous ball's participants/sequence; only ever
-     * undoing the latest ball keeps the history always consistent.
+     * undoable innings and rebuilds the cache from what remains. Still
+     * deliberately the only correction mechanism for a Delivery itself —
+     * no generic Delivery edit/delete.
      *
      * An innings that is already 'completed' may still be undone, but
-     * ONLY when that completion was automatic (Phase 3.32), never when
-     * an admin/scorer completed it manually via InningsService::
-     * completeInnings(). The two are told apart without any persisted
-     * "completion reason" by a closed-loop argument: manual completion
-     * can only ever be invoked while canCompleteInnings() sees the
-     * innings still 'live', and automatic completion always fires
-     * immediately (same transaction) the instant an objective condition
-     * becomes true — so by the time a manual completion is possible, no
-     * objective condition can yet be true, and it can never become true
-     * afterwards without another Delivery being recorded (which a
-     * completed innings no longer accepts). Consequently: if the
-     * innings' CURRENT totals still satisfy hasReachedAutomaticCompletion(),
-     * its 'completed' status can only have come from automatic
-     * completion; if they don't, it can only have come from a manual
-     * completion, which undo must never reopen.
+     * ONLY when innings.completion_type is 'automatic' — a manually
+     * completed innings (frozen rule 15/16) is never reopened by undo;
+     * reopening one requires the explicit, reasoned
+     * InningsService::reopenInnings() action instead. completion_type is
+     * a genuine stored fact (backfilled for pre-existing data), not a
+     * re-derived guess.
      */
     public function undoLastDelivery(GameMatch $match, Innings $innings): bool
     {
@@ -317,7 +469,7 @@ class DeliveryService
             $this->recalculateInningsTotals($lockedInnings);
 
             if ($wasCompleted && ! $this->hasReachedAutomaticCompletion($match, $lockedInnings)) {
-                $lockedInnings->update(['status' => 'live']);
+                $lockedInnings->update(['status' => 'live', 'completion_type' => null, 'completion_reason' => null]);
             }
 
             return true;
@@ -336,18 +488,21 @@ class DeliveryService
             return true;
         }
 
-        return $innings->status === 'completed' && $this->hasReachedAutomaticCompletion($match, $innings);
+        return $innings->status === 'completed' && $innings->completion_type === 'automatic';
     }
 
     /**
-     * The canonical cache-rebuild mechanism: aggregates directly from
-     * Delivery rows rather than trusting incremental increments, so
-     * recordDelivery() and undoLastDelivery() share one source of truth
-     * and correction can never leave the cache out of sync. SUM(is_wicket)
-     * is equivalent to counting dismissalCountsAsWicket() rows here
-     * because every wicket_type this schema supports already passes
-     * that check (see its docblock) — if that ever stops being true,
-     * this query must switch to filtering by wicket_type explicitly.
+     * The canonical cache-rebuild mechanism: aggregates from Delivery
+     * rows (as before) PLUS two ScoringEvent contributions that are
+     * deliberately never Delivery rows themselves (frozen rules 4/5/6):
+     * a retired-out batter counts as a wicket, and penalty runs awarded
+     * to THIS innings' batting team count as runs and extras. Penalty
+     * runs awarded to the bowling team are recorded (audited) but
+     * conservatively not credited to any total here — crediting them to
+     * a different team's innings (possibly not yet started, or already
+     * completed) is a genuine, undecided cricket-law/product question
+     * this phase does not guess at (see the S02 completion report).
+     * Neither event type ever touches legal_balls or strike state.
      */
     public function recalculateInningsTotals(Innings $innings): void
     {
@@ -355,41 +510,47 @@ class DeliveryService
             ->where('innings_id', $innings->id)
             ->selectRaw('
                 COALESCE(SUM(total_runs), 0) as total_runs,
-                COALESCE(SUM(wide_runs + no_ball_runs + bye_runs + leg_bye_runs + penalty_runs), 0) as extras,
+                COALESCE(SUM(wide_runs + wide_running_runs + no_ball_runs + bye_runs + leg_bye_runs + penalty_runs), 0) as extras,
                 COALESCE(SUM(CASE WHEN is_legal_delivery THEN 1 ELSE 0 END), 0) as legal_balls,
                 COALESCE(SUM(CASE WHEN is_wicket THEN 1 ELSE 0 END), 0) as total_wickets
             ')
             ->first();
 
+        $penaltyRunsForBattingTeam = (int) ScoringEvent::query()
+            ->where('innings_id', $innings->id)
+            ->where('type', ScoringEvent::TYPE_PENALTY_RUNS)
+            ->where('awarded_team_id', $innings->batting_team_id)
+            ->sum('runs');
+
+        $retiredOutCount = ScoringEvent::query()
+            ->where('innings_id', $innings->id)
+            ->where('type', ScoringEvent::TYPE_RETIRED_OUT)
+            ->count();
+
         $innings->update([
-            'total_runs' => (int) $totals->total_runs,
-            'extras' => (int) $totals->extras,
+            'total_runs' => (int) $totals->total_runs + $penaltyRunsForBattingTeam,
+            'extras' => (int) $totals->extras + $penaltyRunsForBattingTeam,
             'legal_balls' => (int) $totals->legal_balls,
-            'total_wickets' => (int) $totals->total_wickets,
+            'total_wickets' => (int) $totals->total_wickets + $retiredOutCount,
         ]);
     }
 
     /**
      * The expected striker/non-striker for the NEXT delivery of this
-     * innings, derived entirely from the latest Delivery row — never
-     * persisted (Phase 3.33 explicitly avoids an
-     * innings.current_striker_id-style column), so undo naturally
-     * restores the correct expected state simply by the triggering
-     * Delivery disappearing. Also used by ScoringController to
+     * innings. Checks Innings.pending_state FIRST — an explicit override
+     * written by ScoringEventService::changeStrike()/retireBatter() when
+     * one is active — and otherwise derives it entirely from the latest
+     * Delivery row, exactly as before. Also used by ScoringController to
      * preselect the scoring form's batter fields.
-     *
-     * A dismissal doesn't change which "slot" (striker vs non-striker)
-     * rotation itself would have assigned to each of the two batters
-     * for the next ball — it only means one of those two slots needs a
-     * new occupant. So the same rotation math (run parity XOR over-end)
-     * that decides "who's on strike next" for an ordinary delivery is
-     * computed first regardless of the wicket, and only then is the
-     * dismissed player's slot marked vacant.
      *
      * @return array{first_ball: bool, requires_replacement: bool, striker_id: int|null, non_striker_id: int|null, survivor_id: int|null, survivor_end: string|null}
      */
     public function expectedBattingState(Innings $innings): array
     {
+        if ($innings->pending_state !== null) {
+            return $innings->pending_state;
+        }
+
         $latest = Delivery::query()
             ->where('innings_id', $innings->id)
             ->orderByDesc('delivery_sequence')
@@ -406,18 +567,18 @@ class DeliveryService
             ];
         }
 
-        // Wide-run totals cannot be split into "mandatory penalty" vs
-        // "runs physically run" (see the class docblock) — deliberately
-        // excluded here. no_ball_runs is always exactly 1 (the fixed
-        // penalty; any runs the batter actually ran off a no-ball are
-        // already in runs_off_bat), so it needs no special-casing.
-        $runningRuns = $latest->runs_off_bat + $latest->bye_runs + $latest->leg_bye_runs;
+        // Physically-run runs off the bat, on a wide, or as byes/leg-byes
+        // all now contribute to strike parity (frozen rule 10) — only
+        // the fixed wide/no-ball penalty runs are excluded, since they
+        // correspond to no physical running. runs_physically_run, when
+        // the scorer explicitly recorded it (a short run, or an unusual
+        // run-out), overrides the credited total for this purpose.
+        $runningRuns = $latest->runs_physically_run !== null
+            ? (int) $latest->runs_physically_run
+            : $latest->runs_off_bat + $latest->wide_running_runs + $latest->bye_runs + $latest->leg_bye_runs;
+
         $swapForRuns = $runningRuns % 2 === 1;
         $swapForOver = $latest->is_legal_delivery && $innings->legal_balls > 0 && $innings->legal_balls % 6 === 0;
-        // `!==` rather than `xor`: `xor` binds looser than `=`, so
-        // `$swap = $a xor $b` would actually assign `$swap = $a` and
-        // silently discard the `xor $b` half — `!==` is the correct,
-        // precedence-safe boolean XOR for two booleans.
         $swap = $swapForRuns !== $swapForOver;
 
         $preStriker = (int) $latest->striker_match_player_id;
@@ -447,6 +608,12 @@ class DeliveryService
             $survivorEnd = 'striker';
         }
 
+        // The scorer's explicit confirmation of the survivor's actual
+        // end (frozen rule 19) overrides the computed slot when given.
+        if ($latest->confirmed_survivor_end !== null) {
+            $survivorEnd = $latest->confirmed_survivor_end;
+        }
+
         return [
             'first_ball' => false,
             'requires_replacement' => true,
@@ -458,31 +625,40 @@ class DeliveryService
     }
 
     /**
-     * Every match_player ever recorded as dismissed in this innings —
-     * derived from Delivery history (never a separate table/cache), so
-     * a player who has already been given out cannot be selected again
-     * as striker/non-striker/replacement batter.
+     * Every match_player who can no longer bat in this innings: given
+     * out by a Delivery, or recorded as Retired Out (frozen rule 5 —
+     * counts as a wicket, cannot return). A Retired Hurt batter (frozen
+     * rule 4) is deliberately NOT included here — they remain eligible
+     * to be selected again later as the new batter for a vacant end.
      *
      * @return list<int>
      */
     public function dismissedMatchPlayerIds(Innings $innings): array
     {
-        return Delivery::query()
+        $deliveryDismissed = Delivery::query()
             ->where('innings_id', $innings->id)
             ->where('is_wicket', true)
             ->pluck('dismissed_match_player_id')
             ->map(fn ($id) => (int) $id)
             ->all();
+
+        $retiredOut = ScoringEvent::query()
+            ->where('innings_id', $innings->id)
+            ->where('type', ScoringEvent::TYPE_RETIRED_OUT)
+            ->pluck('match_player_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return array_values(array_unique(array_merge($deliveryDismissed, $retiredOut)));
     }
 
     /**
-     * Enforces Phase 3.33's strike-rotation rules against the submitted
-     * striker/non-striker: the first delivery of an innings is a free
-     * choice (validated only by assertParticipantsValid()'s ordinary
-     * team-membership rules), but every delivery after that must supply
-     * exactly the pair expectedBattingState() derives — or, after a
-     * wicket, the correct surviving batter at their correct end plus
-     * any new, not-yet-dismissed batter for the vacant end.
+     * Enforces the strike-rotation rules against the submitted striker/
+     * non-striker: the first delivery of an innings is a free choice,
+     * every delivery after that must supply exactly the pair
+     * expectedBattingState() derives (or, after a wicket/retirement, the
+     * correct surviving batter at their correct end plus any new,
+     * currently-eligible batter for the vacant end).
      */
     private function assertExpectedBattingEnds(Innings $innings, array $data): void
     {
@@ -493,7 +669,7 @@ class DeliveryService
 
         if (in_array($submittedStriker, $dismissed, true) || in_array($submittedNonStriker, $dismissed, true)) {
             throw ValidationException::withMessages([
-                'striker_match_player_id' => 'A player already dismissed in this innings cannot return to the crease.',
+                'striker_match_player_id' => 'A player already dismissed or retired out in this innings cannot return to the crease.',
             ]);
         }
 
@@ -535,10 +711,9 @@ class DeliveryService
     /**
      * Re-verifies, against fresh data, the core eligibility rules
      * StoreDeliveryRequest already validated — the same defense-in-
-     * depth pattern used throughout this project (e.g.
-     * MatchPlayerService::addPlayer()).
+     * depth pattern used throughout this project.
      */
-    private function assertParticipantsValid(GameMatch $match, Innings $innings, array $data): void
+    private function assertParticipantsValid(GameMatch $match, Innings $innings, array $data, bool $isWide, bool $isNoBall, bool $isFreeHit): void
     {
         if (! $this->matchPlayerBelongsToTeam($data['striker_match_player_id'], $match, $innings->batting_team_id)) {
             throw ValidationException::withMessages(['striker_match_player_id' => 'The striker must be a selected player from the batting team.']);
@@ -568,7 +743,7 @@ class DeliveryService
 
         $wicketType = $data['wicket_type'] ?? null;
 
-        if (! $wicketType || ! in_array($wicketType, $this->validWicketTypesForExtraType($data['extra_type'] ?? null), true)) {
+        if (! $wicketType || ! in_array($wicketType, $this->validWicketTypesForDelivery($isWide, $isNoBall, $isFreeHit), true)) {
             throw ValidationException::withMessages(['wicket_type' => 'This dismissal type is not valid for this kind of delivery.']);
         }
 

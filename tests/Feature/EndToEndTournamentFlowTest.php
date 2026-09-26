@@ -116,8 +116,10 @@ class EndToEndTournamentFlowTest extends TestCase
             'match_status' => 'scheduled',
         ]);
 
-        $squadA = $this->fieldSquad($match, $edition, $teamA, 3);
-        $squadB = $this->fieldSquad($match, $edition, $teamB, 3);
+        // Exactly 11 per side (frozen S02 rule 1) — required to start
+        // the toss/match in this end-to-end flow.
+        $squadA = $this->fieldSquad($match, $edition, $teamA, 11);
+        $squadB = $this->fieldSquad($match, $edition, $teamB, 11);
 
         // ----- Toss & start -----
         $this->actingAs($admin)->post(route('admin.matches.start-toss', $match))->assertRedirect();

@@ -101,6 +101,17 @@ class GameMatchPolicy
     }
 
     /**
+     * Reopening an already-finalized match (frozen S02 rule 17) is
+     * ADMIN ONLY, unlike every other match-day/scoring ability above —
+     * undoing a locked-in result is a higher-stakes correction than
+     * recording one in the first place.
+     */
+    public function reopenResult(User $user, GameMatch $gameMatch): bool
+    {
+        return $this->isAdmin($user);
+    }
+
+    /**
      * Abandoning a match that has already entered match-day activity is
      * closer to the other match-day workflow abilities above (both
      * admin and scorer may need to call it off), unlike cancelMatch().

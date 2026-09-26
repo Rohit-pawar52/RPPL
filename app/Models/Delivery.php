@@ -29,15 +29,14 @@ class Delivery extends Model
     public const WICKET_TYPES = ['bowled', 'caught', 'lbw', 'stumped', 'hit_wicket', 'run_out', 'obstructing_field'];
 
     /**
-     * Not a database column — deliveries has four separate extra-run
-     * columns (wide_runs/no_ball_runs/bye_runs/leg_bye_runs) rather than
-     * one extra_type+extra_runs pair. This constant is a request/UI-
-     * shape convenience only: StoreDeliveryRequest and the scoring form
-     * use it to let the scorer pick ONE extra category per delivery,
-     * which DeliveryService then maps onto the real column.
+     * Retained as the enumeration of dismissal types only. The old
+     * single-select "extra_type" request/UI concept (wide/no_ball/bye/
+     * leg_bye as one mutually-exclusive choice) is gone as of S02 —
+     * is_wide/is_no_ball plus the always-independent bye_runs/
+     * leg_bye_runs columns replace it, because a no-ball combined with
+     * byes/leg-byes on the same delivery is legal cricket and a single
+     * extra_type could never represent it.
      */
-    public const EXTRA_TYPES = ['wide', 'no_ball', 'bye', 'leg_bye'];
-
     protected $fillable = [
         'innings_id',
         'delivery_sequence',
@@ -48,16 +47,24 @@ class Delivery extends Model
         'bowler_match_player_id',
         'runs_off_bat',
         'wide_runs',
+        'wide_running_runs',
         'no_ball_runs',
         'bye_runs',
         'leg_bye_runs',
         'penalty_runs',
         'total_runs',
         'is_legal_delivery',
+        'is_free_hit',
+        'no_ball_reason',
+        'is_wide',
+        'is_no_ball',
         'is_wicket',
+        'is_short_run',
+        'runs_physically_run',
         'wicket_type',
         'dismissed_match_player_id',
         'fielder_match_player_id',
+        'confirmed_survivor_end',
         'commentary',
         'is_edited',
         'edit_reason',
@@ -67,7 +74,11 @@ class Delivery extends Model
     {
         return [
             'is_legal_delivery' => 'boolean',
+            'is_free_hit' => 'boolean',
+            'is_wide' => 'boolean',
+            'is_no_ball' => 'boolean',
             'is_wicket' => 'boolean',
+            'is_short_run' => 'boolean',
             'is_edited' => 'boolean',
         ];
     }

@@ -4,20 +4,18 @@ namespace App\Services\Innings;
 
 use App\Models\GameMatch;
 use App\Models\Innings;
+use App\Models\ScoringEvent;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Innings lifecycle and initialization: which team bats/bowls first,
- * creating Innings #1 and #2, and the explicit (temporary,
- * scoring-engine-free) "complete innings" action. Deliberately separate
- * from MatchFlowService, which owns the scheduled -> toss -> live
- * workflow and stops there — this service starts where that one ends
- * and never touches match_status itself.
- *
- * No ball-by-ball scoring exists yet: completeInnings() is a plain
- * administrative/scorer transition (live -> completed), not derived
- * from 10 wickets/overs exhausted/target reached. A future scoring
- * engine will replace or constrain this once Delivery data exists.
+ * Innings lifecycle: which team bats/bowls first, creating Innings #1
+ * and #2, the explicit manual "complete innings" action (distinct from
+ * DeliveryService's automatic completion), and reopening a completed
+ * innings for correction. Deliberately separate from MatchFlowService,
+ * which owns the scheduled -> toss -> live workflow and stops there —
+ * this service starts where that one ends and never touches
+ * match_status itself.
  */
 class InningsService
 {
@@ -43,10 +41,10 @@ class InningsService
     /**
      * Innings #1 may be started only once the match is live, the toss
      * has been recorded, no innings exists for this match at all yet,
-     * and both teams still have at least one selected MatchPlayer.
-     * There is deliberately no "exactly 11 players" rule — no such
-     * tournament-size requirement is established anywhere else in this
-     * project.
+     * and both teams still have exactly 11 selected MatchPlayers (frozen
+     * S02 rule 1 — MatchFlowService::canStartMatch() already enforces
+     * this before the match can even go live, so this is defense-in-
+     * depth against Playing XI rows somehow changing in between).
      */
     public function canStartFirstInnings(GameMatch $match): bool
     {
@@ -54,8 +52,8 @@ class InningsService
             && $match->toss_winner_team_id !== null
             && $match->toss_decision !== null
             && ! $match->innings()->exists()
-            && $this->teamHasSelectedPlayers($match, $match->edition_team_a_id)
-            && $this->teamHasSelectedPlayers($match, $match->edition_team_b_id);
+            && $this->teamHasExactlyElevenPlayers($match, $match->edition_team_a_id)
+            && $this->teamHasExactlyElevenPlayers($match, $match->edition_team_b_id);
     }
 
     /**
@@ -93,17 +91,17 @@ class InningsService
     }
 
     /**
-     * An innings may be completed only while it belongs to this match,
-     * the match is still live, and the innings itself is still live.
-     * This is a deliberately conservative, purely administrative
-     * transition — it does not (and cannot yet) verify 10 wickets, overs
-     * exhausted, or a chased target, since no automatic completion rule
-     * exists for a manual close. It DOES require at least one legal
-     * delivery to have been recorded: without that floor, an admin could
-     * complete an innings the instant it starts, producing an impossible
-     * 0/0, zero-ball "completed" innings (and, if done to both innings,
-     * a nonsensical tied/completed match with no scoring at all). A
-     * future scoring engine may replace or further constrain this.
+     * An innings may be manually completed only while it belongs to
+     * this match, the match is still live, and the innings itself is
+     * still live. This is a deliberate scorer/admin judgment call (an
+     * innings declaration, a safety call, or any other reason not
+     * captured by the objective automatic-completion conditions in
+     * DeliveryService::hasReachedAutomaticCompletion()) — it does not
+     * itself verify 10 wickets/overs exhausted/target reached, and never
+     * needs to: automatic completion already handles those cases
+     * without this action. It DOES require at least one legal delivery
+     * to have been recorded, so an innings can never be "completed" at
+     * an impossible 0/0, zero-ball state.
      */
     public function canCompleteInnings(GameMatch $match, Innings $innings): bool
     {
@@ -115,36 +113,86 @@ class InningsService
     }
 
     /**
-     * Locks the innings row and rechecks before transitioning it —
-     * future scoring writes (once Delivery exists) must not race a
-     * concurrent completion of the same innings.
-     *
-     * Deliberately never touches match_status, result_type,
-     * match_result, winner_team_id, or completed_at — result
-     * calculation belongs to a later finalization phase. It is
-     * therefore valid, and expected, for a match to remain 'live' with
-     * both innings 'completed' until that phase exists.
+     * Locks the innings row and rechecks before transitioning it.
+     * Records completion_type='manual' with the mandatory reason (frozen
+     * S02 rule 15) — the same stored fact DeliveryService::
+     * undoLastDelivery() now trusts to decide whether undo may reopen
+     * this innings (never, for a manual completion; see
+     * reopenInnings() for the authorized correction path instead).
+     * Deliberately never touches match_status/result fields — those
+     * belong to MatchResultService::finalizeMatch().
      */
-    public function completeInnings(GameMatch $match, Innings $innings): bool
+    public function completeInnings(GameMatch $match, Innings $innings, string $reason): bool
     {
-        return DB::transaction(function () use ($match, $innings) {
+        return DB::transaction(function () use ($match, $innings, $reason) {
             $locked = Innings::query()->whereKey($innings->id)->lockForUpdate()->firstOrFail();
 
             if (! $this->canCompleteInnings($match, $locked)) {
                 return false;
             }
 
-            return (bool) $locked->update(['status' => 'completed']);
+            return (bool) $locked->update([
+                'status' => 'completed',
+                'completion_type' => 'manual',
+                'completion_reason' => $reason,
+            ]);
+        });
+    }
+
+    /**
+     * Reopen a completed innings (frozen S02 rule 16): available to
+     * admin/scorer (the same manageInnings ability as the rest of this
+     * service) for either an automatically or a manually completed
+     * innings, as long as the parent match itself is still 'live' —
+     * reopening an innings that belongs to an already-FINALIZED match is
+     * a distinct, admin-only action (MatchResultService::reopenMatch())
+     * that must happen first. Existing deliveries are never touched;
+     * only the innings' own status/completion metadata changes, so
+     * scoring can resume exactly where it left off.
+     */
+    public function canReopenInnings(GameMatch $match, Innings $innings): bool
+    {
+        return $innings->match_id === $match->id
+            && in_array($innings->innings_number, [1, 2], true)
+            && $match->match_status === 'live'
+            && $innings->status === 'completed';
+    }
+
+    public function reopenInnings(GameMatch $match, Innings $innings, string $reason, User $performedBy): bool
+    {
+        return DB::transaction(function () use ($match, $innings, $reason, $performedBy) {
+            $locked = Innings::query()->whereKey($innings->id)->lockForUpdate()->firstOrFail();
+
+            if (! $this->canReopenInnings($match, $locked)) {
+                return false;
+            }
+
+            ScoringEvent::create([
+                'match_id' => $match->id,
+                'innings_id' => $locked->id,
+                'type' => ScoringEvent::TYPE_INNINGS_REOPENED,
+                'reason' => $reason,
+                'performed_by' => $performedBy->id,
+                'payload' => ['previous_completion_type' => $locked->completion_type],
+            ]);
+
+            return (bool) $locked->update([
+                'status' => 'live',
+                'completion_type' => null,
+                'completion_reason' => null,
+            ]);
         });
     }
 
     /**
      * Innings #2 may be started only once Innings #1 exists and is
      * completed, Innings #2 does not already exist, the match is still
-     * live, and both teams still have at least one selected
-     * MatchPlayer. There is no third-innings path anywhere in this
-     * service — normal limited-overs matches have exactly two innings;
-     * super overs are out of scope.
+     * live, and both teams still have exactly 11 selected MatchPlayers.
+     * There is no third-innings path anywhere in this service — normal
+     * limited-overs matches have exactly two innings; a tied match's
+     * Super Over result is recorded separately by
+     * MatchResultService::recordSuperOverResult() without ball-by-ball
+     * scoring (frozen S02 rule 7).
      */
     public function canStartSecondInnings(GameMatch $match): bool
     {
@@ -154,8 +202,8 @@ class InningsService
             && $firstInnings !== null
             && $firstInnings->status === 'completed'
             && $match->secondInnings === null
-            && $this->teamHasSelectedPlayers($match, $match->edition_team_a_id)
-            && $this->teamHasSelectedPlayers($match, $match->edition_team_b_id);
+            && $this->teamHasExactlyElevenPlayers($match, $match->edition_team_a_id)
+            && $this->teamHasExactlyElevenPlayers($match, $match->edition_team_b_id);
     }
 
     /**
@@ -193,10 +241,10 @@ class InningsService
         });
     }
 
-    private function teamHasSelectedPlayers(GameMatch $match, int $editionTeamId): bool
+    private function teamHasExactlyElevenPlayers(GameMatch $match, int $editionTeamId): bool
     {
         return $match->matchPlayers()
             ->whereHas('teamPlayer', fn ($query) => $query->where('edition_team_id', $editionTeamId))
-            ->exists();
+            ->count() === 11;
     }
 }

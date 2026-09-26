@@ -6,6 +6,7 @@ use App\Models\Delivery;
 use App\Models\GameMatch;
 use App\Models\Innings;
 use App\Models\MatchPlayer;
+use App\Models\ScoringEvent;
 use Illuminate\Support\Collection;
 
 /**
@@ -44,14 +45,14 @@ class ScorecardService
     {
         $deliveries = $this->loadDeliveries($innings);
 
-        $batting = $this->getBattingScorecard($deliveries);
+        $batting = $this->getBattingScorecard($innings, $deliveries);
 
         return [
             'innings' => $innings,
             'battingRows' => $batting['rows'],
             'didNotBat' => $this->getDidNotBat($innings, $batting['appearedMatchPlayerIds']),
             'bowlingRows' => $this->getBowlingScorecard($deliveries),
-            'extras' => $this->getExtrasBreakdown($deliveries),
+            'extras' => $this->getExtrasBreakdown($innings, $deliveries),
             'fallOfWickets' => $this->getFallOfWickets($deliveries),
             'lastDelivery' => $this->getLastDeliveryContext($deliveries),
         ];
@@ -91,10 +92,11 @@ class ScorecardService
      * @param  Collection<int, Delivery>  $deliveries
      * @return array{rows: list<array<string, mixed>>, appearedMatchPlayerIds: list<int>}
      */
-    private function getBattingScorecard(Collection $deliveries): array
+    private function getBattingScorecard(Innings $innings, Collection $deliveries): array
     {
         $stats = [];
         $order = [];
+        $lastAppearanceAt = [];
 
         foreach ($deliveries as $delivery) {
             foreach (['striker', 'nonStriker'] as $role) {
@@ -111,6 +113,8 @@ class ScorecardService
                     ];
                     $order[] = $matchPlayer->id;
                 }
+
+                $lastAppearanceAt[$matchPlayer->id] = $delivery->created_at;
             }
 
             $strikerId = $delivery->striker->id;
@@ -136,12 +140,31 @@ class ScorecardService
             }
         }
 
-        $rows = array_map(function ($id) use ($stats) {
+        // Retired Hurt/Out (frozen S02 rules 4/5) are ScoringEvents, not
+        // Delivery wickets — only relevant for a player who never has a
+        // Delivery-wicket dismissal already. A retired-hurt player who
+        // later batted again (a later delivery appearance than the
+        // retirement event) has effectively returned, so they show
+        // "not out" — the event is presentational history at that point,
+        // not their final outcome.
+        $retirements = ScoringEvent::query()
+            ->where('innings_id', $innings->id)
+            ->whereIn('type', [ScoringEvent::TYPE_RETIRED_HURT, ScoringEvent::TYPE_RETIRED_OUT])
+            ->orderByDesc('created_at')
+            ->get(['match_player_id', 'type', 'created_at'])
+            ->keyBy('match_player_id');
+
+        $rows = array_map(function ($id) use ($stats, $retirements, $lastAppearanceAt) {
             $row = $stats[$id];
             $row['strikeRate'] = $row['balls'] > 0 ? round($row['runs'] / $row['balls'] * 100, 2) : 0.0;
-            $row['dismissalText'] = $row['dismissalDelivery']
-                ? $this->formatDismissal($row['dismissalDelivery'])
-                : 'not out';
+
+            if ($row['dismissalDelivery']) {
+                $row['dismissalText'] = $this->formatDismissal($row['dismissalDelivery']);
+            } elseif (($retirement = $retirements->get($id)) && $retirement->created_at->gte($lastAppearanceAt[$id] ?? $retirement->created_at)) {
+                $row['dismissalText'] = $retirement->type === ScoringEvent::TYPE_RETIRED_OUT ? 'retired out' : 'retired hurt';
+            } else {
+                $row['dismissalText'] = 'not out';
+            }
 
             return $row;
         }, $order);
@@ -233,11 +256,13 @@ class ScorecardService
                 $stats[$bowler->id]['legalBalls']++;
             }
 
-            // Bowler-chargeable runs: runs off the bat plus wide/no-ball
-            // penalty and follow-on runs. Byes, leg-byes, and penalty
+            // Bowler-chargeable runs: runs off the bat plus the full wide
+            // total (fixed penalty + any runs physically run) and
+            // no-ball penalty/follow-on runs. Byes, leg-byes, and penalty
             // runs are team extras, never charged to the bowler.
-            $stats[$bowler->id]['runsConceded'] += (int) $delivery->runs_off_bat + (int) $delivery->wide_runs + (int) $delivery->no_ball_runs;
-            $stats[$bowler->id]['wideRuns'] += (int) $delivery->wide_runs;
+            $wideTotal = (int) $delivery->wide_runs + (int) $delivery->wide_running_runs;
+            $stats[$bowler->id]['runsConceded'] += (int) $delivery->runs_off_bat + $wideTotal + (int) $delivery->no_ball_runs;
+            $stats[$bowler->id]['wideRuns'] += $wideTotal;
             $stats[$bowler->id]['noBallRuns'] += (int) $delivery->no_ball_runs;
 
             if ($delivery->is_wicket && $this->creditsBowlerWicket($delivery->wicket_type)) {
@@ -280,13 +305,25 @@ class ScorecardService
      * @param  Collection<int, Delivery>  $deliveries
      * @return array{wides: int, noBalls: int, byes: int, legByes: int, penalty: int, total: int}
      */
-    private function getExtrasBreakdown(Collection $deliveries): array
+    private function getExtrasBreakdown(Innings $innings, Collection $deliveries): array
     {
-        $wides = $deliveries->sum(fn (Delivery $d) => (int) $d->wide_runs);
+        // wide_runs is always the fixed penalty (1) as of S02;
+        // wide_running_runs holds any additional runs physically run —
+        // both are "wide extras", so both are summed here.
+        $wides = $deliveries->sum(fn (Delivery $d) => (int) $d->wide_runs + (int) $d->wide_running_runs);
         $noBalls = $deliveries->sum(fn (Delivery $d) => (int) $d->no_ball_runs);
         $byes = $deliveries->sum(fn (Delivery $d) => (int) $d->bye_runs);
         $legByes = $deliveries->sum(fn (Delivery $d) => (int) $d->leg_bye_runs);
-        $penalty = $deliveries->sum(fn (Delivery $d) => (int) $d->penalty_runs);
+
+        // Penalty runs (frozen S02 rule 6) are a ScoringEvent, never a
+        // Delivery column — only those credited to this innings' batting
+        // team (see DeliveryService::recalculateInningsTotals()) show up
+        // in this innings' extras.
+        $penalty = (int) ScoringEvent::query()
+            ->where('innings_id', $innings->id)
+            ->where('type', ScoringEvent::TYPE_PENALTY_RUNS)
+            ->where('awarded_team_id', $innings->batting_team_id)
+            ->sum('runs');
 
         return [
             'wides' => $wides,

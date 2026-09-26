@@ -633,21 +633,33 @@ class ScoringTest extends TestCase
 
         $this->assertSame(6, $innings->fresh()->legal_balls);
 
-        $this->score($this->admin(), $match, $innings, $this->validPayload($battingPlayers, $bowlingPlayers, ['runs_off_bat' => 0]))
-            ->assertSessionHas('error');
+        // A different bowler than the one who bowled the completed over,
+        // so this attempt is rejected purely for the over limit — not
+        // also, incidentally, the unrelated consecutive-over-bowler rule.
+        $this->score($this->admin(), $match, $innings, $this->validPayload($battingPlayers, $bowlingPlayers, [
+            'runs_off_bat' => 0,
+            'bowler_match_player_id' => $bowlingPlayers[1]->id,
+        ]))->assertSessionHas('error');
 
         $this->assertSame(6, Delivery::where('innings_id', $innings->id)->count());
     }
 
     // ----- Wicket rules -----
 
-    public function test_caught_requires_fielder(): void
+    /**
+     * Frozen S02 rule 41: caught's fielder is now optional — fast wicket
+     * entry must never be blocked purely because a fielder wasn't
+     * recorded (unlike stumped, which still requires one).
+     */
+    public function test_caught_without_fielder_succeeds(): void
     {
         [$match, $innings, $battingPlayers, $bowlingPlayers] = $this->matchWithLiveInnings();
 
         $this->score($this->admin(), $match, $innings, $this->validPayload($battingPlayers, $bowlingPlayers, [
             'runs_off_bat' => 0, 'is_wicket' => 1, 'wicket_type' => 'caught', 'dismissed_match_player_id' => $battingPlayers[0]->id,
-        ]))->assertSessionHasErrors('fielder_match_player_id');
+        ]))->assertSessionDoesntHaveErrors();
+
+        $this->assertSame(1, $innings->fresh()->total_wickets);
     }
 
     public function test_caught_with_valid_fielder_succeeds(): void

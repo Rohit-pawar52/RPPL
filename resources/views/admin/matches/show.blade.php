@@ -104,6 +104,24 @@
                     <dd class="mt-0.5 font-medium text-neutral-800">{{ $match->match_result ?? '—' }}</dd>
                 </div>
             </dl>
+
+            @can('reopenResult', $match)
+                @if($match->match_status === 'completed')
+                    <form
+                        method="POST"
+                        action="{{ route('admin.matches.reopen', $match) }}"
+                        class="mt-3 flex flex-wrap items-end gap-2 border-t border-neutral-100 pt-3"
+                    >
+                        @csrf
+                        <div class="min-w-[220px] flex-1">
+                            <x-form.input name="reason" label="Reason for reopening this match (admin only)" placeholder="e.g. Scoring error found after finalization" />
+                        </div>
+                        <button type="submit" class="mb-3.5 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-[13px] font-medium text-amber-700 hover:bg-amber-100">
+                            Reopen Match
+                        </button>
+                    </form>
+                @endif
+            @endcan
         </div>
     @endif
 
@@ -299,18 +317,12 @@
                 </div>
 
                 @if($match->firstInnings->status === 'live')
-                    <form
-                        method="POST"
-                        action="{{ route('admin.matches.innings.complete', [$match, $match->firstInnings]) }}"
-                        class="mt-3"
-                        onsubmit="event.preventDefault(); window.confirmAction({title: 'Complete this innings?', confirmButtonText: 'Yes, complete'}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
-                    >
-                        @csrf
-                        <button type="submit" class="rounded-md theme-button px-3 py-1.5 text-[13px] font-medium">
-                            Complete Innings
-                        </button>
-                    </form>
-                @elseif(! $match->secondInnings)
+                    @include('admin.matches._complete-innings-form', ['innings' => $match->firstInnings])
+                @elseif($match->firstInnings->status === 'completed')
+                    @include('admin.matches._reopen-innings-form', ['innings' => $match->firstInnings])
+                @endif
+
+                @if(! $match->secondInnings)
                     <p class="mt-3 text-xs text-neutral-500">
                         Next batting: <span class="font-medium text-neutral-800">{{ $match->firstInnings->bowlingTeam->team->name }}</span>
                     </p>
@@ -325,18 +337,15 @@
                         </button>
                     </form>
                 @elseif($match->secondInnings->status === 'live')
-                    <form
-                        method="POST"
-                        action="{{ route('admin.matches.innings.complete', [$match, $match->secondInnings]) }}"
-                        class="mt-3"
-                        onsubmit="event.preventDefault(); window.confirmAction({title: 'Complete this innings?', confirmButtonText: 'Yes, complete'}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
-                    >
-                        @csrf
-                        <button type="submit" class="rounded-md theme-button px-3 py-1.5 text-[13px] font-medium">
-                            Complete Innings
-                        </button>
-                    </form>
-                @elseif($match->match_status !== 'completed')
+                    @include('admin.matches._complete-innings-form', ['innings' => $match->secondInnings])
+                @elseif($match->match_status === 'live')
+                    @include('admin.matches._reopen-innings-form', ['innings' => $match->secondInnings])
+
+                    @can('finalizeResult', $match)
+                        @if($resultPreview && $resultPreview['result_type'] === 'tied')
+                            @include('admin.matches._super-over-form')
+                        @endif
+                    @endcan
                     {{-- Both innings are completed but the match itself
                          isn't yet — this is the one gap Phase 3.11/3.12
                          deliberately leave open until "Finalize Match"

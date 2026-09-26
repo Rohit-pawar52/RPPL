@@ -39,9 +39,10 @@ class InningsManagementTest extends TestCase
     }
 
     /**
-     * A GameMatch with both participating teams having at least one
-     * selected MatchPlayer, in the given status (default 'live') with a
-     * recorded toss (default: Team A won, chose to bat).
+     * A GameMatch with both participating teams having exactly 11
+     * selected MatchPlayers (frozen S02 rule 1), in the given status
+     * (default 'live') with a recorded toss (default: Team A won, chose
+     * to bat).
      */
     private function matchWithSquadsAndToss(array $matchAttributes = []): GameMatch
     {
@@ -57,14 +58,14 @@ class InningsManagementTest extends TestCase
             $match->update(['toss_winner_team_id' => $match->edition_team_a_id, 'toss_decision' => 'bat']);
         }
 
-        MatchPlayer::factory()->create([
-            'match_id' => $match->id,
-            'team_player_id' => TeamPlayer::factory()->create(['edition_team_id' => $match->edition_team_a_id])->id,
-        ]);
-        MatchPlayer::factory()->create([
-            'match_id' => $match->id,
-            'team_player_id' => TeamPlayer::factory()->create(['edition_team_id' => $match->edition_team_b_id])->id,
-        ]);
+        foreach ([$match->edition_team_a_id, $match->edition_team_b_id] as $editionTeamId) {
+            for ($i = 0; $i < 11; $i++) {
+                MatchPlayer::factory()->create([
+                    'match_id' => $match->id,
+                    'team_player_id' => TeamPlayer::factory()->create(['edition_team_id' => $editionTeamId])->id,
+                ]);
+            }
+        }
 
         return $match->fresh();
     }
@@ -293,7 +294,7 @@ class InningsManagementTest extends TestCase
         $match = $this->matchWithFirstInningsLive();
 
         $this->actingAs($this->admin())
-            ->post(route('admin.matches.innings.complete', [$match, $match->firstInnings]))
+            ->post(route('admin.matches.innings.complete', [$match, $match->firstInnings]), ['reason' => 'Test reason'])
             ->assertRedirect(route('admin.matches.show', $match));
 
         $this->assertSame('completed', $match->firstInnings->fresh()->status);
@@ -304,7 +305,7 @@ class InningsManagementTest extends TestCase
         $match = $this->matchWithFirstInningsCompleted();
 
         $this->actingAs($this->admin())
-            ->post(route('admin.matches.innings.complete', [$match, $match->firstInnings]))
+            ->post(route('admin.matches.innings.complete', [$match, $match->firstInnings]), ['reason' => 'Test reason'])
             ->assertSessionHas('error');
 
         $this->assertSame('completed', $match->firstInnings->fresh()->status);
@@ -316,7 +317,7 @@ class InningsManagementTest extends TestCase
         $matchB = $this->matchWithFirstInningsLive();
 
         $this->actingAs($this->admin())
-            ->post(route('admin.matches.innings.complete', [$matchA, $matchB->firstInnings]))
+            ->post(route('admin.matches.innings.complete', [$matchA, $matchB->firstInnings]), ['reason' => 'Test reason'])
             ->assertNotFound();
 
         $this->assertSame('live', $matchB->firstInnings->fresh()->status);
@@ -342,7 +343,7 @@ class InningsManagementTest extends TestCase
         ]);
 
         $this->actingAs($this->admin())
-            ->post(route('admin.matches.innings.complete', [$match, $match->firstInnings]))
+            ->post(route('admin.matches.innings.complete', [$match, $match->firstInnings]), ['reason' => 'Test reason'])
             ->assertSessionHas('error');
 
         $this->assertSame('live', $match->firstInnings->fresh()->status);
@@ -353,7 +354,7 @@ class InningsManagementTest extends TestCase
         $match = $this->matchWithFirstInningsLive();
 
         $this->actingAs($this->admin())
-            ->post(route('admin.matches.innings.complete', [$match, $match->firstInnings]));
+            ->post(route('admin.matches.innings.complete', [$match, $match->firstInnings]), ['reason' => 'Test reason']);
 
         $fresh = $match->fresh();
         $this->assertSame('live', $fresh->match_status);

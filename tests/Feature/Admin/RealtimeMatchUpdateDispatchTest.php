@@ -55,8 +55,10 @@ class RealtimeMatchUpdateDispatchTest extends TestCase
     }
 
     /**
-     * A live match, toss recorded (Team A batting first), 3 selected
-     * MatchPlayers per side.
+     * A live match, toss recorded (Team A batting first), exactly 11
+     * selected MatchPlayers per side (frozen S02 rule 1) — the innings/
+     * match-flow actions this test file exercises now require exactly
+     * 11 per side to start.
      */
     private function liveMatchWithSquads(array $matchAttributes = []): GameMatch
     {
@@ -69,7 +71,7 @@ class RealtimeMatchUpdateDispatchTest extends TestCase
         $match->update(['toss_winner_team_id' => $match->edition_team_a_id, 'toss_decision' => 'bat']);
 
         foreach ([$match->edition_team_a_id, $match->edition_team_b_id] as $editionTeamId) {
-            for ($i = 0; $i < 3; $i++) {
+            for ($i = 0; $i < 11; $i++) {
                 MatchPlayer::factory()->create([
                     'match_id' => $match->id,
                     'team_player_id' => TeamPlayer::factory()->create(['edition_team_id' => $editionTeamId])->id,
@@ -265,7 +267,7 @@ class RealtimeMatchUpdateDispatchTest extends TestCase
         $innings = $this->addInnings($match, 1, $match->edition_team_a_id, $match->edition_team_b_id, 'live', legalBalls: 1);
 
         $this->actingAs($this->admin())
-            ->post(route('admin.matches.innings.complete', [$match, $innings]))
+            ->post(route('admin.matches.innings.complete', [$match, $innings]), ['reason' => 'Bad light'])
             ->assertRedirect();
 
         $this->assertDispatchedOnceFor($match);
@@ -289,8 +291,11 @@ class RealtimeMatchUpdateDispatchTest extends TestCase
     {
         $match = GameMatch::factory()->create(['match_status' => 'toss']);
         $match->update(['toss_winner_team_id' => $match->edition_team_a_id, 'toss_decision' => 'bat']);
-        MatchPlayer::factory()->create(['match_id' => $match->id, 'team_player_id' => TeamPlayer::factory()->create(['edition_team_id' => $match->edition_team_a_id])->id]);
-        MatchPlayer::factory()->create(['match_id' => $match->id, 'team_player_id' => TeamPlayer::factory()->create(['edition_team_id' => $match->edition_team_b_id])->id]);
+        foreach ([$match->edition_team_a_id, $match->edition_team_b_id] as $editionTeamId) {
+            for ($i = 0; $i < 11; $i++) {
+                MatchPlayer::factory()->create(['match_id' => $match->id, 'team_player_id' => TeamPlayer::factory()->create(['edition_team_id' => $editionTeamId])->id]);
+            }
+        }
 
         $this->actingAs($this->admin())
             ->post(route('admin.matches.start', $match))

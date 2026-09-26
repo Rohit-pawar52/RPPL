@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Events\MatchScoreUpdated;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Innings\CompleteInningsRequest;
+use App\Http\Requests\Admin\Innings\ReopenInningsRequest;
 use App\Models\GameMatch;
 use App\Models\Innings;
 use App\Services\Innings\InningsService;
@@ -38,7 +40,7 @@ class InningsController extends Controller
             ->with('success', 'First innings started successfully.');
     }
 
-    public function complete(GameMatch $match, Innings $innings): RedirectResponse
+    public function complete(CompleteInningsRequest $request, GameMatch $match, Innings $innings): RedirectResponse
     {
         // Never allow an Innings from a different match to be acted on
         // through this match's URL.
@@ -46,7 +48,7 @@ class InningsController extends Controller
 
         $this->authorize('manageInnings', $match);
 
-        if (! $this->innings->completeInnings($match, $innings)) {
+        if (! $this->innings->completeInnings($match, $innings, $request->validated('reason'))) {
             return redirect()
                 ->route('admin.matches.show', $match)
                 ->with('error', 'This innings cannot be completed right now.');
@@ -57,6 +59,28 @@ class InningsController extends Controller
         return redirect()
             ->route('admin.matches.show', $match)
             ->with('success', 'Innings completed successfully.');
+    }
+
+    /**
+     * Reopen a completed innings (frozen S02 rule 16).
+     */
+    public function reopen(ReopenInningsRequest $request, GameMatch $match, Innings $innings): RedirectResponse
+    {
+        abort_unless($innings->match_id === $match->id, 404);
+
+        $this->authorize('manageInnings', $match);
+
+        if (! $this->innings->reopenInnings($match, $innings, $request->validated('reason'), $request->user())) {
+            return redirect()
+                ->route('admin.matches.show', $match)
+                ->with('error', 'This innings cannot be reopened right now.');
+        }
+
+        $this->broadcastMatchUpdated($match->id);
+
+        return redirect()
+            ->route('admin.matches.show', $match)
+            ->with('success', 'Innings reopened successfully.');
     }
 
     public function startSecond(GameMatch $match): RedirectResponse

@@ -451,7 +451,11 @@ class ScorecardServiceTest extends TestCase
             'bowler_match_player_id' => $bowlingPlayers[0]->id,
         ];
 
-        $this->ball($match, $innings, array_merge($base, ['runs_off_bat' => 0, 'extra_type' => 'wide', 'extra_amount' => 2]));
+        // extra_amount=1 on a wide maps to 0 runs physically run (S02:
+        // wide_runs is the fixed 1-run penalty, extra_amount-1 is the
+        // running-runs component) — even (zero), so it does not rotate
+        // strike, same as this test originally assumed.
+        $this->ball($match, $innings, array_merge($base, ['runs_off_bat' => 0, 'extra_type' => 'wide', 'extra_amount' => 1]));
         // The no-ball's 1 batter run is an odd running-run count and
         // rotates strike (Phase 3.33) — the 3 byes on the next ball are
         // therefore run by the other end.
@@ -466,12 +470,12 @@ class ScorecardServiceTest extends TestCase
 
         $card = $this->scorecards->getInningsScorecard($innings->fresh());
 
-        $this->assertSame(2, $card['extras']['wides']);
+        $this->assertSame(1, $card['extras']['wides']);
         $this->assertSame(1, $card['extras']['noBalls']);
         $this->assertSame(3, $card['extras']['byes']);
         $this->assertSame(4, $card['extras']['legByes']);
         $this->assertSame(0, $card['extras']['penalty']);
-        $this->assertSame(10, $card['extras']['total']);
+        $this->assertSame(9, $card['extras']['total']);
         $this->assertSame($innings->fresh()->extras, $card['extras']['total']);
         $this->assertSame($innings->fresh()->total_runs, $card['innings']->total_runs);
     }

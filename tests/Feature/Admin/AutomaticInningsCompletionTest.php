@@ -35,10 +35,13 @@ class AutomaticInningsCompletionTest extends TestCase
     }
 
     /**
-     * A live match, toss recorded, with a GENEROUS squad per side (12 —
-     * comfortably enough for all ten wickets of an innings to fall,
-     * each needing a genuinely new, not-yet-dismissed replacement
-     * batter under Phase 3.33's strike-rotation enforcement).
+     * A live match, toss recorded, with exactly 11 selected players per
+     * side (frozen S02 rule 1 — required for InningsService::
+     * canStartSecondInnings()) — exactly enough for all ten wickets of
+     * an innings to fall, each needing a genuinely new, not-yet-
+     * dismissed replacement batter under Phase 3.33's strike-rotation
+     * enforcement (2 openers + 9 replacements = 11; the 10th wicket ends
+     * the innings without needing an 11th replacement).
      */
     private function liveMatchWithSquads(array $matchAttributes = []): GameMatch
     {
@@ -51,7 +54,7 @@ class AutomaticInningsCompletionTest extends TestCase
         $match->update(['toss_winner_team_id' => $match->edition_team_a_id, 'toss_decision' => 'bat']);
 
         foreach ([$match->edition_team_a_id, $match->edition_team_b_id] as $editionTeamId) {
-            for ($i = 0; $i < 12; $i++) {
+            for ($i = 0; $i < 11; $i++) {
                 MatchPlayer::factory()->create([
                     'match_id' => $match->id,
                     'team_player_id' => TeamPlayer::factory()->create(['edition_team_id' => $editionTeamId])->id,
@@ -88,6 +91,26 @@ class AutomaticInningsCompletionTest extends TestCase
     }
 
     /**
+     * Alternates between the bowling team's first two players by over
+     * (frozen S02 rule 9: the same bowler cannot bowl two overs in a
+     * row) — none of these tests care which bowler bowled which ball,
+     * only wicket/completion mechanics, so a simple two-bowler rotation
+     * is enough.
+     */
+    private function bowlerForOver(Innings $innings, int $editionTeamId): MatchPlayer
+    {
+        $bowlers = MatchPlayer::query()
+            ->whereHas('teamPlayer', fn ($q) => $q->where('edition_team_id', $editionTeamId))
+            ->orderBy('id')
+            ->limit(2)
+            ->get();
+
+        $overNumber = intdiv($innings->fresh()->legal_balls, 6);
+
+        return $overNumber % 2 === 0 ? $bowlers[0] : $bowlers[1];
+    }
+
+    /**
      * Derives the correct striker/non-striker for the next delivery
      * directly from DeliveryService::expectedBattingState() (Phase
      * 3.33) — reusing the exact same production logic these tests are
@@ -114,6 +137,15 @@ class AutomaticInningsCompletionTest extends TestCase
                 fn ($p) => $p->id !== $state['survivor_id'] && ! in_array($p->id, $dismissed, true)
             );
 
+            // With exactly 11 players (frozen S02 rule 1), the 10th
+            // wicket leaves no eligible replacement at all — correct,
+            // since the innings is already all-out and no further
+            // delivery can legally be recorded. Callers exercising that
+            // exact "one more delivery attempted after all-out" scenario
+            // expect recordDelivery() itself to reject it before this
+            // placeholder pairing would ever matter.
+            $newBatter ??= $survivor;
+
             return $state['survivor_end'] === 'striker' ? [$survivor, $newBatter] : [$newBatter, $survivor];
         }
 
@@ -125,7 +157,7 @@ class AutomaticInningsCompletionTest extends TestCase
         $fresh = $innings->fresh();
         $batting = $this->battingPlayers($fresh->batting_team_id);
         [$striker, $nonStriker] = $this->nextBattingPair($fresh, $batting);
-        $bowler = $this->bowler($fresh->bowling_team_id);
+        $bowler = $this->bowlerForOver($fresh, $fresh->bowling_team_id);
 
         return app(DeliveryService::class)->recordDelivery($match, $fresh, array_merge([
             'striker_match_player_id' => $striker->id,
@@ -279,7 +311,7 @@ class AutomaticInningsCompletionTest extends TestCase
         $this->ball($match, $innings, ['runs_off_bat' => 1]);
         $this->ball($match, $innings, ['runs_off_bat' => 2]);
 
-        $this->assertTrue(app(InningsService::class)->completeInnings($match, $innings->fresh()));
+        $this->assertTrue(app(InningsService::class)->completeInnings($match, $innings->fresh(), 'Test reason'));
         $manuallyCompleted = $innings->fresh();
         $this->assertSame('completed', $manuallyCompleted->status);
         $this->assertSame(3, $manuallyCompleted->total_runs);

@@ -61,14 +61,20 @@ class StandingsServiceTest extends TestCase
 
     // ----- Basic eligibility -----
 
-    public function test_every_edition_team_appears_and_only_completed_matches_count(): void
+    /**
+     * Frozen S02 rules 13/18: only 'scheduled'/'live' matches (including
+     * a rescheduled/postponed one, which never leaves 'scheduled') are
+     * excluded — 'cancelled' now counts as played, 1 point each,
+     * regardless of any result_type stored on it (a cancelled match has
+     * no genuine result to award a winner from).
+     */
+    public function test_scheduled_and_live_matches_never_count(): void
     {
         [$edition, $teamA, $teamB] = $this->editionWithTwoTeams();
         $teamC = EditionTeam::factory()->create(['edition_id' => $edition->id]); // zero matches
 
         $this->match($teamA, $teamB, ['match_status' => 'scheduled', 'result_type' => null, 'winner_team_id' => null]);
         $this->match($teamA, $teamB, ['match_status' => 'live', 'result_type' => null, 'winner_team_id' => null]);
-        $this->match($teamA, $teamB, ['match_status' => 'cancelled', 'result_type' => 'won', 'winner_team_id' => $teamA->id]);
 
         $standings = $this->standings->getEditionStandings($edition);
 
@@ -79,6 +85,23 @@ class StandingsServiceTest extends TestCase
             $row = $this->rowFor($standings, $team);
             $this->assertSame(0, $row['played']);
             $this->assertSame(0, $row['points']);
+        }
+    }
+
+    public function test_cancelled_match_awards_both_teams_one_point_regardless_of_stored_result(): void
+    {
+        [$edition, $teamA, $teamB] = $this->editionWithTwoTeams();
+        $this->match($teamA, $teamB, ['match_status' => 'cancelled', 'result_type' => 'won', 'winner_team_id' => $teamA->id]);
+
+        $standings = $this->standings->getEditionStandings($edition);
+
+        $this->assertSame(0, $standings['ignored_matches_count']);
+
+        foreach ([$teamA, $teamB] as $team) {
+            $row = $this->rowFor($standings, $team);
+            $this->assertSame(1, $row['played']);
+            $this->assertSame(1, $row['no_result']);
+            $this->assertSame(StandingsService::NO_RESULT_POINTS, $row['points']);
         }
     }
 
@@ -138,12 +161,51 @@ class StandingsServiceTest extends TestCase
         }
     }
 
-    // ----- Abandoned excluded -----
+    // ----- Abandoned -----
 
-    public function test_abandoned_result_is_excluded_from_standings(): void
+    /**
+     * Frozen S02 rule 13: a genuine abandoned/no-result match awards 1
+     * point to each team — whether recorded as match_status='abandoned'
+     * directly, or as a 'completed' match with result_type='abandoned'.
+     */
+    public function test_abandoned_match_status_awards_both_teams_one_point(): void
+    {
+        [$edition, $teamA, $teamB] = $this->editionWithTwoTeams();
+        $this->match($teamA, $teamB, ['match_status' => 'abandoned', 'result_type' => 'abandoned', 'winner_team_id' => null]);
+
+        $standings = $this->standings->getEditionStandings($edition);
+
+        $this->assertSame(0, $standings['ignored_matches_count']);
+
+        foreach ([$teamA, $teamB] as $team) {
+            $row = $this->rowFor($standings, $team);
+            $this->assertSame(1, $row['played']);
+            $this->assertSame(1, $row['no_result']);
+            $this->assertSame(StandingsService::NO_RESULT_POINTS, $row['points']);
+        }
+    }
+
+    public function test_completed_match_with_abandoned_result_type_awards_both_teams_one_point(): void
     {
         [$edition, $teamA, $teamB] = $this->editionWithTwoTeams();
         $this->match($teamA, $teamB, ['match_status' => 'completed', 'result_type' => 'abandoned', 'winner_team_id' => null]);
+
+        $standings = $this->standings->getEditionStandings($edition);
+
+        $this->assertSame(0, $standings['ignored_matches_count']);
+
+        foreach ([$teamA, $teamB] as $team) {
+            $row = $this->rowFor($standings, $team);
+            $this->assertSame(1, $row['played']);
+            $this->assertSame(1, $row['no_result']);
+            $this->assertSame(StandingsService::NO_RESULT_POINTS, $row['points']);
+        }
+    }
+
+    public function test_abandoned_result_with_a_winner_recorded_is_ignored_as_inconsistent(): void
+    {
+        [$edition, $teamA, $teamB] = $this->editionWithTwoTeams();
+        $this->match($teamA, $teamB, ['match_status' => 'completed', 'result_type' => 'abandoned', 'winner_team_id' => $teamA->id]);
 
         $standings = $this->standings->getEditionStandings($edition);
 
