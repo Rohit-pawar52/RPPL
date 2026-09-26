@@ -5,7 +5,7 @@ namespace App\Http\Requests\Admin\DataCleanup;
 use App\Http\Requests\Admin\DataCleanup\Concerns\ValidatesCutoffDate;
 use Illuminate\Foundation\Http\FormRequest;
 
-class DeleteNotificationSendsRequest extends FormRequest
+class DeleteFailedJobsRequest extends FormRequest
 {
     use ValidatesCutoffDate;
 

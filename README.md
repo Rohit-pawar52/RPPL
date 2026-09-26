@@ -84,6 +84,16 @@ Broadcast push notifications to public website visitors, entirely anonymous — 
 - **Send / Resend** — one explicit action always broadcasts the notification's *current* content to every currently active subscriber, creating a new, immutable `NotificationSend` snapshot every time (editing the notification after a send never rewrites what that send actually contained). Sending is queued (`SendNotificationJob`) and reports back attempted/accepted/failed counts — "Accepted" means Firebase accepted the message for delivery, never "Delivered" or "Read". A permanently invalid/unregistered token is deactivated automatically; a transient failure is not.
 - No audience selector, schedule, topic, or rich media in V1 — every send targets every active subscriber, by design.
 
+### Data retention & cleanup (`admin/data-cleanup`)
+
+One centralized, admin-only destructive-cleanup module — normal operational work and permanent data deletion are deliberately kept apart, never scattered as delete buttons inside other modules. Three tabs:
+
+- **Notifications** — delete old `Notification`/`NotificationSend` records before a chosen date; delete every FCM token Firebase has already reported invalid ("inactive"); delete FCM tokens not seen in a chosen number of days (replaces an earlier "keep the latest N" approach, which could remove a genuinely active token while an older invalid one survived).
+- **Registration Documents** — purges private Aadhaar/payment-proof *files* for a selected edition that is no longer open for public registration, without ever touching the registration record itself (player, payment status, registration number, fee, and financial history all remain exactly as they were) — only the file and its own path column are cleared.
+- **System** — deletes old `failed_jobs` records before a chosen date. (Two related candidates were deliberately **not** built: `job_batches`, since this app never uses `Bus::batch()` so the table is never populated; and application log cleanup, judged unsafe to build against the configured `single` log channel — see the Phase 3.49 report.)
+- Every date cutoff is interpreted as midnight **in the configured `system.display_timezone`**, converted to UTC before the query runs — not the server's own timezone — and the selected date itself is always excluded ("before this date"). Every destructive action shows an exact, server-calculated affected-record count (never a client-supplied number) before the confirmation dialog.
+- Every cleanup action writes an immutable audit row to `data_cleanup_logs` (admin, category, action, criteria, records affected, files deleted) — a simple, reusable trail answering who ran what, when, and how much it affected.
+
 ### Announcements (public ticker)
 
 - Admin-managed announcements (`admin/announcements`) with a start/end scheduling window and a computed status (scheduled/active/expired/disabled) — never a manually-set status field.

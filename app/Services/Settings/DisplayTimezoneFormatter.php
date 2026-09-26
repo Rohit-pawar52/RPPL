@@ -47,4 +47,25 @@ class DisplayTimezoneFormatter
         return Carbon::createFromFormat($format, $value, $this->settings->get('system.display_timezone'))
             ->setTimezone('UTC');
     }
+
+    /**
+     * The reverse direction for a plain admin DATE picker input (Phase
+     * 3.49's Data Cleanup cutoffs) — "23 September 2026" means midnight
+     * of that date IN THE DISPLAY TIMEZONE, converted to UTC for
+     * comparison against stored timestamps, so the selected date itself
+     * is correctly excluded from a "before this date" query. Distinct
+     * from parseFromDisplayTimezone(): PHP's createFromFormat() fills
+     * any time component NOT present in $format with the CURRENT
+     * wall-clock time, so passing a bare 'Y-m-d' format there would
+     * silently resolve to "right now" on the given date, not midnight.
+     * This method makes that impossible by normalizing to startOfDay()
+     * FIRST, then converting to UTC — the reverse order would give UTC
+     * midnight, not the display timezone's midnight.
+     */
+    public function startOfDisplayDate(string $date): Carbon
+    {
+        return Carbon::createFromFormat('Y-m-d', $date, $this->settings->get('system.display_timezone'))
+            ->startOfDay()
+            ->setTimezone('UTC');
+    }
 }

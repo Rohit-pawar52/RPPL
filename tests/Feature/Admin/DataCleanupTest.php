@@ -2,19 +2,23 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Models\FcmToken;
+use App\Models\DataCleanupLog;
 use App\Models\Notification;
 use App\Models\NotificationSend;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Settings\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Phase B5 — bulk, date/count-based retention cleanup for notifications,
- * notification_sends, and fcm_tokens. Admin-triggered only, never
- * automatic; proves authorization, the exact cutoff/retention boundary,
- * the notification->sends RESTRICT-FK cascade handling, and validation.
+ * Phase B5 / Phase 3.49 — bulk, date-based retention cleanup for
+ * notifications and notification_sends, tab dispatch, and
+ * authorization. FCM token cleanup is covered by
+ * DataCleanupFcmTokenTest, registration documents by
+ * DataCleanupRegistrationDocumentsTest, and failed jobs by
+ * DataCleanupFailedJobsTest — all four share this same admin-only gate
+ * and DataCleanupLogger audit trail.
  */
 class DataCleanupTest extends TestCase
 {
@@ -63,6 +67,39 @@ class DataCleanupTest extends TestCase
         $this->get(route('admin.data-cleanup.index'))->assertRedirect(route('admin.login'));
     }
 
+    public function test_preview_endpoint_is_forbidden_for_scorer(): void
+    {
+        $this->actingAs($this->scorer())
+            ->getJson(route('admin.data-cleanup.preview.cutoff', ['category' => 'notifications', 'before_date' => now()->toDateString()]))
+            ->assertForbidden();
+    }
+
+    public function test_preview_endpoint_redirects_guest_to_login(): void
+    {
+        $this->get(route('admin.data-cleanup.preview.cutoff', ['category' => 'notifications', 'before_date' => now()->toDateString()]))
+            ->assertRedirect(route('admin.login'));
+    }
+
+    // ----- Tab dispatch -----
+
+    public function test_invalid_tab_falls_back_to_notifications(): void
+    {
+        $response = $this->actingAs($this->admin())->get(route('admin.data-cleanup.index', ['tab' => 'not-a-real-tab']));
+
+        $response->assertOk();
+        $response->assertViewHas('activeTab', 'notifications');
+    }
+
+    public function test_each_real_tab_renders(): void
+    {
+        foreach (['notifications', 'registration-documents', 'system'] as $tab) {
+            $this->actingAs($this->admin())
+                ->get(route('admin.data-cleanup.index', ['tab' => $tab]))
+                ->assertOk()
+                ->assertViewHas('activeTab', $tab);
+        }
+    }
+
     // ----- Notifications (+ cascade to sends) -----
 
     public function test_deleting_notifications_before_a_date_removes_only_older_ones_and_their_send_history(): void
@@ -79,7 +116,7 @@ class DataCleanupTest extends TestCase
             'before_date' => now()->subDays(5)->toDateString(),
         ]);
 
-        $response->assertRedirect(route('admin.data-cleanup.index'));
+        $response->assertRedirect(route('admin.data-cleanup.index', ['tab' => 'notifications']));
         $this->assertModelMissing($old);
         $this->assertModelMissing($oldSend);
         $this->assertModelExists($recent);
@@ -109,6 +146,49 @@ class DataCleanupTest extends TestCase
         $response->assertSessionHasErrors('before_date');
     }
 
+    /**
+     * Phase 3.49 — the cutoff is interpreted in system.display_timezone,
+     * not the server's default timezone. Asia/Kolkata is UTC+5:30: a
+     * notification created at 2026-01-02 03:00 UTC is already
+     * 2026-01-02 08:30 IST — "before 2026-01-02" (IST) must exclude it,
+     * while "before 2026-01-03" (IST) must include it.
+     */
+    public function test_cutoff_date_is_interpreted_in_the_configured_display_timezone(): void
+    {
+        app(SettingsService::class)->set('system.display_timezone', 'Asia/Kolkata');
+        $admin = $this->admin();
+
+        $justAfterIstMidnight = Notification::factory()->create(['created_at' => '2026-01-02 03:00:00']);
+
+        $this->actingAs($admin)->delete(route('admin.data-cleanup.notifications.destroy'), [
+            'before_date' => '2026-01-02',
+        ]);
+        $this->assertModelExists($justAfterIstMidnight, 'the selected date itself must not be included');
+
+        $this->actingAs($admin)->delete(route('admin.data-cleanup.notifications.destroy'), [
+            'before_date' => '2026-01-03',
+        ]);
+        $this->assertModelMissing($justAfterIstMidnight);
+    }
+
+    public function test_deleting_notifications_writes_an_audit_log_entry(): void
+    {
+        $admin = $this->admin();
+        Notification::factory()->create(['created_at' => now()->subDays(10)]);
+
+        $this->actingAs($admin)->delete(route('admin.data-cleanup.notifications.destroy'), [
+            'before_date' => now()->subDays(5)->toDateString(),
+        ]);
+
+        $log = DataCleanupLog::first();
+        $this->assertNotNull($log);
+        $this->assertSame($admin->id, $log->admin_user_id);
+        $this->assertSame('notifications', $log->category);
+        $this->assertSame('delete_notifications_before', $log->action);
+        $this->assertSame(1, $log->records_affected);
+        $this->assertNull($log->files_deleted);
+    }
+
     // ----- Notification sends (independent of their parent) -----
 
     public function test_deleting_notification_sends_before_a_date_leaves_the_parent_notification_intact(): void
@@ -128,42 +208,25 @@ class DataCleanupTest extends TestCase
         $this->assertModelExists($notification);
     }
 
-    // ----- FCM tokens (keep latest N) -----
+    // ----- Preview accuracy -----
 
-    public function test_keeping_latest_fcm_tokens_deletes_the_least_recently_active_beyond_the_limit(): void
+    public function test_preview_count_matches_what_deletion_actually_removes(): void
     {
         $admin = $this->admin();
+        Notification::factory()->count(3)->create(['created_at' => now()->subDays(10)]);
+        Notification::factory()->create(['created_at' => now()->subDay()]);
 
-        // 10 is the smallest preset retention option (see
-        // DeleteFcmTokensRequest::KEEP_COUNT_OPTIONS) — 10 recently
-        // active tokens plus 2 stale ones beyond that limit.
-        $recent = FcmToken::factory()->count(10)->sequence(
-            fn ($sequence) => ['last_seen_at' => now()->subMinutes($sequence->index)],
-        )->create();
-        $stale = FcmToken::factory()->count(2)->sequence(
-            fn ($sequence) => ['last_seen_at' => now()->subDays(30 + $sequence->index)],
-        )->create();
+        $preview = $this->actingAs($admin)->getJson(route('admin.data-cleanup.preview.cutoff', [
+            'category' => 'notifications',
+            'before_date' => now()->subDays(5)->toDateString(),
+        ]));
 
-        $response = $this->actingAs($admin)->delete(route('admin.data-cleanup.fcm-tokens.destroy'), [
-            'keep_count' => 10,
+        $preview->assertOk()->assertJson(['count' => 3]);
+
+        $this->actingAs($admin)->delete(route('admin.data-cleanup.notifications.destroy'), [
+            'before_date' => now()->subDays(5)->toDateString(),
         ]);
 
-        $response->assertRedirect(route('admin.data-cleanup.index'));
-        $this->assertSame(10, FcmToken::count());
-        $recent->each(fn (FcmToken $token) => $this->assertModelExists($token));
-        $stale->each(fn (FcmToken $token) => $this->assertModelMissing($token));
-    }
-
-    public function test_keep_count_must_be_one_of_the_preset_options(): void
-    {
-        $admin = $this->admin();
-        FcmToken::factory()->count(3)->create();
-
-        $response = $this->actingAs($admin)->delete(route('admin.data-cleanup.fcm-tokens.destroy'), [
-            'keep_count' => 3, // not in the preset list
-        ]);
-
-        $response->assertSessionHasErrors('keep_count');
-        $this->assertSame(3, FcmToken::count());
+        $this->assertSame(1, Notification::count());
     }
 }

@@ -10,12 +10,17 @@
             <x-stat-card label="Active Subscribers" :value="$activeSubscriberCount" icon="bell" />
         </div>
 
-        <a
-            href="{{ route('admin.notifications.create') }}"
-            class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
-        >
-            + New notification
-        </a>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('admin.data-cleanup.index') }}" class="text-xs text-neutral-500 hover:text-neutral-700">
+                Clean up old data? Go to Data Cleanup &rarr;
+            </a>
+            <a
+                href="{{ route('admin.notifications.create') }}"
+                class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
+            >
+                + New notification
+            </a>
+        </div>
     </div>
 
     <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white">

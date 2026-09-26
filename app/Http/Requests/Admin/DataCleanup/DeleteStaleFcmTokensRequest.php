@@ -5,17 +5,17 @@ namespace App\Http\Requests\Admin\DataCleanup;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class DeleteFcmTokensRequest extends FormRequest
+class DeleteStaleFcmTokensRequest extends FormRequest
 {
     /**
-     * The only retention sizes the admin UI offers — a bounded preset
-     * list rather than a free-form number, so this can never be misused
-     * to (for example) accidentally type "1" and wipe almost every real
-     * subscriber.
+     * A bounded preset list rather than a free-form number of days —
+     * same reasoning as the old KEEP_COUNT_OPTIONS this replaces (see
+     * NotificationDataCleanupService's docblock): never let a typo'd
+     * tiny number wipe almost every real subscriber.
      *
      * @var list<int>
      */
-    public const KEEP_COUNT_OPTIONS = [10, 50, 100, 200, 500, 1000, 2000];
+    public const DAYS_OPTIONS = [7, 14, 30, 60, 90, 180, 365];
 
     /**
      * Authorization is handled explicitly in DataCleanupController via
@@ -33,7 +33,7 @@ class DeleteFcmTokensRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'keep_count' => ['required', 'integer', Rule::in(self::KEEP_COUNT_OPTIONS)],
+            'days' => ['required', 'integer', Rule::in(self::DAYS_OPTIONS)],
         ];
     }
 }
