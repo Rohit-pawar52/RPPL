@@ -5,9 +5,13 @@ namespace App\Http\Requests\Admin\Scoring;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Frozen S02 rule 6 — shape validation only; the awarded team must be
- * one of the match's own two teams, re-verified inside
- * ScoringEventService::awardPenaltyRuns().
+ * Frozen S02 rule 6, corrected per the penalty-run-accounting follow-up
+ * — shape validation only; the awarded team must be one of the match's
+ * own two teams, re-verified inside ScoringEventService::
+ * awardPenaltyRuns(). No "runs" field: this action always awards the
+ * standard international-law 5-run penalty
+ * (ScoringEventService::STANDARD_PENALTY_RUNS) — RPPL has no
+ * established need for an arbitrary custom amount, so none is offered.
  */
 class AwardPenaltyRunsRequest extends FormRequest
 {
@@ -20,7 +24,6 @@ class AwardPenaltyRunsRequest extends FormRequest
     {
         return [
             'awarded_team_id' => ['required', 'integer', 'exists:edition_teams,id'],
-            'runs' => ['required', 'integer', 'min:1', 'max:20'],
             'reason' => ['required', 'string', 'max:500'],
         ];
     }

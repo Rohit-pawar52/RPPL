@@ -220,7 +220,7 @@
 
             <div class="rounded-lg border border-neutral-200 bg-white p-4">
                 <h3 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Penalty Runs</h3>
-                <p class="mb-2 text-xs text-neutral-500">A separate scoring event — never affects ball count or strike.</p>
+                <p class="mb-2 text-xs text-neutral-500">Standard 5-run award as Penalty extras — never affects ball count, strike, or batter/bowler figures. If the awarded team hasn't batted yet in this match, it is added to their innings total as soon as that innings starts.</p>
                 <form method="POST" action="{{ route('admin.matches.innings.penalty-runs', [$match, $innings]) }}">
                     @csrf
                     <x-form.select
@@ -232,10 +232,9 @@
                             $match->edition_team_b_id => $match->teamB->team->name,
                         ]"
                     />
-                    <x-form.input name="runs" label="Runs" type="number" min="1" max="20" />
                     <x-form.input name="reason" label="Reason" placeholder="e.g. Fielding restriction breach" />
                     <button type="submit" class="rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
-                        Award Penalty Runs
+                        Award 5 Penalty Runs
                     </button>
                 </form>
             </div>

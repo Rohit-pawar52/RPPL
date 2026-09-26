@@ -496,13 +496,22 @@ class DeliveryService
      * rows (as before) PLUS two ScoringEvent contributions that are
      * deliberately never Delivery rows themselves (frozen rules 4/5/6):
      * a retired-out batter counts as a wicket, and penalty runs awarded
-     * to THIS innings' batting team count as runs and extras. Penalty
-     * runs awarded to the bowling team are recorded (audited) but
-     * conservatively not credited to any total here — crediting them to
-     * a different team's innings (possibly not yet started, or already
-     * completed) is a genuine, undecided cricket-law/product question
-     * this phase does not guess at (see the S02 completion report).
-     * Neither event type ever touches legal_balls or strike state.
+     * to THIS innings' batting team count as runs and extras (as Penalty
+     * extras — never credited to a batter or charged to a bowler).
+     *
+     * Penalty credit is looked up by MATCH + the awarded team, not by
+     * which innings the award happened to be recorded from — a penalty
+     * awarded to a team that hasn't batted yet in this match is still
+     * found here the moment that team's own Innings row exists, because
+     * this query re-reads the same ScoringEvent rows fresh every time
+     * (see ScoringEventService::awardPenaltyRuns()'s docblock for the
+     * full accounting rationale). This is also why recalculating
+     * multiple times is safe: it is always a full re-aggregation from
+     * the one authoritative ScoringEvent/Delivery source, never an
+     * incremental add, so it can never double-credit the same award.
+     *
+     * Neither ScoringEvent type here ever touches legal_balls or strike
+     * state.
      */
     public function recalculateInningsTotals(Innings $innings): void
     {
@@ -517,7 +526,7 @@ class DeliveryService
             ->first();
 
         $penaltyRunsForBattingTeam = (int) ScoringEvent::query()
-            ->where('innings_id', $innings->id)
+            ->where('match_id', $innings->match_id)
             ->where('type', ScoringEvent::TYPE_PENALTY_RUNS)
             ->where('awarded_team_id', $innings->batting_team_id)
             ->sum('runs');

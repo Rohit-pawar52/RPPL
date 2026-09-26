@@ -142,7 +142,6 @@ class ScoringController extends Controller
             $match,
             $innings,
             $awardedTeam,
-            (int) $request->validated('runs'),
             $request->validated('reason'),
             $request->user(),
         );

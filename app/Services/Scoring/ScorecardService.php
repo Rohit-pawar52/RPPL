@@ -316,11 +316,12 @@ class ScorecardService
         $legByes = $deliveries->sum(fn (Delivery $d) => (int) $d->leg_bye_runs);
 
         // Penalty runs (frozen S02 rule 6) are a ScoringEvent, never a
-        // Delivery column — only those credited to this innings' batting
-        // team (see DeliveryService::recalculateInningsTotals()) show up
-        // in this innings' extras.
+        // Delivery column — credited to whichever team this innings
+        // actually belongs to (looked up by match + team, exactly like
+        // DeliveryService::recalculateInningsTotals(), never by which
+        // innings the award happened to be recorded from).
         $penalty = (int) ScoringEvent::query()
-            ->where('innings_id', $innings->id)
+            ->where('match_id', $innings->match_id)
             ->where('type', ScoringEvent::TYPE_PENALTY_RUNS)
             ->where('awarded_team_id', $innings->batting_team_id)
             ->sum('runs');

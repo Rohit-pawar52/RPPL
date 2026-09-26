@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\GameMatch\MatchFlowService;
 use App\Services\Innings\InningsService;
 use App\Services\Scoring\DeliveryService;
+use App\Services\Scoring\ScorecardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
@@ -90,6 +91,26 @@ class ScoringUpgradeTest extends TestCase
     private function score(User $user, GameMatch $match, Innings $innings, array $payload)
     {
         return $this->actingAs($user)->post(route('admin.matches.innings.deliveries.store', [$match, $innings]), $payload);
+    }
+
+    /**
+     * Only the scalar batting figures (never the Eloquent model objects
+     * themselves, which are always distinct instances across two
+     * separate scorecard computations) — for asserting a penalty leaves
+     * every batter's figures byte-for-byte unchanged.
+     */
+    private function battingFigures(Innings $innings): array
+    {
+        return collect(app(ScorecardService::class)->getInningsScorecard($innings)['battingRows'])
+            ->map(fn (array $row) => [
+                'matchPlayerId' => $row['matchPlayer']->id,
+                'runs' => $row['runs'],
+                'balls' => $row['balls'],
+                'fours' => $row['fours'],
+                'sixes' => $row['sixes'],
+                'strikeRate' => $row['strikeRate'],
+                'dismissalText' => $row['dismissalText'],
+            ])->all();
     }
 
     // ----- Rule 1: exactly 11 Playing XI -----
@@ -334,20 +355,33 @@ class ScoringUpgradeTest extends TestCase
 
     // ----- Rule 6: penalty runs -----
 
-    public function test_penalty_runs_awarded_to_the_batting_team_are_credited_to_the_innings(): void
+    public function test_penalty_to_current_batting_side_credits_extras_only_no_batter_bowler_ball_or_strike_change(): void
     {
-        [$match, $innings] = $this->matchWithLiveInnings();
+        [$match, $innings, $battingPlayers, $bowlingPlayers] = $this->matchWithLiveInnings();
+
+        $this->score($this->admin(), $match, $innings, [
+            'striker_match_player_id' => $battingPlayers[0]->id, 'non_striker_match_player_id' => $battingPlayers[1]->id,
+            'bowler_match_player_id' => $bowlingPlayers[0]->id, 'runs_off_bat' => 1,
+        ]);
+        $stateBefore = app(DeliveryService::class)->expectedBattingState($innings->fresh());
+        $battingRowsBefore = $this->battingFigures($innings->fresh());
 
         $this->actingAs($this->admin())->post(route('admin.matches.innings.penalty-runs', [$match, $innings]), [
             'awarded_team_id' => $match->edition_team_a_id,
-            'runs' => 5,
             'reason' => 'Fielding restriction breach',
         ])->assertRedirect();
 
         $fresh = $innings->fresh();
-        $this->assertSame(5, $fresh->total_runs);
+        $this->assertSame(6, $fresh->total_runs); // 1 (bat) + 5 (penalty)
         $this->assertSame(5, $fresh->extras);
-        $this->assertSame(0, $fresh->legal_balls);
+        $this->assertSame(1, $fresh->legal_balls); // unchanged by the penalty
+        $this->assertSame(1, Delivery::where('innings_id', $innings->id)->count()); // no new Delivery
+
+        // Strike state is unaffected by the penalty alone.
+        $this->assertSame($stateBefore, app(DeliveryService::class)->expectedBattingState($fresh));
+
+        // No batter or bowler figure changed.
+        $this->assertSame($battingRowsBefore, $this->battingFigures($fresh));
 
         $event = ScoringEvent::sole();
         $this->assertSame(ScoringEvent::TYPE_PENALTY_RUNS, $event->type);
@@ -356,13 +390,120 @@ class ScoringUpgradeTest extends TestCase
         $this->assertSame('Fielding restriction breach', $event->reason);
     }
 
+    public function test_penalty_to_fielding_side_before_it_has_batted_carries_forward_to_its_own_innings(): void
+    {
+        [$match, $innings, $battingPlayers, $bowlingPlayers] = $this->matchWithLiveInnings();
+        $fieldingTeamId = $match->edition_team_b_id;
+
+        $this->score($this->admin(), $match, $innings, [
+            'striker_match_player_id' => $battingPlayers[0]->id, 'non_striker_match_player_id' => $battingPlayers[1]->id,
+            'bowler_match_player_id' => $bowlingPlayers[0]->id, 'runs_off_bat' => 0,
+        ]);
+
+        $this->actingAs($this->admin())->post(route('admin.matches.innings.penalty-runs', [$match, $innings]), [
+            'awarded_team_id' => $fieldingTeamId,
+            'reason' => 'Slow over rate',
+        ])->assertRedirect();
+
+        // Team A's own (currently batting) innings is completely unaffected.
+        $this->assertSame(0, $innings->fresh()->total_runs);
+        $this->assertSame(0, $innings->fresh()->extras);
+
+        // Complete innings #1 and start innings #2 for the fielding team.
+        app(InningsService::class)->completeInnings($match, $innings->fresh(), 'End of innings');
+        app(InningsService::class)->startSecondInnings($match->fresh());
+        $second = $match->fresh()->secondInnings;
+
+        $this->assertSame($fieldingTeamId, $second->batting_team_id);
+        $this->assertSame(5, $second->total_runs);
+        $this->assertSame(5, $second->extras);
+        $this->assertSame(0, $second->legal_balls);
+        $this->assertSame(0, Delivery::where('innings_id', $second->id)->count());
+
+        // Still only ONE authoritative penalty event — never duplicated.
+        $this->assertSame(1, ScoringEvent::where('type', ScoringEvent::TYPE_PENALTY_RUNS)->count());
+    }
+
+    public function test_penalty_to_fielding_side_after_it_already_batted_corrects_its_completed_innings_and_the_live_chase_target(): void
+    {
+        [$match, $innings, $battingPlayers, $bowlingPlayers] = $this->matchWithLiveInnings();
+
+        // Team A bats 4 in innings #1, then it completes.
+        $this->score($this->admin(), $match, $innings, [
+            'striker_match_player_id' => $battingPlayers[0]->id, 'non_striker_match_player_id' => $battingPlayers[1]->id,
+            'bowler_match_player_id' => $bowlingPlayers[0]->id, 'runs_off_bat' => 4,
+        ]);
+        app(InningsService::class)->completeInnings($match, $innings->fresh(), 'End of innings');
+        app(InningsService::class)->startSecondInnings($match->fresh());
+        $second = $match->fresh()->secondInnings;
+
+        // Penalty awarded to Team A (the now-fielding side), which
+        // already batted — must correct that completed innings.
+        $this->actingAs($this->admin())->post(route('admin.matches.innings.penalty-runs', [$match, $second]), [
+            'awarded_team_id' => $match->edition_team_a_id,
+            'reason' => 'Discovered after the fact',
+        ])->assertRedirect();
+
+        $first = $innings->fresh();
+        $this->assertSame(9, $first->total_runs); // 4 + 5 penalty
+        $this->assertSame(5, $first->extras);
+
+        // The live chase target (first.total_runs + 1 = 10) must reflect
+        // the corrected total, not the stale pre-penalty value (5).
+        $this->score($this->admin(), $match, $second, [
+            'striker_match_player_id' => $bowlingPlayers[0]->id, 'non_striker_match_player_id' => $bowlingPlayers[1]->id,
+            'bowler_match_player_id' => $battingPlayers[0]->id, 'runs_off_bat' => 6, // 6 < corrected target 10, must not complete
+        ]);
+        $this->assertSame('live', $second->fresh()->status);
+
+        $this->score($this->admin(), $match, $second, [
+            'striker_match_player_id' => $bowlingPlayers[0]->id, 'non_striker_match_player_id' => $bowlingPlayers[1]->id,
+            'bowler_match_player_id' => $battingPlayers[0]->id, 'runs_off_bat' => 4, // now 10 total, reaches corrected target
+        ]);
+        $this->assertSame('completed', $second->fresh()->status);
+    }
+
+    public function test_penalty_cannot_be_awarded_once_the_match_is_finalized(): void
+    {
+        [$match, $innings, $battingPlayers, $bowlingPlayers] = $this->matchWithLiveInnings();
+        $this->score($this->admin(), $match, $innings, [
+            'striker_match_player_id' => $battingPlayers[0]->id, 'non_striker_match_player_id' => $battingPlayers[1]->id,
+            'bowler_match_player_id' => $bowlingPlayers[0]->id, 'runs_off_bat' => 0,
+        ]);
+        $match->update(['match_status' => 'completed', 'result_type' => 'won', 'match_result' => 'Team A won']);
+
+        $this->actingAs($this->admin())->post(route('admin.matches.innings.penalty-runs', [$match, $innings]), [
+            'awarded_team_id' => $match->edition_team_a_id,
+            'reason' => 'Too late',
+        ])->assertSessionHasErrors('awarded_team_id');
+
+        $this->assertSame(0, ScoringEvent::count());
+    }
+
+    public function test_recalculating_innings_totals_multiple_times_does_not_double_credit_a_penalty(): void
+    {
+        [$match, $innings] = $this->matchWithLiveInnings();
+        $deliveries = app(DeliveryService::class);
+
+        $this->actingAs($this->admin())->post(route('admin.matches.innings.penalty-runs', [$match, $innings]), [
+            'awarded_team_id' => $match->edition_team_a_id,
+            'reason' => 'Fielding restriction breach',
+        ]);
+
+        $deliveries->recalculateInningsTotals($innings->fresh());
+        $deliveries->recalculateInningsTotals($innings->fresh());
+        $deliveries->recalculateInningsTotals($innings->fresh());
+
+        $this->assertSame(5, $innings->fresh()->total_runs);
+        $this->assertSame(1, ScoringEvent::count());
+    }
+
     public function test_penalty_runs_require_a_reason(): void
     {
         [$match, $innings] = $this->matchWithLiveInnings();
 
         $this->actingAs($this->admin())->post(route('admin.matches.innings.penalty-runs', [$match, $innings]), [
             'awarded_team_id' => $match->edition_team_a_id,
-            'runs' => 5,
         ])->assertSessionHasErrors('reason');
     }
 

@@ -6,6 +6,7 @@ use App\Models\GameMatch;
 use App\Models\Innings;
 use App\Models\ScoringEvent;
 use App\Models\User;
+use App\Services\Scoring\DeliveryService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -19,6 +20,8 @@ use Illuminate\Support\Facades\DB;
  */
 class InningsService
 {
+    public function __construct(private readonly DeliveryService $deliveries) {}
+
     /**
      * Innings #1's batting/bowling teams are derived from the toss, and
      * ONLY from the toss — never chosen manually. If the toss winner
@@ -74,7 +77,7 @@ class InningsService
 
             $teams = $this->determineFirstInningsTeams($locked);
 
-            Innings::create([
+            $innings = Innings::create([
                 'match_id' => $locked->id,
                 'innings_number' => 1,
                 'batting_team_id' => $teams['batting_team_id'],
@@ -85,6 +88,13 @@ class InningsService
                 // four to 0, so there is nothing meaningful to assign
                 // here beyond what the database already guarantees.
             ]);
+
+            // Any penalty runs already awarded to this team earlier in
+            // the match (before it had ever batted — frozen S02 penalty-
+            // accounting correction) must be part of its innings total
+            // from the very first read, not only once a Delivery is
+            // recorded.
+            $this->deliveries->recalculateInningsTotals($innings);
 
             return true;
         });
@@ -229,13 +239,18 @@ class InningsService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            Innings::create([
+            $innings = Innings::create([
                 'match_id' => $locked->id,
                 'innings_number' => 2,
                 'batting_team_id' => $firstInnings->bowling_team_id,
                 'bowling_team_id' => $firstInnings->batting_team_id,
                 'status' => 'live',
             ]);
+
+            // Same as startFirstInnings() — a penalty already awarded to
+            // this team while it was still fielding must be part of its
+            // total from the outset.
+            $this->deliveries->recalculateInningsTotals($innings);
 
             return true;
         });
