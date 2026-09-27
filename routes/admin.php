@@ -75,9 +75,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // entry, nested under its parent match instead.
         Route::prefix('matches/{match}')->name('matches.')->group(function () {
             Route::get('players', [MatchPlayerController::class, 'index'])->name('players.index');
-            Route::post('players', [MatchPlayerController::class, 'store'])->name('players.store');
+            // Bulk Playing XI selection — one team, exactly 11 players,
+            // one request; replaces the old one-player-at-a-time Add.
+            Route::post('players/sync', [MatchPlayerController::class, 'sync'])->name('players.sync');
             Route::patch('players/{matchPlayer}', [MatchPlayerController::class, 'update'])->name('players.update');
-            Route::delete('players/{matchPlayer}', [MatchPlayerController::class, 'destroy'])->name('players.destroy');
 
             // Match-day setup workflow (Phase 3.11) — explicit contextual
             // actions rather than a generic match_status update, so a

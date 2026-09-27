@@ -12,10 +12,12 @@ use App\Models\TeamPlayer;
 use App\Models\User;
 use App\Services\GameMatch\MatchFlowService;
 use App\Services\Innings\InningsService;
+use App\Services\MatchPlayer\MatchPlayerService;
 use App\Services\Scoring\DeliveryService;
 use App\Services\Scoring\ScorecardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 /**
@@ -139,23 +141,30 @@ class ScoringUpgradeTest extends TestCase
         $this->assertTrue(app(MatchFlowService::class)->canStartToss($match));
     }
 
+    /**
+     * MatchPlayerService::addPlayer() (still used directly by the demo
+     * seeders to build a Playing XI) independently enforces the max-11
+     * cap — exercised here at the service level, since the old one-
+     * player-at-a-time HTTP endpoint this test used to go through was
+     * replaced by bulk Playing XI selection (see MatchPlayerController::
+     * sync()), which the "more than eleven is rejected" coverage in
+     * MatchPlayerManagementTest now owns for the HTTP path.
+     */
     public function test_a_twelfth_player_cannot_be_added_to_the_playing_xi(): void
     {
         $match = GameMatch::factory()->create(['match_status' => 'scheduled']);
-        $teamPlayers = collect();
+        $matchPlayers = app(MatchPlayerService::class);
+
         for ($i = 0; $i < 11; $i++) {
             $teamPlayer = TeamPlayer::factory()->create(['edition_team_id' => $match->edition_team_a_id]);
-            $teamPlayers->push($teamPlayer);
-            $this->actingAs($this->admin())->post(route('admin.matches.players.store', $match), ['team_player_id' => $teamPlayer->id]);
+            $matchPlayers->addPlayer($match, $teamPlayer);
         }
         $this->assertSame(11, MatchPlayer::where('match_id', $match->id)->count());
 
         $twelfth = TeamPlayer::factory()->create(['edition_team_id' => $match->edition_team_a_id]);
-        $this->actingAs($this->admin())
-            ->post(route('admin.matches.players.store', $match), ['team_player_id' => $twelfth->id])
-            ->assertSessionHasErrors('team_player_id');
 
-        $this->assertSame(11, MatchPlayer::where('match_id', $match->id)->count());
+        $this->expectException(ValidationException::class);
+        $matchPlayers->addPlayer($match, $twelfth);
     }
 
     // ----- Rule 9: consecutive-over bowler hard-block -----

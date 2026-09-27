@@ -35,11 +35,6 @@ class MatchPlayerPolicy
         return $this->isAdminOrScorer($user);
     }
 
-    public function delete(User $user, MatchPlayer $matchPlayer): bool
-    {
-        return $this->isAdminOrScorer($user);
-    }
-
     private function isAdminOrScorer(User $user): bool
     {
         return in_array($user->role?->slug, ['admin', 'scorer'], true);

@@ -351,10 +351,15 @@ class MatchFinalizationTest extends TestCase
 
         $this->assertFalse(app(MatchPlayerService::class)->canModifyPlayingXI($fresh));
 
-        $teamPlayer = TeamPlayer::factory()->create(['edition_team_id' => $fresh->edition_team_a_id]);
+        $teamPlayerIds = collect(range(1, 11))
+            ->map(fn () => TeamPlayer::factory()->create(['edition_team_id' => $fresh->edition_team_a_id])->id)
+            ->all();
 
         $this->actingAs($this->admin())
-            ->post(route('admin.matches.players.store', $fresh), ['team_player_id' => $teamPlayer->id])
+            ->post(route('admin.matches.players.sync', $fresh), [
+                'edition_team_id' => $fresh->edition_team_a_id,
+                'team_player_ids' => $teamPlayerIds,
+            ])
             ->assertRedirect(route('admin.matches.players.index', $fresh))
             ->assertSessionHas('error');
     }
