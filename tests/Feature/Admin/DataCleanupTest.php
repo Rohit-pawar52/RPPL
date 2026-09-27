@@ -139,8 +139,14 @@ class DataCleanupTest extends TestCase
     {
         $admin = $this->admin();
 
+        // +2 days, not +1: the rejection check compares against "today"
+        // in system.display_timezone (default Asia/Kolkata, UTC+5:30),
+        // while now() here is the server/app timezone (UTC) — in the
+        // last ~5.5 hours of the UTC day, tomorrow-in-UTC is only
+        // "today" in Kolkata, so a +1 offset was flaky depending on
+        // wall-clock time when the suite ran.
         $response = $this->actingAs($admin)->delete(route('admin.data-cleanup.notifications.destroy'), [
-            'before_date' => now()->addDay()->toDateString(),
+            'before_date' => now()->addDays(2)->toDateString(),
         ]);
 
         $response->assertSessionHasErrors('before_date');

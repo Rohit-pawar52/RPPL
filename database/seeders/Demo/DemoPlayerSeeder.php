@@ -6,7 +6,7 @@ use App\Models\Player;
 use Illuminate\Database\Seeder;
 
 /**
- * ~45 reusable Player master records for the stakeholder demo dataset.
+ * ~69 reusable Player master records for the stakeholder demo dataset.
  * Names are believable Indian cricket-player-style names, not real
  * public figures and not the previous RpplDemoSeeder's real-IPL-player
  * names. Phone/email are synthetic (never real), derived deterministically
@@ -33,6 +33,11 @@ class DemoPlayerSeeder extends Seeder
         'Harish Sharma', 'Mahesh Verma', 'Dinesh Patil', 'Ganesh Deshmukh', 'Ravindra Kulkarni',
         'Jitendra Joshi', 'Devendra Pawar', 'Mukesh Shinde', 'Ashok Gaikwad', 'Sandeep Jadhav',
         'Pradeep More', 'Kuldeep Bhosale', 'Harshad Chavan', 'Nikhil Yadav', 'Tarun Singh',
+        'Rajat Kapoor', 'Sameer Bhatt', 'Alok Trivedi', 'Vinay Chauhan', 'Ashish Rawal',
+        'Ramanuj Naik', 'Girish Kamble', 'Suhas Gowda', 'Mohit Bansal', 'Rakesh Thakur',
+        'Yogesh Pillai', 'Bhushan Rane', 'Chetan Salvi', 'Nilesh Bhagat', 'Omkar Sawant',
+        'Parag Kale', 'Sachin Wagh', 'Tejas Naik', 'Uday Ghorpade', 'Vishal Dandekar',
+        'Waseem Ansari', 'Ketan Barve', 'Lalit Bhide', 'Manish Karve',
     ];
 
     /**
