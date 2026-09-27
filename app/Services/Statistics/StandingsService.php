@@ -50,15 +50,21 @@ class StandingsService
      * carefully-defined feature. Never approximated here with a naive
      * runs/overs calculation.
      *
-     * Only matches with match_status === 'completed' count. Among
-     * those, only result_type in [won, tied, no_result] are counted —
-     * 'abandoned' is deliberately excluded (no points rule for
-     * abandonment has been established anywhere in this project), and
-     * any match whose stored result fields are internally inconsistent
-     * (winner not one of the two participating teams, a tie/no-result
-     * with a non-null winner, a team reference outside this edition,
-     * team A === team B) is skipped rather than guessed at, with the
-     * count of such skipped matches reported back for admin visibility.
+     * Matches with match_status 'completed', 'abandoned', or 'cancelled'
+     * (frozen S02 rules 13/18) all count as played. A genuinely
+     * abandoned/no-result match, or a permanently cancelled one, awards
+     * 1 point to each team — the same treatment as the existing
+     * 'no_result' bucket, since both represent "played but not decided"
+     * for standings purposes. A rescheduled/postponed match is never in
+     * this state at all — it stays match_status = 'scheduled' (only its
+     * scheduled_at changes), so it is correctly excluded here without
+     * any special-casing. Among 'completed' matches, only result_type in
+     * [won, tied, no_result, abandoned] are counted; any match whose
+     * stored result fields are internally inconsistent (winner not one
+     * of the two participating teams, a tie/no-result with a non-null
+     * winner, a team reference outside this edition, team A === team B)
+     * is skipped rather than guessed at, with the count of such skipped
+     * matches reported back for admin visibility.
      *
      * @return array{standings: list<array<string, mixed>>, ignored_matches_count: int}
      */
@@ -82,8 +88,8 @@ class StandingsService
 
         $matches = GameMatch::query()
             ->where('edition_id', $edition->id)
-            ->where('match_status', 'completed')
-            ->get(['id', 'edition_team_a_id', 'edition_team_b_id', 'result_type', 'winner_team_id']);
+            ->whereIn('match_status', ['completed', 'abandoned', 'cancelled'])
+            ->get(['id', 'edition_team_a_id', 'edition_team_b_id', 'match_status', 'result_type', 'winner_team_id']);
 
         $ignoredMatchesCount = 0;
 
@@ -93,6 +99,16 @@ class StandingsService
 
             if ($teamAId === $teamBId || ! isset($rows[$teamAId]) || ! isset($rows[$teamBId])) {
                 $ignoredMatchesCount++;
+
+                continue;
+            }
+
+            if (in_array($match->match_status, ['abandoned', 'cancelled'], true)) {
+                foreach ([$teamAId, $teamBId] as $teamId) {
+                    $rows[$teamId]['played']++;
+                    $rows[$teamId]['no_result']++;
+                    $rows[$teamId]['points'] += self::NO_RESULT_POINTS;
+                }
 
                 continue;
             }
@@ -140,6 +156,11 @@ class StandingsService
                     break;
 
                 case 'no_result':
+                case 'abandoned':
+                    // A 'completed' match recorded with result_type
+                    // 'abandoned' is the same "played but not decided"
+                    // case as match_status='abandoned' above (frozen S02
+                    // rule 13) — both award 1 point each.
                     if ($match->winner_team_id !== null) {
                         $ignoredMatchesCount++;
 
@@ -155,9 +176,9 @@ class StandingsService
                     break;
 
                 default:
-                    // 'abandoned' (and any other/unset result_type on a
-                    // completed match) has no established points rule —
-                    // excluded rather than treated as a no-result guess.
+                    // Any other/unset result_type on a completed match
+                    // has no established points rule — excluded rather
+                    // than guessed at.
                     $ignoredMatchesCount++;
 
                     break;

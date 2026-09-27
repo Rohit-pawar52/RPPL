@@ -77,6 +77,19 @@ class StrikeRotationTest extends TestCase
     }
 
     /**
+     * A second bowler from the same team, for tests spanning more than
+     * one over — the same bowler cannot bowl consecutive overs (frozen
+     * S02 rule 9).
+     */
+    private function secondBowler(int $editionTeamId): MatchPlayer
+    {
+        return MatchPlayer::query()
+            ->whereHas('teamPlayer', fn ($q) => $q->where('edition_team_id', $editionTeamId))
+            ->skip(1)
+            ->firstOrFail();
+    }
+
+    /**
      * Submits exactly the given data — no auto-computed defaults — so
      * these tests can deliberately submit both correct and incorrect
      * striker/non-striker pairs.
@@ -223,6 +236,7 @@ class StrikeRotationTest extends TestCase
         $innings = $this->startInnings($match, 1, $match->edition_team_a_id, $match->edition_team_b_id);
         $batting = $this->battingPlayers($match->edition_team_a_id);
         $bowler = $this->bowler($match->edition_team_b_id);
+        $bowler2 = $this->secondBowler($match->edition_team_b_id);
         [$a, $b] = [$batting[0], $batting[1]];
 
         for ($i = 0; $i < 5; $i++) {
@@ -237,9 +251,10 @@ class StrikeRotationTest extends TestCase
             'runs_off_bat' => 0,
         ]);
         $this->assertSame(6, $innings->fresh()->legal_balls);
-        // The new over requires the SWAPPED pair.
+        // The new over requires the SWAPPED pair, and (frozen S02 rule 9)
+        // a different bowler than the one who bowled the first over.
         $this->submit($match, $innings, [
-            'striker_match_player_id' => $b->id, 'non_striker_match_player_id' => $a->id, 'bowler_match_player_id' => $bowler->id,
+            'striker_match_player_id' => $b->id, 'non_striker_match_player_id' => $a->id, 'bowler_match_player_id' => $bowler2->id,
             'runs_off_bat' => 0,
         ]);
 
@@ -248,17 +263,19 @@ class StrikeRotationTest extends TestCase
         // faced it also faces the next (third) over.
         for ($i = 0; $i < 4; $i++) {
             $this->submit($match, $innings, [
-                'striker_match_player_id' => $b->id, 'non_striker_match_player_id' => $a->id, 'bowler_match_player_id' => $bowler->id,
+                'striker_match_player_id' => $b->id, 'non_striker_match_player_id' => $a->id, 'bowler_match_player_id' => $bowler2->id,
                 'runs_off_bat' => 0,
             ]);
         }
         $this->submit($match, $innings, [
-            'striker_match_player_id' => $b->id, 'non_striker_match_player_id' => $a->id, 'bowler_match_player_id' => $bowler->id,
+            'striker_match_player_id' => $b->id, 'non_striker_match_player_id' => $a->id, 'bowler_match_player_id' => $bowler2->id,
             'runs_off_bat' => 1, // odd run on the 6th (over-ending) ball
         ]);
         $this->assertSame(12, $innings->fresh()->legal_balls);
 
         // Third over: no net swap, so $b (unchanged) is still on strike.
+        // Back to $bowler — different from $bowler2, who bowled the over
+        // immediately before this one.
         $this->submit($match, $innings, [
             'striker_match_player_id' => $b->id, 'non_striker_match_player_id' => $a->id, 'bowler_match_player_id' => $bowler->id,
             'runs_off_bat' => 0,
@@ -326,6 +343,7 @@ class StrikeRotationTest extends TestCase
         $innings = $this->startInnings($match, 1, $match->edition_team_a_id, $match->edition_team_b_id);
         $batting = $this->battingPlayers($match->edition_team_a_id);
         $bowler = $this->bowler($match->edition_team_b_id);
+        $bowler2 = $this->secondBowler($match->edition_team_b_id);
         [$a, $b, $c] = [$batting[0], $batting[1], $batting[2]];
 
         for ($i = 0; $i < 5; $i++) {
@@ -343,9 +361,10 @@ class StrikeRotationTest extends TestCase
         // Ignoring the wicket, 0 runs + over-end would put B on strike
         // for the new over. Since A (not B) was the one dismissed, B
         // keeps that same striker slot, and the new batter (C) fills
-        // the vacant non-striker end.
+        // the vacant non-striker end. A different bowler than the first
+        // over's, per frozen S02 rule 9.
         $this->submit($match, $innings, [
-            'striker_match_player_id' => $b->id, 'non_striker_match_player_id' => $c->id, 'bowler_match_player_id' => $bowler->id,
+            'striker_match_player_id' => $b->id, 'non_striker_match_player_id' => $c->id, 'bowler_match_player_id' => $bowler2->id,
             'runs_off_bat' => 0,
         ]);
 

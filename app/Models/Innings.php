@@ -38,15 +38,30 @@ class Innings extends Model
         'batting_team_id',
         'bowling_team_id',
         'status',
+        'completion_type',
+        'completion_reason',
         'legal_balls',
         'total_runs',
         'total_wickets',
         'extras',
+        'pending_state',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'pending_state' => 'array',
+        ];
+    }
 
     public function match(): BelongsTo
     {
         return $this->belongsTo(GameMatch::class, 'match_id');
+    }
+
+    public function scoringEvents(): HasMany
+    {
+        return $this->hasMany(ScoringEvent::class);
     }
 
     public function battingTeam(): BelongsTo

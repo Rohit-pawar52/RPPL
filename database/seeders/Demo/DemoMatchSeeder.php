@@ -166,7 +166,7 @@ class DemoMatchSeeder extends Seeder
         // Only a handful of deliveries — this is the ONE match left
         // genuinely "in progress" for the live scoring / public live page
         // demo, deliberately never completed or finalized.
-        $this->playAutomatedInnings($match->fresh(), $firstInnings, $xiA, $xiB->first(), maxWicketsToFall: 1, offset: 0, maxDeliveries: 5);
+        $this->playAutomatedInnings($match->fresh(), $firstInnings, $xiA, $xiB, maxWicketsToFall: 1, offset: 0, maxDeliveries: 5);
     }
 
     private function playAbandonedMatch(Edition $edition, EditionTeam $teamA, EditionTeam $teamB, Venue $venue, int $matchNumber, \DateTimeInterface $scheduledAt): void
@@ -175,7 +175,7 @@ class DemoMatchSeeder extends Seeder
 
         $firstInnings = $this->startFirstInnings($match);
 
-        $this->playAutomatedInnings($match->fresh(), $firstInnings, $xiA, $xiB->first(), maxWicketsToFall: 1, offset: 2, maxDeliveries: 6);
+        $this->playAutomatedInnings($match->fresh(), $firstInnings, $xiA, $xiB, maxWicketsToFall: 1, offset: 2, maxDeliveries: 6);
 
         // Abandoned with partial delivery history — MatchFlowService never
         // touches Innings/Delivery rows, so that history is left exactly
@@ -188,13 +188,13 @@ class DemoMatchSeeder extends Seeder
         [$match, $xiA, $xiB] = $this->setUpAndStartMatch($edition, $teamA, $teamB, $venue, $matchNumber, $scheduledAt);
 
         $firstInnings = $this->startFirstInnings($match);
-        $this->playAutomatedInnings($match->fresh(), $firstInnings, $xiA, $xiB->first(), maxWicketsToFall: 3, offset: $offset);
+        $this->playAutomatedInnings($match->fresh(), $firstInnings, $xiA, $xiB, maxWicketsToFall: 3, offset: $offset);
 
         $this->assert($this->innings->canStartSecondInnings($match->fresh()), 'canStartSecondInnings', $match);
         $this->assert($this->innings->startSecondInnings($match->fresh()), 'startSecondInnings', $match);
 
         $secondInnings = Innings::where('match_id', $match->id)->where('innings_number', 2)->firstOrFail();
-        $this->playAutomatedInnings($match->fresh(), $secondInnings, $xiB, $xiA->first(), maxWicketsToFall: 3, offset: $offset + 20);
+        $this->playAutomatedInnings($match->fresh(), $secondInnings, $xiB, $xiA, maxWicketsToFall: 3, offset: $offset + 20);
 
         $this->assert($this->results->finalizeMatch($match->fresh()), 'finalizeMatch', $match);
     }
@@ -227,9 +227,13 @@ class DemoMatchSeeder extends Seeder
     }
 
     /**
-     * Selects the whole squad as the Playing XI (no "exactly 11" rule
-     * exists anywhere in this project — see MatchFlowService's docblock),
-     * names a captain and, when the squad has one, a wicket-keeper.
+     * Selects the whole squad as the Playing XI, names a captain and,
+     * when the squad has one, a wicket-keeper. DemoRegistrationSeeder
+     * squads each demo team with exactly 11 players precisely so this
+     * produces a valid Playing XI under the S02 frozen rule that
+     * MatchFlowService::canStartToss() enforces (exactly 11 per side,
+     * never configurable) — addPlayer() would reject a 12th player and
+     * startToss() would reject fewer than 11.
      *
      * @return Collection<int, MatchPlayer> in squad (batting) order
      */
@@ -265,14 +269,24 @@ class DemoMatchSeeder extends Seeder
      * score — every outcome this produces (won by runs, won by wickets,
      * tied) is a genuine, service-derived result, never chosen up front.
      *
+     * $bowlingXi supplies the fielding side's bowlers, rotated round-robin
+     * every time a new over starts (first ball, or expectedBattingState()
+     * reports awaiting_new_over_bowler) — a fixed single bowler for the
+     * whole innings would violate the S02 frozen rule that the same
+     * bowler cannot bowl two overs in a row
+     * (DeliveryService::assertNoConsecutiveOverBowler()).
+     *
      * @param  Collection<int, MatchPlayer>  $battingXi
+     * @param  Collection<int, MatchPlayer>  $bowlingXi
      */
-    private function playAutomatedInnings(GameMatch $match, Innings $innings, Collection $battingXi, MatchPlayer $bowler, int $maxWicketsToFall, int $offset, ?int $maxDeliveries = null): void
+    private function playAutomatedInnings(GameMatch $match, Innings $innings, Collection $battingXi, Collection $bowlingXi, int $maxWicketsToFall, int $offset, ?int $maxDeliveries = null): void
     {
         $nextBatterIndex = 2;
         $wicketsSoFar = 0;
         $delivered = 0;
         $ballCounter = $offset;
+        $bowlerRotationIndex = 0;
+        $currentBowlerId = null;
 
         while ($this->deliveries->canRecordDelivery($match, $innings->fresh())) {
             if ($maxDeliveries !== null && $delivered >= $maxDeliveries) {
@@ -282,6 +296,11 @@ class DemoMatchSeeder extends Seeder
             $freshInnings = $innings->fresh();
             $state = $this->deliveries->expectedBattingState($freshInnings);
             $ballCounter++;
+
+            if ($state['first_ball'] || $state['awaiting_new_over_bowler']) {
+                $currentBowlerId = $bowlingXi[$bowlerRotationIndex % $bowlingXi->count()]->id;
+                $bowlerRotationIndex++;
+            }
 
             if ($state['first_ball']) {
                 $strikerId = $battingXi[0]->id;
@@ -309,7 +328,11 @@ class DemoMatchSeeder extends Seeder
                 $nonStrikerId = $state['non_striker_id'];
             }
 
-            $isWicketBall = $wicketsSoFar < $maxWicketsToFall && $ballCounter % 5 === 0;
+            // A free hit (the ball right after a no-ball) only allows a
+            // run-out dismissal — never bowled/caught/etc — so the
+            // scripted pattern must never land its deterministic "wicket
+            // ball" here.
+            $isWicketBall = ! $this->deliveries->isFreeHit($freshInnings) && $wicketsSoFar < $maxWicketsToFall && $ballCounter % 5 === 0;
             $extraType = null;
             $extraAmount = 0;
             $runsOffBat = 0;
@@ -333,7 +356,7 @@ class DemoMatchSeeder extends Seeder
             $data = [
                 'striker_match_player_id' => $strikerId,
                 'non_striker_match_player_id' => $nonStrikerId,
-                'bowler_match_player_id' => $bowler->id,
+                'bowler_match_player_id' => $currentBowlerId,
                 'runs_off_bat' => $runsOffBat,
                 'extra_type' => $extraType,
                 'extra_amount' => $extraAmount,

@@ -68,7 +68,28 @@ class LiveMatchTest extends TestCase
             'team_player_id' => TeamPlayer::factory()->create(['edition_team_id' => $teamB->id, 'player_registration_id' => $bowlerRegistration->id])->id,
         ]);
 
-        return [$match->fresh(), $innings->fresh(), $striker, $nonStriker, $bowler, $batter, $bowlerPlayer];
+        // A second bowler so multi-over test loops can alternate ends
+        // (frozen S02 rule 9: the same bowler cannot bowl consecutive
+        // overs) without affecting any assertion — none of these tests
+        // care which bowler bowled which ball.
+        $bowler2 = MatchPlayer::factory()->create([
+            'match_id' => $match->id,
+            'team_player_id' => TeamPlayer::factory()->create(['edition_team_id' => $teamB->id])->id,
+        ]);
+
+        return [$match->fresh(), $innings->fresh(), $striker, $nonStriker, $bowler, $batter, $bowlerPlayer, $bowler2];
+    }
+
+    /**
+     * The correct bowler for the delivery about to be recorded — the
+     * given bowler for the first over, alternating with $altBowler on
+     * every subsequent over (frozen S02 rule 9).
+     */
+    private function bowlerForOver(Innings $innings, MatchPlayer $bowler, MatchPlayer $altBowler): MatchPlayer
+    {
+        $overNumber = intdiv($innings->fresh()->legal_balls, 6);
+
+        return $overNumber % 2 === 0 ? $bowler : $altBowler;
     }
 
     /**
@@ -181,10 +202,11 @@ class LiveMatchTest extends TestCase
 
     public function test_live_page_uses_cached_innings_score_and_overs_notation(): void
     {
-        [$match, $innings, $striker, $nonStriker, $bowler] = $this->matchWithInningsAndPlayers();
+        [$match, $innings, $striker, $nonStriker, $bowler, , , $bowler2] = $this->matchWithInningsAndPlayers();
         for ($i = 0; $i < 7; $i++) {
             $this->ball($match, $innings, [
-                'striker_match_player_id' => $striker->id, 'non_striker_match_player_id' => $nonStriker->id, 'bowler_match_player_id' => $bowler->id,
+                'striker_match_player_id' => $striker->id, 'non_striker_match_player_id' => $nonStriker->id,
+                'bowler_match_player_id' => $this->bowlerForOver($innings, $bowler, $bowler2)->id,
                 'runs_off_bat' => 0,
             ]);
         }
@@ -221,11 +243,14 @@ class LiveMatchTest extends TestCase
 
     public function test_recent_deliveries_window_is_bounded(): void
     {
-        [$match, $innings, $striker, $nonStriker, $bowler] = $this->matchWithInningsAndPlayers();
-        $base = ['striker_match_player_id' => $striker->id, 'non_striker_match_player_id' => $nonStriker->id, 'bowler_match_player_id' => $bowler->id];
+        [$match, $innings, $striker, $nonStriker, $bowler, , , $bowler2] = $this->matchWithInningsAndPlayers();
+        $base = ['striker_match_player_id' => $striker->id, 'non_striker_match_player_id' => $nonStriker->id];
 
         foreach (range(1, 35) as $i) {
-            $this->ball($match, $innings, array_merge($base, ['runs_off_bat' => 0]));
+            $this->ball($match, $innings, array_merge($base, [
+                'bowler_match_player_id' => $this->bowlerForOver($innings, $bowler, $bowler2)->id,
+                'runs_off_bat' => 0,
+            ]));
         }
 
         $json = $this->getJson(route('public.matches.live-data', $match))->json();
@@ -316,15 +341,19 @@ class LiveMatchTest extends TestCase
 
     public function test_live_data_endpoint_query_count_stays_bounded_as_deliveries_grow(): void
     {
-        [$match, $innings, $striker, $nonStriker, $bowler] = $this->matchWithInningsAndPlayers();
-        $base = ['striker_match_player_id' => $striker->id, 'non_striker_match_player_id' => $nonStriker->id, 'bowler_match_player_id' => $bowler->id];
+        [$match, $innings, $striker, $nonStriker, $bowler, , , $bowler2] = $this->matchWithInningsAndPlayers();
+        $base = ['striker_match_player_id' => $striker->id, 'non_striker_match_player_id' => $nonStriker->id];
 
         // Runs off bat stay even (Phase 3.33: an odd run rotates strike),
         // so the same fixed striker/non-striker pair remains valid for
         // all 30 balls — this test only cares about query counts, not
-        // the specific runs scored.
+        // the specific runs scored. Bowler alternates by over (frozen
+        // S02 rule 9).
         foreach (range(1, 30) as $i) {
-            $this->ball($match, $innings, array_merge($base, ['runs_off_bat' => 0]));
+            $this->ball($match, $innings, array_merge($base, [
+                'bowler_match_player_id' => $this->bowlerForOver($innings, $bowler, $bowler2)->id,
+                'runs_off_bat' => 0,
+            ]));
         }
 
         DB::enableQueryLog();

@@ -21,18 +21,16 @@ class MatchFlowService
 {
     /**
      * Toss may be started only from 'scheduled', only before any
-     * Innings exists, and only once both participating teams have at
-     * least one selected MatchPlayer. There is deliberately no "exactly
-     * 11 players" rule here — no such tournament-size requirement is
-     * established anywhere else in this project yet, so none is
-     * invented for this phase.
+     * Innings exists, and only once both participating teams have
+     * exactly 11 selected MatchPlayers (frozen S02 rule: Playing XI is
+     * always exactly 11 — no configurable players-per-side).
      */
     public function canStartToss(GameMatch $match): bool
     {
         return $match->match_status === 'scheduled'
             && ! $this->hasInnings($match)
-            && $this->teamHasSelectedPlayers($match, $match->edition_team_a_id)
-            && $this->teamHasSelectedPlayers($match, $match->edition_team_b_id);
+            && $this->teamHasExactlyElevenPlayers($match, $match->edition_team_a_id)
+            && $this->teamHasExactlyElevenPlayers($match, $match->edition_team_b_id);
     }
 
     /**
@@ -83,7 +81,7 @@ class MatchFlowService
 
     /**
      * The match may start only from 'toss', with both toss fields set,
-     * both teams still having at least one selected player, and no
+     * both teams still having exactly 11 selected players, and no
      * Innings yet.
      */
     public function canStartMatch(GameMatch $match): bool
@@ -92,8 +90,8 @@ class MatchFlowService
             && $match->toss_winner_team_id !== null
             && $match->toss_decision !== null
             && ! $this->hasInnings($match)
-            && $this->teamHasSelectedPlayers($match, $match->edition_team_a_id)
-            && $this->teamHasSelectedPlayers($match, $match->edition_team_b_id);
+            && $this->teamHasExactlyElevenPlayers($match, $match->edition_team_a_id)
+            && $this->teamHasExactlyElevenPlayers($match, $match->edition_team_b_id);
     }
 
     /**
@@ -210,10 +208,14 @@ class MatchFlowService
         return $match->innings()->exists();
     }
 
-    private function teamHasSelectedPlayers(GameMatch $match, int $editionTeamId): bool
+    /**
+     * Frozen S02 rule 1: the Playing XI is always exactly 11 — never
+     * fewer, never more, and never configurable per match/edition.
+     */
+    private function teamHasExactlyElevenPlayers(GameMatch $match, int $editionTeamId): bool
     {
         return $match->matchPlayers()
             ->whereHas('teamPlayer', fn ($query) => $query->where('edition_team_id', $editionTeamId))
-            ->exists();
+            ->count() === 11;
     }
 }
