@@ -87,8 +87,12 @@ class DemoRegistrationSeeder extends Seeder
     }
 
     /**
-     * 4 teams x 6 players = squads for players[0..23], all paid except
+     * 4 teams x 11 players = squads for players[0..43], all paid except
      * one refunded (realistic wrap-up variety for a completed season).
+     * 11 per team — not a smaller "sample" squad — because the S02
+     * frozen scoring rules require exactly 11 players per side to start
+     * a toss (MatchFlowService::canStartToss()), and DemoMatchSeeder
+     * drives every demo match through that same real service.
      *
      * The `! $registration->teamPlayer()->exists()` guard around
      * createTeamPlayer() (here and in seedActiveEdition()) makes a
@@ -103,9 +107,9 @@ class DemoRegistrationSeeder extends Seeder
         $playerIndex = 0;
 
         foreach ($editionTeams as $editionTeam) {
-            for ($jersey = 1; $jersey <= 6; $jersey++) {
+            for ($jersey = 1; $jersey <= 11; $jersey++) {
                 $player = $players[$playerIndex];
-                $isLast = $playerIndex === 23;
+                $isLast = $playerIndex === 43;
 
                 $registration = $this->register($edition, $player, $isLast ? 'refunded' : 'paid', monthsAgo: 14);
 
@@ -124,14 +128,15 @@ class DemoRegistrationSeeder extends Seeder
     }
 
     /**
-     * 6 teams x 7 players = squads for players[0..41] (paid), plus 3 more
-     * registrations (players[42..44]) left unsquadded to demonstrate
+     * 6 teams x 11 players = squads for players[0..65] (paid), plus 3 more
+     * registrations (players[66..68]) left unsquadded to demonstrate
      * pending/failed/refunded payment variety on the currently-open
-     * edition. The very first registration created here (team 1, jersey
-     * 1 — a deterministic, always-the-same-row pick across reruns) is
-     * also the one demo registration that gets a payment-proof document
-     * attached — see attachDemoPaymentProof()'s docblock and the class
-     * docblock above for why.
+     * edition. 11 per team for the same reason as seedHistoricalEdition()
+     * — see its docblock. The very first registration created here
+     * (team 1, jersey 1 — a deterministic, always-the-same-row pick
+     * across reruns) is also the one demo registration that gets a
+     * payment-proof document attached — see attachDemoPaymentProof()'s
+     * docblock and the class docblock above for why.
      */
     private function seedActiveEdition(Edition $edition, $editionTeams, $players): void
     {
@@ -139,7 +144,7 @@ class DemoRegistrationSeeder extends Seeder
         $demoDocumentRegistration = null;
 
         foreach ($editionTeams as $editionTeam) {
-            for ($jersey = 1; $jersey <= 7; $jersey++) {
+            for ($jersey = 1; $jersey <= 11; $jersey++) {
                 $player = $players[$playerIndex];
 
                 $registration = $this->register($edition, $player, 'paid', monthsAgo: 2);
@@ -159,9 +164,9 @@ class DemoRegistrationSeeder extends Seeder
             }
         }
 
-        $this->register($edition, $players[42], 'pending', monthsAgo: 1);
-        $this->register($edition, $players[43], 'failed', monthsAgo: 1);
-        $this->register($edition, $players[44], 'refunded', monthsAgo: 1);
+        $this->register($edition, $players[66], 'pending', monthsAgo: 1);
+        $this->register($edition, $players[67], 'failed', monthsAgo: 1);
+        $this->register($edition, $players[68], 'refunded', monthsAgo: 1);
 
         $this->attachDemoPaymentProof($demoDocumentRegistration);
     }

@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Events\MatchScoreUpdated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\GameMatch\RecordTossRequest;
+use App\Http\Requests\Admin\GameMatch\ReopenMatchRequest;
+use App\Http\Requests\Admin\GameMatch\SuperOverResultRequest;
+use App\Models\EditionTeam;
 use App\Models\GameMatch;
 use App\Services\GameMatch\MatchFlowService;
 use App\Services\GameMatch\MatchResultService;
@@ -133,6 +136,48 @@ class MatchFlowController extends Controller
         return redirect()
             ->route('admin.matches.show', $match)
             ->with('success', 'Match finalized successfully.');
+    }
+
+    /**
+     * Tied Match / Super Over (frozen S02 rule 7).
+     */
+    public function recordSuperOverResult(SuperOverResultRequest $request, GameMatch $match): RedirectResponse
+    {
+        $this->authorize('finalizeResult', $match);
+
+        $winner = EditionTeam::findOrFail($request->validated('winner_team_id'));
+
+        if (! $this->results->recordSuperOverResult($match, $winner, $request->validated('reason'), $request->user())) {
+            return redirect()
+                ->route('admin.matches.show', $match)
+                ->with('error', 'A Super Over result can only be recorded for a match tied after both innings are completed.');
+        }
+
+        $this->broadcastMatchUpdated($match->id);
+
+        return redirect()
+            ->route('admin.matches.show', $match)
+            ->with('success', 'Super Over result recorded successfully.');
+    }
+
+    /**
+     * Reopen a finalized match (frozen S02 rule 17) — admin only.
+     */
+    public function reopen(ReopenMatchRequest $request, GameMatch $match): RedirectResponse
+    {
+        $this->authorize('reopenResult', $match);
+
+        if (! $this->results->reopenMatch($match, $request->validated('reason'), $request->user())) {
+            return redirect()
+                ->route('admin.matches.show', $match)
+                ->with('error', 'This match cannot be reopened right now.');
+        }
+
+        $this->broadcastMatchUpdated($match->id);
+
+        return redirect()
+            ->route('admin.matches.show', $match)
+            ->with('success', 'Match reopened for correction.');
     }
 
     /**

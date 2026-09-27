@@ -97,12 +97,22 @@ Route::prefix('admin')->name('admin.')->group(function () {
             // completed innings totals, never chosen by the admin/scorer.
             Route::post('finalize', [MatchFlowController::class, 'finalize'])->name('finalize');
 
+            // Tied Match / Super Over and Reopen Finalized Match (S02
+            // rules 7/17) — explicit actions, distinct from finalize().
+            Route::post('super-over', [MatchFlowController::class, 'recordSuperOverResult'])->name('super-over');
+            Route::post('reopen', [MatchFlowController::class, 'reopen'])->name('reopen');
+
             // Innings lifecycle (Phase 3.12) — explicit workflow actions,
             // not Route::resource('innings'): innings identity is derived
             // domain data, never a generic create/edit form.
             Route::post('innings/first/start', [InningsController::class, 'startFirst'])->name('innings.first.start');
             Route::post('innings/{innings}/complete', [InningsController::class, 'complete'])->name('innings.complete');
+            Route::post('innings/{innings}/reopen', [InningsController::class, 'reopen'])->name('innings.reopen');
             Route::post('innings/second/start', [InningsController::class, 'startSecond'])->name('innings.second.start');
+
+            // Explicit Start Innings setup (S02 completion rule A) —
+            // confirms opening striker/non-striker/bowler; no Delivery.
+            Route::post('innings/{innings}/setup', [InningsController::class, 'setupOpeningState'])->name('innings.setup');
 
             // Ball-by-ball scoring (Phase 3.13) — no generic Delivery
             // resource controller; "undo" is the only correction path,
@@ -110,6 +120,20 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('innings/{innings}/score', [ScoringController::class, 'show'])->name('innings.score');
             Route::post('innings/{innings}/deliveries', [ScoringController::class, 'store'])->name('innings.deliveries.store');
             Route::delete('innings/{innings}/deliveries/latest', [ScoringController::class, 'undoLatest'])->name('innings.deliveries.undo-latest');
+
+            // Non-delivery scoring events (S02 rules 4/5/6/20) — never
+            // create a Delivery row; each is its own reasoned, audited
+            // action rather than a generic "scoring event" endpoint.
+            Route::post('innings/{innings}/change-strike', [ScoringController::class, 'changeStrike'])->name('innings.change-strike');
+            Route::post('innings/{innings}/retire-batter', [ScoringController::class, 'retireBatter'])->name('innings.retire-batter');
+            Route::post('innings/{innings}/penalty-runs', [ScoringController::class, 'awardPenaltyRuns'])->name('innings.penalty-runs');
+
+            // New Batter / New Over Bowler / Mid-Over Bowler Change (S02
+            // completion rules C/D/E) — normal-flow continuations (no
+            // reason) vs. an explicit, reasoned correction, respectively.
+            Route::post('innings/{innings}/select-new-batter', [ScoringController::class, 'selectNewBatter'])->name('innings.select-new-batter');
+            Route::post('innings/{innings}/select-over-bowler', [ScoringController::class, 'selectOverBowler'])->name('innings.select-over-bowler');
+            Route::post('innings/{innings}/change-bowler', [ScoringController::class, 'changeBowlerMidOver'])->name('innings.change-bowler');
 
             // Read-only match scorecard (Phase 3.14) — no writes.
             Route::get('scorecard', [ScorecardController::class, 'show'])->name('scorecard');

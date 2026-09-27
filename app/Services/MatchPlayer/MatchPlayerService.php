@@ -39,7 +39,11 @@ class MatchPlayerService
      * data before writing — the core rule of this phase, the one this
      * project was explicitly asked not to rely on UI filtering alone
      * for — as cheap insurance against a future caller skipping the
-     * FormRequest.
+     * FormRequest. Also caps this team's selection at 11 (frozen S02
+     * rule 1: the Playing XI is always exactly 11, never configurable)
+     * — MatchFlowService/InningsService separately refuse to start a
+     * toss/match/innings with fewer than 11, so together the two ends
+     * of the range are enforced.
      */
     public function addPlayer(GameMatch $match, TeamPlayer $teamPlayer): MatchPlayer
     {
@@ -48,6 +52,17 @@ class MatchPlayerService
         if (! in_array($teamPlayer->edition_team_id, $participatingTeamIds, true)) {
             throw ValidationException::withMessages([
                 'team_player_id' => 'The selected player does not belong to either team in this match.',
+            ]);
+        }
+
+        $alreadySelected = MatchPlayer::query()
+            ->where('match_id', $match->id)
+            ->whereHas('teamPlayer', fn ($query) => $query->where('edition_team_id', $teamPlayer->edition_team_id))
+            ->count();
+
+        if ($alreadySelected >= 11) {
+            throw ValidationException::withMessages([
+                'team_player_id' => 'This team already has 11 players selected — the Playing XI cannot exceed 11.',
             ]);
         }
 

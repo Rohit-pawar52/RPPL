@@ -51,6 +51,8 @@ class GameMatch extends Model
         'match_result',
         'winner_team_id',
         'result_type',
+        'result_source',
+        'result_note',
         'win_margin_type',
         'win_margin',
     ];
