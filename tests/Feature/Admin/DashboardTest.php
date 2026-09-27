@@ -80,7 +80,7 @@ class DashboardTest extends TestCase
 
     public function test_summary_counts_are_scoped_to_the_selected_edition(): void
     {
-        $edition = Edition::factory()->create(['status' => 'active']);
+        $edition = Edition::factory()->create(['status' => 'active', 'year' => 2030]);
         $otherEdition = Edition::factory()->create(['status' => 'completed', 'year' => 2020]);
 
         $teamA = EditionTeam::factory()->create(['edition_id' => $edition->id]);
@@ -110,7 +110,7 @@ class DashboardTest extends TestCase
 
     public function test_matches_needing_attention_prioritizes_live_toss_then_scheduled_and_is_bounded(): void
     {
-        $edition = Edition::factory()->create(['status' => 'active']);
+        $edition = Edition::factory()->create(['status' => 'active', 'year' => 2031]);
         $teamA = EditionTeam::factory()->create(['edition_id' => $edition->id]);
         $teamB = EditionTeam::factory()->create(['edition_id' => $edition->id]);
 
@@ -142,7 +142,7 @@ class DashboardTest extends TestCase
 
     public function test_recent_results_show_stored_result_for_completed_matches_only(): void
     {
-        $edition = Edition::factory()->create(['status' => 'active']);
+        $edition = Edition::factory()->create(['status' => 'active', 'year' => 2032]);
         $teamA = EditionTeam::factory()->create(['edition_id' => $edition->id]);
         $teamB = EditionTeam::factory()->create(['edition_id' => $edition->id]);
 
@@ -192,7 +192,7 @@ class DashboardTest extends TestCase
      */
     public function test_payment_finance_and_contribution_metrics_are_correct_and_edition_scoped(): void
     {
-        $edition = Edition::factory()->create(['status' => 'active']);
+        $edition = Edition::factory()->create(['status' => 'active', 'year' => 2033]);
 
         // Paid rows with DIFFERENT stored fees — proves the total is a
         // sum of actual stored values, not edition fee x paid count.
@@ -248,7 +248,7 @@ class DashboardTest extends TestCase
      */
     public function test_dashboard_action_links_use_existing_routes_with_correct_edition_and_status_filters(): void
     {
-        $edition = Edition::factory()->create(['status' => 'active']);
+        $edition = Edition::factory()->create(['status' => 'active', 'year' => 2034]);
         PlayerRegistration::factory()->create(['edition_id' => $edition->id, 'payment_status' => 'pending']);
 
         $response = $this->actingAs($this->admin())->get(route('admin.dashboard'));
@@ -268,7 +268,7 @@ class DashboardTest extends TestCase
 
     public function test_zero_data_edition_renders_clean_zero_values_without_errors(): void
     {
-        Edition::factory()->create(['status' => 'active']);
+        Edition::factory()->create(['status' => 'active', 'year' => 2035]);
 
         $response = $this->actingAs($this->admin())->get(route('admin.dashboard'));
 
