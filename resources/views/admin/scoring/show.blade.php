@@ -57,6 +57,90 @@
                 Free Hit — only Run Out or Obstructing the Field may dismiss the batter
             </p>
         @endif
+
+        <p id="scorer-crr" class="mt-2 text-xs text-neutral-500">CRR {{ number_format($liveState['innings']['crr'], 2) }}</p>
+    </div>
+
+    {{-- Frozen S02 rules 50-61: the live scorer-state panels. Server-
+         rendered from $liveState for a fast first paint; admin-scoring.js
+         re-renders these same elements from the identical JSON shape
+         after every quick action, poll, and realtime signal — never a
+         second, independently-computed source of truth. --}}
+    <div
+        id="scorer-root"
+        data-match-id="{{ $match->id }}"
+        data-score-data-url="{{ route('admin.matches.innings.score-data', [$match, $innings]) }}"
+        data-store-url="{{ route('admin.matches.innings.deliveries.store', [$match, $innings]) }}"
+        data-undo-url="{{ route('admin.matches.innings.deliveries.undo-latest', [$match, $innings]) }}"
+        data-correct-url-base="{{ url('admin/matches/'.$match->id.'/innings/'.$innings->id.'/deliveries') }}"
+        data-batting-options="{{ $battingOptions->toJson() }}"
+        data-bowling-options="{{ $bowlingOptions->toJson() }}"
+        data-wicket-types="{{ collect($wicketTypes)->mapWithKeys(fn ($type) => [$type => ucwords(str_replace('_', ' ', $type))])->toJson() }}"
+    >
+        <div id="scorer-chase" class="mt-3 rounded-lg border border-neutral-200 bg-white p-3 text-xs text-neutral-600" @unless($liveState['chase']) hidden @endif>
+            @if($liveState['chase'])
+                @include('admin.scoring._chase', ['chase' => $liveState['chase']])
+            @endif
+        </div>
+
+        <div class="mt-3 grid gap-3 sm:grid-cols-3">
+            <div class="rounded-lg border border-neutral-200 bg-white p-3">
+                <h4 class="text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Striker</h4>
+                <div id="scorer-striker" class="mt-1 text-[13px] text-neutral-800">@include('admin.scoring._batter-figure', ['player' => $liveState['striker']])</div>
+            </div>
+            <div class="rounded-lg border border-neutral-200 bg-white p-3">
+                <h4 class="text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Non-Striker</h4>
+                <div id="scorer-non-striker" class="mt-1 text-[13px] text-neutral-800">@include('admin.scoring._batter-figure', ['player' => $liveState['non_striker']])</div>
+            </div>
+            <div class="rounded-lg border border-neutral-200 bg-white p-3">
+                <h4 class="text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Bowler</h4>
+                <div id="scorer-bowler" class="mt-1 text-[13px] text-neutral-800">@include('admin.scoring._bowler-figure', ['player' => $liveState['bowler']])</div>
+            </div>
+        </div>
+
+        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+            <p id="scorer-partnership" class="rounded-lg border border-neutral-200 bg-white p-3 text-xs text-neutral-600">
+                Partnership: <span class="font-medium text-neutral-800">{{ $liveState['partnership']['runs'] }} runs ({{ $liveState['partnership']['balls'] }} balls)</span>
+            </p>
+            <p id="scorer-last-wicket" class="rounded-lg border border-neutral-200 bg-white p-3 text-xs text-neutral-600">
+                @include('admin.scoring._last-wicket', ['lastWicket' => $liveState['last_wicket']])
+            </p>
+        </div>
+
+        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+            <div class="rounded-lg border border-neutral-200 bg-white p-3">
+                <h4 class="text-[10px] font-semibold uppercase tracking-wide text-neutral-400">This Over</h4>
+                <div id="scorer-this-over" class="mt-1.5 flex flex-wrap gap-1">@include('admin.scoring._over-strip', ['over' => $liveState['this_over']])</div>
+            </div>
+            <div class="rounded-lg border border-neutral-200 bg-white p-3">
+                <h4 class="text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Previous Over</h4>
+                <div id="scorer-previous-over" class="mt-1.5 flex flex-wrap gap-1">@include('admin.scoring._over-strip', ['over' => $liveState['previous_over']])</div>
+            </div>
+        </div>
+
+        <div id="scorer-correction-panel" class="mt-3 hidden rounded-lg border border-amber-200 bg-amber-50 p-3"></div>
+
+        @if($canRecordDelivery && ! $awaitingSetup && ! $expectedBattingState['requires_replacement'] && ! $expectedBattingState['awaiting_new_over_bowler'])
+            <div id="scorer-quick-pad" class="mt-3 rounded-lg border border-neutral-200 bg-white p-3">
+                <div class="grid grid-cols-4 gap-2 sm:grid-cols-9">
+                    @foreach(['0','1','2','3','4','6'] as $run)
+                        <button type="button" class="scorer-quick-run rounded-md border border-neutral-200 py-3 text-base font-semibold text-neutral-800 hover:bg-neutral-50 active:bg-neutral-100" data-runs="{{ $run }}">{{ $run }}</button>
+                    @endforeach
+                    <button type="button" id="scorer-quick-wide" class="relative rounded-md border border-amber-200 bg-amber-50 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-100">
+                        Wd
+                        <span data-extra-runs-for="wide" class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-amber-600 ring-1 ring-amber-300" title="Add extra physically-run runs">+</span>
+                    </button>
+                    <button type="button" id="scorer-quick-noball" class="relative rounded-md border border-amber-200 bg-amber-50 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-100">
+                        Nb
+                        <span data-extra-runs-for="no_ball" class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-amber-600 ring-1 ring-amber-300" title="Add bat runs off this no ball">+</span>
+                    </button>
+                    <button type="button" id="scorer-quick-wicket" class="rounded-md border border-red-200 bg-red-50 py-3 text-sm font-semibold text-red-700 hover:bg-red-100">W</button>
+                </div>
+                <p id="scorer-saving-indicator" class="mt-2 hidden text-[11px] text-neutral-400">Saving…</p>
+
+                <div id="scorer-situational-panel" class="mt-3 hidden rounded-md border border-neutral-200 bg-neutral-50 p-3"></div>
+            </div>
+        @endif
     </div>
 
     @unless($canRecordDelivery)
@@ -134,8 +218,15 @@
             </form>
         </div>
     @elseif($canRecordDelivery)
-        <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-            <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Record Delivery</h3>
+        {{-- Frozen S02 rule 50: the quick-tap pad above covers the common
+             case in one tap. This full manual form stays available,
+             collapsed, for anything the quick pad's situational follow-
+             ups don't cover (e.g. an unusual overthrow/short-run
+             combination) — never removed, just no longer the primary
+             entry point. Auto-expanded on a validation error so the
+             scorer immediately sees what needs fixing. --}}
+        <details class="mt-4 rounded-lg border border-neutral-200 bg-white p-4" @if($errors->has('delivery') || $errors->any()) open @endif>
+            <summary class="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Manual Entry (Advanced)</summary>
 
             @error('delivery')
                 <p class="mb-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">{{ $message }}</p>
@@ -232,7 +323,7 @@
                     Record Delivery
                 </button>
             </form>
-        </div>
+        </details>
 
         <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div class="rounded-lg border border-neutral-200 bg-white p-4">
@@ -308,17 +399,23 @@
         <div class="mb-3 flex items-center justify-between">
             <h3 class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Recent Deliveries</h3>
 
-            @if($canRecordDelivery && $recentDeliveries->isNotEmpty())
+            @if($liveState['can_undo'])
+                {{-- Universal Undo (frozen rule 42) — reverses whichever
+                     reversible action is chronologically latest, not only
+                     the latest Delivery. admin-scoring.js intercepts this
+                     form's submit for the AJAX path; the plain POST below
+                     is the fallback if JS is unavailable. --}}
                 <form
+                    id="scorer-undo-form"
                     method="POST"
                     action="{{ route('admin.matches.innings.deliveries.undo-latest', [$match, $innings]) }}"
-                    onsubmit="event.preventDefault(); window.confirmAction({title: 'Undo the last delivery?', confirmButtonText: 'Yes, undo'}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
+                    onsubmit="event.preventDefault(); window.confirmAction({title: 'Undo the last action?', confirmButtonText: 'Yes, undo'}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
                 >
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50">
+                    <button id="scorer-undo-button" type="submit" class="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50">
                         <x-icon name="undo" class="h-3.5 w-3.5" />
-                        Undo Last Delivery
+                        Undo Last Action
                     </button>
                 </form>
             @endif
@@ -430,4 +527,6 @@
             }
         });
     </script>
+
+    @vite(['resources/js/admin-scoring.js'])
 @endsection
