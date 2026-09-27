@@ -3,12 +3,14 @@
 namespace Tests\Feature\Seeders;
 
 use App\Models\Contributor;
+use App\Models\Delivery;
 use App\Models\Edition;
 use App\Models\EditionCommitteeMember;
 use App\Models\EditionContribution;
 use App\Models\EditionTeam;
 use App\Models\EditionTransaction;
 use App\Models\GameMatch;
+use App\Models\MatchPlayer;
 use App\Models\Notification;
 use App\Models\NotificationSend;
 use App\Models\Player;
@@ -16,20 +18,21 @@ use App\Models\PlayerRegistration;
 use App\Models\Team;
 use App\Models\TeamPlayer;
 use App\Models\User;
-use App\Models\Venue;
-use App\Services\Finance\ContributorRankingService;
-use App\Services\Statistics\PlayerStatisticsService;
 use App\Services\Statistics\StandingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * One focused test proving the stakeholder demo dataset's high-value
+ * One focused test proving the RPPL 2026 local UAT dataset's high-value
  * invariants hold — NOT a row-by-row check of every seeded record. This
  * is the safe verification step required before `migrate:fresh --seed`
  * is ever run against the real dev database: it runs the exact same
  * DatabaseSeeder, but against phpunit's in-memory SQLite connection
  * (see phpunit.xml), which can never touch real data.
+ *
+ * Replaces the previous 3-edition/6-generic-team dataset's assertions
+ * with the RPPL 2026 reset's single-edition/4-IPL-style-team shape — see
+ * that reset's completion report for why DatabaseSeeder itself changed.
  */
 class DemoDataSeederTest extends TestCase
 {
@@ -40,12 +43,12 @@ class DemoDataSeederTest extends TestCase
         $this->seed();
 
         $this->assertDemoUsersExist();
-        $this->assertEditionsAreConsistent();
-        $this->assertMasterDataIsPopulated();
-        $this->assertActiveEditionHasRegistrationsAndSquads();
-        $this->assertMatchLifecycleStatesArePresent();
-        $this->assertFinanceAndContributionsAreConsistent();
-        $this->assertReportingServicesCanConsumeTheSeededData();
+        $this->assertSingleActiveEditionWithFourTeams();
+        $this->assertSixtyPlayersFullyRegisteredAndSquadded();
+        $this->assertSixFixturesWithThreeCompletedAndThreeScheduled();
+        $this->assertCompletedMatchesHaveConsistentBallByBallData();
+        $this->assertStandingsDeriveFromSeededResults();
+        $this->assertSmallFinanceDatasetExists();
         $this->assertDemoNotificationMastersExistWithNoFakeSendHistory();
     }
 
@@ -62,60 +65,64 @@ class DemoDataSeederTest extends TestCase
         $this->assertSame('scorer', $scorer->role->slug);
     }
 
-    private function assertEditionsAreConsistent(): void
+    private function assertSingleActiveEditionWithFourTeams(): void
     {
-        $this->assertSame(3, Edition::count());
+        $this->assertSame(1, Edition::count());
 
-        $active = Edition::where('status', 'active')->first();
-        $this->assertNotNull($active);
-        $this->assertTrue((bool) $active->registration_open);
+        $edition = Edition::firstOrFail();
+        $this->assertSame('RPPL 2026', $edition->name);
+        $this->assertSame('active', $edition->status);
 
-        // At most one edition may ever be open for public registration.
-        $this->assertSame(1, Edition::where('registration_open', true)->count());
+        $this->assertSame(4, Team::count());
+        $this->assertSame(4, EditionTeam::where('edition_id', $edition->id)->count());
 
-        $this->assertSame(1, Edition::where('status', 'completed')->count());
-        $this->assertSame(1, Edition::where('status', 'upcoming')->count());
+        $this->assertEqualsCanonicalizing(
+            ['MI', 'RCB', 'CSK', 'KKR'],
+            Team::pluck('short_name')->all(),
+        );
     }
 
-    private function assertMasterDataIsPopulated(): void
+    private function assertSixtyPlayersFullyRegisteredAndSquadded(): void
     {
-        $this->assertGreaterThanOrEqual(40, Player::count());
-        $this->assertSame(6, Team::count());
-        $this->assertSame(3, Venue::count());
-    }
+        $this->assertSame(60, Player::count());
 
-    private function assertActiveEditionHasRegistrationsAndSquads(): void
-    {
-        $active = Edition::where('status', 'active')->firstOrFail();
-
-        $this->assertGreaterThan(0, PlayerRegistration::where('edition_id', $active->id)->count());
-
-        $editionTeamIds = EditionTeam::where('edition_id', $active->id)->pluck('id');
-        $this->assertSame(6, $editionTeamIds->count());
-
-        $squadSize = TeamPlayer::whereIn('edition_team_id', $editionTeamIds)->count();
-        $this->assertGreaterThanOrEqual(6 * 6, $squadSize);
+        $edition = Edition::firstOrFail();
+        $this->assertSame(60, PlayerRegistration::where('edition_id', $edition->id)->count());
 
         // Every seeded registration was created without a payment proof
         // and without ever dispatching OCR — ocr_status must reflect
         // that conclusively, never sit at the migration's raw 'pending'
         // default as if a job were still queued.
         $this->assertSame(0, PlayerRegistration::where('ocr_status', 'pending')->count());
+        $this->assertSame(0, PlayerRegistration::whereNotNull('aadhaar_document_path')->count());
+        $this->assertSame(0, PlayerRegistration::whereNotNull('payment_proof_path')->count());
+
+        foreach (EditionTeam::where('edition_id', $edition->id)->get() as $editionTeam) {
+            $this->assertSame(15, TeamPlayer::where('edition_team_id', $editionTeam->id)->count());
+        }
     }
 
-    private function assertMatchLifecycleStatesArePresent(): void
+    private function assertSixFixturesWithThreeCompletedAndThreeScheduled(): void
     {
-        $active = Edition::where('status', 'active')->firstOrFail();
-        $matches = GameMatch::where('edition_id', $active->id)->get()->keyBy('match_status');
+        $edition = Edition::firstOrFail();
 
-        foreach (['scheduled', 'toss', 'live', 'completed', 'abandoned', 'cancelled'] as $status) {
-            $this->assertTrue($matches->has($status), "Expected a demo match with match_status={$status}.");
-        }
+        $this->assertSame(6, GameMatch::where('edition_id', $edition->id)->count());
+        $this->assertSame(3, GameMatch::where('edition_id', $edition->id)->where('match_status', 'completed')->count());
+        $this->assertSame(3, GameMatch::where('edition_id', $edition->id)->where('match_status', 'scheduled')->count());
 
-        $this->assertSame(1, GameMatch::where('edition_id', $active->id)->where('match_status', 'live')->count());
+        // No Final yet — the league-stage Top 2 isn't known with only 3
+        // of 6 league matches played (see the reset completion report).
+        $this->assertSame(0, GameMatch::where('edition_id', $edition->id)->where('match_stage', 'final')->count());
 
-        $completed = GameMatch::where('edition_id', $active->id)->where('match_status', 'completed')->get();
-        $this->assertGreaterThanOrEqual(1, $completed->count());
+        GameMatch::where('edition_id', $edition->id)->get()->each(function (GameMatch $match) {
+            $this->assertSame(5, $match->overs_per_innings);
+        });
+    }
+
+    private function assertCompletedMatchesHaveConsistentBallByBallData(): void
+    {
+        $completed = GameMatch::where('match_status', 'completed')->get();
+        $this->assertCount(3, $completed);
 
         foreach ($completed as $match) {
             $first = $match->firstInnings;
@@ -125,71 +132,73 @@ class DemoDataSeederTest extends TestCase
             $this->assertNotNull($second);
             $this->assertSame('completed', $first->status);
             $this->assertSame('completed', $second->status);
-            $this->assertGreaterThan(0, $first->deliveries()->count());
-            $this->assertGreaterThan(0, $second->deliveries()->count());
             $this->assertNotNull($match->result_type);
+            $this->assertNotNull($match->winner_team_id);
+
+            // Exactly 11 selected players per side — the frozen S02 rule
+            // this whole dataset was built to exercise.
+            $this->assertSame(11, MatchPlayer::where('match_id', $match->id)
+                ->whereHas('teamPlayer', fn ($q) => $q->where('edition_team_id', $match->edition_team_a_id))
+                ->count());
+            $this->assertSame(11, MatchPlayer::where('match_id', $match->id)
+                ->whereHas('teamPlayer', fn ($q) => $q->where('edition_team_id', $match->edition_team_b_id))
+                ->count());
+
+            foreach ([$first, $second] as $innings) {
+                $deliveryCount = Delivery::where('innings_id', $innings->id)->count();
+                $this->assertGreaterThan(0, $deliveryCount, "Innings {$innings->id} has no Delivery rows.");
+
+                // Innings.total_runs is a cache rebuilt from Delivery rows
+                // (DeliveryService::recalculateInningsTotals()) — this
+                // must still agree with a fresh independent SUM, proving
+                // the cache was never hand-set.
+                $sumFromDeliveries = (int) Delivery::where('innings_id', $innings->id)->sum('total_runs');
+                $this->assertSame($sumFromDeliveries, $innings->fresh()->total_runs);
+            }
         }
-
-        $live = $matches->get('live');
-        $this->assertNotNull($live->firstInnings);
-        $this->assertSame('live', $live->firstInnings->status);
-        $this->assertGreaterThan(0, $live->firstInnings->deliveries()->count());
-        $this->assertNull($live->result_type);
-
-        $abandoned = $matches->get('abandoned');
-        $this->assertNotNull($abandoned->firstInnings);
-        $this->assertGreaterThan(0, $abandoned->firstInnings->deliveries()->count());
-
-        $this->assertSame(2, GameMatch::where('edition_id', Edition::where('status', 'completed')->firstOrFail()->id)->where('match_status', 'completed')->count());
     }
 
-    private function assertFinanceAndContributionsAreConsistent(): void
+    private function assertStandingsDeriveFromSeededResults(): void
     {
-        $active = Edition::where('status', 'active')->firstOrFail();
+        $edition = Edition::firstOrFail();
 
-        $this->assertGreaterThan(0, EditionTransaction::where('edition_id', $active->id)->count());
-        $this->assertGreaterThan(0, EditionContribution::where('edition_id', $active->id)->count());
+        // Must not throw for a seeded edition with real completed-match
+        // Delivery data — the same service the public standings page and
+        // dashboard call.
+        $result = app(StandingsService::class)->getEditionStandings($edition);
 
-        // Every contribution's linked transaction must exist and carry
-        // exactly the same amount — the one real consistency invariant
-        // EditionContributionService owns.
-        EditionContribution::where('edition_id', $active->id)->get()->each(function (EditionContribution $contribution) {
+        $this->assertIsArray($result);
+        $this->assertCount(4, $result['standings']);
+        $this->assertSame(0, $result['ignored_matches_count']);
+
+        $totalPoints = array_sum(array_column($result['standings'], 'points'));
+        // 3 completed league matches, each awarding points to two teams
+        // (win/loss, or 1 each on a no-result) — never zero.
+        $this->assertGreaterThan(0, $totalPoints);
+    }
+
+    private function assertSmallFinanceDatasetExists(): void
+    {
+        $edition = Edition::firstOrFail();
+
+        $this->assertGreaterThan(0, EditionTransaction::where('edition_id', $edition->id)->count());
+        $this->assertGreaterThan(0, EditionContribution::where('edition_id', $edition->id)->count());
+        $this->assertGreaterThan(0, EditionCommitteeMember::where('edition_id', $edition->id)->count());
+        $this->assertGreaterThan(0, Contributor::count());
+
+        EditionContribution::where('edition_id', $edition->id)->get()->each(function (EditionContribution $contribution) {
             $transaction = $contribution->transaction;
 
             $this->assertNotNull($transaction);
             $this->assertSame('income', $transaction->type);
             $this->assertEquals((float) $contribution->amount, (float) $transaction->amount);
         });
-
-        $this->assertGreaterThanOrEqual(10, EditionCommitteeMember::where('edition_id', $active->id)->count());
-        $this->assertGreaterThanOrEqual(12, Contributor::count());
-    }
-
-    private function assertReportingServicesCanConsumeTheSeededData(): void
-    {
-        $active = Edition::where('status', 'active')->firstOrFail();
-
-        $ranking = app(ContributorRankingService::class)->getEditionRanking($active);
-        $this->assertGreaterThanOrEqual(10, count($ranking));
-
-        $summary = EditionTransaction::summaryForEdition($active->id);
-        $this->assertGreaterThan(0, $summary['income']);
-
-        // Must not throw for a seeded edition with real completed-match
-        // Delivery data — the same services the Dashboard/Reports/public
-        // pages call.
-        $standings = app(StandingsService::class)->getEditionStandings($active);
-        $this->assertIsArray($standings);
-
-        $leaderboard = app(PlayerStatisticsService::class)->getEditionLeaderboard($active);
-        $this->assertIsArray($leaderboard);
     }
 
     /**
-     * Phase B5 — demo notification masters exist for the stakeholder
-     * demo, but with deliberately ZERO send history: seeding a fake
-     * "accepted" count would misrepresent a real Firebase result that
-     * never happened.
+     * Demo notification masters exist, but with deliberately ZERO send
+     * history: seeding a fake "accepted" count would misrepresent a real
+     * Firebase result that never happened.
      */
     private function assertDemoNotificationMastersExistWithNoFakeSendHistory(): void
     {
