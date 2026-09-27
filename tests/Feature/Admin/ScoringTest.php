@@ -866,7 +866,10 @@ class ScoringTest extends TestCase
         $response = $this->actingAs($this->admin())->get(route('admin.matches.innings.score', [$match, $innings]));
 
         $response->assertOk();
-        $response->assertSee('Undo Last Delivery');
+        // Frozen S02 rule 42: Undo Last Delivery evolved into Universal
+        // Undo, which reverses whichever reversible scoring action is
+        // chronologically latest, not only the latest Delivery.
+        $response->assertSee('Undo Last Action');
         $response->assertSee($battingPlayers[0]->teamPlayer->playerRegistration->player->name);
     }
 

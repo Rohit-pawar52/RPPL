@@ -150,6 +150,7 @@ class ScorecardService
         $retirements = ScoringEvent::query()
             ->where('innings_id', $innings->id)
             ->whereIn('type', [ScoringEvent::TYPE_RETIRED_HURT, ScoringEvent::TYPE_RETIRED_OUT])
+            ->notUndone()
             ->orderByDesc('created_at')
             ->get(['match_player_id', 'type', 'created_at'])
             ->keyBy('match_player_id');
@@ -324,6 +325,7 @@ class ScorecardService
             ->where('match_id', $innings->match_id)
             ->where('type', ScoringEvent::TYPE_PENALTY_RUNS)
             ->where('awarded_team_id', $innings->batting_team_id)
+            ->notUndone()
             ->sum('runs');
 
         return [

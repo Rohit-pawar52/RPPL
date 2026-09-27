@@ -36,10 +36,13 @@ This README is meant to be comprehensive enough that reading it alone tells you 
 
 - Full match lifecycle as explicit actions (never a generic status field the client can drive arbitrarily): schedule a match → set the playing XI → start toss → record toss → start match → play innings → finalize result — plus **cancel**/**abandon** at any point.
 - Two-innings model with explicit innings start/complete actions.
-- Ball-by-ball delivery entry (runs, extras — wide/no-ball/bye/leg-bye, wickets with dismissal type/fielder) with **undo latest delivery** as the only correction path (scoped to the current innings).
+- Frozen tournament cricket scoring rules: explicit Start Innings/New Batter/New Over Bowler/Mid-Over Bowler Change steps, Free Hit tracking, Retired Hurt/Out, Change Strike, standard Penalty Runs, and a "same bowler can't bowl two overs in a row" guard.
+- **One-click match-day scoring pad** (0/1/2/3/4/6/Wd/Nb/W) with a live This Over/Previous Over strip, current batter and bowler figures, current partnership, last wicket, and (during a chase) target/runs needed/required run rate — all derived live, nothing double-stored. Ball submissions are duplicate-safe (an accidental double-tap or a retried request after a dropped connection can never record the same ball twice) and the screen recovers its exact state after a refresh or reconnect.
+- **Universal Undo** reverses whichever scoring action was most recent — a delivery, a strike correction, a retirement, a bowler/batter selection, or a penalty-runs award — not only the last ball, while always preserving who undid what and when.
+- **Quick correction** of any of the latest 3 deliveries (runs, extras, wicket details, commentary) with a full before/after audit trail; older deliveries require the innings to be reopened first.
 - Match result is always server-derived from completed innings totals — never chosen by the admin/scorer.
 - Read-only match scorecard (admin and public), plus a **downloadable PDF scorecard**.
-- **Real-time live scoring** on the public match page via Laravel Reverb (WebSocket broadcasting) + Laravel Echo — a `MatchScoreUpdated` event fires after each committed scoring action and the public "live" view updates without a page refresh; falls back to polling (`live-data`) if a socket connection isn't available.
+- **Real-time live scoring** on the public match page via Laravel Reverb (WebSocket broadcasting) + Laravel Echo — a `MatchScoreUpdated` event fires after each committed scoring action and the public "live" view updates without a page refresh; falls back to polling (`live-data`) if a socket connection isn't available. Corrections made after the fact simply refresh the public score to the corrected figure.
 
 ### Standings & statistics
 

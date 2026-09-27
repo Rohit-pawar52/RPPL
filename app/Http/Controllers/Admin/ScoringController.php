@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Scoring\AwardPenaltyRunsRequest;
 use App\Http\Requests\Admin\Scoring\ChangeBowlerMidOverRequest;
 use App\Http\Requests\Admin\Scoring\ChangeStrikeRequest;
+use App\Http\Requests\Admin\Scoring\CorrectDeliveryRequest;
 use App\Http\Requests\Admin\Scoring\RetireBatterRequest;
 use App\Http\Requests\Admin\Scoring\SelectNewBatterRequest;
 use App\Http\Requests\Admin\Scoring\SelectOverBowlerRequest;
@@ -18,9 +19,13 @@ use App\Models\Innings;
 use App\Models\MatchPlayer;
 use App\Services\Innings\InningsService;
 use App\Services\Scoring\DeliveryService;
+use App\Services\Scoring\LiveScoringStateService;
 use App\Services\Scoring\ScoringEventService;
+use App\Services\Scoring\UndoService;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Throwable;
 
@@ -35,7 +40,24 @@ class ScoringController extends Controller
         private readonly DeliveryService $deliveries,
         private readonly ScoringEventService $scoringEvents,
         private readonly InningsService $inningsService,
+        private readonly LiveScoringStateService $liveState,
+        private readonly UndoService $undo,
     ) {}
+
+    /**
+     * The canonical scorer-state JSON (frozen S02 rules 50-61) — polled
+     * by the scoring screen's JS, and used to recover state after a
+     * refresh/reconnect (rule 53) exactly like the public Live Match
+     * Center's own /live-data endpoint already works for spectators.
+     */
+    public function scoreData(GameMatch $match, Innings $innings): JsonResponse
+    {
+        abort_unless($innings->match_id === $match->id, 404);
+
+        $this->authorize('score', $match);
+
+        return response()->json($this->liveState->getState($match, $innings));
+    }
 
     public function show(GameMatch $match, Innings $innings): View
     {
@@ -80,6 +102,7 @@ class ScoringController extends Controller
             'isFreeHit' => $this->deliveries->isFreeHit($innings),
             'previousOverBowlerId' => $previousOverBowlerId,
             'wicketTypes' => Delivery::WICKET_TYPES,
+            'liveState' => $this->liveState->getState($match, $innings),
         ]);
     }
 
@@ -237,18 +260,34 @@ class ScoringController extends Controller
             ->with('success', 'Bowler changed mid-over.');
     }
 
-    public function store(StoreDeliveryRequest $request, GameMatch $match, Innings $innings): RedirectResponse
+    /**
+     * JSON when the client asks for it (the one-click quick-scoring pad,
+     * frozen rules 50/51) — otherwise the original redirect, so the
+     * plain-form fallback keeps working with JavaScript disabled.
+     * idempotency_key (rule 51) is validated by StoreDeliveryRequest and
+     * checked inside DeliveryService::recordDelivery() itself, ahead of
+     * any other eligibility check, so a safe retry of an already-
+     * succeeded submission can never fail merely because the innings
+     * moved on in the meantime.
+     */
+    public function store(StoreDeliveryRequest $request, GameMatch $match, Innings $innings): RedirectResponse|JsonResponse
     {
         abort_unless($innings->match_id === $match->id, 404);
 
         $this->authorize('score', $match);
 
         if (! $this->deliveries->canRecordDelivery($match, $innings)) {
+            $message = $this->deliveries->isOverLimitReached($match, $innings)
+                ? 'The overs limit for this innings has been reached.'
+                : 'This innings can no longer be scored.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
             return redirect()
                 ->route('admin.matches.innings.score', [$match, $innings])
-                ->with('error', $this->deliveries->isOverLimitReached($match, $innings)
-                    ? 'The overs limit for this innings has been reached.'
-                    : 'This innings can no longer be scored.');
+                ->with('error', $message);
         }
 
         $this->deliveries->recordDelivery($match, $innings, $request->validated());
@@ -262,28 +301,78 @@ class ScoringController extends Controller
             ? 'Delivery recorded. Innings completed.'
             : 'Delivery recorded successfully.';
 
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $message, 'state' => $this->liveState->getState($match, $innings)]);
+        }
+
         return redirect()
             ->route('admin.matches.innings.score', [$match, $innings])
             ->with('success', $message);
     }
 
-    public function undoLatest(GameMatch $match, Innings $innings): RedirectResponse
+    /**
+     * Universal Undo (frozen rule 42) — reverses whichever reversible
+     * scoring action is chronologically latest for this innings (a
+     * Delivery, or one of ScoringEvent::UNDOABLE_TYPES), not only the
+     * latest Delivery. See UndoService for exactly which action types
+     * are reversible and why the rest are deliberately excluded.
+     */
+    public function undoLatest(Request $request, GameMatch $match, Innings $innings): RedirectResponse|JsonResponse
     {
         abort_unless($innings->match_id === $match->id, 404);
 
         $this->authorize('score', $match);
 
-        if (! $this->deliveries->undoLastDelivery($match, $innings)) {
+        $result = $this->undo->undoLastAction($match, $innings, $request->user());
+
+        if (! $result['undone']) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $result['message']], 422);
+            }
+
             return redirect()
                 ->route('admin.matches.innings.score', [$match, $innings])
-                ->with('error', 'There is no delivery to undo right now.');
+                ->with('error', $result['message']);
         }
 
         $this->broadcastMatchUpdated($match->id);
 
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $result['message'], 'state' => $this->liveState->getState($match, $innings)]);
+        }
+
         return redirect()
             ->route('admin.matches.innings.score', [$match, $innings])
-            ->with('success', 'Last delivery undone successfully.');
+            ->with('success', $result['message']);
+    }
+
+    /**
+     * Quick correction of one of the latest 3 deliveries (frozen rules
+     * 43/44/46) — JSON only, this is a new AJAX-only affordance with no
+     * plain-form fallback (there was no prior UI for it to degrade to).
+     */
+    public function correctDelivery(CorrectDeliveryRequest $request, GameMatch $match, Innings $innings, Delivery $delivery): JsonResponse
+    {
+        abort_unless($innings->match_id === $match->id, 404);
+        abort_unless($delivery->innings_id === $innings->id, 404);
+
+        $this->authorize('score', $match);
+
+        $this->deliveries->correctDelivery(
+            $match,
+            $innings,
+            $delivery,
+            $request->validated(),
+            $request->validated('reason'),
+            $request->user(),
+        );
+
+        $this->broadcastMatchUpdated($match->id);
+
+        return response()->json([
+            'message' => 'Delivery corrected successfully.',
+            'state' => $this->liveState->getState($match, $innings),
+        ]);
     }
 
     /**

@@ -141,7 +141,13 @@ class LiveMatchService
      * invariant (Phase 3.13), so this is a plain priority ladder, not a
      * combination engine.
      */
-    private function outcomeLabel(Delivery $delivery): string
+    /**
+     * Public so LiveScoringStateService's This Over/Previous Over strips
+     * (frozen S02 rules 54/55) can reuse the exact same ball-outcome
+     * label the public Live Match Center already shows — never a second,
+     * independently-maintained formatting implementation.
+     */
+    public function outcomeLabel(Delivery $delivery): string
     {
         if ($delivery->is_wicket) {
             return 'W';

@@ -249,6 +249,12 @@ class StoreDeliveryRequest extends FormRequest
                 },
             ],
             'commentary' => ['nullable', 'string', 'max:2000'],
+            // Idempotency (frozen S02 rule 51): a client-generated token
+            // for one quick-scoring tap, unique per innings. Optional —
+            // a caller that never supplies one (any existing direct
+            // caller/test) simply gets no duplicate-submission
+            // protection, exactly as before this phase.
+            'idempotency_key' => ['nullable', 'string', 'max:100'],
         ];
     }
 
