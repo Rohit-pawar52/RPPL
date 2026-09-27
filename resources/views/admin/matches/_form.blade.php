@@ -97,7 +97,7 @@
         name="scheduled_at"
         label="Scheduled at"
         type="datetime-local"
-        :value="$match?->scheduled_at?->format('Y-m-d\TH:i') ?? ''"
+        :value="$match?->scheduled_at ? display_datetime($match->scheduled_at, 'Y-m-d\TH:i') : old('scheduled_at', '')"
         required
     />
 </div>

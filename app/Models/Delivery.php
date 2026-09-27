@@ -68,6 +68,8 @@ class Delivery extends Model
         'commentary',
         'is_edited',
         'edit_reason',
+        'idempotency_key',
+        'action_sequence',
     ];
 
     protected function casts(): array

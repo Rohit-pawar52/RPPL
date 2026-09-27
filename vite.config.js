@@ -10,6 +10,7 @@ export default defineConfig({
                 'resources/js/app.js',
                 'resources/js/public-live-match.js',
                 'resources/js/push-notifications.js',
+                'resources/js/admin-scoring.js',
             ],
             refresh: true,
         }),

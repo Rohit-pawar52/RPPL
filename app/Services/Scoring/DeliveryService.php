@@ -3,10 +3,13 @@
 namespace App\Services\Scoring;
 
 use App\Models\Delivery;
+use App\Models\DeliveryCorrection;
 use App\Models\GameMatch;
 use App\Models\Innings;
 use App\Models\MatchPlayer;
 use App\Models\ScoringEvent;
+use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -240,6 +243,26 @@ class DeliveryService
         return DB::transaction(function () use ($match, $innings, $data) {
             $lockedInnings = Innings::query()->whereKey($innings->id)->lockForUpdate()->firstOrFail();
 
+            // Idempotency (frozen rule 51): a retried submission carrying
+            // a key already recorded for THIS innings returns the
+            // existing Delivery unchanged rather than creating a second
+            // one — checked before any other validation/eligibility, so
+            // a safe retry can never fail merely because the innings
+            // moved on (over limit reached, innings completed) since the
+            // original request actually succeeded.
+            $idempotencyKey = $data['idempotency_key'] ?? null;
+
+            if ($idempotencyKey) {
+                $existing = Delivery::query()
+                    ->where('innings_id', $lockedInnings->id)
+                    ->where('idempotency_key', $idempotencyKey)
+                    ->first();
+
+                if ($existing) {
+                    return $existing;
+                }
+            }
+
             if (! $this->canRecordDelivery($match, $lockedInnings)) {
                 throw ValidationException::withMessages([
                     'delivery' => 'This delivery cannot be recorded right now.',
@@ -296,6 +319,8 @@ class DeliveryService
                 'fielder_match_player_id' => $isWicket ? ($data['fielder_match_player_id'] ?? null) : null,
                 'confirmed_survivor_end' => $isWicket ? ($data['confirmed_survivor_end'] ?? null) : null,
                 'commentary' => $data['commentary'] ?? null,
+                'idempotency_key' => $idempotencyKey,
+                'action_sequence' => $this->nextActionSequence($lockedInnings),
             ]);
 
             $this->recalculateInningsTotals($lockedInnings);
@@ -324,6 +349,25 @@ class DeliveryService
 
             return $delivery;
         });
+    }
+
+    /**
+     * The next value for Delivery.action_sequence/ScoringEvent.
+     * action_sequence — a single strictly-increasing ordering key shared
+     * across both tables for this innings (frozen rule 42), so Universal
+     * Undo can determine "the chronologically latest reversible action"
+     * without relying on timestamp precision. Safe from races only
+     * because every caller (recordDelivery() and every
+     * ScoringEventService method) already computes this AFTER acquiring
+     * the same Innings row lock this method requires as a parameter —
+     * never call this against an unlocked Innings.
+     */
+    public function nextActionSequence(Innings $lockedInnings): int
+    {
+        $latestDelivery = (int) Delivery::where('innings_id', $lockedInnings->id)->max('action_sequence');
+        $latestEvent = (int) ScoringEvent::where('innings_id', $lockedInnings->id)->max('action_sequence');
+
+        return max($latestDelivery, $latestEvent) + 1;
     }
 
     /**
@@ -510,7 +554,7 @@ class DeliveryService
      * penalty runs) via recalculateInningsTotals(), so a retirement can
      * itself trigger all-out here exactly like a Delivery wicket would.
      */
-    private function hasReachedAutomaticCompletion(GameMatch $match, Innings $innings): bool
+    public function hasReachedAutomaticCompletion(GameMatch $match, Innings $innings): bool
     {
         if ($innings->total_wickets >= Innings::MAX_WICKETS) {
             return true;
@@ -591,7 +635,16 @@ class DeliveryService
         });
     }
 
-    private function isInningsUndoable(GameMatch $match, Innings $innings): bool
+    /**
+     * Shared eligibility gate for every reversal/correction action this
+     * service and UndoService expose (undo, Universal Undo, quick
+     * correction): the match must still be live, and the innings must
+     * either still be live or be 'completed' with completion_type
+     * 'automatic' — a manually completed innings (frozen rule 15/16) is
+     * never touched by any of these, only by the explicit, reasoned
+     * InningsService::reopenInnings() action.
+     */
+    public function isInningsUndoable(GameMatch $match, Innings $innings): bool
     {
         if ((int) $innings->match_id !== (int) $match->id
             || ! in_array($innings->innings_number, [1, 2], true)
@@ -604,6 +657,244 @@ class DeliveryService
         }
 
         return $innings->status === 'completed' && $innings->completion_type === 'automatic';
+    }
+
+    /**
+     * Frozen rules 43/44/46: only the latest 3 recorded Delivery rows of
+     * an innings are ever open to quick correction — never an arbitrary
+     * older ball (that is explicitly deferred, frozen rule 45).
+     */
+    public const CORRECTION_WINDOW = 3;
+
+    /**
+     * @return Collection<int, Delivery>
+     */
+    public function correctableDeliveries(Innings $innings): Collection
+    {
+        return Delivery::query()
+            ->where('innings_id', $innings->id)
+            ->orderByDesc('delivery_sequence')
+            ->limit(self::CORRECTION_WINDOW)
+            ->get();
+    }
+
+    /**
+     * Edits one of the latest 3 deliveries of an innings in place (frozen
+     * rules 43/44/46) — the delivery keeps its identity (delivery_sequence/
+     * over_number/ball_number, and its striker/non-striker/bowler, which
+     * correction never changes; that is what Change Strike/Change Bowler
+     * Mid-Over are for), only its recorded OUTCOME facts (runs, extras,
+     * wicket information, physical-run fields, commentary) are replaced.
+     * Every correction is audited via DeliveryCorrection (old/new full
+     * fact snapshot, who, when, optional reason) — see that model's
+     * migration docblock — and the delivery's own is_edited/edit_reason
+     * flags are set for at-a-glance display.
+     *
+     * Two independent safety gates, both required:
+     *   1. Wide/No Ball state can only change on the innings' current
+     *      LATEST delivery — changing it on an older one would silently
+     *      invalidate the legality/over-boundary numbering and Free Hit
+     *      status of every delivery recorded after it (frozen rule 45's
+     *      "do not implement deep correction" boundary).
+     *   2. For anything OTHER than the latest delivery, the correction is
+     *      rejected outright if it would change what
+     *      deriveNextStateFromDelivery() computes for it (see
+     *      wouldChangeDownstreamState()) — i.e. if a later, already-
+     *      recorded delivery's striker/non-striker/bowler/replacement
+     *      expectation was built on a fact this correction would now
+     *      contradict. The LATEST delivery has no such restriction: its
+     *      pending_state is simply recomputed fresh afterward, exactly as
+     *      if it had been recorded correctly the first time.
+     *
+     * Runs/extras/wicket totals always rebuild via
+     * recalculateInningsTotals() regardless of position in the window,
+     * and the innings' automatic-completion state (frozen rule: "result/
+     * completion state must not remain knowingly stale") is re-evaluated
+     * afterward in both directions — a correction can newly reach
+     * completion (e.g. correcting in the 10th wicket) or newly fall
+     * short of it (e.g. correcting away the wicket/runs that had reached
+     * it), exactly like recordDelivery()/undoLastDelivery() already do.
+     *
+     * @param  array<string, mixed>  $newData
+     */
+    public function correctDelivery(GameMatch $match, Innings $innings, Delivery $delivery, array $newData, ?string $reason, User $performedBy): Delivery
+    {
+        $newData = $this->normalizeLegacyExtraShape($newData);
+
+        return DB::transaction(function () use ($match, $innings, $delivery, $newData, $reason, $performedBy) {
+            $lockedInnings = Innings::query()->whereKey($innings->id)->lockForUpdate()->firstOrFail();
+            $lockedDelivery = Delivery::query()->whereKey($delivery->id)->lockForUpdate()->firstOrFail();
+
+            if ((int) $lockedDelivery->innings_id !== (int) $lockedInnings->id) {
+                throw ValidationException::withMessages(['delivery' => 'This delivery does not belong to this innings.']);
+            }
+
+            if (! $this->isInningsUndoable($match, $lockedInnings)) {
+                throw ValidationException::withMessages(['delivery' => 'This innings can no longer be corrected.']);
+            }
+
+            $window = $this->correctableDeliveries($lockedInnings);
+
+            if (! $window->contains('id', $lockedDelivery->id)) {
+                throw ValidationException::withMessages([
+                    'delivery' => 'Only the latest '.self::CORRECTION_WINDOW.' deliveries of this innings can be corrected.',
+                ]);
+            }
+
+            $isLatest = (int) $window->first()->id === (int) $lockedDelivery->id;
+
+            $isWide = array_key_exists('is_wide', $newData) ? (bool) $newData['is_wide'] : (bool) $lockedDelivery->is_wide;
+            $isNoBall = array_key_exists('is_no_ball', $newData) ? (bool) $newData['is_no_ball'] : (bool) $lockedDelivery->is_no_ball;
+
+            if (! $isLatest && ($isWide !== (bool) $lockedDelivery->is_wide || $isNoBall !== (bool) $lockedDelivery->is_no_ball)) {
+                throw ValidationException::withMessages([
+                    'delivery' => 'Wide/No Ball can only be changed on the most recent delivery — changing it here would invalidate the legality and Free Hit sequencing of deliveries already recorded after it.',
+                ]);
+            }
+
+            // is_free_hit is an immutable fact of when THIS delivery was
+            // bowled (it depends only on the delivery before it, which a
+            // correction never touches) — reused as stored, never
+            // re-derived from the correction itself.
+            $isFreeHit = (bool) $lockedDelivery->is_free_hit;
+
+            $runs = $this->calculateDeliveryRuns(
+                $isWide,
+                $isNoBall,
+                (int) ($newData['runs_off_bat'] ?? $lockedDelivery->runs_off_bat),
+                (int) ($newData['wide_running_runs'] ?? $lockedDelivery->wide_running_runs),
+                (int) ($newData['bye_runs'] ?? $lockedDelivery->bye_runs),
+                (int) ($newData['leg_bye_runs'] ?? $lockedDelivery->leg_bye_runs),
+            );
+
+            $isWicket = array_key_exists('is_wicket', $newData) ? (bool) $newData['is_wicket'] : (bool) $lockedDelivery->is_wicket;
+            $wicketType = $isWicket ? ($newData['wicket_type'] ?? $lockedDelivery->wicket_type) : null;
+            $dismissedId = $isWicket ? (int) ($newData['dismissed_match_player_id'] ?? $lockedDelivery->dismissed_match_player_id) : null;
+            $fielderId = $isWicket ? ($newData['fielder_match_player_id'] ?? $lockedDelivery->fielder_match_player_id) : null;
+            $confirmedSurvivorEnd = $isWicket ? ($newData['confirmed_survivor_end'] ?? $lockedDelivery->confirmed_survivor_end) : null;
+
+            $this->assertParticipantsValid($match, $lockedInnings, [
+                'striker_match_player_id' => $lockedDelivery->striker_match_player_id,
+                'non_striker_match_player_id' => $lockedDelivery->non_striker_match_player_id,
+                'bowler_match_player_id' => $lockedDelivery->bowler_match_player_id,
+                'is_wicket' => $isWicket,
+                'wicket_type' => $wicketType,
+                'dismissed_match_player_id' => $dismissedId,
+                'fielder_match_player_id' => $fielderId,
+            ], $isWide, $isNoBall, $isFreeHit);
+
+            $newAttributes = [
+                'runs_off_bat' => $runs['runs_off_bat'],
+                'wide_runs' => $runs['wide_runs'],
+                'wide_running_runs' => $runs['wide_running_runs'],
+                'no_ball_runs' => $runs['no_ball_runs'],
+                'bye_runs' => $runs['bye_runs'],
+                'leg_bye_runs' => $runs['leg_bye_runs'],
+                'total_runs' => array_sum($runs),
+                'is_legal_delivery' => $this->determineLegality($isWide, $isNoBall),
+                'no_ball_reason' => $isNoBall ? ($newData['no_ball_reason'] ?? $lockedDelivery->no_ball_reason) : null,
+                'is_wide' => $isWide,
+                'is_no_ball' => $isNoBall,
+                'is_wicket' => $isWicket,
+                'is_short_run' => array_key_exists('is_short_run', $newData) ? (bool) $newData['is_short_run'] : (bool) $lockedDelivery->is_short_run,
+                'runs_physically_run' => array_key_exists('runs_physically_run', $newData) ? $newData['runs_physically_run'] : $lockedDelivery->runs_physically_run,
+                'wicket_type' => $wicketType,
+                'dismissed_match_player_id' => $dismissedId,
+                'fielder_match_player_id' => $fielderId,
+                'confirmed_survivor_end' => $confirmedSurvivorEnd,
+                'commentary' => array_key_exists('commentary', $newData) ? $newData['commentary'] : $lockedDelivery->commentary,
+            ];
+
+            if (! $isLatest && $this->wouldChangeDownstreamState($lockedDelivery, $newAttributes)) {
+                throw ValidationException::withMessages([
+                    'delivery' => 'This correction would change what a later delivery already assumed (who was on strike, who was due to bat next, or the bowler for the next over) — only the most recent delivery can carry that kind of change.',
+                ]);
+            }
+
+            $oldValues = $lockedDelivery->only(array_keys($newAttributes));
+
+            $lockedDelivery->update($newAttributes + ['is_edited' => true, 'edit_reason' => $reason]);
+
+            DeliveryCorrection::create([
+                'delivery_id' => $lockedDelivery->id,
+                'innings_id' => $lockedInnings->id,
+                'match_id' => $match->id,
+                'old_values' => $oldValues,
+                'new_values' => $newAttributes,
+                'reason' => $reason,
+                'performed_by' => $performedBy->id,
+            ]);
+
+            $this->recalculateInningsTotals($lockedInnings);
+
+            if ($isLatest) {
+                $lockedInnings->update([
+                    'pending_state' => $this->deriveNextStateFromDelivery($lockedInnings->fresh(), $lockedDelivery->fresh()),
+                ]);
+            }
+
+            $this->reconcileCompletionState($match, $lockedInnings);
+
+            return $lockedDelivery->fresh();
+        });
+    }
+
+    /**
+     * Re-evaluates automatic completion after any write that can change
+     * total_wickets/total_runs/legal_balls without going through
+     * recordDelivery() itself (a quick correction, or Universal Undo
+     * reversing a retired-out/penalty-runs ScoringEvent): a correction
+     * can newly REACH completion (e.g. correcting in the 10th wicket) or
+     * newly fall short of it (e.g. correcting away the wicket/runs that
+     * had reached it) — "result/completion state must not remain
+     * knowingly stale" applies in both directions, exactly like
+     * recordDelivery()/undoLastDelivery() already guarantee for a normal
+     * ball. Only ever toggles an 'automatic' completion — a manually
+     * completed innings is untouched, exactly like undoLastDelivery().
+     */
+    public function reconcileCompletionState(GameMatch $match, Innings $innings): void
+    {
+        $fresh = $innings->fresh();
+        $nowComplete = $this->hasReachedAutomaticCompletion($match, $fresh);
+
+        if ($fresh->status === 'live' && $nowComplete) {
+            $fresh->update(['status' => 'completed', 'completion_type' => 'automatic', 'completion_reason' => null]);
+        } elseif ($fresh->status === 'completed' && $fresh->completion_type === 'automatic' && ! $nowComplete) {
+            $fresh->update(['status' => 'live', 'completion_type' => null, 'completion_reason' => null]);
+        }
+    }
+
+    /**
+     * The generic safety check behind correctDelivery()'s rule 2 (see its
+     * docblock): recomputes deriveNextStateFromDelivery() for the OLD and
+     * the proposed NEW fact set of the same delivery, using its own
+     * unchanged over_number/ball_number to reconstruct "legal balls so
+     * far as of this delivery" — never the innings' current legal_balls,
+     * which reflects the whole innings, not just up to this ball. Equal
+     * results mean nothing downstream needs to change; different results
+     * mean an already-recorded later delivery relied on a fact this
+     * correction would now contradict.
+     *
+     * @param  array<string, mixed>  $newAttributes
+     */
+    private function wouldChangeDownstreamState(Delivery $original, array $newAttributes): bool
+    {
+        $legalBallsBeforeThisBall = $original->over_number * 6 + ($original->ball_number - 1);
+
+        $oldState = $this->deriveNextStateFromDelivery(
+            new Innings(['legal_balls' => $legalBallsBeforeThisBall + ($original->is_legal_delivery ? 1 : 0)]),
+            $original,
+        );
+
+        $candidate = $original->replicate();
+        $candidate->forceFill($newAttributes);
+
+        $newState = $this->deriveNextStateFromDelivery(
+            new Innings(['legal_balls' => $legalBallsBeforeThisBall + ($newAttributes['is_legal_delivery'] ? 1 : 0)]),
+            $candidate,
+        );
+
+        return $oldState !== $newState;
     }
 
     /**
@@ -644,11 +935,13 @@ class DeliveryService
             ->where('match_id', $innings->match_id)
             ->where('type', ScoringEvent::TYPE_PENALTY_RUNS)
             ->where('awarded_team_id', $innings->batting_team_id)
+            ->notUndone()
             ->sum('runs');
 
         $retiredOutCount = ScoringEvent::query()
             ->where('innings_id', $innings->id)
             ->where('type', ScoringEvent::TYPE_RETIRED_OUT)
+            ->notUndone()
             ->count();
 
         $innings->update([
@@ -733,6 +1026,7 @@ class DeliveryService
         $retiredOut = ScoringEvent::query()
             ->where('innings_id', $innings->id)
             ->where('type', ScoringEvent::TYPE_RETIRED_OUT)
+            ->notUndone()
             ->pluck('match_player_id')
             ->map(fn ($id) => (int) $id)
             ->all();
