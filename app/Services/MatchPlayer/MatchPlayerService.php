@@ -2,10 +2,12 @@
 
 namespace App\Services\MatchPlayer;
 
+use App\Models\EditionTeam;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\TeamPlayer;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -83,18 +85,105 @@ class MatchPlayerService
     }
 
     /**
-     * Removes a Playing XI selection only when no scoring history
-     * references it. Returns false instead of letting the FK
-     * (restrictOnDelete) constraint fail, so the controller can show a
-     * friendly message.
+     * Bulk Playing XI selection: replaces one team's ENTIRE Playing XI
+     * for this match with exactly the given set of team_player_ids, in
+     * a single atomic operation — the fast match-day alternative to
+     * addPlayer() called 11 times. A player already selected who is
+     * still in $teamPlayerIds keeps their existing MatchPlayer row (and
+     * therefore their captain/wicket-keeper designation) untouched;
+     * only genuinely added/removed players cause a write. This is what
+     * makes re-saving an unchanged selection a safe no-op rather than
+     * silently wiping out who was captain.
+     *
+     * Structural validation (team membership, exact count, duplicates,
+     * squad membership) happens here as cheap insurance against a
+     * future caller skipping SyncMatchPlayersRequest — the same
+     * defense-in-depth pattern addPlayer() already uses. The active-
+     * player check is deliberately NOT repeated here (SyncMatchPlayers
+     * Request's job only, matching addPlayer()'s existing division of
+     * responsibility) so an already-selected player who later became
+     * inactive can still be re-submitted as part of an unchanged
+     * selection without this method rejecting its own prior state.
+     *
+     * Callers must check canModifyPlayingXI() first — this method does
+     * not re-check it, matching every other write in this service.
+     *
+     * @param  list<int>  $teamPlayerIds
+     * @return Collection<int, MatchPlayer>
      */
-    public function removePlayer(MatchPlayer $matchPlayer): bool
+    public function syncPlayingXi(GameMatch $match, EditionTeam $editionTeam, array $teamPlayerIds): Collection
     {
-        if ($this->hasDeliveryHistory($matchPlayer)) {
-            return false;
+        $participatingTeamIds = [$match->edition_team_a_id, $match->edition_team_b_id];
+
+        if (! in_array($editionTeam->id, $participatingTeamIds, true)) {
+            throw ValidationException::withMessages([
+                'edition_team_id' => 'The selected team does not belong to this match.',
+            ]);
         }
 
-        return (bool) $matchPlayer->delete();
+        $uniqueIds = array_values(array_unique($teamPlayerIds));
+
+        if (count($uniqueIds) !== count($teamPlayerIds)) {
+            throw ValidationException::withMessages([
+                'team_player_ids' => 'The same player cannot be selected twice.',
+            ]);
+        }
+
+        if (count($uniqueIds) !== 11) {
+            throw ValidationException::withMessages([
+                'team_player_ids' => 'Exactly 11 players must be selected.',
+            ]);
+        }
+
+        $squadCount = TeamPlayer::where('edition_team_id', $editionTeam->id)->whereIn('id', $uniqueIds)->count();
+
+        if ($squadCount !== 11) {
+            throw ValidationException::withMessages([
+                'team_player_ids' => 'One or more selected players do not belong to this team\'s squad.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($match, $editionTeam, $uniqueIds) {
+            $existing = MatchPlayer::query()
+                ->where('match_id', $match->id)
+                ->whereHas('teamPlayer', fn ($query) => $query->where('edition_team_id', $editionTeam->id))
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('team_player_id');
+
+            $toRemove = $existing->except($uniqueIds);
+
+            // Defense-in-depth: canModifyPlayingXI() (checked by the
+            // caller) already guarantees no Innings exists for this
+            // match, which is the only thing that can ever create
+            // scoring history — so this can never actually trigger
+            // today. Kept anyway so a future change to that invariant
+            // fails loudly here rather than silently deleting scored
+            // history.
+            foreach ($toRemove as $matchPlayer) {
+                if ($this->hasDeliveryHistory($matchPlayer)) {
+                    throw ValidationException::withMessages([
+                        'team_player_ids' => 'A previously selected player already has scoring history and cannot be removed.',
+                    ]);
+                }
+            }
+
+            foreach ($toRemove as $matchPlayer) {
+                $matchPlayer->delete();
+            }
+
+            foreach ($uniqueIds as $teamPlayerId) {
+                if (! $existing->has($teamPlayerId)) {
+                    MatchPlayer::create(['match_id' => $match->id, 'team_player_id' => $teamPlayerId]);
+                }
+            }
+
+            return MatchPlayer::query()
+                ->where('match_id', $match->id)
+                ->whereHas('teamPlayer', fn ($query) => $query->where('edition_team_id', $editionTeam->id))
+                ->with('teamPlayer')
+                ->get();
+        });
     }
 
     /**

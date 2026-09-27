@@ -35,8 +35,10 @@
             'team' => $match->teamA->team,
             'editionTeamId' => $match->edition_team_a_id,
             'selected' => $teamASelected,
-            'eligible' => $teamAEligible,
+            'squad' => $teamASquad,
+            'autoSelectIds' => $teamAAutoSelectIds,
             'canModify' => $canModify,
+            'panelId' => 'team-a',
         ])
 
         @include('admin.match-players._team', [
@@ -44,8 +46,95 @@
             'team' => $match->teamB->team,
             'editionTeamId' => $match->edition_team_b_id,
             'selected' => $teamBSelected,
-            'eligible' => $teamBEligible,
+            'squad' => $teamBSquad,
+            'autoSelectIds' => $teamBAutoSelectIds,
             'canModify' => $canModify,
+            'panelId' => 'team-b',
         ])
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('[data-xi-panel]').forEach((panel) => {
+                const maxPlayers = 11;
+                const checkboxes = () => Array.from(panel.querySelectorAll('.xi-checkbox'));
+                const counterEl = panel.querySelector('[data-xi-counter]');
+                const saveButton = panel.querySelector('[data-xi-save]');
+                const searchInput = panel.querySelector('[data-xi-search]');
+                const rows = () => Array.from(panel.querySelectorAll('[data-xi-row]'));
+                const autoSelectIds = JSON.parse(panel.dataset.autoSelectIds || '[]').map(String);
+
+                function selectedCount() {
+                    return checkboxes().filter((cb) => cb.checked).length;
+                }
+
+                function refreshCounterAndSave() {
+                    const count = selectedCount();
+
+                    if (counterEl) counterEl.textContent = `${count} / ${maxPlayers} selected`;
+
+                    if (saveButton) saveButton.disabled = count !== maxPlayers;
+                }
+
+                function notifyMax() {
+                    if (window.Swal) {
+                        window.Swal.fire({
+                            icon: 'warning',
+                            text: 'Maximum 11 players can be selected.',
+                            toast: true,
+                            position: 'top-end',
+                            timer: 2200,
+                            showConfirmButton: false,
+                        });
+                    } else {
+                        window.alert('Maximum 11 players can be selected.');
+                    }
+                }
+
+                checkboxes().forEach((checkbox) => {
+                    checkbox.addEventListener('change', () => {
+                        if (checkbox.checked && selectedCount() > maxPlayers) {
+                            checkbox.checked = false;
+                            notifyMax();
+
+                            return;
+                        }
+
+                        refreshCounterAndSave();
+                    });
+                });
+
+                const autoSelectButton = panel.querySelector('[data-xi-auto-select]');
+                if (autoSelectButton) {
+                    autoSelectButton.addEventListener('click', () => {
+                        checkboxes().forEach((cb) => {
+                            cb.checked = autoSelectIds.includes(cb.value);
+                        });
+                        refreshCounterAndSave();
+                    });
+                }
+
+                const clearButton = panel.querySelector('[data-xi-clear]');
+                if (clearButton) {
+                    clearButton.addEventListener('click', () => {
+                        checkboxes().forEach((cb) => { cb.checked = false; });
+                        refreshCounterAndSave();
+                    });
+                }
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', () => {
+                        const term = searchInput.value.trim().toLowerCase();
+
+                        rows().forEach((row) => {
+                            const name = (row.dataset.playerName || '').toLowerCase();
+                            row.hidden = term.length > 0 && !name.includes(term);
+                        });
+                    });
+                }
+
+                refreshCounterAndSave();
+            });
+        });
+    </script>
 @endsection
