@@ -14,6 +14,7 @@ use App\Services\GameMatch\GameMatchService;
 use App\Services\GameMatch\MatchFlowService;
 use App\Services\GameMatch\MatchResultService;
 use App\Services\Innings\InningsService;
+use App\Services\Settings\DisplayTimezoneFormatter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,7 @@ class GameMatchController extends Controller
         private readonly MatchFlowService $matchFlow,
         private readonly InningsService $innings,
         private readonly MatchResultService $results,
+        private readonly DisplayTimezoneFormatter $displayTimezone,
     ) {}
 
     public function index(Request $request): View
@@ -157,7 +159,10 @@ class GameMatchController extends Controller
     {
         $this->authorize('create', GameMatch::class);
 
-        $this->matches->createMatch($request->validated());
+        $data = $request->validated();
+        $data['scheduled_at'] = $this->displayTimezone->parseFromDisplayTimezone($data['scheduled_at']);
+
+        $this->matches->createMatch($data);
 
         return redirect()
             ->route('admin.matches.index')
@@ -251,7 +256,13 @@ class GameMatchController extends Controller
     {
         $this->authorize('update', $match);
 
-        $this->matches->updateMatch($match, $request->validated());
+        $data = $request->validated();
+
+        if (array_key_exists('scheduled_at', $data)) {
+            $data['scheduled_at'] = $this->displayTimezone->parseFromDisplayTimezone($data['scheduled_at']);
+        }
+
+        $this->matches->updateMatch($match, $data);
 
         return redirect()
             ->route('admin.matches.index')

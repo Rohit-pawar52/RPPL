@@ -25,6 +25,10 @@ class ScoringEvent extends Model
 
     public const TYPE_BOWLER_CHANGE_MID_OVER = 'bowler_change_mid_over';
 
+    public const TYPE_NEW_BATTER_SELECTED = 'new_batter_selected';
+
+    public const TYPE_OVER_BOWLER_SELECTED = 'over_bowler_selected';
+
     public const TYPE_MANUAL_INNINGS_COMPLETION = 'manual_innings_completion';
 
     public const TYPE_INNINGS_REOPENED = 'innings_reopened';
@@ -32,6 +36,26 @@ class ScoringEvent extends Model
     public const TYPE_MATCH_RESULT_REOPENED = 'match_result_reopened';
 
     public const TYPE_SUPER_OVER_RESULT = 'super_over_result';
+
+    /**
+     * Event types Universal Undo (frozen rule 42) may reverse. Lifecycle
+     * events (manual completion, innings/match reopen, Super Over
+     * result) are deliberately excluded — each already has its own
+     * dedicated, explicit reopen/re-record action, and folding them into
+     * generic undo would duplicate that existing architecture rather
+     * than reuse it.
+     *
+     * @var list<string>
+     */
+    public const UNDOABLE_TYPES = [
+        self::TYPE_PENALTY_RUNS,
+        self::TYPE_RETIRED_HURT,
+        self::TYPE_RETIRED_OUT,
+        self::TYPE_CHANGE_STRIKE,
+        self::TYPE_BOWLER_CHANGE_MID_OVER,
+        self::TYPE_NEW_BATTER_SELECTED,
+        self::TYPE_OVER_BOWLER_SELECTED,
+    ];
 
     protected $fillable = [
         'match_id',
@@ -43,13 +67,22 @@ class ScoringEvent extends Model
         'payload',
         'reason',
         'performed_by',
+        'action_sequence',
+        'undone_at',
+        'undone_by',
     ];
 
     protected function casts(): array
     {
         return [
             'payload' => 'array',
+            'undone_at' => 'datetime',
         ];
+    }
+
+    public function scopeNotUndone($query)
+    {
+        return $query->whereNull('undone_at');
     }
 
     public function match(): BelongsTo
@@ -75,5 +108,10 @@ class ScoringEvent extends Model
     public function performedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'performed_by');
+    }
+
+    public function undoneBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'undone_by');
     }
 }

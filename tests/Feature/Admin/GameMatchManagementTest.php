@@ -12,6 +12,7 @@ use App\Models\Team;
 use App\Models\TeamPlayer;
 use App\Models\User;
 use App\Models\Venue;
+use App\Services\Settings\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -68,7 +69,7 @@ class GameMatchManagementTest extends TestCase
             'edition_id' => $edition->id,
             'edition_team_a_id' => $teamA->id,
             'edition_team_b_id' => $teamB->id,
-            'scheduled_at' => now()->addDay()->format('Y-m-d H:i:s'),
+            'scheduled_at' => now()->addDay()->format('Y-m-d\TH:i'),
         ], $overrides);
     }
 
@@ -110,7 +111,7 @@ class GameMatchManagementTest extends TestCase
                 'edition_id' => $match->edition_id,
                 'edition_team_a_id' => $match->edition_team_a_id,
                 'edition_team_b_id' => $match->edition_team_b_id,
-                'scheduled_at' => now()->addDay()->format('Y-m-d H:i:s'),
+                'scheduled_at' => now()->addDay()->format('Y-m-d\TH:i'),
             ])
             ->assertForbidden();
     }
@@ -154,6 +155,30 @@ class GameMatchManagementTest extends TestCase
             'edition_team_b_id' => $teamB->id,
             'match_number' => 1,
         ]);
+    }
+
+    /**
+     * The scheduling form's datetime-local input is a naive string
+     * meant relative to system.display_timezone (Asia/Kolkata by
+     * default), never UTC directly — GameMatchController must convert
+     * it the same way AnnouncementController already does for starts_at/
+     * ends_at, or a time entered by the admin ends up stored 5:30 off.
+     */
+    public function test_scheduled_at_is_stored_converted_from_the_display_timezone_to_utc(): void
+    {
+        app(SettingsService::class)->set('system.display_timezone', 'Asia/Kolkata');
+
+        [$edition, $teamA, $teamB] = $this->eligibleTeams();
+
+        $this->actingAs($this->admin())->post(
+            route('admin.matches.store'),
+            $this->validPayload($edition, $teamA, $teamB, ['match_number' => 1, 'scheduled_at' => '2026-06-10T19:00'])
+        );
+
+        $match = GameMatch::where('edition_id', $edition->id)->where('match_number', 1)->firstOrFail();
+
+        // 19:00 IST (UTC+5:30) is 13:30 UTC the same day.
+        $this->assertSame('2026-06-10 13:30:00', $match->scheduled_at->format('Y-m-d H:i:s'));
     }
 
     public function test_completed_edition_is_rejected(): void
@@ -307,11 +332,29 @@ class GameMatchManagementTest extends TestCase
             'edition_team_a_id' => $match->edition_team_a_id,
             'edition_team_b_id' => $match->edition_team_b_id,
             'venue_id' => $newVenue->id,
-            'scheduled_at' => now()->addDays(10)->format('Y-m-d H:i:s'),
+            'scheduled_at' => now()->addDays(10)->format('Y-m-d\TH:i'),
         ]);
 
         $response->assertRedirect(route('admin.matches.index'));
         $this->assertDatabaseHas('matches', ['id' => $match->id, 'venue_id' => $newVenue->id]);
+    }
+
+    public function test_scheduled_at_is_converted_from_display_timezone_on_update_too(): void
+    {
+        app(SettingsService::class)->set('system.display_timezone', 'Asia/Kolkata');
+
+        $match = GameMatch::factory()->create(['scheduled_at' => now()->addDays(3)]);
+
+        $this->actingAs($this->admin())->put(route('admin.matches.update', $match), [
+            'edition_id' => $match->edition_id,
+            'edition_team_a_id' => $match->edition_team_a_id,
+            'edition_team_b_id' => $match->edition_team_b_id,
+            'venue_id' => $match->venue_id,
+            'scheduled_at' => '2026-06-10T19:00',
+        ]);
+
+        // 19:00 IST (UTC+5:30) is 13:30 UTC the same day.
+        $this->assertSame('2026-06-10 13:30:00', $match->fresh()->scheduled_at->format('Y-m-d H:i:s'));
     }
 
     /**
@@ -338,7 +381,7 @@ class GameMatchManagementTest extends TestCase
             'edition_team_a_id' => $match->edition_team_a_id,
             'edition_team_b_id' => $match->edition_team_b_id,
             'venue_id' => $newVenue->id,
-            'scheduled_at' => now()->addDays(10)->format('Y-m-d H:i:s'),
+            'scheduled_at' => now()->addDays(10)->format('Y-m-d\TH:i'),
         ]);
 
         $response->assertSessionDoesntHaveErrors();
@@ -355,7 +398,7 @@ class GameMatchManagementTest extends TestCase
             'edition_id' => $match->edition_id,
             'edition_team_a_id' => $wrongTeam->id,
             'edition_team_b_id' => $match->edition_team_b_id,
-            'scheduled_at' => now()->addDay()->format('Y-m-d H:i:s'),
+            'scheduled_at' => now()->addDay()->format('Y-m-d\TH:i'),
         ]);
 
         $response->assertSessionHasErrors('edition_team_a_id');
@@ -373,7 +416,7 @@ class GameMatchManagementTest extends TestCase
             'edition_team_a_id' => $teamA->id,
             'edition_team_b_id' => $teamB->id,
             'match_number' => 1,
-            'scheduled_at' => now()->addDay()->format('Y-m-d H:i:s'),
+            'scheduled_at' => now()->addDay()->format('Y-m-d\TH:i'),
         ]);
 
         $response->assertSessionHasErrors('match_number');
@@ -393,7 +436,7 @@ class GameMatchManagementTest extends TestCase
             'edition_id' => $otherEdition->id,
             'edition_team_a_id' => $otherTeam->id,
             'edition_team_b_id' => $match->edition_team_b_id,
-            'scheduled_at' => now()->addDay()->format('Y-m-d H:i:s'),
+            'scheduled_at' => now()->addDay()->format('Y-m-d\TH:i'),
         ]);
 
         $response->assertRedirect(route('admin.matches.index'));
@@ -421,7 +464,7 @@ class GameMatchManagementTest extends TestCase
             'edition_id' => $otherEdition->id,
             'edition_team_a_id' => $otherTeam->id,
             'edition_team_b_id' => $match->edition_team_b_id,
-            'scheduled_at' => now()->addDay()->format('Y-m-d H:i:s'),
+            'scheduled_at' => now()->addDay()->format('Y-m-d\TH:i'),
         ]);
 
         $this->assertDatabaseHas('matches', [

@@ -77,7 +77,16 @@ class ScoringEventService
                 'type' => ScoringEvent::TYPE_CHANGE_STRIKE,
                 'reason' => $reason,
                 'performed_by' => $performedBy->id,
-                'payload' => ['striker_match_player_id' => $strikerId, 'non_striker_match_player_id' => $nonStrikerId],
+                'action_sequence' => $this->deliveries->nextActionSequence($lockedInnings),
+                // before_pending_state (frozen rule 42) lets Universal
+                // Undo restore exactly what expectedBattingState() would
+                // have returned immediately before this correction, never
+                // a freshly re-derived guess.
+                'payload' => [
+                    'striker_match_player_id' => $strikerId,
+                    'non_striker_match_player_id' => $nonStrikerId,
+                    'before_pending_state' => $state,
+                ],
             ]);
 
             $lockedInnings->update([
@@ -88,6 +97,8 @@ class ScoringEventService
                     'non_striker_id' => $nonStrikerId,
                     'survivor_id' => null,
                     'survivor_end' => null,
+                    'bowler_id' => $state['bowler_id'] ?? null,
+                    'awaiting_new_over_bowler' => $state['awaiting_new_over_bowler'] ?? false,
                 ],
             ]);
         });
@@ -141,6 +152,8 @@ class ScoringEventService
                 'match_player_id' => $batterId,
                 'reason' => $reason,
                 'performed_by' => $performedBy->id,
+                'action_sequence' => $this->deliveries->nextActionSequence($lockedInnings),
+                'payload' => ['before_pending_state' => $state],
             ]);
 
             $lockedInnings->update([
@@ -151,6 +164,8 @@ class ScoringEventService
                     'non_striker_id' => null,
                     'survivor_id' => $survivorId,
                     'survivor_end' => $survivorEnd,
+                    'bowler_id' => $state['bowler_id'] ?? null,
+                    'awaiting_new_over_bowler' => $state['awaiting_new_over_bowler'] ?? false,
                 ],
             ]);
 
@@ -172,7 +187,7 @@ class ScoringEventService
      */
     public function selectNewBatter(GameMatch $match, Innings $innings, int $newBatterId, User $performedBy): void
     {
-        DB::transaction(function () use ($match, $innings, $newBatterId) {
+        DB::transaction(function () use ($match, $innings, $newBatterId, $performedBy) {
             $lockedInnings = Innings::query()->whereKey($innings->id)->lockForUpdate()->firstOrFail();
 
             $this->assertInningsIsLive($match, $lockedInnings);
@@ -198,6 +213,23 @@ class ScoringEventService
             if (in_array($newBatterId, $dismissed, true)) {
                 throw ValidationException::withMessages(['match_player_id' => 'A player already dismissed or retired out in this innings cannot return to the crease.']);
             }
+
+            // Frozen rule 42: Select New Batter previously never left an
+            // audit trail (it's a normal continuation of play, not a
+            // correction — no reason is required or stored here either),
+            // which also meant Universal Undo had nothing to reverse it
+            // with. This ScoringEvent exists purely so undo can restore
+            // the exact prior pending_state; it carries no reason.
+            ScoringEvent::create([
+                'match_id' => $match->id,
+                'innings_id' => $lockedInnings->id,
+                'type' => ScoringEvent::TYPE_NEW_BATTER_SELECTED,
+                'match_player_id' => $newBatterId,
+                'reason' => '',
+                'performed_by' => $performedBy->id,
+                'action_sequence' => $this->deliveries->nextActionSequence($lockedInnings),
+                'payload' => ['before_pending_state' => $state],
+            ]);
 
             $lockedInnings->update([
                 'pending_state' => [
@@ -225,7 +257,7 @@ class ScoringEventService
      */
     public function selectOverBowler(GameMatch $match, Innings $innings, int $bowlerId, User $performedBy): void
     {
-        DB::transaction(function () use ($match, $innings, $bowlerId) {
+        DB::transaction(function () use ($match, $innings, $bowlerId, $performedBy) {
             $lockedInnings = Innings::query()->whereKey($innings->id)->lockForUpdate()->firstOrFail();
 
             $this->assertInningsIsLive($match, $lockedInnings);
@@ -247,6 +279,21 @@ class ScoringEventService
             if ($previousBowlerId !== null && $previousBowlerId === $bowlerId) {
                 throw ValidationException::withMessages(['bowler_match_player_id' => 'The same bowler cannot bowl two overs in a row.']);
             }
+
+            // Frozen rule 42: same rationale as Select New Batter above —
+            // this ScoringEvent exists purely so Universal Undo has
+            // something to restore the prior pending_state from; no
+            // reason is required or stored.
+            ScoringEvent::create([
+                'match_id' => $match->id,
+                'innings_id' => $lockedInnings->id,
+                'type' => ScoringEvent::TYPE_OVER_BOWLER_SELECTED,
+                'match_player_id' => $bowlerId,
+                'reason' => '',
+                'performed_by' => $performedBy->id,
+                'action_sequence' => $this->deliveries->nextActionSequence($lockedInnings),
+                'payload' => ['before_pending_state' => $state],
+            ]);
 
             $lockedInnings->update([
                 'pending_state' => array_merge($state, [
@@ -295,10 +342,12 @@ class ScoringEventService
                 'type' => ScoringEvent::TYPE_BOWLER_CHANGE_MID_OVER,
                 'reason' => $reason,
                 'performed_by' => $performedBy->id,
+                'action_sequence' => $this->deliveries->nextActionSequence($lockedInnings),
                 'payload' => [
                     'old_bowler_match_player_id' => (int) $state['bowler_id'],
                     'new_bowler_match_player_id' => $newBowlerId,
                     'over_number' => intdiv($lockedInnings->legal_balls, 6),
+                    'before_pending_state' => $state,
                 ],
             ]);
 
@@ -385,14 +434,17 @@ class ScoringEventService
         }
 
         DB::transaction(function () use ($match, $innings, $awardedTeam, $reason, $performedBy) {
+            $lockedContextInnings = Innings::query()->whereKey($innings->id)->lockForUpdate()->firstOrFail();
+
             ScoringEvent::create([
                 'match_id' => $match->id,
-                'innings_id' => $innings->id,
+                'innings_id' => $lockedContextInnings->id,
                 'type' => ScoringEvent::TYPE_PENALTY_RUNS,
                 'awarded_team_id' => $awardedTeam->id,
                 'runs' => self::STANDARD_PENALTY_RUNS,
                 'reason' => $reason,
                 'performed_by' => $performedBy->id,
+                'action_sequence' => $this->deliveries->nextActionSequence($lockedContextInnings),
             ]);
 
             $targetInnings = Innings::query()

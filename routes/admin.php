@@ -118,8 +118,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
             // resource controller; "undo" is the only correction path,
             // scoped to the latest delivery of this specific innings.
             Route::get('innings/{innings}/score', [ScoringController::class, 'show'])->name('innings.score');
+            // Canonical scorer-state JSON (S02 rules 50-61) — polled by
+            // the scoring screen's JS and used to recover state after a
+            // refresh/reconnect (rule 53).
+            Route::get('innings/{innings}/score-data', [ScoringController::class, 'scoreData'])->name('innings.score-data');
             Route::post('innings/{innings}/deliveries', [ScoringController::class, 'store'])->name('innings.deliveries.store');
+            // Universal Undo (rule 42) now lives behind this same route —
+            // "latest" no longer means only the latest Delivery.
             Route::delete('innings/{innings}/deliveries/latest', [ScoringController::class, 'undoLatest'])->name('innings.deliveries.undo-latest');
+            // Quick correction window (rules 43/44/46) — only the latest
+            // 3 Delivery rows of an innings are ever eligible; see
+            // DeliveryService::correctDelivery().
+            Route::patch('innings/{innings}/deliveries/{delivery}/correct', [ScoringController::class, 'correctDelivery'])->name('innings.deliveries.correct');
 
             // Non-delivery scoring events (S02 rules 4/5/6/20) — never
             // create a Delivery row; each is its own reasoned, audited
