@@ -126,7 +126,7 @@ class LiveMatchTest extends TestCase
             'runs_off_bat' => 4,
         ]);
 
-        $this->get(route('public.matches.live', $match))->assertOk()->assertSee('Ball-by-Ball');
+        $this->get(route('public.matches.live', $match))->assertOk()->assertSee('This Over');
 
         $response = $this->getJson(route('public.matches.live-data', $match));
         $response->assertOk();
@@ -149,7 +149,7 @@ class LiveMatchTest extends TestCase
             ->assertRedirect(route('public.matches.show', $match));
 
         $this->followRedirects($this->get(route('public.matches.live', $match)))
-            ->assertSee('Ball-by-ball coverage will be available once scoring begins.');
+            ->assertSee('Live coverage will be available once scoring begins.');
     }
 
     public function test_completed_match_with_history_remains_viewable_and_stops_polling(): void

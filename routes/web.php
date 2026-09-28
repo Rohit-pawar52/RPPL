@@ -9,6 +9,7 @@ use App\Http\Controllers\Public\PlayerController;
 use App\Http\Controllers\Public\PlayerRegistrationController;
 use App\Http\Controllers\Public\TeamController;
 use App\Http\Controllers\Public\VenueController;
+use App\Http\Controllers\Public\VideoController;
 use App\Http\Middleware\EnsurePublicSiteIsNotUnderMaintenance;
 use App\Models\ContentPage;
 use Illuminate\Support\Facades\Route;
@@ -33,6 +34,7 @@ Route::middleware(EnsurePublicSiteIsNotUnderMaintenance::class)->group(function 
         Route::get('/{match}', [MatchController::class, 'show'])->name('show');
         Route::get('/{match}/scorecard', [MatchController::class, 'scorecard'])->name('scorecard');
         Route::get('/{match}/scorecard/pdf', [MatchController::class, 'scorecardPdf'])->name('scorecard.pdf');
+        Route::get('/{match}/squads', [MatchController::class, 'squads'])->name('squads');
         Route::get('/{match}/live', [MatchController::class, 'live'])->name('live');
         Route::get('/{match}/live-data', [MatchController::class, 'liveData'])->name('live-data');
     });
@@ -50,6 +52,10 @@ Route::middleware(EnsurePublicSiteIsNotUnderMaintenance::class)->group(function 
     Route::prefix('venues')->name('public.venues.')->group(function () {
         Route::get('/', [VenueController::class, 'index'])->name('index');
         Route::get('/{venue}', [VenueController::class, 'show'])->name('show');
+    });
+
+    Route::prefix('videos')->name('public.videos.')->group(function () {
+        Route::get('/', [VideoController::class, 'index'])->name('index');
     });
 
     Route::prefix('player-registration')->name('public.player-registration.')->group(function () {

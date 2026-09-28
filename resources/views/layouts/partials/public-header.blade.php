@@ -1,5 +1,5 @@
 <header class="sticky top-0 z-40 border-b border-neutral-200 bg-white">
-    <div class="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-6">
+    <div class="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-2.5 lg:px-6">
         <a href="{{ route('public.home') }}" class="flex items-center gap-2 font-semibold text-neutral-900">
             @if($branding->logoUrl)
                 <img src="{{ $branding->logoUrl }}" alt="{{ $branding->applicationName }}" class="h-7 w-7 rounded-md object-contain" />
@@ -11,22 +11,31 @@
             <span class="text-sm">{{ $branding->shortName }}</span>
         </a>
 
-        <nav class="flex flex-wrap items-center gap-4 text-[13px] font-medium text-neutral-600">
+        {{-- Desktop nav: the 5 primary areas directly, everything else
+             tucked into a native <details> "More" menu — no JS needed
+             for either this or the mobile drawer below. --}}
+        <nav class="hidden items-center gap-4 text-[13px] font-medium text-neutral-600 md:flex">
             <a href="{{ route('public.home') }}" class="hover:text-neutral-900">Home</a>
-            <a href="{{ route('public.editions.index') }}" class="hover:text-neutral-900">Editions</a>
             <a href="{{ route('public.matches.index') }}" class="hover:text-neutral-900">Matches</a>
+            @if($currentEditionForNav)
+                <a href="{{ route('public.editions.show', $currentEditionForNav) }}" class="hover:text-neutral-900">Points Table</a>
+            @endif
             <a href="{{ route('public.teams.index') }}" class="hover:text-neutral-900">Teams</a>
             <a href="{{ route('public.players.index') }}" class="hover:text-neutral-900">Players</a>
-            <a href="{{ route('public.venues.index') }}" class="hover:text-neutral-900">Venues</a>
-            <a href="{{ route('public.player-registration.create') }}" class="hover:text-neutral-900">Register</a>
-            {{-- Compact bell badge (Phase 3.47) — hidden by default;
-                 resources/js/push-notifications.js reveals it only once
-                 the browser/Firebase config are confirmed usable.
-                 Clicking it never itself guarantees a native permission
-                 prompt: the JS decides what to do based on the CURRENT
-                 Notification.permission (request it, show blocked help,
-                 or do nothing if already granted) — see
-                 push-notifications.js for the full state machine. --}}
+
+            <details class="group relative">
+                <summary class="flex cursor-pointer list-none items-center gap-1 hover:text-neutral-900">
+                    More
+                    <span aria-hidden="true" class="text-[10px] text-neutral-400">&#9662;</span>
+                </summary>
+                <div class="absolute right-0 z-50 mt-2 w-44 rounded-md border border-neutral-200 bg-white py-1 text-[13px] shadow-lg">
+                    <a href="{{ route('public.venues.index') }}" class="block px-3 py-1.5 hover:bg-neutral-50">Venues</a>
+                    <a href="{{ route('public.editions.index') }}" class="block px-3 py-1.5 hover:bg-neutral-50">Editions</a>
+                    <a href="{{ route('public.player-registration.create') }}" class="block px-3 py-1.5 hover:bg-neutral-50">Player Registration</a>
+                    <a href="{{ route('public.faqs') }}" class="block px-3 py-1.5 hover:bg-neutral-50">FAQs</a>
+                </div>
+            </details>
+
             <span class="relative inline-flex">
                 <button
                     type="button"
@@ -46,5 +55,29 @@
             </span>
             <a href="{{ route('admin.login') }}" class="text-neutral-400 hover:text-neutral-600">Admin</a>
         </nav>
+
+        {{-- Mobile: a single <details> drawer toggle, no JS. --}}
+        <details class="group relative md:hidden">
+            <summary class="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-md text-neutral-600 hover:bg-neutral-100">
+                <x-icon name="menu" class="h-5 w-5 group-open:hidden" />
+                <x-icon name="close" class="hidden h-5 w-5 group-open:block" />
+            </summary>
+            <nav class="absolute right-0 z-50 mt-2 w-56 rounded-md border border-neutral-200 bg-white py-1 text-[13px] font-medium text-neutral-700 shadow-lg">
+                <a href="{{ route('public.home') }}" class="block px-3 py-2 hover:bg-neutral-50">Home</a>
+                <a href="{{ route('public.matches.index') }}" class="block px-3 py-2 hover:bg-neutral-50">Matches</a>
+                @if($currentEditionForNav)
+                    <a href="{{ route('public.editions.show', $currentEditionForNav) }}" class="block px-3 py-2 hover:bg-neutral-50">Points Table</a>
+                @endif
+                <a href="{{ route('public.teams.index') }}" class="block px-3 py-2 hover:bg-neutral-50">Teams</a>
+                <a href="{{ route('public.players.index') }}" class="block px-3 py-2 hover:bg-neutral-50">Players</a>
+                <a href="{{ route('public.venues.index') }}" class="block px-3 py-2 hover:bg-neutral-50">Venues</a>
+                <a href="{{ route('public.editions.index') }}" class="block px-3 py-2 hover:bg-neutral-50">Editions</a>
+                <a href="{{ route('public.player-registration.create') }}" class="block px-3 py-2 hover:bg-neutral-50">Player Registration</a>
+                <a href="{{ route('public.faqs') }}" class="block px-3 py-2 hover:bg-neutral-50">FAQs</a>
+                <div class="mt-1 border-t border-neutral-100 pt-1">
+                    <a href="{{ route('admin.login') }}" class="block px-3 py-2 text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600">Admin</a>
+                </div>
+            </nav>
+        </details>
     </div>
 </header>
