@@ -16,22 +16,10 @@
         </a>
     </div>
 
-    <div class="rounded-lg border border-neutral-200 bg-white p-3 sm:p-4">
-        <p class="truncate text-[11px] text-neutral-500">{{ $match->edition->name }}</p>
-        <h1 class="mt-0.5 text-base font-semibold text-neutral-900">
-            {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
-        </h1>
-        <p class="mt-1 text-[11px] text-neutral-500">
-            @if($match->venue)
-                {{ $match->venue->name }} &middot;
-            @endif
-            {{ display_datetime($match->scheduled_at, 'd M Y, h:i A') }}
-        </p>
-        <div class="mt-2">
-            <x-status-badge :status="$match->match_status" />
-        </div>
-    </div>
-
+    {{-- No match-info card here on purpose — team names/venue/date/
+         status already live one tab over (Match Info); the Scorecard
+         tab goes straight from the tabs into the result and the
+         innings themselves, per the cricket-portal reference. --}}
     @include('public.matches._match-tabs', ['match' => $match, 'active' => 'scorecard'])
 
     @if($match->match_status === 'completed' && $match->match_result)
