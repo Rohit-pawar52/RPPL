@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\TeamPlayerController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VenueController;
+use App\Http\Controllers\Admin\VideoController;
 use App\Models\CommitteeMember;
 use Illuminate\Support\Facades\Route;
 
@@ -268,5 +269,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/', [ContentPageController::class, 'index'])->name('index');
             Route::put('{content_page}', [ContentPageController::class, 'update'])->name('update');
         });
+
+        // Admin-uploaded short RPPL clips for the public homepage's
+        // Featured Videos section — no show(), same as announcements.
+        // Activate/deactivate is just the status field on the edit form.
+        Route::resource('videos', VideoController::class)->except(['show']);
     });
 });

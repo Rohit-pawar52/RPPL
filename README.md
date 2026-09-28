@@ -107,6 +107,12 @@ One centralized, admin-only destructive-cleanup module — normal operational wo
 - Three fixed content-page slots (`admin/content-pages`), each with Markdown-authored content rendered safely to HTML (`MarkdownRenderer`, raw HTML input escaped, unsafe links rejected) and shown at its own public route/footer link.
 - No create/delete — the three slots are fixed identities, only their content is editable.
 
+### Videos (homepage clips)
+
+- Admin-managed short RPPL clips (`admin/videos`) — title, optional description, an MP4/WebM video file, an optional JPG/PNG/WebP thumbnail, a status (Active/Inactive) and a priority number (lower shows first).
+- Upload size is capped by `VIDEOS_MAX_UPLOAD_MB` (default 50 MB), aimed at short ~1–2 minute clips; errors are worded in MB. No transcoding or auto-generated thumbnails — files are stored as uploaded.
+- Editing without choosing a new file keeps the existing video/thumbnail; replacing or deleting a video removes the old stored files. Activating/deactivating is just the Status field on the edit form.
+
 ### Global settings, dynamic branding & theme
 
 - A tabbed admin Settings screen (`admin/settings`) covering general branding (application name, short name, tagline, logo/favicon, footer text), contact details, system options (currency symbol, display timezone, the committee dues target — see Finance below), and encrypted payment-gateway secrets — each tab its own scoped update action, never one generic "update settings" endpoint.
