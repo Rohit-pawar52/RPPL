@@ -140,6 +140,34 @@ class MatchScorecardAndSquadsTest extends TestCase
         $response->assertSee('Econ');
     }
 
+    public function test_scorecard_with_two_innings_renders_a_pure_css_toggle_showing_one_at_a_time(): void
+    {
+        [$match] = $this->matchWithFullScorecard();
+        $teamB = $match->teamB;
+
+        Innings::create([
+            'match_id' => $match->id,
+            'innings_number' => 2,
+            'batting_team_id' => $teamB->id,
+            'bowling_team_id' => $match->teamA->id,
+            'status' => 'completed',
+            'total_runs' => 10,
+            'total_wickets' => 1,
+        ]);
+
+        $response = $this->get(route('public.matches.scorecard', $match));
+
+        $response->assertOk();
+        // Two radio-driven pills, first innings selected by default —
+        // no JS switcher, both panels exist in the DOM but only one is
+        // visible at a time via the has-checked/group-has-[] CSS.
+        $response->assertSee('name="innings-tab"', false);
+        $response->assertSee('value="1"', false);
+        $response->assertSee('value="2"', false);
+        $response->assertSee("group-has-[input[value='1']:checked]/innings:block", false);
+        $response->assertSee("group-has-[input[value='2']:checked]/innings:block", false);
+    }
+
     public function test_scorecard_shows_prominent_result_and_hides_pdf_cta(): void
     {
         [$match] = $this->matchWithFullScorecard();
