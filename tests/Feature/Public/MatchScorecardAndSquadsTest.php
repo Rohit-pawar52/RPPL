@@ -63,17 +63,24 @@ class MatchScorecardAndSquadsTest extends TestCase
         ]);
 
         // On Team A's squad, but never given a MatchPlayer row for this
-        // match — must never appear on the public Squads page.
+        // match — must never appear on the public Squads page. jersey
+        // numbers throughout this fixture are all explicit and distinct
+        // per team (never left to the factory's random default), since
+        // team_players has a real (edition_team_id, jersey_number)
+        // unique constraint the factory's fake()->unique() knows nothing
+        // about an explicitly-passed override elsewhere in the same team.
         $benchPlayerA = Player::factory()->create();
         TeamPlayer::factory()->create([
             'edition_team_id' => $teamA->id,
             'player_registration_id' => PlayerRegistration::factory()->create(['edition_id' => $edition->id, 'player_id' => $benchPlayerA->id])->id,
+            'jersey_number' => 11,
         ]);
 
         $bowler = Player::factory()->create();
         $bowlerTeamPlayer = TeamPlayer::factory()->create([
             'edition_team_id' => $teamB->id,
             'player_registration_id' => PlayerRegistration::factory()->create(['edition_id' => $edition->id, 'player_id' => $bowler->id])->id,
+            'jersey_number' => 21,
             'role' => 'bowler',
         ]);
         $bowlerMatchPlayer = MatchPlayer::factory()->create(['match_id' => $match->id, 'team_player_id' => $bowlerTeamPlayer->id]);
@@ -82,6 +89,7 @@ class MatchScorecardAndSquadsTest extends TestCase
         TeamPlayer::factory()->create([
             'edition_team_id' => $teamB->id,
             'player_registration_id' => PlayerRegistration::factory()->create(['edition_id' => $edition->id, 'player_id' => $benchPlayerB->id])->id,
+            'jersey_number' => 23,
         ]);
 
         $innings = Innings::create([
