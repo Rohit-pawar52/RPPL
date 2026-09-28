@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Models\GameMatch;
+use App\Models\MatchPlayer;
 use App\Services\LiveMatch\LiveMatchService;
 use App\Services\Scoring\ScorecardService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -80,7 +81,8 @@ class MatchController extends Controller
                 ->with('info', 'Scorecard will be available once the match begins.');
         }
 
-        $match->load(['edition', 'teamA.team', 'teamB.team']);
+        $match->load(['edition', 'teamA.team', 'teamB.team', 'venue']);
+        $match->loadCount('innings');
 
         return view('public.matches.scorecard', [
             'match' => $match,
@@ -114,15 +116,42 @@ class MatchController extends Controller
         return $pdf->download($filename);
     }
 
+    /**
+     * The match's Playing XI for each team, split by edition_team —
+     * never the full squad. A team with no saved MatchPlayer rows yet
+     * (Playing XI not announced) simply gets an empty collection; the
+     * view renders that as its own explicit state rather than falling
+     * back to the squad list.
+     */
+    public function squads(GameMatch $match): View
+    {
+        $match->load(['edition', 'teamA.team', 'teamB.team', 'venue']);
+        $match->loadCount('innings');
+
+        $selected = MatchPlayer::query()
+            ->where('match_id', $match->id)
+            ->with('teamPlayer.playerRegistration.player')
+            ->get()
+            ->sortBy(fn (MatchPlayer $matchPlayer) => $matchPlayer->teamPlayer->jersey_number ?? PHP_INT_MAX)
+            ->groupBy(fn (MatchPlayer $matchPlayer) => $matchPlayer->teamPlayer->edition_team_id);
+
+        return view('public.matches.squads', [
+            'match' => $match,
+            'teamAPlayers' => $selected->get($match->edition_team_a_id) ?? collect(),
+            'teamBPlayers' => $selected->get($match->edition_team_b_id) ?? collect(),
+        ]);
+    }
+
     public function live(GameMatch $match): View|RedirectResponse
     {
         if (! $this->liveMatch->isAvailable($match)) {
             return redirect()
                 ->route('public.matches.show', $match)
-                ->with('info', 'Ball-by-ball coverage will be available once scoring begins.');
+                ->with('info', 'Live coverage will be available once scoring begins.');
         }
 
         $match->load(['edition', 'teamA.team', 'teamB.team', 'venue', 'tossWinner.team']);
+        $match->loadCount('innings');
 
         return view('public.matches.live', [
             'match' => $match,

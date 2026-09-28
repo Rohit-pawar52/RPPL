@@ -1,29 +1,42 @@
 {{--
-    Compact per-match tab nav: Live | Scorecard | Match Info.
-    Expects: $match, $active ('live' | 'scorecard' | 'info').
-    Only include it when the match has scoring data (Innings) — the Live
-    and Scorecard pages both redirect away otherwise, so rendering these
-    tabs for an unscored match would only produce dead links. No Squads/
-    Commentary tabs: there is no public per-match view for either.
+    Compact per-match tab nav: Live | Scorecard | Squads | Match Info.
+    Expects: $match (with innings_count loaded via loadCount('innings'))
+    and $active ('live' | 'scorecard' | 'squads' | 'info').
+
+    Live and Scorecard only appear once the match actually has scoring
+    data (Innings) — both pages redirect back to Match Info otherwise,
+    so showing them for an unscored match would only produce dead links.
+    Squads and Match Info are always shown: a Playing XI (or its
+    "not announced yet" state) and basic match info are both meaningful
+    before a ball is bowled. No Commentary/Graphs/Highlights tabs — no
+    public data backs them.
 --}}
 @php
     $isLive = $match->match_status === 'live';
-    $tabs = [
-        'live' => [
-            'label' => $isLive ? 'Live' : 'Ball-by-Ball',
+    $tabs = [];
+
+    if ($match->innings_count > 0) {
+        $tabs['live'] = [
+            'label' => 'Live',
             'url' => route('public.matches.live', $match),
             'icon' => 'chart-bar',
-        ],
-        'scorecard' => [
+        ];
+        $tabs['scorecard'] = [
             'label' => 'Scorecard',
             'url' => route('public.matches.scorecard', $match),
             'icon' => 'document-chart',
-        ],
-        'info' => [
-            'label' => 'Match Info',
-            'url' => route('public.matches.show', $match),
-            'icon' => 'clipboard',
-        ],
+        ];
+    }
+
+    $tabs['squads'] = [
+        'label' => 'Squads',
+        'url' => route('public.matches.squads', $match),
+        'icon' => 'users',
+    ];
+    $tabs['info'] = [
+        'label' => 'Match Info',
+        'url' => route('public.matches.show', $match),
+        'icon' => 'clipboard',
     ];
 @endphp
 

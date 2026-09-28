@@ -9,11 +9,7 @@
         </a>
     </div>
 
-    {{-- Tabs only once scoring data exists: Live/Scorecard redirect back
-         here otherwise, so an unscored match gets no dead tabs. --}}
-    @if($match->innings_count > 0)
-        @include('public.matches._match-tabs', ['match' => $match, 'active' => 'info'])
-    @endif
+    @include('public.matches._match-tabs', ['match' => $match, 'active' => 'info'])
 
     <div class="rounded-lg border border-neutral-200 bg-white p-4">
         <div class="flex items-center justify-between gap-3">

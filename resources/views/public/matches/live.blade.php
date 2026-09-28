@@ -60,7 +60,7 @@
         </div>
 
         <div class="mt-3 rounded-lg border border-neutral-200 bg-white p-3 sm:p-4">
-            <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Ball-by-Ball</h3>
+            <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">This Over</h3>
             <div id="live-deliveries">
                 @forelse($liveData['recent_deliveries'] as $delivery)
                     @include('public.matches._live-delivery-row', ['delivery' => $delivery])

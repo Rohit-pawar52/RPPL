@@ -15,7 +15,7 @@
     // match outcome instead of contradicting it.
     $inningsInterrupted = $innings->status === 'live' && in_array($match->match_status, ['abandoned', 'cancelled'], true);
 @endphp
-<div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
+<div id="innings-{{ $innings->innings_number }}" class="mt-4 rounded-lg border border-neutral-200 bg-white p-4 scroll-mt-16">
     <div class="flex items-center justify-between gap-3">
         <h3 class="text-sm font-semibold text-neutral-900">
             Innings {{ $innings->innings_number }} &mdash; {{ $innings->battingTeam->team->name }}
