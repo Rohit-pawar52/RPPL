@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Database\Seeders\Demo\DemoAnnouncementSeeder;
 use Database\Seeders\Demo\DemoContentPageSeeder;
 use Database\Seeders\Demo\DemoNotificationSeeder;
+use Database\Seeders\Demo\DemoRuleSeeder;
 use Database\Seeders\Demo\DemoSettingSeeder;
 use Database\Seeders\Demo\DemoUserSeeder;
 use Database\Seeders\Rppl2026\Rppl2026EditionSeeder;
@@ -61,6 +62,7 @@ class DatabaseSeeder extends Seeder
             Rppl2026FinanceSeeder::class,
             DemoNotificationSeeder::class,
             DemoAnnouncementSeeder::class,
+            DemoRuleSeeder::class,
         ]);
     }
 }

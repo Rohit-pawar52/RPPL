@@ -108,6 +108,14 @@ One centralized, admin-only destructive-cleanup module — normal operational wo
 - A public **Videos** page (`/videos`) lists every active video, 12 per page, in the same order (lowest priority number first, then newest). Inactive videos never appear on either page.
 - Videos never autoplay. Each card uses the browser's own player (thumbnail as the poster when one exists, only metadata loaded until the viewer presses Play). Starting one video pauses any other that's playing on the page.
 
+### Rules & Regulations (public page)
+
+- A public **Rules & Regulations** page (`/rules`, linked from the header's **More** menu) shows the tournament rulebook grouped into categories (e.g. Cricket Rules, RPPL Specific Rules), one tab per category.
+- Only active categories that contain at least one active rule appear — an inactive category, an inactive rule, or a category whose rules are all inactive never shows up. Categories and rules follow their admin-set display order.
+- The selected category lives in the URL (`/rules?type=cricket-rules`), so a category can be linked to directly and stays selected on refresh. An unknown or hidden category in the link simply falls back to the first category.
+- Each rule shows its number, title, text (line breaks kept), an optional image, and an **Important** marker when flagged. A short notice at the top states that in any critical, disputed or unforeseen situation not clearly covered by the rules, the RPPL Committee's decision is final.
+- When nothing is published yet, the page shows a short "will be published here soon" message.
+
 ### Content pages (Privacy Policy / Terms & Conditions / FAQs)
 
 - Three fixed content-page slots (`admin/content-pages`), each with Markdown-authored content rendered safely to HTML (`MarkdownRenderer`, raw HTML input escaped, unsafe links rejected) and shown at its own public route/footer link.
@@ -118,6 +126,14 @@ One centralized, admin-only destructive-cleanup module — normal operational wo
 - Admin-managed short RPPL clips (`admin/videos`) — title, optional description, an MP4/WebM video file, an optional JPG/PNG/WebP thumbnail, a status (Active/Inactive) and a priority number (lower shows first).
 - Upload size is capped by `VIDEOS_MAX_UPLOAD_MB` (default 50 MB), aimed at short ~1–2 minute clips; errors are worded in MB. No transcoding or auto-generated thumbnails — files are stored as uploaded.
 - Editing without choosing a new file keeps the existing video/thumbnail; replacing or deleting a video removes the old stored files. Activating/deactivating is just the Status field on the edit form.
+
+### Rules & Regulations (admin)
+
+- One **Rules & Regulations** sidebar entry (`admin/rules`) lists every rule with its order, title, rule type, status, an "important" star and last-updated date, filterable by rule type and status and searchable by title.
+- Each rule has a rule type, a title, plain-text content (line breaks kept, no HTML), an optional JPG/PNG/WebP image up to 2 MB, a sort order (lower shows first within its type), a status (Active/Inactive) and an optional "especially important" highlight.
+- Editing without a new image keeps the current one; uploading a new image replaces it (the old file is deleted); a "Remove image" checkbox clears it with no replacement; deleting a rule also deletes its image.
+- **Rule types** (the categories rules are grouped under, e.g. Cricket Rules) are managed from a "Manage Rule Types" button on the Rules page (`admin/rule-types`) — name, a unique lowercase-hyphenated slug, optional description, sort order and Active/Inactive status. Deactivating a type hides all of its rules from the public website without touching the rules themselves.
+- A rule type that still has rules can't be deleted — the admin gets a friendly message to move/delete its rules first or deactivate the type instead.
 
 ### Global settings, dynamic branding & theme
 
