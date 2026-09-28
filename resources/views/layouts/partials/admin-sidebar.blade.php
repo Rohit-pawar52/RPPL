@@ -65,6 +65,9 @@
             <x-nav-item :route="route('admin.content-pages.index')" icon="clipboard" :active="request()->routeIs('admin.content-pages.*')">
                 Content Pages
             </x-nav-item>
+            <x-nav-item :route="route('admin.videos.index')" icon="play" :active="request()->routeIs('admin.videos.*')">
+                Videos
+            </x-nav-item>
             <x-nav-item :route="route('admin.settings.index')" icon="cog" :active="request()->routeIs('admin.settings.*')">
                 Settings
             </x-nav-item>

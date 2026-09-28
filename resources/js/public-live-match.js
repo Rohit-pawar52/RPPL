@@ -19,21 +19,115 @@ function escapeHtml(value) {
     return div.innerHTML;
 }
 
+/*
+ * Rendering helpers below mirror the Blade partials used for the initial
+ * server render (public/matches/_live-innings-row, _live-chase,
+ * _live-delivery-row and components/status-badge). They only format the
+ * /live-data payload already fetched — never derive score data — and must
+ * be kept in sync with those partials so a polled update never shows
+ * less (or different) information than a fresh page load.
+ */
+
+// Subset of components/status-badge.blade.php's map covering every match
+// and innings status this page can show.
+const STATUS_BADGE_STYLES = {
+    scheduled: 'bg-blue-50 text-blue-700 ring-blue-200',
+    toss: 'bg-amber-50 text-amber-700 ring-amber-200',
+    live: 'bg-green-50 text-green-700 ring-green-200',
+    completed: 'bg-neutral-100 text-neutral-600 ring-neutral-200',
+    abandoned: 'bg-red-50 text-red-700 ring-red-200',
+    cancelled: 'bg-red-50 text-red-700 ring-red-200',
+};
+
+function renderStatusBadge(status) {
+    const style = STATUS_BADGE_STYLES[status] ?? 'bg-neutral-100 text-neutral-600 ring-neutral-200';
+
+    return `<span class="inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ring-1 ring-inset ${style}">${escapeHtml(status)}</span>`;
+}
+
+function formatRate(value) {
+    return Number(value ?? 0).toFixed(2);
+}
+
+function plural(word, count) {
+    return count === 1 ? word : `${word}s`;
+}
+
 function renderInnings(innings) {
     return innings
-        .map(
-            (i) => `
-                <div class="rounded-lg border border-neutral-200 bg-white p-4">
-                    <p class="text-sm font-semibold text-neutral-900">Innings ${i.innings_number} &mdash; ${escapeHtml(i.batting_team)}</p>
-                    <p class="mt-1 text-lg font-semibold text-neutral-900">
-                        ${i.total_runs}/${i.total_wickets}
-                        <span class="text-xs font-normal text-neutral-500">(${escapeHtml(i.overs_display)} overs)</span>
-                    </p>
-                    <p class="text-xs text-neutral-500">${escapeHtml(i.batting_team)} batting &middot; ${escapeHtml(i.bowling_team)} bowling</p>
+        .map((i) => {
+            const borderClass = i.status === 'live' ? 'theme-primary-border' : 'border-neutral-200';
+            const crr =
+                i.crr !== undefined && i.crr !== null
+                    ? ` &middot; CRR <span class="font-semibold tabular-nums text-neutral-700">${formatRate(i.crr)}</span>`
+                    : '';
+
+            return `
+                <div class="rounded-lg border bg-white p-3 ${borderClass}">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Innings ${escapeHtml(String(i.innings_number))}</p>
+                            <p class="truncate text-[13px] font-semibold text-neutral-900">${escapeHtml(i.batting_team)}</p>
+                        </div>
+                        <div class="shrink-0 text-right">
+                            <p class="text-lg font-bold leading-tight tabular-nums text-neutral-900">${escapeHtml(String(i.total_runs))}/${escapeHtml(String(i.total_wickets))}</p>
+                            <p class="text-[11px] text-neutral-500">(${escapeHtml(i.overs_display)} overs)</p>
+                        </div>
+                    </div>
+                    <div class="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] text-neutral-500">
+                        <span class="min-w-0">vs ${escapeHtml(i.bowling_team)}${crr}</span>
+                        ${renderStatusBadge(i.status)}
+                    </div>
                 </div>
-            `
-        )
+            `;
+        })
         .join('');
+}
+
+function renderChase(chase, innings) {
+    if (!chase) {
+        return '';
+    }
+
+    const second = innings.find((i) => Number(i.innings_number) === 2);
+    const team = escapeHtml(second?.batting_team ?? 'Chasing side');
+    const headline =
+        chase.runs_needed > 0
+            ? `${team} need ${chase.runs_needed} ${plural('run', chase.runs_needed)} from ${chase.balls_remaining} ${plural('ball', chase.balls_remaining)}`
+            : `${team} have reached the target`;
+
+    const stat = (label, value) => `
+        <div>
+            <dt class="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">${label}</dt>
+            <dd class="text-[13px] font-semibold tabular-nums text-neutral-900">${escapeHtml(String(value))}</dd>
+        </div>
+    `;
+
+    return `
+        <p class="text-[13px] font-semibold text-neutral-900">${headline}</p>
+        <dl class="mt-1.5 grid grid-cols-4 gap-2 text-center">
+            ${stat('Target', chase.target)}
+            ${stat('Need', chase.runs_needed)}
+            ${stat('Balls', chase.balls_remaining)}
+            ${stat('RRR', formatRate(chase.required_run_rate))}
+        </dl>
+    `;
+}
+
+function outcomeClasses(d) {
+    if (d.is_wicket) {
+        return 'bg-red-600 text-white';
+    }
+
+    if (d.outcome_label === '6') {
+        return 'bg-emerald-600 text-white';
+    }
+
+    if (d.outcome_label === '4') {
+        return 'bg-blue-600 text-white';
+    }
+
+    return 'bg-neutral-100 text-neutral-700';
 }
 
 function renderDeliveries(deliveries) {
@@ -42,17 +136,15 @@ function renderDeliveries(deliveries) {
     }
 
     return deliveries
-        .map((d) => {
-            const outcomeClasses = d.is_wicket ? 'bg-red-50 text-red-600' : 'bg-neutral-100 text-neutral-700';
-
-            return `
-                <div class="flex items-start gap-3 border-b border-neutral-100 py-2 text-[13px] last:border-b-0">
-                    <span class="mt-0.5 w-10 shrink-0 text-xs font-medium text-neutral-500">${escapeHtml(d.ball_label)}</span>
-                    <span class="flex h-6 w-9 shrink-0 items-center justify-center rounded-md text-xs font-semibold ${outcomeClasses}">${escapeHtml(d.outcome_label)}</span>
-                    <span class="min-w-0 text-neutral-700">${escapeHtml(d.commentary)}</span>
+        .map(
+            (d) => `
+                <div class="flex items-start gap-2.5 border-b border-neutral-100 py-2 text-[13px] last:border-b-0">
+                    <span class="mt-0.5 w-9 shrink-0 text-[11px] font-medium tabular-nums text-neutral-500">${escapeHtml(d.ball_label)}</span>
+                    <span class="flex h-6 min-w-8 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-bold ${outcomeClasses(d)}">${escapeHtml(d.outcome_label)}</span>
+                    <span class="min-w-0 leading-snug text-neutral-700">${escapeHtml(d.commentary)}</span>
                 </div>
-            `;
-        })
+            `
+        )
         .join('');
 }
 
@@ -70,6 +162,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const inningsEl = document.getElementById('live-innings');
     const deliveriesEl = document.getElementById('live-deliveries');
     const resultEl = document.getElementById('live-match-result');
+    const chaseEl = document.getElementById('live-chase');
+    const statusBadgeEl = document.getElementById('live-status-badge');
 
     // Reassigned once initRealtimeUpdates() runs, below — declared here
     // so applyUpdate() can call whatever it currently is by reference.
@@ -84,8 +178,19 @@ document.addEventListener('DOMContentLoaded', () => {
             deliveriesEl.innerHTML = renderDeliveries(data.recent_deliveries);
         }
 
+        if (chaseEl) {
+            const chaseHtml = renderChase(data.chase ?? null, data.innings);
+            chaseEl.innerHTML = chaseHtml;
+            chaseEl.classList.toggle('hidden', chaseHtml === '');
+        }
+
         if (resultEl) {
             resultEl.textContent = data.match_result ?? '';
+            resultEl.classList.toggle('hidden', !data.match_result);
+        }
+
+        if (statusBadgeEl && data.match_status) {
+            statusBadgeEl.innerHTML = renderStatusBadge(data.match_status);
         }
 
         shouldPoll = data.should_poll;

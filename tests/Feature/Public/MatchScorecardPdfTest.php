@@ -162,13 +162,18 @@ class MatchScorecardPdfTest extends TestCase
         $response->assertHeader('content-disposition', "attachment; filename={$expected}");
     }
 
-    public function test_download_pdf_link_appears_on_the_public_scorecard_page(): void
+    public function test_download_pdf_link_is_hidden_on_the_public_scorecard_page(): void
     {
         [$match] = $this->matchWithScoredInnings();
 
         $response = $this->get(route('public.matches.scorecard', $match));
 
+        // The public download CTA is intentionally hidden for now — the
+        // route/controller/PDF generation below are untouched and still
+        // directly reachable (see the other tests in this file), so this
+        // only asserts the UI control itself is gone.
         $response->assertOk();
-        $response->assertSee(route('public.matches.scorecard.pdf', $match), false);
+        $response->assertDontSee(route('public.matches.scorecard.pdf', $match), false);
+        $response->assertDontSee('Download PDF');
     }
 }

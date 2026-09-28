@@ -102,10 +102,22 @@ One centralized, admin-only destructive-cleanup module — normal operational wo
 - Admin-managed announcements (`admin/announcements`) with a start/end scheduling window and a computed status (scheduled/active/expired/disabled) — never a manually-set status field.
 - Active announcements scroll across a CSS-only marquee ticker on every public page (`AnnouncementTickerComposer`); admin controls the display order via an explicit `sort_order`, not a generic column sort.
 
+### Featured videos (public)
+
+- The public homepage shows up to 3 active videos in a compact **Featured Videos** section, placed below the Match Centre and Featured Match (live and match info always come first) and above the Points Table. The section disappears entirely when there are no active videos.
+- A public **Videos** page (`/videos`) lists every active video, 12 per page, in the same order (lowest priority number first, then newest). Inactive videos never appear on either page.
+- Videos never autoplay. Each card uses the browser's own player (thumbnail as the poster when one exists, only metadata loaded until the viewer presses Play). Starting one video pauses any other that's playing on the page.
+
 ### Content pages (Privacy Policy / Terms & Conditions / FAQs)
 
 - Three fixed content-page slots (`admin/content-pages`), each with Markdown-authored content rendered safely to HTML (`MarkdownRenderer`, raw HTML input escaped, unsafe links rejected) and shown at its own public route/footer link.
 - No create/delete — the three slots are fixed identities, only their content is editable.
+
+### Videos (homepage clips)
+
+- Admin-managed short RPPL clips (`admin/videos`) — title, optional description, an MP4/WebM video file, an optional JPG/PNG/WebP thumbnail, a status (Active/Inactive) and a priority number (lower shows first).
+- Upload size is capped by `VIDEOS_MAX_UPLOAD_MB` (default 50 MB), aimed at short ~1–2 minute clips; errors are worded in MB. No transcoding or auto-generated thumbnails — files are stored as uploaded.
+- Editing without choosing a new file keeps the existing video/thumbnail; replacing or deleting a video removes the old stored files. Activating/deactivating is just the Status field on the edit form.
 
 ### Global settings, dynamic branding & theme
 
