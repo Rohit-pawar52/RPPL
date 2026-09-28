@@ -28,6 +28,8 @@
         // — 'active'/'scheduled' above are reused as-is.
         'expired' => 'bg-neutral-100 text-neutral-500 ring-neutral-200',
         'disabled' => 'bg-neutral-100 text-neutral-500 ring-neutral-200',
+        // Video status (videos.status) — 'active' above is reused as-is.
+        'inactive' => 'bg-neutral-100 text-neutral-500 ring-neutral-200',
         // Committee dues status (CommitteeDuesService, Phase 3.48).
         'paid in full' => 'bg-green-50 text-green-700 ring-green-200',
         'partially paid' => 'bg-amber-50 text-amber-700 ring-amber-200',
