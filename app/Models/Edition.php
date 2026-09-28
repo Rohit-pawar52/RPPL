@@ -123,4 +123,21 @@ class Edition extends Model
             && $this->registration_open
             && $this->registration_fee !== null;
     }
+
+    /**
+     * The single "current" edition for public-facing pages that need
+     * exactly one (the homepage, the header's Points Table link): the
+     * active edition if one exists, otherwise the soonest upcoming
+     * edition, otherwise the most recently completed one, otherwise
+     * null (a brand-new install with zero editions is a real, valid
+     * state — never assumed away). Originally HomeController-only
+     * logic, promoted here so PublicNavComposer can reuse the exact
+     * same selection without a second, potentially-drifting copy.
+     */
+    public static function current(): ?self
+    {
+        return self::where('status', 'active')->latest('year')->first()
+            ?? self::where('status', 'upcoming')->orderBy('year')->first()
+            ?? self::where('status', 'completed')->latest('year')->first();
+    }
 }

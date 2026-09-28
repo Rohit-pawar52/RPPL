@@ -6,6 +6,7 @@ use App\Models\User;
 use App\View\Composers\AnnouncementTickerComposer;
 use App\View\Composers\BrandingComposer;
 use App\View\Composers\ContentPageFooterComposer;
+use App\View\Composers\PublicNavComposer;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -35,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureBranding();
         $this->configureAnnouncementTicker();
         $this->configureContentPageFooter();
+        $this->configurePublicNav();
     }
 
     /**
@@ -179,5 +181,15 @@ class AppServiceProvider extends ServiceProvider
     private function configureContentPageFooter(): void
     {
         View::composer('layouts.partials.public-footer', ContentPageFooterComposer::class);
+    }
+
+    /**
+     * The public header's "current edition" for the Points Table nav
+     * link — bound only to its own partial, so this never runs for
+     * admin/guest/maintenance pages (none of which include it).
+     */
+    private function configurePublicNav(): void
+    {
+        View::composer('layouts.partials.public-header', PublicNavComposer::class);
     }
 }

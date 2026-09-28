@@ -46,7 +46,7 @@ class LiveMatchService
     }
 
     /**
-     * @return array{match_status: string, match_result: string|null, should_poll: bool, innings: list<array<string, mixed>>, recent_deliveries: list<array<string, mixed>>}
+     * @return array{match_status: string, match_result: string|null, should_poll: bool, innings: list<array<string, mixed>>, recent_deliveries: list<array<string, mixed>>, chase: array<string, mixed>|null}
      */
     public function getLiveMatchData(GameMatch $match): array
     {
@@ -63,6 +63,7 @@ class LiveMatchService
             'should_poll' => $this->shouldPoll($match),
             'innings' => $innings->map(fn (Innings $i) => $this->formatInnings($i))->all(),
             'recent_deliveries' => $primaryInnings ? $this->recentDeliveries($primaryInnings) : [],
+            'chase' => $this->chaseInfo($match, $innings),
         ];
     }
 
@@ -79,6 +80,48 @@ class LiveMatchService
             'total_runs' => $innings->total_runs,
             'total_wickets' => $innings->total_wickets,
             'overs_display' => $innings->oversDisplay(),
+            // Current run rate — legal balls only, never decimal-over
+            // arithmetic. 0.0 when no legal ball has been bowled yet,
+            // rather than a division-by-zero.
+            'crr' => $innings->legal_balls > 0 ? round($innings->total_runs * 6 / $innings->legal_balls, 2) : 0.0,
+        ];
+    }
+
+    /**
+     * Target/runs-needed/balls-remaining/required-run-rate for a live
+     * second innings — null whenever a chase isn't currently meaningful
+     * (no second innings yet, it's not live, or the match has no fixed
+     * overs limit to derive "balls remaining" from). Same formula
+     * LiveScoringStateService already uses for the admin scorer screen,
+     * duplicated here (not shared) because that service is admin-only
+     * and carries admin-specific concerns (correction eligibility, etc.)
+     * this public payload must never depend on.
+     *
+     * @param  \Illuminate\Support\Collection<int, Innings>  $innings
+     * @return array<string, mixed>|null
+     */
+    private function chaseInfo(GameMatch $match, $innings): ?array
+    {
+        if (! $match->overs_per_innings) {
+            return null;
+        }
+
+        $first = $innings->firstWhere('innings_number', 1);
+        $second = $innings->firstWhere('innings_number', 2);
+
+        if (! $first || ! $second || $second->status !== 'live') {
+            return null;
+        }
+
+        $target = (int) $first->total_runs + 1;
+        $runsNeeded = max(0, $target - (int) $second->total_runs);
+        $ballsRemaining = max(0, ($match->overs_per_innings * 6) - (int) $second->legal_balls);
+
+        return [
+            'target' => $target,
+            'runs_needed' => $runsNeeded,
+            'balls_remaining' => $ballsRemaining,
+            'required_run_rate' => $ballsRemaining > 0 ? round($runsNeeded * 6 / $ballsRemaining, 2) : 0.0,
         ];
     }
 
