@@ -102,6 +102,12 @@ One centralized, admin-only destructive-cleanup module — normal operational wo
 - Admin-managed announcements (`admin/announcements`) with a start/end scheduling window and a computed status (scheduled/active/expired/disabled) — never a manually-set status field.
 - Active announcements scroll across a CSS-only marquee ticker on every public page (`AnnouncementTickerComposer`); admin controls the display order via an explicit `sort_order`, not a generic column sort.
 
+### Featured videos (public)
+
+- The public homepage shows up to 3 active videos in a compact **Featured Videos** section, placed below the Match Centre and Featured Match (live and match info always come first) and above the Points Table. The section disappears entirely when there are no active videos.
+- A public **Videos** page (`/videos`) lists every active video, 12 per page, in the same order (lowest priority number first, then newest). Inactive videos never appear on either page.
+- Videos never autoplay. Each card uses the browser's own player (thumbnail as the poster when one exists, only metadata loaded until the viewer presses Play). Starting one video pauses any other that's playing on the page.
+
 ### Content pages (Privacy Policy / Terms & Conditions / FAQs)
 
 - Three fixed content-page slots (`admin/content-pages`), each with Markdown-authored content rendered safely to HTML (`MarkdownRenderer`, raw HTML input escaped, unsafe links rejected) and shown at its own public route/footer link.

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Models\GameMatch;
+use App\Models\Video;
 use App\Services\LiveMatch\LiveMatchService;
 use App\Services\Statistics\PlayerStatisticsService;
 use App\Services\Statistics\StandingsService;
@@ -41,6 +42,7 @@ class HomeController extends Controller
         $topRunScorers = collect();
         $topWicketTakers = collect();
         $teams = collect();
+        $featuredVideos = collect();
         $liveMatch = null;
         $liveMatchData = null;
         $nextMatch = null;
@@ -100,6 +102,12 @@ class HomeController extends Controller
             $topWicketTakers = collect($leaderboard['topWicketTakers']);
 
             $teams = $edition->editionTeams()->with('team')->get();
+
+            // Videos aren't edition-scoped, but the section only renders
+            // inside the edition branch of the homepage (between Featured
+            // Match and Points Table), so there's no point querying them
+            // for the no-edition empty state.
+            $featuredVideos = Video::query()->active()->ordered()->limit(3)->get();
         }
 
         return view('public.home', [
@@ -114,6 +122,7 @@ class HomeController extends Controller
             'topRunScorers' => $topRunScorers,
             'topWicketTakers' => $topWicketTakers,
             'teams' => $teams,
+            'featuredVideos' => $featuredVideos,
         ]);
     }
 }

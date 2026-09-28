@@ -5,7 +5,7 @@
 {{--
     Public homepage — compact, match-first tournament portal. Top to
     bottom: edition context strip → Match Centre → Featured Match →
-    Points Table → Recent Results / Upcoming Matches → Teams → Top
+    Featured Videos (only when any are active) → Points Table → Recent Results / Upcoming Matches → Teams → Top
     Performers. Purely presentational: every score, standing and stat
     comes pre-computed from HomeController (LiveMatchService,
     StandingsService, PlayerStatisticsService) — nothing is recalculated
@@ -65,6 +65,10 @@
                 <p class="text-[11px] text-neutral-400">The fixture list will appear here once matches are announced.</p>
             </div>
         @endif
+
+        {{-- Featured Videos — deliberately below the match blocks so live/
+             match info stays first; renders nothing when there are none. --}}
+        @include('public._featured-videos', ['featuredVideos' => $featuredVideos])
 
         {{-- 3. Points Table preview --}}
         <section class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
