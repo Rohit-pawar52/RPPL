@@ -20,6 +20,8 @@ use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PlayerController;
 use App\Http\Controllers\Admin\PlayerRegistrationController;
 use App\Http\Controllers\Admin\ReportsController;
+use App\Http\Controllers\Admin\RuleController;
+use App\Http\Controllers\Admin\RuleTypeController;
 use App\Http\Controllers\Admin\ScorecardController;
 use App\Http\Controllers\Admin\ScoringController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -274,5 +276,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Featured Videos section — no show(), same as announcements.
         // Activate/deactivate is just the status field on the edit form.
         Route::resource('videos', VideoController::class)->except(['show']);
+
+        // Rules & Regulations — Rule Types (categories) and the Rules
+        // under them. No show(): manage/edit in place, same as videos.
+        // A Rule Type that still has Rules is never deleted (guarded in
+        // RuleTypeService::deleteType()); deactivate it instead.
+        Route::resource('rule-types', RuleTypeController::class)->except(['show']);
+        Route::resource('rules', RuleController::class)->except(['show']);
     });
 });

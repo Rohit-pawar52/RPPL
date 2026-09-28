@@ -127,6 +127,14 @@ One centralized, admin-only destructive-cleanup module — normal operational wo
 - Upload size is capped by `VIDEOS_MAX_UPLOAD_MB` (default 50 MB), aimed at short ~1–2 minute clips; errors are worded in MB. No transcoding or auto-generated thumbnails — files are stored as uploaded.
 - Editing without choosing a new file keeps the existing video/thumbnail; replacing or deleting a video removes the old stored files. Activating/deactivating is just the Status field on the edit form.
 
+### Rules & Regulations (admin)
+
+- One **Rules & Regulations** sidebar entry (`admin/rules`) lists every rule with its order, title, rule type, status, an "important" star and last-updated date, filterable by rule type and status and searchable by title.
+- Each rule has a rule type, a title, plain-text content (line breaks kept, no HTML), an optional JPG/PNG/WebP image up to 2 MB, a sort order (lower shows first within its type), a status (Active/Inactive) and an optional "especially important" highlight.
+- Editing without a new image keeps the current one; uploading a new image replaces it (the old file is deleted); a "Remove image" checkbox clears it with no replacement; deleting a rule also deletes its image.
+- **Rule types** (the categories rules are grouped under, e.g. Cricket Rules) are managed from a "Manage Rule Types" button on the Rules page (`admin/rule-types`) — name, a unique lowercase-hyphenated slug, optional description, sort order and Active/Inactive status. Deactivating a type hides all of its rules from the public website without touching the rules themselves.
+- A rule type that still has rules can't be deleted — the admin gets a friendly message to move/delete its rules first or deactivate the type instead.
+
 ### Global settings, dynamic branding & theme
 
 - A tabbed admin Settings screen (`admin/settings`) covering general branding (application name, short name, tagline, logo/favicon, footer text), contact details, system options (currency symbol, display timezone, the committee dues target — see Finance below), and encrypted payment-gateway secrets — each tab its own scoped update action, never one generic "update settings" endpoint.
