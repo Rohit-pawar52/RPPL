@@ -3,30 +3,17 @@
 @section('title', $match->teamA->team->name.' vs '.$match->teamB->team->name.' · '.$branding->shortName)
 
 @section('content')
-    <div class="mb-4 flex items-center justify-between">
+    <div class="mb-3">
         <a href="{{ route('public.matches.index') }}" class="text-xs text-neutral-500 hover:text-neutral-700">
             &larr; All matches
         </a>
-
-        @if($match->innings_count > 0)
-            <div class="flex items-center gap-2">
-                <a
-                    href="{{ route('public.matches.live', $match) }}"
-                    class="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
-                >
-                    <x-icon name="chart-bar" class="h-3.5 w-3.5" />
-                    {{ $match->match_status === 'live' ? 'Live Match' : 'Ball-by-Ball' }}
-                </a>
-                <a
-                    href="{{ route('public.matches.scorecard', $match) }}"
-                    class="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
-                >
-                    <x-icon name="document-chart" class="h-3.5 w-3.5" />
-                    Scorecard
-                </a>
-            </div>
-        @endif
     </div>
+
+    {{-- Tabs only once scoring data exists: Live/Scorecard redirect back
+         here otherwise, so an unscored match gets no dead tabs. --}}
+    @if($match->innings_count > 0)
+        @include('public.matches._match-tabs', ['match' => $match, 'active' => 'info'])
+    @endif
 
     <div class="rounded-lg border border-neutral-200 bg-white p-4">
         <div class="flex items-center justify-between gap-3">
@@ -45,17 +32,17 @@
             @endif
         </p>
 
-        <dl class="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
+        <dl class="mt-3 grid grid-cols-2 gap-3 text-[13px] sm:grid-cols-3">
             <div>
-                <dt class="text-neutral-400">Venue</dt>
+                <dt class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Venue</dt>
                 <dd class="mt-0.5 font-medium text-neutral-800">{{ $match->venue->name ?? 'TBD' }}</dd>
             </div>
             <div>
-                <dt class="text-neutral-400">Scheduled</dt>
+                <dt class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Scheduled</dt>
                 <dd class="mt-0.5 font-medium text-neutral-800">{{ display_datetime($match->scheduled_at, 'd M Y, h:i A') }}</dd>
             </div>
             <div>
-                <dt class="text-neutral-400">Overs</dt>
+                <dt class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Overs</dt>
                 <dd class="mt-0.5 font-medium text-neutral-800">{{ $match->overs_per_innings }}</dd>
             </div>
         </dl>
@@ -74,26 +61,27 @@
         <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
             <h3 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Innings</h3>
 
-            @if($match->firstInnings)
-                <p class="text-[13px] text-neutral-800">
-                    {{ $match->firstInnings->battingTeam->team->name }}
-                    {{ $match->firstInnings->total_runs }}/{{ $match->firstInnings->total_wickets }}
-                    <span class="text-xs text-neutral-500">({{ $match->firstInnings->oversDisplay() }} overs)</span>
-                </p>
-            @endif
-            @if($match->secondInnings)
-                <p class="mt-1 text-[13px] text-neutral-800">
-                    {{ $match->secondInnings->battingTeam->team->name }}
-                    {{ $match->secondInnings->total_runs }}/{{ $match->secondInnings->total_wickets }}
-                    <span class="text-xs text-neutral-500">({{ $match->secondInnings->oversDisplay() }} overs)</span>
-                </p>
+            <div class="divide-y divide-neutral-100">
+                @foreach([$match->firstInnings, $match->secondInnings] as $inn)
+                    @if($inn)
+                        <div class="flex items-baseline justify-between gap-3 py-1.5 text-[13px]">
+                            <span class="min-w-0 truncate font-medium text-neutral-800">{{ $inn->battingTeam->team->name }}</span>
+                            <span class="shrink-0 whitespace-nowrap">
+                                <span class="font-semibold tabular-nums text-neutral-900">{{ $inn->total_runs }}/{{ $inn->total_wickets }}</span>
+                                <span class="text-[11px] text-neutral-500">({{ $inn->oversDisplay() }} overs)</span>
+                            </span>
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+
+            @if($match->match_status === 'completed' && $match->match_result)
+                <p class="mt-2 border-t border-neutral-100 pt-2 text-[13px] font-semibold theme-primary-text">{{ $match->match_result }}</p>
             @endif
         </div>
-    @endif
-
-    @if($match->match_status === 'completed' && $match->match_result)
+    @elseif($match->match_status === 'completed' && $match->match_result)
         <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-            <p class="text-sm font-medium text-neutral-900">{{ $match->match_result }}</p>
+            <p class="text-[13px] font-semibold theme-primary-text">{{ $match->match_result }}</p>
         </div>
     @endif
 @endsection

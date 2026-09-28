@@ -22,41 +22,52 @@
         </form>
     </div>
 
-    <div class="rounded-lg border border-neutral-200 bg-white p-4">
-        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Upcoming &amp; Live</h3>
-        @forelse($upcoming as $match)
+    @php
+        // Presentation-only split of the controller's single "upcoming"
+        // collection (scheduled/toss/live) so live matches get their own
+        // always-on-top card — no extra query, same eager-loaded models.
+        $liveMatches = $upcoming->where('match_status', 'live');
+        $scheduledMatches = $upcoming->where('match_status', '!=', 'live');
+    @endphp
+
+    @if($liveMatches->isNotEmpty())
+        <div class="mb-4 rounded-lg border border-red-200 bg-white p-3 sm:p-4">
+            <h3 class="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-red-600">
+                <span class="relative flex h-2 w-2" aria-hidden="true">
+                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                    <span class="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+                </span>
+                Live Now
+            </h3>
+            @foreach($liveMatches as $match)
+                @include('public.matches._list-row', ['match' => $match])
+            @endforeach
+        </div>
+    @endif
+
+    <div class="rounded-lg border border-neutral-200 bg-white p-3 sm:p-4">
+        <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Upcoming</h3>
+        @forelse($scheduledMatches as $match)
             @include('public.matches._list-row', ['match' => $match])
         @empty
-            <p class="py-4 text-center text-xs text-neutral-400">No matches scheduled yet.</p>
+            <p class="py-4 text-center text-xs text-neutral-400">
+                {{ $liveMatches->isNotEmpty() ? 'No other matches scheduled yet.' : 'No matches scheduled yet.' }}
+            </p>
         @endforelse
     </div>
 
-    <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Completed</h3>
+    <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-3 sm:p-4">
+        <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Results</h3>
         @forelse($past as $match)
-            <div class="flex items-center justify-between gap-3 border-b border-neutral-100 py-2 text-[13px] last:border-b-0">
-                <div class="min-w-0">
-                    <a href="{{ route('public.matches.show', $match) }}" class="font-medium text-neutral-800 hover:underline">
-                        {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
-                    </a>
-                    <p class="text-[11px] text-neutral-500">
-                        {{ display_datetime($match->scheduled_at, 'd M Y') }}
-                        @if($match->venue)
-                            &middot; {{ $match->venue->name }}
-                        @endif
-                    </p>
-                    @if($match->match_result)
-                        <p class="mt-0.5 text-[11px] text-neutral-600">{{ $match->match_result }}</p>
-                    @endif
-                </div>
-                <x-status-badge :status="$match->match_status" />
-            </div>
+            @include('public.matches._list-row', ['match' => $match])
         @empty
             <p class="py-4 text-center text-xs text-neutral-400">No completed matches yet.</p>
         @endforelse
 
-        <div class="mt-3">
-            {{ $past->links() }}
-        </div>
+        @if($past->hasPages())
+            <div class="mt-3">
+                {{ $past->links() }}
+            </div>
+        @endif
     </div>
 @endsection
