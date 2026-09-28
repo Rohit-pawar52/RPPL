@@ -32,6 +32,7 @@
                     <a href="{{ route('public.venues.index') }}" class="block px-3 py-1.5 hover:bg-neutral-50">Venues</a>
                     <a href="{{ route('public.editions.index') }}" class="block px-3 py-1.5 hover:bg-neutral-50">Editions</a>
                     <a href="{{ route('public.player-registration.create') }}" class="block px-3 py-1.5 hover:bg-neutral-50">Player Registration</a>
+                    <a href="{{ route('public.rules.index') }}" class="block px-3 py-1.5 hover:bg-neutral-50">Rules</a>
                     <a href="{{ route('public.faqs') }}" class="block px-3 py-1.5 hover:bg-neutral-50">FAQs</a>
                 </div>
             </details>
@@ -73,6 +74,7 @@
                 <a href="{{ route('public.venues.index') }}" class="block px-3 py-2 hover:bg-neutral-50">Venues</a>
                 <a href="{{ route('public.editions.index') }}" class="block px-3 py-2 hover:bg-neutral-50">Editions</a>
                 <a href="{{ route('public.player-registration.create') }}" class="block px-3 py-2 hover:bg-neutral-50">Player Registration</a>
+                <a href="{{ route('public.rules.index') }}" class="block px-3 py-2 hover:bg-neutral-50">Rules</a>
                 <a href="{{ route('public.faqs') }}" class="block px-3 py-2 hover:bg-neutral-50">FAQs</a>
                 <div class="mt-1 border-t border-neutral-100 pt-1">
                     <a href="{{ route('admin.login') }}" class="block px-3 py-2 text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600">Admin</a>

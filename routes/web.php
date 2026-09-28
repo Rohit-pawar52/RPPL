@@ -7,6 +7,7 @@ use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\MatchController;
 use App\Http\Controllers\Public\PlayerController;
 use App\Http\Controllers\Public\PlayerRegistrationController;
+use App\Http\Controllers\Public\RuleController;
 use App\Http\Controllers\Public\TeamController;
 use App\Http\Controllers\Public\VenueController;
 use App\Http\Controllers\Public\VideoController;
@@ -57,6 +58,11 @@ Route::middleware(EnsurePublicSiteIsNotUnderMaintenance::class)->group(function 
     Route::prefix('videos')->name('public.videos.')->group(function () {
         Route::get('/', [VideoController::class, 'index'])->name('index');
     });
+
+    // One page; the selected category is a ?type=<slug> query string
+    // (same pattern as ?edition_id= on public.matches.index), not a
+    // route per category — tabs deep-link and survive a refresh.
+    Route::get('rules', [RuleController::class, 'index'])->name('public.rules.index');
 
     Route::prefix('player-registration')->name('public.player-registration.')->group(function () {
         Route::get('/', [PlayerRegistrationController::class, 'create'])->name('create');
