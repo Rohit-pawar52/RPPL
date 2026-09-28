@@ -5,6 +5,7 @@ namespace App\Services\LiveMatch;
 use App\Models\Delivery;
 use App\Models\GameMatch;
 use App\Models\Innings;
+use Illuminate\Support\Collection;
 
 /**
  * Assembles the public Live Match Center payload — shared verbatim by
@@ -97,7 +98,7 @@ class LiveMatchService
      * and carries admin-specific concerns (correction eligibility, etc.)
      * this public payload must never depend on.
      *
-     * @param  \Illuminate\Support\Collection<int, Innings>  $innings
+     * @param  Collection<int, Innings>  $innings
      * @return array<string, mixed>|null
      */
     private function chaseInfo(GameMatch $match, $innings): ?array

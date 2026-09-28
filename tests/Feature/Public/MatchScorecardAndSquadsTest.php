@@ -25,7 +25,7 @@ class MatchScorecardAndSquadsTest extends TestCase
      * per team who is on the squad but never selected for the XI.
      *
      * @return array{0: GameMatch, 1: Player, 2: Player, 3: Player, 4: Player}
-     *                match, striker, bowler, benchPlayerTeamA, benchPlayerTeamB
+     *                                                                         match, striker, bowler, benchPlayerTeamA, benchPlayerTeamB
      */
     private function matchWithFullScorecard(): array
     {
