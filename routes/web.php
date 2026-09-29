@@ -4,6 +4,7 @@ use App\Http\Controllers\Public\ContentPageController;
 use App\Http\Controllers\Public\EditionController;
 use App\Http\Controllers\Public\FcmTokenController;
 use App\Http\Controllers\Public\HomeController;
+use App\Http\Controllers\Public\LanguageController;
 use App\Http\Controllers\Public\MatchController;
 use App\Http\Controllers\Public\PlayerController;
 use App\Http\Controllers\Public\PlayerRegistrationController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Public\TeamController;
 use App\Http\Controllers\Public\VenueController;
 use App\Http\Controllers\Public\VideoController;
 use App\Http\Middleware\EnsurePublicSiteIsNotUnderMaintenance;
+use App\Http\Middleware\SetPublicLocale;
 use App\Models\ContentPage;
 use Illuminate\Support\Facades\Route;
 
@@ -22,8 +24,16 @@ use Illuminate\Support\Facades\Route;
 // Every public route (including guest registration and the FCM
 // subscribe endpoint) is in scope for maintenance mode; no route here
 // is exempted without a concrete operational reason (see Phase 3.44B3).
-Route::middleware(EnsurePublicSiteIsNotUnderMaintenance::class)->group(function () {
+Route::middleware([EnsurePublicSiteIsNotUnderMaintenance::class, SetPublicLocale::class])->group(function () {
     Route::get('/', HomeController::class)->name('public.home');
+
+    // English/हिन्दी switcher (V1: no login, no DB row — see
+    // LanguageController). {locale} is constrained to exactly the same
+    // whitelist LanguageController::LOCALES defines, so an out-of-list
+    // value 404s here rather than ever reaching the controller.
+    Route::post('language/{locale}', [LanguageController::class, 'switch'])
+        ->whereIn('locale', LanguageController::LOCALES)
+        ->name('public.language.switch');
 
     Route::prefix('editions')->name('public.editions.')->group(function () {
         Route::get('/', [EditionController::class, 'index'])->name('index');
