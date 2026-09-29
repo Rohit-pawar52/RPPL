@@ -1,6 +1,9 @@
 <?php
 
+use App\Console\Commands\DispatchMatchReminders;
+use App\Console\Commands\DispatchScheduledAnnouncements;
 use App\Http\Middleware\EnsureUserIsActive;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,6 +22,37 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::middleware('web')->group(base_path('routes/admin.php'));
         },
     )
+    /*
+     * The ONE central Laravel Scheduler entry point (Jobs/Queue/
+     * Scheduler audit, phase: scheduler foundation). Production needs
+     * exactly one OS cron line regardless of how many tasks are
+     * registered here — see README's Deployment section. Registrations
+     * stay a thin list; all real logic lives in the Commands/Services
+     * they invoke, never in this closure.
+     *
+     * onOneServer() is safe to use even though this app runs
+     * single-server today: its locking is backed by config('cache.default'),
+     * which is 'database' (CACHE_STORE, .env) — a real shared store, not
+     * a per-server local cache — so it remains correct if a second app
+     * server is ever added, rather than offering false confidence.
+     * withoutOverlapping() additionally protects a single server from a
+     * slow run overlapping its own next-minute invocation. Neither is
+     * the SOURCE of correctness though — each Command's own database
+     * atomic claim (lockForUpdate() + a dispatched_at check) is what
+     * actually prevents a duplicate send if both protections somehow
+     * failed; see AnnouncementNotificationService/MatchReminderService.
+     */
+    ->withSchedule(function (Schedule $schedule): void {
+        $schedule->command(DispatchScheduledAnnouncements::class)
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        $schedule->command(DispatchMatchReminders::class)
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer();
+    })
     ->withMiddleware(function (Middleware $middleware): void {
         // This app has no public-facing "login" route, only admin.login,
         // so the framework's default guest/auth redirect targets (which

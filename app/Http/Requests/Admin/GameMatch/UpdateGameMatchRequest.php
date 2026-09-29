@@ -71,6 +71,8 @@ class UpdateGameMatchRequest extends FormRequest
                     ))
                     ->ignore($match->id),
             ],
+            'reminder_enabled' => ['nullable', 'boolean'],
+            'reminder_minutes_before' => ['nullable', 'required_if:reminder_enabled,1', 'integer', 'min:1', 'max:1440'],
         ];
 
         if ($canChangeIdentity) {

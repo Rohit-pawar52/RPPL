@@ -41,6 +41,18 @@ class ProcessPaymentProofOcr implements ShouldQueue
     /** @var array<int, int> */
     public array $backoff = [10, 30, 60];
 
+    /**
+     * Explicit bound (queue reliability hardening — the Jobs/Queue audit
+     * found neither existing job declared one). A single-image Tesseract
+     * shell-out normally completes in a few seconds; 60s is generous
+     * headroom for a slower image while staying comfortably under the
+     * database queue connection's retry_after (90s, config/queue.php) —
+     * shorter than SendNotificationJob's timeout since this is one
+     * bounded local process invocation, not several chunked network
+     * round-trips.
+     */
+    public int $timeout = 60;
+
     public function __construct(public PlayerRegistration $registration) {}
 
     public function handle(PaymentProofOcrService $ocrService): void

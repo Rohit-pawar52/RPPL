@@ -43,6 +43,7 @@ This README is meant to be comprehensive enough that reading it alone tells you 
 - Match result is always server-derived from completed innings totals — never chosen by the admin/scorer.
 - Read-only match scorecard (admin and public), plus a **downloadable PDF scorecard**.
 - **Real-time live scoring** on the public match page via Laravel Reverb (WebSocket broadcasting) + Laravel Echo — a `MatchScoreUpdated` event fires after each committed scoring action and the public "live" view updates without a page refresh; falls back to polling (`live-data`) if a socket connection isn't available. Corrections made after the fact simply refresh the public score to the corrected figure.
+- **Optional match reminder push notification** — an admin may enable "Send reminder before match" (a configurable minutes-before, default 30) on any match. The due instant is always *derived* as `scheduled_at` minus that many minutes, never stored separately, so rescheduling the match before the reminder fires automatically moves it with no special handling needed. Only ever considered for an upcoming (`scheduled`/`toss`) match whose start time hasn't already passed — cancelling, abandoning, completing, or starting the match makes an unsent reminder permanently ineligible. Picked up by `rppl:dispatch-match-reminders` (see Scheduled tasks) via the same atomic-claim + existing-notification-pipeline pattern scheduled announcements use.
 
 ### Standings & statistics
 
@@ -101,6 +102,11 @@ One centralized, admin-only destructive-cleanup module — normal operational wo
 
 - Admin-managed announcements (`admin/announcements`) with a start/end scheduling window and a computed status (scheduled/active/expired/disabled) — never a manually-set status field.
 - Active announcements scroll across a CSS-only marquee ticker on every public page (`AnnouncementTickerComposer`); admin controls the display order via an explicit `sort_order`, not a generic column sort.
+- **Optional push notification, entirely separate from ticker visibility** — an admin may additionally choose Send Now or Schedule for Later (a future date/time, entered and shown in `system.display_timezone`). Both reuse the exact same Notification/`SendNotificationJob`/Firebase pipeline the standalone Notifications module uses — there is only ever one outbound push code path. A scheduled send is picked up by `rppl:dispatch-scheduled-announcements` (see Scheduled tasks below) once due; an atomic database claim (`lockForUpdate()` + a `notification_dispatched_at` check) guarantees it can never double-send even if the scheduler runs it more than once. Editing an announcement after its notification has already fired never resends or reschedules it.
+
+### Scheduled tasks (`rppl:dispatch-scheduled-announcements`, `rppl:dispatch-match-reminders`)
+
+One Laravel Scheduler, registered in `bootstrap/app.php`, running both of the above every minute — production needs exactly one OS cron entry regardless of how many scheduled tasks exist; see the Production checklist below for the exact line and the full explanation of what still runs as separate long-running processes (queue worker, Reverb). Both tasks are a thin scan-and-dispatch: find due, eligible rows; atomically claim one; hand it to the existing notification pipeline. Neither ever calls Firebase directly.
 
 ### Featured videos (public)
 
@@ -231,11 +237,26 @@ This codebase deliberately stays small and boring rather than speculative:
 - `APP_ENV=production` and `APP_DEBUG=false` (`.env.example` defaults `APP_DEBUG=true`, which must never run in production — it leaks stack traces/config).
 - `SESSION_SECURE_COOKIE=true`, served over HTTPS (not set by default; without it the session cookie is also sent over plain HTTP).
 - `php artisan storage:link` has been run on the deployed instance (see step 5 above — easy to forget on a fresh deploy).
-- A queue worker is running under a process supervisor (e.g. Supervisor/systemd), not just a one-off terminal — required for OCR and push notification sending (step 10 above).
+- A queue worker is running under a process supervisor (e.g. Supervisor/systemd), not just a one-off terminal — required for OCR and push notification sending (step 10 above), and now also for scheduled announcements/match reminders (see below).
 - Real Firebase credentials configured (step 11) if push notifications are wanted; the app works fine without them, just with that one feature inactive.
 - A unique `APP_KEY` generated per environment (`php artisan key:generate`) — also used to encrypt the Settings module's Razorpay secret fields; rotating it later invalidates any already-stored encrypted values.
-- No scheduler/cron entry is required — this app has no `Schedule::` jobs.
 - If a queued job (OCR, notification send) exhausts its retries, it lands in `failed_jobs` with no other signal to an admin — check periodically with `php artisan queue:failed`, and retry with `php artisan queue:retry {id}` (or `all`) once the underlying issue is fixed.
+
+### Scheduled tasks — exactly ONE cron entry, regardless of how many are added later
+
+Add this single line to the server's crontab (adjust the path):
+
+```
+* * * * * cd /path/to/project && php artisan schedule:run >> /dev/null 2>&1
+```
+
+That one entry invokes Laravel's Scheduler every minute, which internally runs whichever registered tasks are actually due (currently: `rppl:dispatch-scheduled-announcements` and `rppl:dispatch-match-reminders`, both registered in `bootstrap/app.php`'s `->withSchedule()`, both every minute). **Adding a future scheduled feature (a tournament-day reminder, a cleanup task, anything else) only ever means adding another registration inside that same `->withSchedule()` closure — it never means adding a second cron line.** Three genuinely separate things are required in production, and only the first is cron-triggered:
+
+1. **The one Scheduler cron above** — triggers due tasks, then exits; never runs anything long-lived itself.
+2. **A queue worker** (`php artisan queue:work database --queue=default`), supervised (Supervisor/systemd) — the Scheduler's own tasks only ever *dispatch* a Job (e.g. `SendNotificationJob`); the actual Firebase/OCR work happens here, in the separately-running worker. Never launched from the Scheduler.
+3. **Reverb** (`php artisan reverb:start`), supervised, only if realtime live-score broadcasting is enabled — entirely unrelated to the Scheduler, unchanged by this feature.
+
+Verify what's currently registered at any time with `php artisan schedule:list`.
 
 ## Demo data
 

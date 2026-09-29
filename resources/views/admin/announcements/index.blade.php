@@ -21,6 +21,7 @@
                 <tr>
                     <th class="px-4 py-2 font-medium">Message</th>
                     <th class="px-4 py-2 font-medium">Status</th>
+                    <th class="px-4 py-2 font-medium">Push</th>
                     <th class="hidden px-4 py-2 font-medium md:table-cell">Starts</th>
                     <th class="hidden px-4 py-2 font-medium md:table-cell">Ends</th>
                     <th class="hidden px-4 py-2 text-right font-medium sm:table-cell">Order</th>
@@ -36,6 +37,17 @@
                         </td>
                         <td class="px-4 py-2">
                             <x-status-badge :status="$announcement->computedStatus()" />
+                        </td>
+                        <td class="px-4 py-2">
+                            @php $pushStatus = $announcement->notificationStatusLabel(); @endphp
+                            @if($pushStatus === 'not_scheduled')
+                                <span class="text-neutral-400">—</span>
+                            @else
+                                <x-status-badge :status="match($pushStatus) { 'scheduled' => 'scheduled', 'queued' => 'queued', default => 'completed' }" />
+                                @if($pushStatus === 'scheduled' && $announcement->notification_scheduled_at)
+                                    <span class="mt-0.5 block text-[11px] text-neutral-400">{{ display_datetime($announcement->notification_scheduled_at, 'd M, h:i A') }}</span>
+                                @endif
+                            @endif
                         </td>
                         <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">
                             {{ $announcement->starts_at ? display_datetime($announcement->starts_at, 'd M Y, h:i A') : '—' }}
@@ -82,7 +94,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-neutral-400">
+                        <td colspan="8" class="px-4 py-8 text-center text-neutral-400">
                             No announcements yet.
                         </td>
                     </tr>

@@ -40,6 +40,19 @@ class SendNotificationJob implements ShouldQueue
 
     public int $tries = 1;
 
+    /**
+     * Explicit bound (queue reliability hardening — the Jobs/Queue audit
+     * found neither existing job declared one). Firebase sends are
+     * chunked at FcmMessagingService::BATCH_LIMIT (500 tokens/call), so
+     * this allows headroom for several chunked HTTP round-trips while
+     * staying comfortably under the database queue connection's
+     * retry_after (90s, config/queue.php) — Laravel's own guidance is
+     * that timeout must stay meaningfully below retry_after, or a
+     * worker could be killed for exceeding it just as the connection
+     * considers the job eligible for re-reservation.
+     */
+    public int $timeout = 75;
+
     public function __construct(public NotificationSend $send) {}
 
     public function handle(): void
