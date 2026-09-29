@@ -122,6 +122,14 @@ One Laravel Scheduler, registered in `bootstrap/app.php`, running both of the ab
 - Each rule shows its number, title, text (line breaks kept), an optional image, and an **Important** marker when flagged. A short notice at the top states that in any critical, disputed or unforeseen situation not clearly covered by the rules, the RPPL Committee's decision is final.
 - When nothing is published yet, the page shows a short "will be published here soon" message.
 
+### Bilingual public website (English / हिन्दी)
+
+- A compact **English / हिन्दी** language switcher lives in the public header (desktop dropdown + mobile drawer), next to the existing "More" menu — no separate language page, no URL prefix (`/matches`, `/rules`, `/videos` etc. stay exactly the same in both languages).
+- Built on Laravel's native localization (`lang/{en,hi}/*.php`) — no external translation service, no database table. The choice is stored in a long-lived `rppl_locale` cookie (~5 years), read by a small `SetPublicLocale` middleware registered **only** on the public routes — the Admin panel and Scorer panel always render in English regardless of a visitor's cookie.
+- Covers the homepage, Match Centre/Featured Match, Matches list, Live/Scorecard/Squads/Match Info tabs, Teams, Players, Venues, Editions (incl. the points table, leaderboard and records), Videos, Rules & Regulations (including a natural-Hindi translation of the Committee final-decision notice), and the Player Registration + status-lookup forms (including their validation messages).
+- Player/team/venue/edition names, scores, dates, registration numbers, and all other Admin-entered or DB-sourced content are never translated — only the surrounding static UI labels. Hindi cricket terminology favours plain, commonly-spoken words (लाइव, ओवर, विकेट, स्कोरकार्ड) over stiff textbook translations.
+- Two deliberate scope boundaries for this V1 pass: the scorecard's batting/bowling table (`shared/scorecard/_innings.blade.php`) is shared verbatim with the Admin scorecard, so its column headers stay English even in Hindi mode; and the live match page's realtime-updated rows (redrawn client-side by `public-live-match.js` on every poll/websocket push) also stay English, since only the Blade half of those labels could be localized without the JS re-render immediately reverting them — translating the JS side is a natural follow-up, not done here.
+
 ### Content pages (Privacy Policy / Terms & Conditions / FAQs)
 
 - Three fixed content-page slots (`admin/content-pages`), each with Markdown-authored content rendered safely to HTML (`MarkdownRenderer`, raw HTML input escaped, unsafe links rejected) and shown at its own public route/footer link.
