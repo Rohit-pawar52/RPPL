@@ -1,21 +1,21 @@
 @extends('layouts.public')
 
-@section('title', 'Teams · '.$branding->shortName)
+@section('title', __('directory.teams.title').' · '.$branding->shortName)
 
 @section('content')
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 class="text-base font-semibold text-neutral-900">Teams</h1>
+        <h1 class="text-base font-semibold text-neutral-900">{{ __('directory.teams.title') }}</h1>
 
         <form method="GET" action="{{ route('public.teams.index') }}" class="flex items-center gap-2">
             <input
                 type="text"
                 name="search"
                 value="{{ $search }}"
-                placeholder="Search by name"
+                placeholder="{{ __('directory.common.search_by_name') }}"
                 class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
             />
             <button type="submit" class="rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
-                Search
+                {{ __('directory.common.search') }}
             </button>
         </form>
     </div>
@@ -46,7 +46,7 @@
                     </div>
                 </a>
             @empty
-                <p class="col-span-full py-4 text-center text-xs text-neutral-400">No teams available yet.</p>
+                <p class="col-span-full py-4 text-center text-xs text-neutral-400">{{ __('directory.teams.empty') }}</p>
             @endforelse
         </div>
 

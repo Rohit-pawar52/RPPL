@@ -4,7 +4,7 @@
 
 @section('content')
     <a href="{{ route('public.teams.index') }}" class="mb-4 inline-block text-xs text-neutral-500 hover:text-neutral-700">
-        &larr; Back to teams
+        &larr; {{ __('directory.teams.back') }}
     </a>
 
     <div class="rounded-lg border border-neutral-200 bg-white p-4">
@@ -23,7 +23,7 @@
 
             <div>
                 <h1 class="text-base font-semibold text-neutral-900">{{ $team->name }}</h1>
-                <p class="text-xs text-neutral-500">{{ $team->short_name ?? 'No short name' }}</p>
+                <p class="text-xs text-neutral-500">{{ $team->short_name ?? __('directory.teams.no_short_name') }}</p>
             </div>
         </div>
     </div>
@@ -37,26 +37,26 @@
                 {{ $editionTeam->edition->name }}
             </a>
         @empty
-            <p class="text-xs text-neutral-400">No tournament history available yet.</p>
+            <p class="text-xs text-neutral-400">{{ __('directory.teams.no_history') }}</p>
         @endforelse
     </div>
 
     @if($record)
         <div class="mt-3 grid grid-cols-4 gap-3 text-center text-xs">
             <div class="rounded-lg border border-neutral-200 bg-white p-3">
-                <p class="text-neutral-400">Played</p>
+                <p class="text-neutral-400">{{ __('directory.teams.played') }}</p>
                 <p class="mt-0.5 text-sm font-semibold text-neutral-900">{{ $record['played'] }}</p>
             </div>
             <div class="rounded-lg border border-neutral-200 bg-white p-3">
-                <p class="text-neutral-400">Won</p>
+                <p class="text-neutral-400">{{ __('directory.teams.won') }}</p>
                 <p class="mt-0.5 text-sm font-semibold text-neutral-900">{{ $record['won'] }}</p>
             </div>
             <div class="rounded-lg border border-neutral-200 bg-white p-3">
-                <p class="text-neutral-400">Lost</p>
+                <p class="text-neutral-400">{{ __('directory.teams.lost') }}</p>
                 <p class="mt-0.5 text-sm font-semibold text-neutral-900">{{ $record['lost'] }}</p>
             </div>
             <div class="rounded-lg border border-neutral-200 bg-white p-3">
-                <p class="text-neutral-400">Tied</p>
+                <p class="text-neutral-400">{{ __('directory.teams.tied') }}</p>
                 <p class="mt-0.5 text-sm font-semibold text-neutral-900">{{ $record['tied'] }}</p>
             </div>
         </div>
@@ -64,7 +64,7 @@
 
     <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
         <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
-            Squad @if($selectedEditionTeam) &middot; {{ $selectedEditionTeam->edition->name }} @endif
+            {{ __('directory.teams.squad') }} @if($selectedEditionTeam) &middot; {{ $selectedEditionTeam->edition->name }} @endif
         </h3>
 
         <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -89,18 +89,18 @@
                         <p class="truncate text-[13px] font-medium text-neutral-900">{{ $player->name }}</p>
                         <p class="truncate text-[11px] text-neutral-500">
                             @if($teamPlayer->jersey_number) #{{ $teamPlayer->jersey_number }} &middot; @endif
-                            {{ str_replace('_', ' ', ucfirst($teamPlayer->role)) }}
+                            {{ \Illuminate\Support\Facades\Lang::has('directory.roles.'.$teamPlayer->role) ? __('directory.roles.'.$teamPlayer->role) : str_replace('_', ' ', ucfirst($teamPlayer->role)) }}
                         </p>
                     </div>
                 </a>
             @empty
-                <p class="col-span-full py-4 text-center text-xs text-neutral-400">No squad available for this edition yet.</p>
+                <p class="col-span-full py-4 text-center text-xs text-neutral-400">{{ __('directory.teams.squad_empty') }}</p>
             @endforelse
         </div>
     </div>
 
     <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Recent Matches</h3>
+        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{{ __('directory.teams.recent_matches') }}</h3>
 
         @forelse($recentMatches as $match)
             @php
@@ -109,7 +109,7 @@
             <div class="flex items-center justify-between gap-3 border-b border-neutral-100 py-2 text-[13px] last:border-b-0">
                 <div class="min-w-0">
                     <a href="{{ route('public.matches.show', $match) }}" class="font-medium text-neutral-800 hover:underline">
-                        vs {{ $opponent->team->name }}
+                        {{ __('directory.common.vs') }} {{ $opponent->team->name }}
                     </a>
                     <p class="text-[11px] text-neutral-500">
                         {{ display_datetime($match->scheduled_at, 'd M Y') }}
@@ -124,7 +124,7 @@
                 <x-status-badge :status="$match->match_status" />
             </div>
         @empty
-            <p class="py-4 text-center text-xs text-neutral-400">No matches available for this edition yet.</p>
+            <p class="py-4 text-center text-xs text-neutral-400">{{ __('directory.teams.recent_matches_empty') }}</p>
         @endforelse
     </div>
 @endsection

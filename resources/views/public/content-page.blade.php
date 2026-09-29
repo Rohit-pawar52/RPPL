@@ -11,7 +11,7 @@
                 {!! $content !!}
             </div>
         @else
-            <p class="text-xs text-neutral-400">This page has no content yet.</p>
+            <p class="text-xs text-neutral-400">{{ __('directory.content.empty') }}</p>
         @endif
     </div>
 @endsection
