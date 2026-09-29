@@ -31,6 +31,27 @@ return [
         'switch_language' => 'Switch language',
     ],
 
+    // <x-status-badge> DISPLAY labels only — never changes the
+    // underlying DB enum value it's given. Only public-facing statuses
+    // are listed; anything Admin-only (income/expense/queued/paid in
+    // full/...) is deliberately absent — status-badge.blade.php falls
+    // back to the raw value when a key is missing, which is correct for
+    // those (Admin never runs in Hindi anyway).
+    'status' => [
+        'upcoming' => 'Upcoming',
+        'active' => 'Active',
+        'completed' => 'Completed',
+        'scheduled' => 'Scheduled',
+        'toss' => 'Toss',
+        'live' => 'Live',
+        'abandoned' => 'Abandoned',
+        'cancelled' => 'Cancelled',
+        'pending' => 'Pending',
+        'paid' => 'Paid',
+        'failed' => 'Failed',
+        'refunded' => 'Refunded',
+    ],
+
     'common' => [
         'view_all' => 'View All',
         'view_match' => 'View Match',

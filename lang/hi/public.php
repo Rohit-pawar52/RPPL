@@ -29,6 +29,21 @@ return [
         'switch_language' => 'भाषा बदलें',
     ],
 
+    'status' => [
+        'upcoming' => 'आगामी',
+        'active' => 'सक्रिय',
+        'completed' => 'पूर्ण',
+        'scheduled' => 'निर्धारित',
+        'toss' => 'टॉस',
+        'live' => 'लाइव',
+        'abandoned' => 'स्थगित',
+        'cancelled' => 'रद्द',
+        'pending' => 'लंबित',
+        'paid' => 'भुगतान किया गया',
+        'failed' => 'असफल',
+        'refunded' => 'वापस किया गया',
+    ],
+
     'common' => [
         'view_all' => 'सभी देखें',
         'view_match' => 'मैच देखें',
