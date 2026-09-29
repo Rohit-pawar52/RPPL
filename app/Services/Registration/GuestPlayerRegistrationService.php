@@ -37,12 +37,16 @@ class GuestPlayerRegistrationService
      * Deliberately generic — never reveals which field conflicted, that
      * a phone/email belongs to someone else, or that a matched Player is
      * inactive. See Phase 3.39C's privacy requirements.
+     *
+     * These are translation KEYS (lang/{en,hi}/registration.php), resolved
+     * with __() at throw time so the guest sees them in their public
+     * site language.
      */
-    public const GENERIC_REJECTION_MESSAGE = "We couldn't process the registration with the details provided. Please contact RPPL administration.";
+    public const GENERIC_REJECTION_MESSAGE_KEY = 'registration.errors.generic_rejection';
 
-    public const DUPLICATE_MESSAGE = 'A registration already exists for these details. Please use the registration status option or contact RPPL administration.';
+    public const DUPLICATE_MESSAGE_KEY = 'registration.errors.duplicate';
 
-    public const CLOSED_MESSAGE = 'Player registration is currently closed.';
+    public const CLOSED_MESSAGE_KEY = 'registration.errors.closed';
 
     public function __construct(
         private readonly PlayerIdentityResolver $identity,
@@ -60,17 +64,17 @@ class GuestPlayerRegistrationService
         $resolved = $this->identity->resolve($phone, $email);
 
         if ($resolved['conflict']) {
-            throw ValidationException::withMessages(['phone' => self::GENERIC_REJECTION_MESSAGE]);
+            throw ValidationException::withMessages(['phone' => __(self::GENERIC_REJECTION_MESSAGE_KEY)]);
         }
 
         $player = $resolved['player'];
 
         if ($player && ! $player->is_active) {
-            throw ValidationException::withMessages(['phone' => self::GENERIC_REJECTION_MESSAGE]);
+            throw ValidationException::withMessages(['phone' => __(self::GENERIC_REJECTION_MESSAGE_KEY)]);
         }
 
         if ($player && PlayerRegistration::where('edition_id', $edition->id)->where('player_id', $player->id)->exists()) {
-            throw ValidationException::withMessages(['phone' => self::DUPLICATE_MESSAGE]);
+            throw ValidationException::withMessages(['phone' => __(self::DUPLICATE_MESSAGE_KEY)]);
         }
 
         // Files are not transactional — stored before the DB transaction,
@@ -87,7 +91,7 @@ class GuestPlayerRegistrationService
                 $lockedEdition = Edition::whereKey($edition->id)->lockForUpdate()->firstOrFail();
 
                 if (! $lockedEdition->isAcceptingPublicRegistration()) {
-                    throw ValidationException::withMessages(['phone' => self::CLOSED_MESSAGE]);
+                    throw ValidationException::withMessages(['phone' => __(self::CLOSED_MESSAGE_KEY)]);
                 }
 
                 $playerId = $player?->id ?? $this->createPlayer($data, $phone, $email)->id;

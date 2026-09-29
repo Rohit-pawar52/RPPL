@@ -57,10 +57,17 @@ class StorePublicPlayerRegistrationRequest extends FormRequest
         ];
     }
 
+    /**
+     * Resolved per request so the message follows the public site
+     * language (SetPublicLocale). Generic rule messages (required, max,
+     * mimes, ...) come from lang/{locale}/validation.php as usual.
+     *
+     * @return array<string, string>
+     */
     public function messages(): array
     {
         return [
-            'phone.regex' => 'Enter a valid 10-digit Indian mobile number.',
+            'phone.regex' => __('registration.validation.phone_regex'),
         ];
     }
 }
