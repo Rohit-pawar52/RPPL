@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Live · '.$match->teamA->team->name.' vs '.$match->teamB->team->name)
+@section('title', __('matches.nav.live').' · '.$match->teamA->team->name.' '.__('matches.common.vs').' '.$match->teamB->team->name)
 
 @section('content')
     @php
@@ -11,7 +11,7 @@
 
     <div class="mb-3">
         <a href="{{ route('public.matches.index') }}" class="text-xs text-neutral-500 hover:text-neutral-700">
-            &larr; All matches
+            &larr; {{ __('public.common.all_matches') }}
         </a>
     </div>
 
@@ -33,14 +33,14 @@
             </p>
             <div class="mt-0.5 flex items-center justify-between gap-3">
                 <h1 class="min-w-0 text-base font-semibold text-neutral-900">
-                    {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
+                    {{ $match->teamA->team->name }} {{ __('matches.common.vs') }} {{ $match->teamB->team->name }}
                 </h1>
                 <span id="live-status-badge" class="shrink-0"><x-status-badge :status="$liveData['match_status']" /></span>
             </div>
 
             @if($match->tossWinner)
                 <p class="mt-1 text-[11px] text-neutral-500">
-                    {{ $match->tossWinner->team->name }} won the toss and chose to {{ $match->toss_decision }}
+                    {{ __('matches.info.toss_result', ['team' => $match->tossWinner->team->name, 'decision' => __('matches.info.toss_decision.'.$match->toss_decision)]) }}
                 </p>
             @endif
 
@@ -60,7 +60,7 @@
         </div>
 
         <div class="mt-3 rounded-lg border border-neutral-200 bg-white p-3 sm:p-4">
-            <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">This Over</h3>
+            <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{{ __('matches.live.this_over') }}</h3>
             <div id="live-deliveries">
                 @forelse($liveData['recent_deliveries'] as $delivery)
                     @include('public.matches._live-delivery-row', ['delivery' => $delivery])

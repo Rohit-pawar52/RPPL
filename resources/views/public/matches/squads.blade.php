@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Squads · '.$match->teamA->team->name.' vs '.$match->teamB->team->name)
+@section('title', __('matches.nav.squads').' · '.$match->teamA->team->name.' '.__('matches.common.vs').' '.$match->teamB->team->name)
 
 {{--
     Public per-match Playing XI. Deliberately the announced XI
@@ -11,7 +11,7 @@
 @section('content')
     <div class="mb-3">
         <a href="{{ route('public.matches.index') }}" class="text-xs text-neutral-500 hover:text-neutral-700">
-            &larr; All matches
+            &larr; {{ __('public.common.all_matches') }}
         </a>
     </div>
 
@@ -19,7 +19,7 @@
         <p class="truncate text-[11px] text-neutral-500">{{ $match->edition->name }}</p>
         <div class="mt-0.5 flex items-center justify-between gap-3">
             <h1 class="min-w-0 text-base font-semibold text-neutral-900">
-                {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
+                {{ $match->teamA->team->name }} {{ __('matches.common.vs') }} {{ $match->teamB->team->name }}
             </h1>
             <x-status-badge :status="$match->match_status" />
         </div>
@@ -40,7 +40,7 @@
                     </span>
                     <span class="min-w-0">
                         <span class="block truncate text-[13px] font-semibold text-neutral-900">{{ $editionTeam->team->name }}</span>
-                        <span class="block text-[11px] uppercase tracking-wide text-neutral-400">Playing XI</span>
+                        <span class="block text-[11px] uppercase tracking-wide text-neutral-400">{{ __('matches.squads.playing_xi') }}</span>
                     </span>
                 </div>
 
@@ -48,16 +48,16 @@
                     @php
                         $player = $matchPlayer->teamPlayer->playerRegistration->player;
                         $roleLabel = match ($matchPlayer->teamPlayer->role) {
-                            'batter' => 'Batter',
-                            'bowler' => 'Bowler',
-                            'all_rounder' => 'All-rounder',
-                            'wicket_keeper' => 'Wicketkeeper',
+                            'batter' => __('matches.squads.role.batter'),
+                            'bowler' => __('matches.squads.role.bowler'),
+                            'all_rounder' => __('matches.squads.role.all_rounder'),
+                            'wicket_keeper' => __('matches.squads.role.wicket_keeper'),
                             default => null,
                         };
                         $marker = match (true) {
-                            $matchPlayer->is_captain && $matchPlayer->is_wicket_keeper => '(C & WK)',
-                            $matchPlayer->is_captain => '(C)',
-                            $matchPlayer->is_wicket_keeper => '(WK)',
+                            $matchPlayer->is_captain && $matchPlayer->is_wicket_keeper => __('matches.squads.captain_and_wicket_keeper'),
+                            $matchPlayer->is_captain => __('matches.squads.captain'),
+                            $matchPlayer->is_wicket_keeper => __('matches.squads.wicket_keeper'),
                             default => null,
                         };
                     @endphp
@@ -78,7 +78,7 @@
                         @endif
                     </div>
                 @empty
-                    <p class="py-4 text-center text-[11px] text-neutral-400">Playing XI not announced yet.</p>
+                    <p class="py-4 text-center text-[11px] text-neutral-400">{{ __('matches.squads.not_announced') }}</p>
                 @endforelse
             </section>
         @endforeach

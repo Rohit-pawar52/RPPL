@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Scorecard · '.$match->teamA->team->name.' vs '.$match->teamB->team->name)
+@section('title', __('matches.nav.scorecard').' · '.$match->teamA->team->name.' '.__('matches.common.vs').' '.$match->teamB->team->name)
 
 {{--
     Public PDF download is intentionally hidden for now (per the
@@ -12,7 +12,7 @@
 @section('content')
     <div class="mb-3">
         <a href="{{ route('public.matches.index') }}" class="text-xs text-neutral-500 hover:text-neutral-700">
-            &larr; All matches
+            &larr; {{ __('public.common.all_matches') }}
         </a>
     </div>
 
@@ -78,7 +78,7 @@
             @include('shared.scorecard._innings', ['card' => $card])
         @empty
             <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4 text-center text-xs text-neutral-400">
-                Scorecard will be available once the match begins.
+                {{ __('matches.scorecard.not_available') }}
             </div>
         @endforelse
     @endif
