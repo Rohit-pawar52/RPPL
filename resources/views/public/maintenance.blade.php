@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-neutral-50">
+<html lang="en" class="h-full bg-surface">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,7 +10,7 @@
     @include('layouts.partials.theme-vars')
     @vite(['resources/css/app.css'])
 </head>
-<body class="h-full text-[13px] text-neutral-800 antialiased">
+<body class="h-full bg-surface text-[13px] text-slate-800 antialiased">
     <div class="flex min-h-full items-center justify-center px-4 py-10">
         <div class="w-full max-w-sm text-center">
             <div class="mb-4 flex items-center justify-center">
@@ -18,19 +18,19 @@
                     <img
                         src="{{ $branding->logoUrl }}"
                         alt="{{ $branding->applicationName }}"
-                        class="h-12 w-12 rounded-md object-contain"
+                        class="h-14 w-14 rounded-xl object-contain"
                     />
                 @else
-                    <span class="theme-primary-bg flex h-12 w-12 items-center justify-center rounded-md text-lg font-bold">
+                    <span class="flex h-14 w-14 items-center justify-center rounded-xl bg-navy-900 text-xl font-bold text-white">
                         {{ Illuminate\Support\Str::substr($branding->shortName, 0, 1) }}
                     </span>
                 @endif
             </div>
 
-            <h1 class="text-base font-semibold text-neutral-900">{{ $branding->applicationName }}</h1>
+            <h1 class="pub-h1">{{ $branding->applicationName }}</h1>
 
-            <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-                <p class="text-sm text-neutral-700">
+            <div class="pub-card mt-4 p-6">
+                <p class="text-sm leading-relaxed text-slate-700">
                     {{ $message ?: 'The website is currently under maintenance. Please check back shortly.' }}
                 </p>
             </div>

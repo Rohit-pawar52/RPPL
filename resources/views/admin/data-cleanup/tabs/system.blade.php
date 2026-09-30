@@ -12,12 +12,12 @@
      pre-summarized from FailedJobViewService (the raw payload never
      reaches this view). --}}
 <div class="mb-6">
-    <h3 class="mb-1 text-sm font-semibold text-neutral-900">Failed Jobs</h3>
-    <p class="mb-3 text-xs text-neutral-500">Most recent first. Times shown in {{ $displayTimezone }}.</p>
+    <h3 class="mb-1 text-sm font-semibold text-slate-900">Failed Jobs</h3>
+    <p class="mb-3 text-xs text-slate-500">Most recent first. Times shown in {{ $displayTimezone }}.</p>
 
-    <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+    <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
         <table class="w-full min-w-[640px] text-left text-[13px]">
-            <thead class="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-400">
+            <thead class="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-400">
                 <tr>
                     <th class="px-4 py-2 font-medium">Failed At</th>
                     <th class="px-4 py-2 font-medium">Job</th>
@@ -27,21 +27,21 @@
                     <th class="px-4 py-2 text-right font-medium">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-neutral-100">
+            <tbody class="divide-y divide-slate-100">
                 @forelse($failedJobList ?? [] as $failedJob)
-                    <tr class="hover:bg-neutral-50">
-                        <td class="whitespace-nowrap px-4 py-2 text-neutral-500">{{ display_datetime($failedJob->failed_at, 'd M Y, h:i A') ?? '—' }}</td>
-                        <td class="px-4 py-2 font-medium text-neutral-800">{{ $failedJob->job_name }}</td>
-                        <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">{{ $failedJob->queue }}</td>
-                        <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">{{ $failedJob->connection }}</td>
-                        <td class="break-words px-4 py-2 text-neutral-600">{{ $failedJob->error_summary }}</td>
+                    <tr class="hover:bg-slate-50">
+                        <td class="whitespace-nowrap px-4 py-2 text-slate-500">{{ display_datetime($failedJob->failed_at, 'd M Y, h:i A') ?? '—' }}</td>
+                        <td class="px-4 py-2 font-medium text-slate-800">{{ $failedJob->job_name }}</td>
+                        <td class="hidden px-4 py-2 text-slate-600 md:table-cell">{{ $failedJob->queue }}</td>
+                        <td class="hidden px-4 py-2 text-slate-600 md:table-cell">{{ $failedJob->connection }}</td>
+                        <td class="break-words px-4 py-2 text-slate-600">{{ $failedJob->error_summary }}</td>
                         <td class="px-4 py-2">
                             <div class="flex items-center justify-end gap-1">
                                 <a
                                     href="{{ route('admin.data-cleanup.failed-jobs.show', $failedJob->uuid) }}"
                                     title="Details"
                                     aria-label="View failed job details"
-                                    class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
+                                    class="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                                 >
                                     <x-icon name="eye" class="h-4 w-4" />
                                 </a>
@@ -50,7 +50,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-neutral-400">
+                        <td colspan="6" class="px-4 py-8 text-center text-slate-400">
                             No failed jobs.
                         </td>
                     </tr>
@@ -66,9 +66,9 @@
     @endif
 </div>
 
-<div class="border-t border-neutral-200 pt-4">
-    <h3 class="mb-1 text-sm font-semibold text-neutral-900">Delete Old Failed Jobs</h3>
-    <p class="mb-3 text-xs text-neutral-500">{{ $failedJobCount }} total. Delete records before this date (selected date is not included) — times are interpreted in {{ $displayTimezone }}.</p>
+<div class="border-t border-slate-200 pt-4">
+    <h3 class="mb-1 text-sm font-semibold text-slate-900">Delete Old Failed Jobs</h3>
+    <p class="mb-3 text-xs text-slate-500">{{ $failedJobCount }} total. Delete records before this date (selected date is not included) — times are interpreted in {{ $displayTimezone }}.</p>
 
     <form
         method="POST"
@@ -87,7 +87,7 @@
                 Delete failed jobs
             </button>
         </div>
-        <p class="-mt-2 text-xs text-neutral-500" data-cutoff-preview-result="failed-jobs">Select a date to see how many failed jobs this would affect.</p>
+        <p class="-mt-2 text-xs text-slate-500" data-cutoff-preview-result="failed-jobs">Select a date to see how many failed jobs this would affect.</p>
     </form>
 </div>
 

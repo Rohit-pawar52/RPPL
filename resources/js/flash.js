@@ -26,14 +26,19 @@ export function initFlashMessages() {
             return;
         }
 
+        const icon = SWAL_ICON_BY_FLASH_TYPE[type] ?? 'info';
+
         Swal.fire({
-            icon: SWAL_ICON_BY_FLASH_TYPE[type] ?? 'info',
+            icon,
             text: message,
             toast: true,
             position: 'top-end',
-            timer: 3500,
+            // Errors stay a little longer so they can actually be read.
+            timer: icon === 'error' ? 6000 : 3500,
             timerProgressBar: true,
             showConfirmButton: false,
+            showCloseButton: true,
+            customClass: { popup: 'rppl-toast', container: 'rppl-toast-container' },
         });
     });
 }
@@ -55,5 +60,7 @@ export function confirmAction({ title, text, confirmButtonText = 'Yes, continue'
         cancelButtonText: 'Cancel',
         reverseButtons: true,
         focusCancel: true,
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#64748b',
     });
 }

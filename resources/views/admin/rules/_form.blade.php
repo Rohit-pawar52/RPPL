@@ -17,27 +17,13 @@
 
 <x-form.input name="title" label="Title" :value="$rule->title ?? ''" maxlength="255" required />
 
-<div class="mb-3.5">
-    <label for="content" class="mb-1 block text-xs font-medium text-neutral-700">Content</label>
-    <textarea
-        id="content"
-        name="content"
-        rows="6"
-        maxlength="5000"
-        required
-        class="w-full rounded-md border px-3 py-2 text-[13px] focus:outline-none focus:ring-2 {{ $errors->has('content') ? 'border-red-400 focus:ring-red-100' : 'border-neutral-300 theme-focus-ring' }}"
-    >{{ old('content', $rule->content ?? '') }}</textarea>
-    <p class="mt-1 text-[11px] text-neutral-400">Plain text, line breaks are preserved. No HTML.</p>
-    @error('content')
-        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-    @enderror
-</div>
+<x-form.textarea name="content" label="Content" :value="$rule->content ?? ''" rows="6" maxlength="5000" required help="Plain text, line breaks are preserved. No HTML." />
 
 <div class="mb-3.5">
-    <p class="mb-1 text-xs font-medium text-neutral-700">Image <span class="font-normal text-neutral-400">(optional)</span></p>
+    <p class="mb-1 text-xs font-medium text-slate-700">Image <span class="font-normal text-slate-400">(optional)</span></p>
 
     <div class="flex items-center gap-3">
-        <div class="flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-md border border-neutral-200 bg-neutral-50 text-neutral-300">
+        <div class="flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50 text-slate-300">
             @if($rule?->image_path)
                 <img
                     src="{{ Illuminate\Support\Facades\Storage::url($rule->image_path) }}"
@@ -50,7 +36,7 @@
         </div>
 
         <div class="min-w-0">
-            <label class="cursor-pointer text-[12px] font-medium theme-link">
+            <label class="cursor-pointer text-[12px] font-medium text-green-700">
                 {{ $rule?->image_path ? 'Replace image' : 'Upload image' }}
                 <input
                     type="file"
@@ -60,8 +46,8 @@
                     onchange="document.getElementById('image-filename').textContent = this.files[0]?.name ?? ''"
                 />
             </label>
-            <p id="image-filename" class="mt-1 max-w-[12rem] truncate text-[11px] text-neutral-500"></p>
-            <p class="mt-1 text-[11px] text-neutral-400">
+            <p id="image-filename" class="mt-1 max-w-[12rem] truncate text-[11px] text-slate-500"></p>
+            <p class="mt-1 text-[11px] text-slate-400">
                 JPG, PNG or WebP, up to 2 MB.
                 @if($rule?->image_path)
                     Leave empty to keep the current image.
@@ -69,12 +55,12 @@
             </p>
 
             @if($rule?->image_path)
-                <label class="mt-1.5 flex items-center gap-1.5 text-[12px] text-neutral-600">
+                <label class="mt-1.5 flex items-center gap-1.5 text-[12px] text-slate-600">
                     <input
                         type="checkbox"
                         name="remove_image"
                         value="1"
-                        class="rounded border-neutral-300"
+                        class="rounded border-slate-300"
                         @checked(old('remove_image'))
                     />
                     Remove image
@@ -104,22 +90,8 @@
         :value="$rule->status ?? 'active'"
     />
 </div>
-<p class="-mt-2.5 mb-3.5 text-[11px] text-neutral-400">
+<p class="-mt-2.5 mb-3.5 text-[11px] text-slate-400">
     Lower sort order numbers are shown first within their rule type. Only Active rules under an Active rule type appear on the public website.
 </p>
 
-<div class="mb-3.5">
-    <label class="flex items-center gap-2 text-[13px] text-neutral-700">
-        <input
-            type="checkbox"
-            name="is_important"
-            value="1"
-            class="rounded border-neutral-300"
-            @checked($errors->any() ? old('is_important') : ($rule->is_important ?? false))
-        />
-        Highlight as an especially important rule
-    </label>
-    @error('is_important')
-        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-    @enderror
-</div>
+<x-form.checkbox name="is_important" label="Highlight as an especially important rule" :checked="$errors->any() ? (bool) old('is_important') : ($rule->is_important ?? false)" />

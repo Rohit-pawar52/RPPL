@@ -10,20 +10,10 @@
     it again later is a one-line change back.
 --}}
 @section('content')
-    <div class="mb-3">
-        <a href="{{ route('public.matches.index') }}" class="text-xs text-neutral-500 hover:text-neutral-700">
-            &larr; {{ __('public.common.all_matches') }}
-        </a>
-    </div>
-
-    {{-- No match-info card here on purpose — team names/venue/date/
-         status already live one tab over (Match Info); the Scorecard
-         tab goes straight from the tabs into the result and the
-         innings themselves, per the cricket-portal reference. --}}
-    @include('public.matches._match-tabs', ['match' => $match, 'active' => 'scorecard'])
+    @include('public.matches._header', ['match' => $match, 'active' => 'scorecard'])
 
     @if($match->match_status === 'completed' && $match->match_result)
-        <div class="mb-4 rounded-md border theme-primary-border theme-primary-soft-bg px-3 py-2 text-[13px] font-semibold theme-primary-text">
+        <div class="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
             {{ $match->match_result }}
         </div>
     @endif
@@ -45,11 +35,7 @@
             <div class="mb-4 flex flex-wrap gap-2">
                 @foreach($inningsScorecards as $card)
                     @php $inn = $card['innings']; @endphp
-                    {{-- has-checked: only works with real Tailwind utilities,
-                         not the plain .theme-primary-bg/-fg CSS classes, so
-                         the active-pill fill uses the same --rppl-primary
-                         custom properties directly via arbitrary values. --}}
-                    <label class="cursor-pointer rounded-full border theme-primary-border px-3 py-1 text-[12px] font-medium text-neutral-600 has-checked:bg-[var(--rppl-primary)] has-checked:text-[var(--rppl-primary-fg)]">
+                    <label class="inline-flex min-h-10 cursor-pointer items-center rounded-full border border-slate-300 bg-white px-4 text-[13px] font-medium text-slate-600 transition hover:border-slate-400 has-checked:border-green-600 has-checked:bg-green-600 has-checked:text-white has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-green-600">
                         <input
                             type="radio"
                             name="innings-tab"
@@ -77,7 +63,7 @@
         @forelse($inningsScorecards as $card)
             @include('shared.scorecard._innings', ['card' => $card])
         @empty
-            <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4 text-center text-xs text-neutral-400">
+            <div class="pub-card pub-empty">
                 {{ __('matches.scorecard.not_available') }}
             </div>
         @endforelse

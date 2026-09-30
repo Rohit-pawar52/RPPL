@@ -3,128 +3,114 @@
 @section('title', $team->name.' · '.$branding->shortName)
 
 @section('content')
-    <a href="{{ route('public.teams.index') }}" class="mb-4 inline-block text-xs text-neutral-500 hover:text-neutral-700">
-        &larr; {{ __('directory.teams.back') }}
+    <a href="{{ route('public.teams.index') }}" class="mb-2 inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-900">
+        <span aria-hidden="true">&larr;</span> {{ __('directory.teams.back') }}
     </a>
 
-    <div class="rounded-lg border border-neutral-200 bg-white p-4">
+    <div class="pub-card p-4 sm:p-5">
         <div class="flex items-center gap-4">
-            <div class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-50 text-neutral-300">
+            <div class="pub-media flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-line bg-slate-100 text-xl font-bold text-slate-500 sm:h-20 sm:w-20 sm:text-2xl">
+                {{ mb_strtoupper(mb_substr($team->name, 0, 1)) }}
                 @if($team->logo_path)
                     <img
                         src="{{ Illuminate\Support\Facades\Storage::url($team->logo_path) }}"
                         alt="{{ $team->name }}"
-                        class="h-full w-full object-cover"
+                        class="absolute inset-0 h-full w-full bg-white object-cover"
+                        onerror="this.style.visibility='hidden'"
                     />
-                @else
-                    <x-icon name="shield" class="h-6 w-6" />
                 @endif
             </div>
 
-            <div>
-                <h1 class="text-base font-semibold text-neutral-900">{{ $team->name }}</h1>
-                <p class="text-xs text-neutral-500">{{ $team->short_name ?? __('directory.teams.no_short_name') }}</p>
+            <div class="min-w-0">
+                <h1 class="pub-h1 break-words">{{ $team->name }}</h1>
+                <p class="pub-meta mt-0.5">{{ $team->short_name ?? __('directory.teams.no_short_name') }}</p>
             </div>
         </div>
-    </div>
 
-    <div class="mt-4 flex flex-wrap items-center gap-2">
-        @forelse($editionTeams as $editionTeam)
-            <a
-                href="{{ route('public.teams.show', ['team' => $team, 'edition_id' => $editionTeam->edition_id]) }}"
-                class="rounded-md border px-2.5 py-1 text-xs font-medium {{ $selectedEditionTeam?->id === $editionTeam->id ? 'theme-primary-border theme-primary-soft-bg theme-primary-text' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}"
-            >
-                {{ $editionTeam->edition->name }}
-            </a>
-        @empty
-            <p class="text-xs text-neutral-400">{{ __('directory.teams.no_history') }}</p>
-        @endforelse
+        @if($editionTeams->isNotEmpty())
+            <div class="mt-4 flex gap-2 overflow-x-auto border-t border-line pt-3">
+                @foreach($editionTeams as $editionTeam)
+                    <a
+                        href="{{ route('public.teams.show', ['team' => $team, 'edition_id' => $editionTeam->edition_id]) }}"
+                        class="inline-flex min-h-9 shrink-0 items-center rounded-full border px-3 text-xs font-semibold {{ $selectedEditionTeam?->id === $editionTeam->id ? 'border-green-600 bg-green-50 text-green-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50' }}"
+                    >
+                        {{ $editionTeam->edition->name }}
+                    </a>
+                @endforeach
+            </div>
+        @else
+            <p class="pub-meta mt-4 border-t border-line pt-3">{{ __('directory.teams.no_history') }}</p>
+        @endif
     </div>
 
     @if($record)
-        <div class="mt-3 grid grid-cols-4 gap-3 text-center text-xs">
-            <div class="rounded-lg border border-neutral-200 bg-white p-3">
-                <p class="text-neutral-400">{{ __('directory.teams.played') }}</p>
-                <p class="mt-0.5 text-sm font-semibold text-neutral-900">{{ $record['played'] }}</p>
-            </div>
-            <div class="rounded-lg border border-neutral-200 bg-white p-3">
-                <p class="text-neutral-400">{{ __('directory.teams.won') }}</p>
-                <p class="mt-0.5 text-sm font-semibold text-neutral-900">{{ $record['won'] }}</p>
-            </div>
-            <div class="rounded-lg border border-neutral-200 bg-white p-3">
-                <p class="text-neutral-400">{{ __('directory.teams.lost') }}</p>
-                <p class="mt-0.5 text-sm font-semibold text-neutral-900">{{ $record['lost'] }}</p>
-            </div>
-            <div class="rounded-lg border border-neutral-200 bg-white p-3">
-                <p class="text-neutral-400">{{ __('directory.teams.tied') }}</p>
-                <p class="mt-0.5 text-sm font-semibold text-neutral-900">{{ $record['tied'] }}</p>
-            </div>
+        <div class="mt-3 grid grid-cols-4 gap-2 text-center sm:gap-3">
+            @foreach(['played', 'won', 'lost', 'tied'] as $key)
+                <div class="pub-card px-2 py-3">
+                    <p class="pub-eyebrow">{{ __('directory.teams.'.$key) }}</p>
+                    <p class="mt-1 text-xl font-bold tabular-nums text-slate-900">{{ $record[$key] }}</p>
+                </div>
+            @endforeach
         </div>
     @endif
 
-    <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
-            {{ __('directory.teams.squad') }} @if($selectedEditionTeam) &middot; {{ $selectedEditionTeam->edition->name }} @endif
-        </h3>
-
-        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <x-public.card class="mt-4" flush>
+        <header class="pub-card-head">
+            <h2 class="pub-card-title">{{ __('directory.teams.squad') }} @if($selectedEditionTeam) &middot; {{ $selectedEditionTeam->edition->name }} @endif</h2>
+        </header>
+        <div class="grid grid-cols-1 sm:grid-cols-2">
             @forelse($squad as $teamPlayer)
                 @php $player = $teamPlayer->playerRegistration->player; @endphp
-                <a
-                    href="{{ route('public.players.show', $player) }}"
-                    class="flex items-center gap-3 rounded-md border border-neutral-200 p-2 hover:bg-neutral-50"
-                >
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-50 text-neutral-300">
+                <a href="{{ route('public.players.show', $player) }}" class="flex min-h-14 items-center gap-3 border-b border-line px-4 py-2.5 hover:bg-slate-50 sm:odd:border-r">
+                    <div class="pub-media flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line text-xs font-bold text-slate-500">
+                        {{ mb_strtoupper(mb_substr($player->name, 0, 1)) }}
                         @if($player->photo_path)
                             <img
                                 src="{{ Illuminate\Support\Facades\Storage::url($player->photo_path) }}"
                                 alt="{{ $player->name }}"
-                                class="h-full w-full object-cover"
+                                class="absolute inset-0 h-full w-full bg-white object-cover"
+                                onerror="this.style.visibility='hidden'"
                             />
-                        @else
-                            <x-icon name="user" class="h-3.5 w-3.5" />
                         @endif
                     </div>
                     <div class="min-w-0">
-                        <p class="truncate text-[13px] font-medium text-neutral-900">{{ $player->name }}</p>
-                        <p class="truncate text-[11px] text-neutral-500">
+                        <p class="truncate text-[13px] font-semibold text-slate-900">{{ $player->name }}</p>
+                        <p class="pub-meta truncate">
                             @if($teamPlayer->jersey_number) #{{ $teamPlayer->jersey_number }} &middot; @endif
                             {{ \Illuminate\Support\Facades\Lang::has('directory.roles.'.$teamPlayer->role) ? __('directory.roles.'.$teamPlayer->role) : str_replace('_', ' ', ucfirst($teamPlayer->role)) }}
                         </p>
                     </div>
                 </a>
             @empty
-                <p class="col-span-full py-4 text-center text-xs text-neutral-400">{{ __('directory.teams.squad_empty') }}</p>
+                <x-public.empty class="col-span-full">{{ __('directory.teams.squad_empty') }}</x-public.empty>
             @endforelse
         </div>
-    </div>
+    </x-public.card>
 
-    <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{{ __('directory.teams.recent_matches') }}</h3>
-
+    <x-public.card class="mt-4" flush :title="__('directory.teams.recent_matches')">
         @forelse($recentMatches as $match)
             @php
                 $opponent = $match->teamA->id === $selectedEditionTeam->id ? $match->teamB : $match->teamA;
             @endphp
-            <div class="flex items-center justify-between gap-3 border-b border-neutral-100 py-2 text-[13px] last:border-b-0">
+            <div class="flex items-center justify-between gap-3 border-b border-line px-4 py-3 text-[13px] last:border-b-0">
                 <div class="min-w-0">
-                    <a href="{{ route('public.matches.show', $match) }}" class="font-medium text-neutral-800 hover:underline">
+                    <a href="{{ route('public.matches.show', $match) }}" class="font-semibold text-slate-900 hover:text-green-700">
                         {{ __('directory.common.vs') }} {{ $opponent->team->name }}
                     </a>
-                    <p class="text-[11px] text-neutral-500">
+                    <p class="pub-meta">
                         {{ display_datetime($match->scheduled_at, 'd M Y') }}
                         @if($match->venue)
                             &middot; {{ $match->venue->name }}
                         @endif
                     </p>
                     @if($match->match_status === 'completed' && $match->match_result)
-                        <p class="mt-0.5 text-[11px] text-neutral-600">{{ $match->match_result }}</p>
+                        <p class="mt-0.5 text-xs text-slate-600">{{ $match->match_result }}</p>
                     @endif
                 </div>
-                <x-status-badge :status="$match->match_status" />
+                <x-public.status-pill :status="$match->match_status" />
             </div>
         @empty
-            <p class="py-4 text-center text-xs text-neutral-400">{{ __('directory.teams.recent_matches_empty') }}</p>
+            <x-public.empty>{{ __('directory.teams.recent_matches_empty') }}</x-public.empty>
         @endforelse
-    </div>
+    </x-public.card>
 @endsection

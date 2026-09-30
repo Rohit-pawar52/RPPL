@@ -6,7 +6,7 @@
     and its own path column are cleared.
 --}}
 <div>
-    <p class="mb-4 text-xs text-neutral-500">
+    <p class="mb-4 text-xs text-slate-500">
         Only editions no longer open for public registration are selectable — deleting sensitive identity documents while an edition is still actively collecting them is not allowed.
     </p>
 

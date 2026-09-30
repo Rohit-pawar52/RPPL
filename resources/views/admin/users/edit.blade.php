@@ -8,12 +8,12 @@
     @endphp
 
     <div class="mb-4">
-        <a href="{{ route('admin.users.index') }}" class="text-xs text-neutral-500 hover:text-neutral-700">
+        <a href="{{ route('admin.users.index') }}" class="text-xs text-slate-500 hover:text-slate-700">
             &larr; Back to users
         </a>
     </div>
 
-    <div class="max-w-lg rounded-lg border border-neutral-200 bg-white p-4">
+    <div class="max-w-lg rounded-lg border border-slate-200 bg-white p-4">
         <form method="POST" action="{{ route('admin.users.update', $targetUser) }}" novalidate>
             @csrf
             @method('PUT')
@@ -28,9 +28,9 @@
                      always be rejected. --}}
                 <input type="hidden" name="role_id" value="{{ $targetUser->role_id }}" />
                 <input type="hidden" name="is_active" value="1" />
-                <div class="mb-3.5 text-xs text-neutral-500">
-                    <p><span class="font-medium text-neutral-700">Role:</span> {{ $targetUser->role->name }} (you cannot change your own role)</p>
-                    <p><span class="font-medium text-neutral-700">Status:</span> Active (you cannot deactivate your own account)</p>
+                <div class="mb-3.5 text-xs text-slate-500">
+                    <p><span class="font-medium text-slate-700">Role:</span> {{ $targetUser->role->name }} (you cannot change your own role)</p>
+                    <p><span class="font-medium text-slate-700">Status:</span> Active (you cannot deactivate your own account)</p>
                 </div>
             @else
                 <x-form.select
@@ -51,15 +51,11 @@
 
             <x-form.input name="password" label="New Password" type="password" />
             <x-form.input name="password_confirmation" label="Confirm New Password" type="password" />
-            <p class="-mt-2 mb-3.5 text-xs text-neutral-400">Leave password blank to keep the current password.</p>
+            <p class="-mt-2 mb-3.5 text-xs text-slate-400">Leave password blank to keep the current password.</p>
 
             <div class="mt-2 flex items-center gap-2">
-                <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
-                    Save changes
-                </button>
-                <a href="{{ route('admin.users.index') }}" class="rounded-md border border-neutral-200 px-3 py-2 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
-                    Cancel
-                </a>
+                <x-admin.button>Save changes</x-admin.button>
+                <x-admin.button href="{{ route('admin.users.index') }}" variant="secondary">Cancel</x-admin.button>
             </div>
         </form>
     </div>

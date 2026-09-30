@@ -5,10 +5,10 @@
 
 <div class="grid gap-6 sm:grid-cols-[6.5rem_1fr]">
     <div>
-        <p class="mb-1 text-xs font-medium text-neutral-700">Photo</p>
+        <p class="mb-1 text-xs font-medium text-slate-700">Photo</p>
 
         <div class="flex flex-col items-center gap-2">
-            <div class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-50 text-neutral-300">
+            <div class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-slate-300">
                 @if($player?->photo_path)
                     <img
                         src="{{ Illuminate\Support\Facades\Storage::url($player->photo_path) }}"
@@ -20,7 +20,7 @@
                 @endif
             </div>
 
-            <label class="cursor-pointer text-[11px] font-medium theme-link">
+            <label class="cursor-pointer text-[11px] font-medium text-green-700">
                 {{ $player?->photo_path ? 'Replace photo' : 'Upload photo' }}
                 <input
                     type="file"
@@ -30,7 +30,7 @@
                     onchange="document.getElementById('photo-filename').textContent = this.files[0]?.name ?? ''"
                 />
             </label>
-            <p id="photo-filename" class="max-w-[7rem] truncate text-center text-[11px] text-neutral-400"></p>
+            <p id="photo-filename" class="max-w-[7rem] truncate text-center text-[11px] text-slate-400"></p>
         </div>
 
         @error('photo')
@@ -39,7 +39,7 @@
     </div>
 
     <div>
-        <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Personal</p>
+        <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Personal</p>
 
         <x-form.input name="name" label="Full name" :value="$player->name ?? ''" required autofocus />
 
@@ -67,7 +67,7 @@
             />
         @endif
 
-        <p class="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Cricket Profile</p>
+        <p class="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Cricket Profile</p>
 
         <div class="grid gap-x-3 sm:grid-cols-3">
             <x-form.select

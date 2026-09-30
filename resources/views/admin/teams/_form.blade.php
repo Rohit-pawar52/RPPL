@@ -5,10 +5,10 @@
 
 <div class="grid gap-6 sm:grid-cols-[6.5rem_1fr]">
     <div>
-        <p class="mb-1 text-xs font-medium text-neutral-700">Logo</p>
+        <p class="mb-1 text-xs font-medium text-slate-700">Logo</p>
 
         <div class="flex flex-col items-center gap-2">
-            <div class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-50 text-neutral-300">
+            <div class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-slate-300">
                 @if($team?->logo_path)
                     <img
                         src="{{ Illuminate\Support\Facades\Storage::url($team->logo_path) }}"
@@ -20,7 +20,7 @@
                 @endif
             </div>
 
-            <label class="cursor-pointer text-[11px] font-medium theme-link">
+            <label class="cursor-pointer text-[11px] font-medium text-green-700">
                 {{ $team?->logo_path ? 'Replace logo' : 'Upload logo' }}
                 <input
                     type="file"
@@ -30,7 +30,7 @@
                     onchange="document.getElementById('logo-filename').textContent = this.files[0]?.name ?? ''"
                 />
             </label>
-            <p id="logo-filename" class="max-w-[7rem] truncate text-center text-[11px] text-neutral-400"></p>
+            <p id="logo-filename" class="max-w-[7rem] truncate text-center text-[11px] text-slate-400"></p>
         </div>
 
         @error('logo')

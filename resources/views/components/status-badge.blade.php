@@ -48,6 +48,4 @@
         : $status;
 @endphp
 
-<span class="inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ring-1 ring-inset {{ $style }}">
-    {{ $displayStatus }}
-</span>
+<span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium leading-4 capitalize ring-1 ring-inset {{ $style }}"><span class="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-70" aria-hidden="true"></span>{{ $displayStatus }}</span>

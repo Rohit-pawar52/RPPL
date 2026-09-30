@@ -11,7 +11,7 @@
     @method('PATCH')
     <button
         type="submit"
-        class="cursor-pointer"
+        class="cursor-pointer rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
         title="{{ $status === 'active' ? 'Click to deactivate' : 'Click to activate' }}"
         aria-label="{{ $status === 'active' ? 'Deactivate' : 'Activate' }} {{ $noun }}"
     >

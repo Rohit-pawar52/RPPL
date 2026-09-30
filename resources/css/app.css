@@ -6,8 +6,19 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    /* System UI stack: crisp on every device and covers Devanagari through
+       the OS fallback, with no web-font request. */
+    --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Noto Sans Devanagari', sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* RPPL public design system — static tokens (the admin-editable
+       branding colours below stay runtime CSS variables). */
+    --color-navy-950: #07202d;
+    --color-navy-900: #0b2e3f;
+    --color-navy-800: #123c52;
+    --color-navy-700: #1b4d68;
+    --color-surface: #f3f6f9;
+    --color-line: #e2e8ee;
 }
 
 /*
@@ -228,4 +239,321 @@
 .rppl-notify-indicator[data-state='denied'] {
     display: block;
     background-color: #a3a3a3;
+}
+
+/*
+ * ============================================================
+ * RPPL public design system
+ * ------------------------------------------------------------
+ * One small set of component classes every public page shares, so
+ * cards, buttons, pills, tabs and tables look identical everywhere.
+ * Palette: navy (header/footer/scores), white cards on a light
+ * blue-grey page, green for live/active/primary actions, slate for
+ * secondary text. Use these classes (or the <x-public.*> components)
+ * instead of re-styling the same pattern per page.
+ * ============================================================
+ */
+@layer components {
+    /* Cards */
+    .pub-card {
+        @apply rounded-xl border border-line bg-white shadow-[0_1px_2px_rgba(15,34,51,0.05)];
+    }
+    .pub-card-link {
+        @apply transition duration-150 hover:-translate-y-px hover:border-slate-300 hover:shadow-md;
+    }
+    .pub-card-head {
+        @apply flex items-center justify-between gap-3 border-b border-line px-4 py-3;
+    }
+    .pub-card-title {
+        @apply text-[13px] font-semibold tracking-tight text-slate-900;
+    }
+    .pub-card-body {
+        @apply p-4;
+    }
+
+    /* Page + section headings */
+    .pub-h1 {
+        @apply text-xl font-bold tracking-tight text-slate-900;
+    }
+    .pub-h2 {
+        @apply text-base font-semibold tracking-tight text-slate-900;
+    }
+    .pub-meta {
+        @apply text-xs text-slate-500;
+    }
+    .pub-eyebrow {
+        @apply text-[11px] font-semibold uppercase tracking-wider text-slate-400;
+    }
+    .pub-link {
+        @apply font-medium text-green-700 hover:text-green-800 hover:underline;
+    }
+
+    /* Buttons */
+    .pub-btn {
+        @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-green-600 px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-green-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:cursor-not-allowed disabled:opacity-60;
+    }
+    .pub-btn-outline {
+        @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:cursor-not-allowed disabled:opacity-60;
+    }
+    .pub-btn-sm {
+        @apply px-2.5 py-1.5 text-xs;
+    }
+
+    /* Status pills (see <x-public.status-pill>) */
+    .pub-pill {
+        @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide;
+    }
+    .pub-pill-live {
+        @apply bg-green-600 text-white;
+    }
+    .pub-pill-scheduled {
+        @apply bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200;
+    }
+    .pub-pill-completed {
+        @apply bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200;
+    }
+    .pub-pill-warn {
+        @apply bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200;
+    }
+    .pub-pill-danger {
+        @apply bg-red-50 text-red-700 ring-1 ring-inset ring-red-200;
+    }
+    .pub-pill-success {
+        @apply bg-green-50 text-green-700 ring-1 ring-inset ring-green-200;
+    }
+    .pub-pill-neutral {
+        @apply bg-slate-100 text-slate-500 ring-1 ring-inset ring-slate-200;
+    }
+
+    /* Pulsing dot for LIVE; stays static under reduced motion */
+    .live-dot {
+        @apply inline-block h-1.5 w-1.5 rounded-full bg-current;
+        animation: rppl-live-pulse 1.6s ease-in-out infinite;
+    }
+
+    /* Tabs (links or buttons) */
+    .pub-tabs {
+        @apply flex gap-1 overflow-x-auto border-b border-line;
+        scrollbar-width: none;
+    }
+    .pub-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    .pub-tab {
+        @apply -mb-px whitespace-nowrap border-b-2 border-transparent px-3 py-2.5 text-[13px] font-medium text-slate-500 transition hover:text-slate-900;
+    }
+    .pub-tab-active {
+        @apply border-green-600 font-semibold text-green-700 hover:text-green-700;
+    }
+
+    /* Tables: always wrap in .pub-table-wrap so they scroll instead of
+       breaking the page on a phone. */
+    .pub-table-wrap {
+        @apply overflow-x-auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .pub-table {
+        @apply w-full text-left text-[13px];
+    }
+    .pub-table thead th {
+        @apply whitespace-nowrap bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+    .pub-table tbody td {
+        @apply border-t border-line px-3 py-2.5 text-slate-700;
+    }
+    .pub-table tbody tr:hover td {
+        @apply bg-slate-50/60;
+    }
+
+    /* Empty / placeholder states */
+    .pub-empty {
+        @apply px-4 py-8 text-center text-sm text-slate-400;
+    }
+    .pub-skeleton {
+        @apply animate-pulse rounded-md bg-slate-200/70;
+    }
+
+    /* Media frame: keeps a fixed ratio and shows a neutral surface if
+       the image is missing or fails to load. */
+    .pub-media {
+        @apply relative overflow-hidden bg-slate-100;
+    }
+}
+
+@keyframes rppl-live-pulse {
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.45;
+        transform: scale(0.8);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .live-dot {
+        animation: none;
+    }
+    .pub-card-link {
+        transition: none;
+    }
+}
+
+/* Dropdown panels (native <details>) fade in */
+@keyframes rppl-pop {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+details[open] > .rppl-pop {
+    animation: rppl-pop 0.12s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+    details[open] > .rppl-pop {
+        animation: none;
+    }
+}
+
+/* Hide the default <summary> marker on the public shell only */
+.pub-shell summary {
+    list-style: none;
+}
+.pub-shell summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Match experience */
+@layer components {
+    /* Ball-by-ball outcome badge (commentary + recent deliveries) */
+    .ball-badge {
+        @apply flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 px-1.5 text-[11px] font-bold tabular-nums text-slate-600;
+    }
+    .ball-badge-four {
+        @apply bg-indigo-600 text-white;
+    }
+    .ball-badge-six {
+        @apply bg-green-600 text-white;
+    }
+    .ball-badge-wicket {
+        @apply bg-red-600 text-white;
+    }
+    .ball-badge-extra {
+        @apply bg-amber-100 text-amber-800;
+    }
+
+    /* Match card: LIVE stands out with a green edge + tint */
+    .match-card {
+        @apply relative flex flex-1 flex-col gap-3 rounded-xl border border-line bg-white p-4 shadow-[0_1px_2px_rgba(15,34,51,0.05)] transition duration-150 hover:-translate-y-px hover:border-slate-300 hover:shadow-md;
+    }
+    .match-card-live {
+        @apply border-green-200 border-l-4 border-l-green-500 bg-green-50/50 hover:border-green-300;
+    }
+    .match-card-live:hover {
+        border-left-color: var(--color-green-600);
+    }
+
+    /* Compact list row used inside cards (edition / venue pages, home lists) */
+    .match-row {
+        @apply flex items-center justify-between gap-3 border-b border-line px-4 py-3 text-[13px] last:border-b-0;
+    }
+    a.match-row {
+        @apply transition hover:bg-slate-50;
+    }
+
+    /* Score figure */
+    .score-figure {
+        @apply text-2xl font-bold leading-none tracking-tight tabular-nums text-slate-900;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .match-card {
+        transition: none;
+    }
+}
+
+/*
+ * ============================================================
+ * Admin shell (sidebar / topbar) — classes used by
+ * layouts/partials/admin-sidebar.blade.php and admin-header.blade.php.
+ * Desktop can collapse the sidebar to an icon rail: the choice is a
+ * data-sidebar="collapsed" attribute on <html> (set early by an inline
+ * script, persisted in localStorage by admin-nav.js). Below lg the
+ * sidebar is always a full-width-labels drawer, so collapsed rules only
+ * apply from lg up.
+ * ============================================================
+ */
+@layer components {
+    .adm-side {
+        @apply bg-navy-950 text-slate-300;
+    }
+    .adm-eyebrow {
+        @apply px-2.5 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-wider text-slate-500;
+    }
+    .adm-link {
+        @apply flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[13px] font-medium text-slate-300 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-green-400;
+    }
+    .adm-link-active {
+        @apply bg-white/10 text-white;
+        box-shadow: inset 3px 0 0 #4ade80;
+    }
+    .adm-children {
+        @apply mb-1 ml-[19px] mt-0.5 space-y-0.5 border-l border-white/10 pl-2;
+    }
+    .adm-sublink {
+        @apply flex items-center gap-2 rounded-md py-1.5 pl-2.5 pr-2 text-[13px] text-slate-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-green-400;
+    }
+    .adm-sublink-active {
+        @apply bg-white/10 font-medium text-white;
+        box-shadow: inset 2px 0 0 #4ade80;
+    }
+    .adm-group > summary {
+        list-style: none;
+    }
+    .adm-group > summary::-webkit-details-marker {
+        display: none;
+    }
+    .adm-group[open] > summary .adm-chevron {
+        transform: rotate(180deg);
+    }
+    .adm-chevron {
+        transition: transform 0.15s ease;
+    }
+}
+
+@media (min-width: 1024px) {
+    .adm-side {
+        transition: width 0.15s ease;
+    }
+    html[data-sidebar='collapsed'] .adm-side {
+        width: 4rem;
+    }
+    html[data-sidebar='collapsed'] .adm-label,
+    html[data-sidebar='collapsed'] .adm-chevron,
+    html[data-sidebar='collapsed'] .adm-eyebrow,
+    html[data-sidebar='collapsed'] .adm-children {
+        display: none;
+    }
+    html[data-sidebar='collapsed'] .adm-link {
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0;
+    }
+    html[data-sidebar='collapsed'] .adm-brand {
+        justify-content: center;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .adm-side,
+    .adm-chevron {
+        transition: none;
+    }
 }
