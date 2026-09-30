@@ -37,6 +37,12 @@ return [
         'contact' => 'Please check back later or contact :league administration.',
     ],
 
+    'window' => [
+        'not_yet_open' => 'Registration has not opened yet.',
+        'opens_on' => 'Registration opens on :date.',
+        'closes_on' => 'Registration closes on :date.',
+    ],
+
     'fields' => [
         'name' => 'Full Name',
         'phone' => 'Phone Number',

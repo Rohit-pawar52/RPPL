@@ -105,6 +105,35 @@
                 </div>
             </dl>
 
+            {{--
+                Result-notification status — never rendered for a match
+                the concept doesn't apply to (not yet completed). "Queued"
+                only ever means the job was queued, never that Firebase
+                finished — see GameMatch::resultNotificationStatusLabel().
+            --}}
+            @php $resultNotificationStatus = $match->resultNotificationStatusLabel(); @endphp
+            @if($resultNotificationStatus !== 'not_applicable')
+                <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-neutral-100 pt-3">
+                    <p class="text-xs text-neutral-500">
+                        Result Notification:
+                        <span class="font-medium text-neutral-800">
+                            {{ match($resultNotificationStatus) { 'pending' => 'Not sent', 'dispatched' => 'Queued', 'completed' => 'Completed' } }}
+                        </span>
+                    </p>
+
+                    @can('finalizeResult', $match)
+                        @if($resultNotificationStatus === 'pending')
+                            <form method="POST" action="{{ route('admin.matches.resend-result-notification', $match) }}">
+                                @csrf
+                                <button type="submit" class="rounded-md border border-neutral-300 px-2.5 py-1 text-[11px] font-medium text-neutral-600 hover:bg-neutral-50">
+                                    Send Result Notification
+                                </button>
+                            </form>
+                        @endif
+                    @endcan
+                </div>
+            @endif
+
             @can('reopenResult', $match)
                 @if($match->match_status === 'completed')
                     <form

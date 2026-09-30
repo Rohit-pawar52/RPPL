@@ -29,8 +29,12 @@ class PlayerRegistrationController extends Controller
 
     public function create(): View
     {
+        $candidate = Edition::publicRegistrationEnabled()->first();
+        $state = $candidate?->publicRegistrationState() ?? Edition::REGISTRATION_STATE_CLOSED;
+
         return view('public.player-registration.create', [
-            'edition' => Edition::acceptingPublicRegistration()->first(),
+            'edition' => $state === Edition::REGISTRATION_STATE_OPEN ? $candidate : null,
+            'upcomingEdition' => $state === Edition::REGISTRATION_STATE_NOT_YET_OPEN ? $candidate : null,
         ]);
     }
 

@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\Settings\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -94,6 +95,10 @@ class AnnouncementNotificationSchedulingTest extends TestCase
     public function test_scheduled_time_is_converted_from_display_timezone_to_utc(): void
     {
         app(SettingsService::class)->set('system.display_timezone', 'Asia/Kolkata');
+
+        // The schedule must be in the future, so pin "now" before the
+        // fixed date below instead of depending on the real clock.
+        $this->travelTo(Carbon::parse('2026-09-01 00:00:00', 'UTC'));
 
         $this->actingAs($this->admin())->post(route('admin.announcements.store'), [
             'message' => 'Timezone check',

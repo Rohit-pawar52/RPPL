@@ -82,6 +82,13 @@ final class SettingsRegistry
         'payment.razorpay_key_secret' => ['type' => Setting::TYPE_ENCRYPTED, 'default' => null],
         'payment.razorpay_webhook_secret' => ['type' => Setting::TYPE_ENCRYPTED, 'default' => null],
 
+        // Notifications — the Tournament-Day Morning Reminder (see
+        // TournamentDayReminderService). Opt-in (default off), same as
+        // the per-match reminder. The time is an "H:i" wall-clock time
+        // interpreted in system.display_timezone, never UTC.
+        'notifications.tournament_day_reminder_enabled' => ['type' => Setting::TYPE_BOOLEAN, 'default' => false],
+        'notifications.tournament_day_reminder_time' => ['type' => Setting::TYPE_STRING, 'default' => '07:00'],
+
         // Public
         'public.footer_text' => ['type' => Setting::TYPE_TEXT, 'default' => null],
     ];

@@ -303,6 +303,12 @@ class MatchResultService
                 'win_margin' => null,
                 'match_result' => null,
                 'completed_at' => null,
+                // Clearing these two lets a corrected re-finalize send a
+                // FRESH result notification with the corrected outcome,
+                // rather than staying permanently marked as already
+                // notified for a result that no longer exists.
+                'result_notification_dispatched_at' => null,
+                'result_notification_id' => null,
             ]);
         });
     }

@@ -60,6 +60,8 @@ class GameMatch extends Model
         'reminder_minutes_before',
         'reminder_dispatched_at',
         'notification_id',
+        'result_notification_dispatched_at',
+        'result_notification_id',
     ];
 
     /**
@@ -79,6 +81,7 @@ class GameMatch extends Model
             'reminder_enabled' => 'boolean',
             'reminder_minutes_before' => 'integer',
             'reminder_dispatched_at' => 'datetime',
+            'result_notification_dispatched_at' => 'datetime',
         ];
     }
 
@@ -94,6 +97,60 @@ class GameMatch extends Model
     public function notification(): BelongsTo
     {
         return $this->belongsTo(Notification::class);
+    }
+
+    /**
+     * The Notification created for this match's RESULT push, once
+     * dispatched — a distinct FK from notification()/reminder_dispatched_at
+     * above (that pair is the pre-match reminder; this pair is the
+     * post-finalization result). See the migration's own docblock.
+     */
+    public function resultNotification(): BelongsTo
+    {
+        return $this->belongsTo(Notification::class, 'result_notification_id');
+    }
+
+    /**
+     * Eligible for MatchResultNotificationService::dispatchIfDue(): a
+     * genuinely completed match (never cancelled/abandoned — both of
+     * those set match_result too, e.g. "Match cancelled", but their
+     * match_status is 'cancelled'/'abandoned', never 'completed', so
+     * gating on match_status alone already excludes them with no
+     * separate check needed) with a canonical result text, not yet
+     * dispatched. Covers a normal win, a tie with no Super Over (the
+     * canonical "Match tied" text is reused as-is — never a fabricated
+     * winner), and a Super Over-decided result — all three reach
+     * match_status 'completed' via MatchResultService.
+     */
+    public function scopeDueForResultNotification(Builder $query): Builder
+    {
+        return $query
+            ->where('match_status', 'completed')
+            ->whereNotNull('match_result')
+            ->whereNull('result_notification_dispatched_at');
+    }
+
+    /**
+     * The admin show page's result-notification status — never
+     * persisted, always derived so it can't drift from match_status/
+     * result_notification_dispatched_at and the linked Notification's
+     * latest send. Mirrors Announcement::notificationStatusLabel()
+     * exactly. 'dispatched' only ever means "the job was queued", never
+     * "Firebase finished" — that's completed_at's job alone.
+     *
+     * @return 'not_applicable'|'pending'|'dispatched'|'completed'
+     */
+    public function resultNotificationStatusLabel(): string
+    {
+        if ($this->match_status !== 'completed' || $this->match_result === null) {
+            return 'not_applicable';
+        }
+
+        if ($this->result_notification_dispatched_at === null) {
+            return 'pending';
+        }
+
+        return $this->resultNotification?->latestSend()?->completed_at !== null ? 'completed' : 'dispatched';
     }
 
     /**
