@@ -15,6 +15,7 @@ use App\Models\NotificationSend;
 use App\Services\DataCleanup\DataCleanupLogger;
 use App\Services\DataCleanup\FailedJobCleanupService;
 use App\Services\DataCleanup\FailedJobViewService;
+use App\Services\DataCleanup\MediaFileCleanupService;
 use App\Services\DataCleanup\RegistrationDocumentCleanupService;
 use App\Services\Notification\NotificationDataCleanupService;
 use App\Services\Settings\DisplayTimezoneFormatter;
@@ -43,7 +44,7 @@ use Illuminate\View\View;
  */
 class DataCleanupController extends Controller
 {
-    private const TABS = ['notifications', 'registration-documents', 'system'];
+    private const TABS = ['notifications', 'registration-documents', 'media-files', 'system'];
 
     private const FAILED_JOBS_PER_PAGE = 20;
 
@@ -52,6 +53,7 @@ class DataCleanupController extends Controller
         private readonly RegistrationDocumentCleanupService $documents,
         private readonly FailedJobCleanupService $failedJobs,
         private readonly FailedJobViewService $failedJobViews,
+        private readonly MediaFileCleanupService $mediaFiles,
         private readonly DataCleanupLogger $logger,
         private readonly DisplayTimezoneFormatter $timezoneFormatter,
         private readonly SettingsService $settings,
@@ -83,6 +85,9 @@ class DataCleanupController extends Controller
             'failedJobList' => $tab === 'system'
                 ? $this->failedJobViews->paginate(self::FAILED_JOBS_PER_PAGE)->withQueryString()
                 : null,
+            // Read-only orphan scan — only run when the Media Files tab is open.
+            'mediaScan' => $tab === 'media-files' ? $this->mediaFiles->scanAll() : null,
+            'mediaMinAgeHours' => MediaFileCleanupService::MIN_AGE_HOURS,
         ]);
     }
 
@@ -269,6 +274,50 @@ class DataCleanupController extends Controller
         return redirect()
             ->route('admin.data-cleanup.index', ['tab' => 'registration-documents'])
             ->with('success', $message.'.');
+    }
+
+    /**
+     * Deletes the orphaned files of ONE media category. The orphan list is
+     * re-scanned here, server-side, at delete time — nothing about which
+     * files to delete ever comes from the request, only the category key.
+     * Never touches database records.
+     */
+    public function destroyMediaFiles(Request $request, string $category): RedirectResponse
+    {
+        $this->authorize('manage-tournament');
+
+        abort_unless($this->mediaFiles->has($category), 404);
+
+        $result = $this->mediaFiles->deleteOrphans($category);
+
+        $this->logger->log(
+            $request->user(),
+            'media_files',
+            'delete_orphan_media_files',
+            [
+                'category' => $category,
+                'scanned' => $result['scanned'],
+                'orphans' => $result['orphans'],
+                'deleted' => $result['deleted'],
+                'failed' => $result['failed'],
+                'skipped' => $result['skipped'],
+                'protected_recent' => $result['recent'],
+                'min_age_hours' => MediaFileCleanupService::MIN_AGE_HOURS,
+            ],
+            0,
+            $result['deleted'],
+        );
+
+        $label = MediaFileCleanupService::CATEGORIES[$category]['label'];
+        $message = "{$label}: {$result['deleted']} orphaned file(s) deleted";
+
+        if ($result['failed'] > 0) {
+            $message .= ", {$result['failed']} could not be deleted";
+        }
+
+        return redirect()
+            ->route('admin.data-cleanup.index', ['tab' => 'media-files'])
+            ->with($result['failed'] > 0 ? 'error' : 'success', $message.'.');
     }
 
     public function destroyFailedJobs(DeleteFailedJobsRequest $request): RedirectResponse

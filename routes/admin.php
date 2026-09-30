@@ -248,6 +248,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('fcm-tokens/stale', [DataCleanupController::class, 'destroyStaleFcmTokens'])->name('fcm-tokens.destroy-stale');
             Route::delete('registration-documents', [DataCleanupController::class, 'destroyRegistrationDocuments'])->name('registration-documents.destroy');
             Route::delete('failed-jobs', [DataCleanupController::class, 'destroyFailedJobs'])->name('failed-jobs.destroy');
+            Route::delete('media-files/{category}', [DataCleanupController::class, 'destroyMediaFiles'])->name('media-files.destroy');
             Route::get('failed-jobs/{uuid}', [DataCleanupController::class, 'failedJobDetail'])->name('failed-jobs.show');
         });
         Route::prefix('edition-contributions/{edition_contribution}')->name('edition-contributions.')->group(function () {

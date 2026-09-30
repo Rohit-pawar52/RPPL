@@ -6,6 +6,7 @@
     $tabs = [
         'notifications' => 'Notifications',
         'registration-documents' => 'Registration Documents',
+        'media-files' => 'Media Files',
         'system' => 'System',
     ];
 @endphp
