@@ -3,6 +3,7 @@
 use App\Console\Commands\DispatchMatchReminders;
 use App\Console\Commands\DispatchRegistrationClosingReminders;
 use App\Console\Commands\DispatchScheduledAnnouncements;
+use App\Console\Commands\DispatchTournamentDayReminders;
 use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -55,6 +56,13 @@ return Application::configure(basePath: dirname(__DIR__))
             ->onOneServer();
 
         $schedule->command(DispatchRegistrationClosingReminders::class)
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        // Runs every minute; the configured morning time lives in Settings
+        // and is checked inside TournamentDayReminderService.
+        $schedule->command(DispatchTournamentDayReminders::class)
             ->everyMinute()
             ->withoutOverlapping()
             ->onOneServer();
