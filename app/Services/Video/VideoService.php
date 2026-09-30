@@ -76,6 +76,13 @@ class VideoService
         return $video;
     }
 
+    public function toggleStatus(Video $video): Video
+    {
+        $video->update(['status' => $video->status === 'active' ? 'inactive' : 'active']);
+
+        return $video;
+    }
+
     public function deleteVideo(Video $video): bool
     {
         $videoPath = $video->video_path;
