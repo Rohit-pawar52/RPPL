@@ -54,6 +54,10 @@ final class SettingsRegistry
         'system.currency' => ['type' => Setting::TYPE_STRING, 'default' => 'INR'],
         'system.currency_symbol' => ['type' => Setting::TYPE_STRING, 'default' => '₹'],
         'system.display_timezone' => ['type' => Setting::TYPE_STRING, 'default' => 'Asia/Kolkata'],
+        // Automatic failed_jobs pruning (rppl:cleanup-failed-jobs, daily).
+        // Off by default so deploying this never deletes anything.
+        'system.failed_jobs_auto_cleanup_enabled' => ['type' => Setting::TYPE_BOOLEAN, 'default' => false],
+        'system.failed_jobs_retention_days' => ['type' => Setting::TYPE_INTEGER, 'default' => 30],
 
         // Contact — no current UI renders any of these; this phase only
         // makes them storable.
