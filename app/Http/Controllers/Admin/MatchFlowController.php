@@ -11,7 +11,9 @@ use App\Models\EditionTeam;
 use App\Models\GameMatch;
 use App\Services\GameMatch\MatchFlowService;
 use App\Services\GameMatch\MatchResultService;
+use App\Services\MatchResult\MatchResultNotificationService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Throwable;
 
 /**
@@ -30,6 +32,7 @@ class MatchFlowController extends Controller
     public function __construct(
         private readonly MatchFlowService $matchFlow,
         private readonly MatchResultService $results,
+        private readonly MatchResultNotificationService $resultNotifications,
     ) {}
 
     public function startToss(GameMatch $match): RedirectResponse
@@ -121,7 +124,7 @@ class MatchFlowController extends Controller
             ->with('success', 'Match abandoned successfully.');
     }
 
-    public function finalize(GameMatch $match): RedirectResponse
+    public function finalize(Request $request, GameMatch $match): RedirectResponse
     {
         $this->authorize('finalizeResult', $match);
 
@@ -132,6 +135,13 @@ class MatchFlowController extends Controller
         }
 
         $this->broadcastMatchUpdated($match->id);
+
+        // Best-effort, strictly AFTER finalizeMatch()'s own transaction
+        // has already committed — see MatchResultNotificationService's
+        // docblock. A failed attempt here never affects the finalized
+        // result above; the admin can retry via "Send Result
+        // Notification" on the match page.
+        $this->resultNotifications->dispatchIfDue($match->id, $request->user());
 
         return redirect()
             ->route('admin.matches.show', $match)
@@ -155,9 +165,32 @@ class MatchFlowController extends Controller
 
         $this->broadcastMatchUpdated($match->id);
 
+        $this->resultNotifications->dispatchIfDue($match->id, $request->user());
+
         return redirect()
             ->route('admin.matches.show', $match)
             ->with('success', 'Super Over result recorded successfully.');
+    }
+
+    /**
+     * Manual recovery (only ever needed if the automatic attempt right
+     * after finalize()/recordSuperOverResult() failed to queue, e.g. a
+     * transient queue-connection issue) — reuses the exact same atomic
+     * claim, so this is a no-op (returns to the page with an explanatory
+     * message) if the notification was already dispatched or the match
+     * isn't eligible.
+     */
+    public function resendResultNotification(Request $request, GameMatch $match): RedirectResponse
+    {
+        $this->authorize('finalizeResult', $match);
+
+        $dispatched = $this->resultNotifications->dispatchIfDue($match->id, $request->user());
+
+        return redirect()
+            ->route('admin.matches.show', $match)
+            ->with($dispatched ? 'success' : 'error', $dispatched
+                ? 'Result notification queued.'
+                : 'Result notification could not be sent right now (it may already have been sent, or the match is not eligible).');
     }
 
     /**

@@ -106,6 +106,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('super-over', [MatchFlowController::class, 'recordSuperOverResult'])->name('super-over');
             Route::post('reopen', [MatchFlowController::class, 'reopen'])->name('reopen');
 
+            // Manual recovery for the rare case where finalize's own
+            // automatic result-notification attempt failed to queue —
+            // reuses the same atomic claim, so it's a safe no-op if
+            // already dispatched or the match isn't eligible.
+            Route::post('resend-result-notification', [MatchFlowController::class, 'resendResultNotification'])->name('resend-result-notification');
+
             // Innings lifecycle (Phase 3.12) — explicit workflow actions,
             // not Route::resource('innings'): innings identity is derived
             // domain data, never a generic create/edit form.
