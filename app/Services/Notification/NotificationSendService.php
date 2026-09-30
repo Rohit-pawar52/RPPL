@@ -13,12 +13,21 @@ use Throwable;
  * click and queues the actual Firebase send. A single NotificationSend::
  * create() call is already atomic, so — unlike PlayerRegistrationService::
  * createRegistration()'s two-step placeholder-then-real-value write —
- * no explicit DB transaction is needed here.
+ * no explicit DB transaction is needed here for the ORIGINAL manual
+ * Send/Resend callers.
  *
  * Dispatch happens strictly AFTER that row exists, in a separate
  * try/catch — the same after-commit pattern GuestPlayerRegistrationService
  * already established: a queue-connection failure must never delete or
  * roll back the just-created send-history row, only be reported.
+ *
+ * The dispatch itself is chained with ->afterCommit() (added for the
+ * scheduler foundation — AnnouncementNotificationService/
+ * MatchReminderService call this method from INSIDE their own
+ * lockForUpdate() claim transaction, so a worker must never be able to
+ * pick up the job before that transaction commits). This is a no-op
+ * change for every existing caller: afterCommit() dispatches
+ * immediately, exactly as before, whenever there is no open transaction.
  */
 class NotificationSendService
 {
@@ -46,7 +55,7 @@ class NotificationSendService
         $dispatched = true;
 
         try {
-            SendNotificationJob::dispatch($send);
+            SendNotificationJob::dispatch($send)->afterCommit();
         } catch (Throwable $e) {
             report($e);
 

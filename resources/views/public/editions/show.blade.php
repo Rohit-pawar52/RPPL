@@ -5,7 +5,7 @@
 @section('content')
     <div class="mb-4">
         <a href="{{ route('public.editions.index') }}" class="text-xs text-neutral-500 hover:text-neutral-700">
-            &larr; All editions
+            &larr; {{ __('directory.editions.all_editions') }}
         </a>
     </div>
 
@@ -18,12 +18,12 @@
     </div>
 
     <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2">
-        <x-stat-card label="Teams" :value="$edition->edition_teams_count" icon="shield" />
-        <x-stat-card label="Matches" :value="$edition->matches_count" icon="trophy" />
+        <x-stat-card :label="__('directory.editions.teams')" :value="$edition->edition_teams_count" icon="shield" />
+        <x-stat-card :label="__('directory.editions.matches')" :value="$edition->matches_count" icon="trophy" />
     </div>
 
     <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Participating Teams</h3>
+        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{{ __('directory.editions.participating_teams') }}</h3>
         <div class="flex flex-wrap gap-2">
             @forelse($teams as $editionTeam)
                 <span class="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-2.5 py-1 text-xs text-neutral-700">
@@ -37,7 +37,7 @@
                     {{ $editionTeam->team->name }}
                 </span>
             @empty
-                <p class="text-xs text-neutral-400">No teams participating yet.</p>
+                <p class="text-xs text-neutral-400">{{ __('directory.editions.participating_teams_empty') }}</p>
             @endforelse
         </div>
     </div>
@@ -60,15 +60,15 @@
          position/name/photo_path. --}}
     @if(! empty($contributorRanking))
         <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-            <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Top {{ $branding->shortName }} Contributors</h3>
+            <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{{ __('directory.editions.top_contributors', ['name' => $branding->shortName]) }}</h3>
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
                 @foreach($contributorRanking as $row)
                     @php
                         $badge = match (true) {
-                            $row['position'] === 1 => ['label' => 'Top Contributor', 'class' => 'bg-amber-100 text-amber-700', 'icon' => 'trophy'],
-                            $row['position'] === 2 => ['label' => '2nd Contributor', 'class' => 'bg-neutral-200 text-neutral-700', 'icon' => 'star'],
-                            $row['position'] === 3 => ['label' => '3rd Contributor', 'class' => 'bg-orange-100 text-orange-700', 'icon' => 'star'],
-                            $row['is_top_ten'] => ['label' => 'Top 10', 'class' => 'bg-blue-50 text-blue-600', 'icon' => null],
+                            $row['position'] === 1 => ['label' => __('directory.editions.badge_top'), 'class' => 'bg-amber-100 text-amber-700', 'icon' => 'trophy'],
+                            $row['position'] === 2 => ['label' => __('directory.editions.badge_second'), 'class' => 'bg-neutral-200 text-neutral-700', 'icon' => 'star'],
+                            $row['position'] === 3 => ['label' => __('directory.editions.badge_third'), 'class' => 'bg-orange-100 text-orange-700', 'icon' => 'star'],
+                            $row['is_top_ten'] => ['label' => __('directory.editions.badge_top_ten'), 'class' => 'bg-blue-50 text-blue-600', 'icon' => null],
                             default => null,
                         };
                         $initials = collect(preg_split('/\s+/', trim($row['name'])))
@@ -106,11 +106,11 @@
     @endif
 
     <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Matches</h3>
+        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{{ __('directory.editions.matches') }}</h3>
         @forelse($matches as $match)
             @include('public.matches._list-row', ['match' => $match])
         @empty
-            <p class="py-4 text-center text-xs text-neutral-400">No matches scheduled yet.</p>
+            <p class="py-4 text-center text-xs text-neutral-400">{{ __('directory.editions.matches_empty') }}</p>
         @endforelse
     </div>
 @endsection

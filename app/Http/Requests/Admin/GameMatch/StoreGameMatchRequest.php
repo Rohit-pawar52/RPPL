@@ -62,6 +62,8 @@ class StoreGameMatchRequest extends FormRequest
                 Rule::unique('matches', 'match_number')
                     ->where(fn ($query) => $query->where('edition_id', $this->input('edition_id'))),
             ],
+            'reminder_enabled' => ['nullable', 'boolean'],
+            'reminder_minutes_before' => ['nullable', 'required_if:reminder_enabled,1', 'integer', 'min:1', 'max:1440'],
         ];
     }
 

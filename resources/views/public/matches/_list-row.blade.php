@@ -24,7 +24,7 @@
                 </span>
             @endif
             <a href="{{ route('public.matches.show', $match) }}" class="truncate font-semibold text-neutral-900 hover:underline">
-                {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
+                {{ $match->teamA->team->name }} {{ __('matches.common.vs') }} {{ $match->teamB->team->name }}
             </a>
         </div>
 
@@ -46,7 +46,7 @@
                 @if($match->venue)
                     {{ $match->venue->name }} &middot;
                 @endif
-                <a href="{{ route('public.matches.live', $match) }}" class="font-medium theme-link">Follow live &rarr;</a>
+                <a href="{{ route('public.matches.live', $match) }}" class="font-medium theme-link">{{ __('matches.list.follow_live') }} &rarr;</a>
             </p>
         @elseif($isFinished)
             @if($match->match_result)

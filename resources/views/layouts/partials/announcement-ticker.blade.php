@@ -13,7 +13,7 @@
         // ticker still scrolls at a sane pace.
         $duration = max(15, min(60, (int) round($combinedLength * 0.18)));
     @endphp
-    <div class="rppl-ticker" role="region" aria-label="Announcements">
+    <div class="rppl-ticker" role="region" aria-label="{{ __('directory.announcements.label') }}">
         <div class="rppl-ticker-track" style="--rppl-ticker-duration: {{ $duration }}s;">
             <span class="rppl-ticker-content">
                 @foreach($activeAnnouncements as $announcement)

@@ -4,7 +4,7 @@
 
 @section('content')
     <a href="{{ route('public.players.index') }}" class="mb-4 inline-block text-xs text-neutral-500 hover:text-neutral-700">
-        &larr; Back to players
+        &larr; {{ __('directory.players.back') }}
     </a>
 
     <div class="rounded-lg border border-neutral-200 bg-white p-4">
@@ -24,9 +24,9 @@
             <div>
                 <h1 class="text-base font-semibold text-neutral-900">{{ $player->name }}</h1>
                 <p class="text-xs text-neutral-500">
-                    {{ $currentTeam?->name ?? 'No current team' }}
+                    {{ $currentTeam?->name ?? __('directory.players.no_current_team') }}
                     @if($player->primary_role)
-                        &middot; {{ str_replace('_', ' ', ucfirst($player->primary_role)) }}
+                        &middot; {{ \Illuminate\Support\Facades\Lang::has('directory.roles.'.$player->primary_role) ? __('directory.roles.'.$player->primary_role) : str_replace('_', ' ', ucfirst($player->primary_role)) }}
                     @endif
                 </p>
             </div>
@@ -38,7 +38,7 @@
             href="{{ route('public.players.show', $player) }}"
             class="rounded-md border px-2.5 py-1 text-xs font-medium {{ ! $selectedEdition ? 'theme-primary-border theme-primary-soft-bg theme-primary-text' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}"
         >
-            Career / All Editions
+            {{ __('directory.players.career') }}
         </a>
         @foreach($player->playerRegistrations as $registration)
             <a
@@ -52,22 +52,22 @@
 
     <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div class="rounded-lg border border-neutral-200 bg-white p-4">
-            <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Batting</h3>
+            <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{{ __('directory.players.batting') }}</h3>
             <dl class="grid grid-cols-3 gap-3 text-xs sm:grid-cols-4">
                 <div>
-                    <dt class="text-neutral-400">Matches</dt>
+                    <dt class="text-neutral-400">{{ __('directory.players.matches') }}</dt>
                     <dd class="mt-0.5 font-medium text-neutral-800">{{ $stats['matches_played'] }}</dd>
                 </div>
                 <div>
-                    <dt class="text-neutral-400">Innings</dt>
+                    <dt class="text-neutral-400">{{ __('directory.players.innings') }}</dt>
                     <dd class="mt-0.5 font-medium text-neutral-800">{{ $stats['batting']['innings_batted'] }}</dd>
                 </div>
                 <div>
-                    <dt class="text-neutral-400">Runs</dt>
+                    <dt class="text-neutral-400">{{ __('directory.players.runs') }}</dt>
                     <dd class="mt-0.5 font-medium text-neutral-800">{{ $stats['batting']['runs'] }}</dd>
                 </div>
                 <div>
-                    <dt class="text-neutral-400">Highest</dt>
+                    <dt class="text-neutral-400">{{ __('directory.players.highest') }}</dt>
                     <dd class="mt-0.5 font-medium text-neutral-800">
                         @if($stats['batting']['highest_score'] !== null)
                             {{ $stats['batting']['highest_score'] }}{{ $stats['batting']['highest_score_not_out'] ? '*' : '' }}
@@ -77,53 +77,53 @@
                     </dd>
                 </div>
                 <div>
-                    <dt class="text-neutral-400">Average</dt>
+                    <dt class="text-neutral-400">{{ __('directory.players.average') }}</dt>
                     <dd class="mt-0.5 font-medium text-neutral-800">
                         {{ $stats['batting']['batting_average'] !== null ? number_format($stats['batting']['batting_average'], 2) : '-' }}
                     </dd>
                 </div>
                 <div>
-                    <dt class="text-neutral-400">Strike Rate</dt>
+                    <dt class="text-neutral-400">{{ __('directory.players.strike_rate') }}</dt>
                     <dd class="mt-0.5 font-medium text-neutral-800">{{ number_format($stats['batting']['strike_rate'], 2) }}</dd>
                 </div>
                 <div>
-                    <dt class="text-neutral-400">4s</dt>
+                    <dt class="text-neutral-400">{{ __('directory.players.fours') }}</dt>
                     <dd class="mt-0.5 font-medium text-neutral-800">{{ $stats['batting']['fours'] }}</dd>
                 </div>
                 <div>
-                    <dt class="text-neutral-400">6s</dt>
+                    <dt class="text-neutral-400">{{ __('directory.players.sixes') }}</dt>
                     <dd class="mt-0.5 font-medium text-neutral-800">{{ $stats['batting']['sixes'] }}</dd>
                 </div>
             </dl>
         </div>
 
         <div class="rounded-lg border border-neutral-200 bg-white p-4">
-            <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Bowling</h3>
+            <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{{ __('directory.players.bowling') }}</h3>
             <dl class="grid grid-cols-3 gap-3 text-xs sm:grid-cols-4">
                 <div>
-                    <dt class="text-neutral-400">Overs</dt>
+                    <dt class="text-neutral-400">{{ __('directory.players.overs') }}</dt>
                     <dd class="mt-0.5 font-medium text-neutral-800">{{ $stats['bowling']['overs'] }}</dd>
                 </div>
                 <div>
-                    <dt class="text-neutral-400">Runs</dt>
+                    <dt class="text-neutral-400">{{ __('directory.players.runs') }}</dt>
                     <dd class="mt-0.5 font-medium text-neutral-800">{{ $stats['bowling']['runs_conceded'] }}</dd>
                 </div>
                 <div>
-                    <dt class="text-neutral-400">Wickets</dt>
+                    <dt class="text-neutral-400">{{ __('directory.players.wickets') }}</dt>
                     <dd class="mt-0.5 font-medium text-neutral-800">{{ $stats['bowling']['wickets'] }}</dd>
                 </div>
                 <div>
-                    <dt class="text-neutral-400">Best</dt>
+                    <dt class="text-neutral-400">{{ __('directory.players.best') }}</dt>
                     <dd class="mt-0.5 font-medium text-neutral-800">{{ $stats['bowling']['best_bowling'] ?? '-' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-neutral-400">Average</dt>
+                    <dt class="text-neutral-400">{{ __('directory.players.average') }}</dt>
                     <dd class="mt-0.5 font-medium text-neutral-800">
                         {{ $stats['bowling']['bowling_average'] !== null ? number_format($stats['bowling']['bowling_average'], 2) : '-' }}
                     </dd>
                 </div>
                 <div>
-                    <dt class="text-neutral-400">Economy</dt>
+                    <dt class="text-neutral-400">{{ __('directory.players.economy') }}</dt>
                     <dd class="mt-0.5 font-medium text-neutral-800">{{ number_format($stats['bowling']['economy'], 2) }}</dd>
                 </div>
             </dl>
@@ -131,17 +131,17 @@
     </div>
 
     <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Match History</h3>
+        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{{ __('directory.players.match_history') }}</h3>
 
         <div class="overflow-x-auto">
             <table class="w-full min-w-[560px] text-left text-[13px]">
                 <thead class="border-b border-neutral-200 text-[11px] uppercase tracking-wide text-neutral-400">
                     <tr>
-                        <th class="px-2 py-1.5 font-medium">Date</th>
-                        <th class="px-2 py-1.5 font-medium">Match</th>
-                        <th class="px-2 py-1.5 font-medium">Batting</th>
-                        <th class="px-2 py-1.5 font-medium">Bowling</th>
-                        <th class="hidden px-2 py-1.5 font-medium md:table-cell">Result</th>
+                        <th class="px-2 py-1.5 font-medium">{{ __('directory.players.date') }}</th>
+                        <th class="px-2 py-1.5 font-medium">{{ __('directory.players.match') }}</th>
+                        <th class="px-2 py-1.5 font-medium">{{ __('directory.players.batting') }}</th>
+                        <th class="px-2 py-1.5 font-medium">{{ __('directory.players.bowling') }}</th>
+                        <th class="hidden px-2 py-1.5 font-medium md:table-cell">{{ __('directory.players.result') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-neutral-100">
@@ -151,7 +151,7 @@
                             <td class="whitespace-nowrap px-2 py-1.5 text-neutral-500">{{ display_datetime($match->scheduled_at, 'd M Y') }}</td>
                             <td class="px-2 py-1.5 text-neutral-800">
                                 <a href="{{ route('public.matches.show', $match) }}" class="hover:underline">
-                                    {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
+                                    {{ $match->teamA->team->name }} {{ __('directory.common.vs') }} {{ $match->teamB->team->name }}
                                 </a>
                             </td>
                             <td class="px-2 py-1.5 text-neutral-700">
@@ -178,7 +178,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-2 py-6 text-center text-neutral-400">No match history available yet.</td>
+                            <td colspan="5" class="px-2 py-6 text-center text-neutral-400">{{ __('directory.players.match_history_empty') }}</td>
                         </tr>
                     @endforelse
                 </tbody>

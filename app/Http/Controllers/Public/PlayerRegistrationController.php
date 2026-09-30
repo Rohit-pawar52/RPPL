@@ -41,7 +41,7 @@ class PlayerRegistrationController extends Controller
         if (! $edition) {
             return redirect()
                 ->route('public.player-registration.create')
-                ->with('error', GuestPlayerRegistrationService::CLOSED_MESSAGE);
+                ->with('error', __(GuestPlayerRegistrationService::CLOSED_MESSAGE_KEY));
         }
 
         $registration = $this->registrations->register(
