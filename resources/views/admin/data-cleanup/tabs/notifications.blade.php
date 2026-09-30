@@ -8,8 +8,8 @@
 --}}
 <div class="space-y-6">
     <div>
-        <h3 class="mb-1 text-sm font-semibold text-neutral-900">Old Notifications</h3>
-        <p class="mb-3 text-xs text-neutral-500">{{ $notificationCount }} total. Delete records before this date (selected date is not included) — times are interpreted in {{ $displayTimezone }}.</p>
+        <h3 class="mb-1 text-sm font-semibold text-slate-900">Old Notifications</h3>
+        <p class="mb-3 text-xs text-slate-500">{{ $notificationCount }} total. Delete records before this date (selected date is not included) — times are interpreted in {{ $displayTimezone }}.</p>
 
         <form
             method="POST"
@@ -28,13 +28,13 @@
                     Delete notifications
                 </button>
             </div>
-            <p class="-mt-2 text-xs text-neutral-500" data-cutoff-preview-result="notifications">Select a date to see how many notifications this would affect.</p>
+            <p class="-mt-2 text-xs text-slate-500" data-cutoff-preview-result="notifications">Select a date to see how many notifications this would affect.</p>
         </form>
     </div>
 
-    <div class="border-t border-neutral-100 pt-6">
-        <h3 class="mb-1 text-sm font-semibold text-neutral-900">Notification Send History</h3>
-        <p class="mb-3 text-xs text-neutral-500">{{ $notificationSendCount }} total. Deleting this leaves the notifications themselves untouched.</p>
+    <div class="border-t border-slate-100 pt-6">
+        <h3 class="mb-1 text-sm font-semibold text-slate-900">Notification Send History</h3>
+        <p class="mb-3 text-xs text-slate-500">{{ $notificationSendCount }} total. Deleting this leaves the notifications themselves untouched.</p>
 
         <form
             method="POST"
@@ -53,13 +53,13 @@
                     Delete send history
                 </button>
             </div>
-            <p class="-mt-2 text-xs text-neutral-500" data-cutoff-preview-result="notification-sends">Select a date to see how many send records this would affect.</p>
+            <p class="-mt-2 text-xs text-slate-500" data-cutoff-preview-result="notification-sends">Select a date to see how many send records this would affect.</p>
         </form>
     </div>
 
-    <div class="border-t border-neutral-100 pt-6">
-        <h3 class="mb-1 text-sm font-semibold text-neutral-900">FCM Tokens</h3>
-        <p class="mb-3 text-xs text-neutral-500">{{ $fcmTokenCount }} total, {{ $inactiveFcmTokenCount }} inactive.</p>
+    <div class="border-t border-slate-100 pt-6">
+        <h3 class="mb-1 text-sm font-semibold text-slate-900">FCM Tokens</h3>
+        <p class="mb-3 text-xs text-slate-500">{{ $fcmTokenCount }} total, {{ $inactiveFcmTokenCount }} inactive.</p>
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <form
@@ -72,8 +72,8 @@
             >
                 @csrf
                 @method('DELETE')
-                <p class="mb-2 text-xs font-medium text-neutral-700">Delete all inactive tokens</p>
-                <p class="mb-3 text-xs text-neutral-500">{{ $inactiveFcmTokenCount }} token(s) already marked invalid by Firebase.</p>
+                <p class="mb-2 text-xs font-medium text-slate-700">Delete all inactive tokens</p>
+                <p class="mb-3 text-xs text-slate-500">{{ $inactiveFcmTokenCount }} token(s) already marked invalid by Firebase.</p>
                 <button type="submit" class="w-full rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] font-medium text-red-700 hover:bg-red-100">
                     Delete inactive tokens
                 </button>
@@ -96,7 +96,7 @@
                     label="Delete tokens not seen in the last"
                     :options="collect($staleDaysOptions)->mapWithKeys(fn ($days) => [$days => $days.' days'])->all()"
                 />
-                <p class="-mt-2 mb-3 text-xs text-neutral-500" id="stale-fcm-preview">Choose a threshold to see how many tokens this would affect.</p>
+                <p class="-mt-2 mb-3 text-xs text-slate-500" id="stale-fcm-preview">Choose a threshold to see how many tokens this would affect.</p>
 
                 <button type="submit" class="w-full rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] font-medium text-red-700 hover:bg-red-100">
                     Delete stale tokens

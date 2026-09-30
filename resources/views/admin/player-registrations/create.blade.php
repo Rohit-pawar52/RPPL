@@ -4,24 +4,20 @@
 
 @section('content')
     <div class="mb-4">
-        <a href="{{ route('admin.player-registrations.index') }}" class="text-xs text-neutral-500 hover:text-neutral-700">
+        <a href="{{ route('admin.player-registrations.index') }}" class="text-xs text-slate-500 hover:text-slate-700">
             &larr; Back to registrations
         </a>
     </div>
 
-    <div class="max-w-2xl rounded-lg border border-neutral-200 bg-white p-4">
+    <div class="max-w-2xl rounded-lg border border-slate-200 bg-white p-4">
         <form method="POST" action="{{ route('admin.player-registrations.store') }}" novalidate>
             @csrf
 
             @include('admin.player-registrations._form')
 
             <div class="mt-4 flex items-center gap-2">
-                <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
-                    Save registration
-                </button>
-                <a href="{{ route('admin.player-registrations.index') }}" class="rounded-md border border-neutral-200 px-3 py-2 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
-                    Cancel
-                </a>
+                <x-admin.button>Save registration</x-admin.button>
+                <x-admin.button href="{{ route('admin.player-registrations.index') }}" variant="secondary">Cancel</x-admin.button>
             </div>
         </form>
     </div>

@@ -9,8 +9,8 @@
     is omitted entirely when there is no thumbnail (the element's own
     neutral surface shows instead — no generated thumbnails).
 --}}
-<article class="overflow-hidden rounded-lg border border-neutral-200 bg-white">
-    <div class="aspect-video w-full bg-neutral-100">
+<article class="pub-card flex flex-col overflow-hidden">
+    <div class="pub-media aspect-video w-full bg-slate-900">
         <video
             class="rppl-featured-video h-full w-full object-cover"
             controls
@@ -22,10 +22,13 @@
             {{ __('directory.videos.unsupported') }}
         </video>
     </div>
-    <div class="p-3">
-        <h3 class="truncate text-[13px] font-medium text-neutral-800">{{ $video->title }}</h3>
+    <div class="p-4">
+        <h3 class="line-clamp-2 break-words text-[14px] font-semibold leading-snug text-slate-900">{{ $video->title }}</h3>
         @if($video->description)
-            <p class="mt-0.5 line-clamp-2 text-[11px] text-neutral-500">{{ $video->description }}</p>
+            <p class="mt-1 line-clamp-2 break-words text-[13px] leading-relaxed text-slate-500">{{ $video->description }}</p>
+        @endif
+        @if($video->created_at)
+            <p class="pub-meta mt-2">{{ display_datetime($video->created_at, 'd M Y') }}</p>
         @endif
     </div>
 </article>

@@ -28,21 +28,23 @@ function escapeHtml(value) {
  * less (or different) information than a fresh page load.
  */
 
-// Subset of components/status-badge.blade.php's map covering every match
-// and innings status this page can show.
-const STATUS_BADGE_STYLES = {
-    scheduled: 'bg-blue-50 text-blue-700 ring-blue-200',
-    toss: 'bg-amber-50 text-amber-700 ring-amber-200',
-    live: 'bg-green-50 text-green-700 ring-green-200',
-    completed: 'bg-neutral-100 text-neutral-600 ring-neutral-200',
-    abandoned: 'bg-red-50 text-red-700 ring-red-200',
-    cancelled: 'bg-red-50 text-red-700 ring-red-200',
+// Mirrors components/public/status-pill.blade.php: variant per status.
+const STATUS_PILL_VARIANTS = {
+    scheduled: 'scheduled',
+    upcoming: 'scheduled',
+    live: 'live',
+    completed: 'completed',
+    toss: 'warn',
+    pending: 'warn',
+    abandoned: 'danger',
+    cancelled: 'danger',
 };
 
 function renderStatusBadge(status) {
-    const style = STATUS_BADGE_STYLES[status] ?? 'bg-neutral-100 text-neutral-600 ring-neutral-200';
+    const variant = STATUS_PILL_VARIANTS[status] ?? 'neutral';
+    const dot = variant === 'live' ? '<span class="live-dot" aria-hidden="true"></span>' : '';
 
-    return `<span class="inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ring-1 ring-inset ${style}">${escapeHtml(status)}</span>`;
+    return `<span class="pub-pill pub-pill-${variant}">${dot}${escapeHtml(status)}</span>`;
 }
 
 function formatRate(value) {
@@ -56,28 +58,24 @@ function plural(word, count) {
 function renderInnings(innings) {
     return innings
         .map((i) => {
-            const borderClass = i.status === 'live' ? 'theme-primary-border' : 'border-neutral-200';
+            const tint = i.status === 'live' ? 'bg-green-50/50' : '';
             const crr =
                 i.crr !== undefined && i.crr !== null
-                    ? ` &middot; CRR <span class="font-semibold tabular-nums text-neutral-700">${formatRate(i.crr)}</span>`
+                    ? ` &middot; CRR <span class="font-semibold tabular-nums text-slate-700">${formatRate(i.crr)}</span>`
                     : '';
 
             return `
-                <div class="rounded-lg border bg-white p-3 ${borderClass}">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <p class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Innings ${escapeHtml(String(i.innings_number))}</p>
-                            <p class="truncate text-[13px] font-semibold text-neutral-900">${escapeHtml(i.batting_team)}</p>
-                        </div>
-                        <div class="shrink-0 text-right">
-                            <p class="text-lg font-bold leading-tight tabular-nums text-neutral-900">${escapeHtml(String(i.total_runs))}/${escapeHtml(String(i.total_wickets))}</p>
-                            <p class="text-[11px] text-neutral-500">(${escapeHtml(i.overs_display)} overs)</p>
-                        </div>
-                    </div>
-                    <div class="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] text-neutral-500">
-                        <span class="min-w-0">vs ${escapeHtml(i.bowling_team)}${crr}</span>
+                <div class="p-4 sm:p-5 ${tint}">
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="pub-eyebrow">Innings ${escapeHtml(String(i.innings_number))}</p>
                         ${renderStatusBadge(i.status)}
                     </div>
+                    <p class="mt-2 truncate text-sm font-semibold text-slate-800">${escapeHtml(i.batting_team)}</p>
+                    <p class="mt-1 flex items-baseline gap-2">
+                        <span class="score-figure">${escapeHtml(String(i.total_runs))}/${escapeHtml(String(i.total_wickets))}</span>
+                        <span class="text-xs text-slate-500">(${escapeHtml(i.overs_display)} overs)</span>
+                    </p>
+                    <p class="mt-2 text-xs text-slate-500">vs ${escapeHtml(i.bowling_team)}${crr}</p>
                 </div>
             `;
         })
@@ -97,15 +95,15 @@ function renderChase(chase, innings) {
             : `${team} have reached the target`;
 
     const stat = (label, value) => `
-        <div>
-            <dt class="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">${label}</dt>
-            <dd class="text-[13px] font-semibold tabular-nums text-neutral-900">${escapeHtml(String(value))}</dd>
+        <div class="rounded-lg bg-white px-1 py-2 ring-1 ring-inset ring-green-200">
+            <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">${label}</dt>
+            <dd class="mt-0.5 text-sm font-bold tabular-nums text-slate-900">${escapeHtml(String(value))}</dd>
         </div>
     `;
 
     return `
-        <p class="text-[13px] font-semibold text-neutral-900">${headline}</p>
-        <dl class="mt-1.5 grid grid-cols-4 gap-2 text-center">
+        <p class="text-[13px] font-semibold text-green-800">${headline}</p>
+        <dl class="mt-3 grid grid-cols-4 gap-2 text-center">
             ${stat('Target', chase.target)}
             ${stat('Need', chase.runs_needed)}
             ${stat('Balls', chase.balls_remaining)}
@@ -115,33 +113,39 @@ function renderChase(chase, innings) {
 }
 
 function outcomeClasses(d) {
+    const label = String(d.outcome_label ?? '');
+
     if (d.is_wicket) {
-        return 'bg-red-600 text-white';
+        return 'ball-badge-wicket';
     }
 
-    if (d.outcome_label === '6') {
-        return 'bg-emerald-600 text-white';
+    if (label === '6') {
+        return 'ball-badge-six';
     }
 
-    if (d.outcome_label === '4') {
-        return 'bg-blue-600 text-white';
+    if (label === '4') {
+        return 'ball-badge-four';
     }
 
-    return 'bg-neutral-100 text-neutral-700';
+    // Anything non-numeric (Wd, Nb, B, Lb...) is an extra.
+    if (!/^\d+$/.test(label)) {
+        return 'ball-badge-extra';
+    }
+
+    return '';
 }
 
 function renderDeliveries(deliveries) {
     if (deliveries.length === 0) {
-        return '<p class="py-4 text-center text-xs text-neutral-400">No deliveries recorded yet.</p>';
+        return '<p class="pub-empty">No deliveries recorded yet.</p>';
     }
 
     return deliveries
         .map(
             (d) => `
-                <div class="flex items-start gap-2.5 border-b border-neutral-100 py-2 text-[13px] last:border-b-0">
-                    <span class="mt-0.5 w-9 shrink-0 text-[11px] font-medium tabular-nums text-neutral-500">${escapeHtml(d.ball_label)}</span>
-                    <span class="flex h-6 min-w-8 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-bold ${outcomeClasses(d)}">${escapeHtml(d.outcome_label)}</span>
-                    <span class="min-w-0 leading-snug text-neutral-700">${escapeHtml(d.commentary)}</span>
+                <div class="flex items-start gap-3 border-b border-line px-4 py-3 text-[13px] last:border-b-0">
+                    <span class="ball-badge ${outcomeClasses(d)}">${escapeHtml(d.outcome_label)}</span>
+                    <p class="min-w-0 pt-0.5 leading-snug text-slate-700"><span class="mr-1.5 font-semibold tabular-nums text-slate-900">${escapeHtml(d.ball_label)}</span>${escapeHtml(d.commentary)}</p>
                 </div>
             `
         )

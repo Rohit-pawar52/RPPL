@@ -45,3 +45,69 @@ export function initConfirmActionForms() {
         });
     });
 }
+
+/**
+ * Generic "submit lock": once a form has actually been submitted, its
+ * submit button(s) are disabled and show a loading label so a double
+ * click can't post twice. Runs in the bubbling phase on document, so any
+ * handler that intercepted the submit (confirm dialogs call
+ * preventDefault and later form.submit(), which fires no submit event)
+ * is respected automatically. Opt out per form with `data-no-lock`; GET
+ * forms and forms opening in another tab/window are never locked.
+ * Buttons are restored on bfcache restore and after a safety timeout
+ * (covers downloads, where the page stays put).
+ */
+const LOCK_RESTORE_MS = 10000;
+
+function lockSubmittedForm(event) {
+    const form = event.target;
+
+    if (event.defaultPrevented
+        || !(form instanceof HTMLFormElement)
+        || form.method.toLowerCase() === 'get'
+        || form.hasAttribute('data-no-lock')
+        || (form.target && form.target !== '_self')
+        || event.submitter?.formTarget === '_blank'
+        || event.submitter?.hasAttribute('data-no-lock')) {
+        return;
+    }
+
+    // Disable on the next tick: the browser builds the form data right
+    // after this event, and a disabled submitter would be left out of it.
+    setTimeout(() => {
+        const buttons = form.querySelectorAll('button[type="submit"], button:not([type]), input[type="submit"]');
+
+        buttons.forEach((button) => {
+            if (button.disabled) {
+                return;
+            }
+
+            const isSubmitter = button === event.submitter;
+            const original = button.tagName === 'INPUT' ? button.value : button.innerHTML;
+
+            if (isSubmitter && button.tagName === 'BUTTON' && !button.querySelector('svg')) {
+                button.textContent = button.dataset.loadingText ?? 'Saving…';
+            } else if (isSubmitter && button.tagName === 'INPUT') {
+                button.value = button.dataset.loadingText ?? 'Saving…';
+            }
+
+            button.disabled = true;
+            button.classList.add('opacity-60', 'cursor-not-allowed');
+
+            const restore = () => {
+                if (button.tagName === 'INPUT') {
+                    button.value = original;
+                } else {
+                    button.innerHTML = original;
+                }
+                button.disabled = false;
+                button.classList.remove('opacity-60', 'cursor-not-allowed');
+            };
+
+            window.addEventListener('pageshow', (e) => e.persisted && restore(), { once: true });
+            setTimeout(restore, LOCK_RESTORE_MS);
+        });
+    }, 0);
+}
+
+document.addEventListener('submit', lockSubmittedForm);

@@ -54,6 +54,16 @@ class DemoRuleSeeder extends Seeder
                 'content' => 'The same bowler cannot bowl two overs in a row. A different bowler must be used for the next over.',
                 'sort_order' => 4,
             ],
+            [
+                'title' => 'Wide Ball',
+                'content' => "A delivery that passes too wide of the batter to be hit by normal cricket strokes is called a wide by the umpire.\n\nA wide adds one penalty run to the batting side and is not counted as one of the 6 legal deliveries of the over.",
+                'sort_order' => 5,
+            ],
+            [
+                'title' => 'Ways a Batter Can Be Dismissed',
+                'content' => "In RPPL a batter can be given out bowled, caught, leg before wicket, run out, stumped or hit wicket.\n\nOn a Free Hit, the batter can only be dismissed by a run out.",
+                'sort_order' => 6,
+            ],
         ]);
 
         $this->seedRules($rpplRules, [
@@ -61,6 +71,17 @@ class DemoRuleSeeder extends Seeder
                 'title' => 'Playing XI Submission',
                 'content' => "Both teams must submit their Playing XI before the toss.\n\nOnce submitted and the match has started, the Playing XI cannot be changed for that match.",
                 'sort_order' => 1,
+            ],
+            [
+                'title' => 'Tied Matches and Super Over',
+                'content' => "If both teams finish on the same score, the match is tied.\n\nWhere a winner is required, the tournament committee decides the tie-break, and the winner is recorded by the admin on the match.",
+                'sort_order' => 2,
+            ],
+            [
+                'title' => 'Code of Conduct and Fair Play',
+                'content' => "Players, captains and supporters must respect the umpires, opponents and volunteers at all times.\n\nAbusive behaviour or dissent may lead to a warning or removal from a match, at the committee's discretion.",
+                'sort_order' => 3,
+                'is_important' => true,
             ],
         ]);
     }

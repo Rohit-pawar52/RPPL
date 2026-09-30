@@ -78,6 +78,7 @@ return [
         'no_scheduled' => 'No matches scheduled yet.',
         'no_completed' => 'No completed matches yet.',
         'follow_live' => 'Follow live',
+        'subtitle' => 'Fixtures, live scores and results',
     ],
 
     'info' => [
@@ -93,6 +94,11 @@ return [
             'bowl' => 'bowl',
         ],
         'innings' => 'Innings',
+        'details' => 'Match Details',
+        'format' => 'Format',
+        'date' => 'Date & time',
+        'edition' => 'Edition',
+        'stage' => 'Stage',
     ],
 
     'squads' => [
@@ -115,6 +121,8 @@ return [
 
     'live' => [
         'this_over' => 'This Over',
+        'commentary' => 'Commentary',
+        'auto_updates' => 'Updates automatically',
     ],
 
     'chase' => [

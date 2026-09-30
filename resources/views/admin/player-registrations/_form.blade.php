@@ -8,17 +8,17 @@
 <div class="grid gap-4 sm:grid-cols-2">
     @if($registration)
         <div>
-            <p class="mb-1 text-xs font-medium text-neutral-700">Player</p>
-            <p class="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-[13px] text-neutral-700">
+            <p class="mb-1 text-xs font-medium text-slate-700">Player</p>
+            <p class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] text-slate-700">
                 {{ $registration->player->name }}
                 @unless($registration->player->is_active)
-                    <span class="text-neutral-400">(inactive)</span>
+                    <span class="text-slate-400">(inactive)</span>
                 @endunless
             </p>
         </div>
         <div>
-            <p class="mb-1 text-xs font-medium text-neutral-700">Edition</p>
-            <p class="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-[13px] text-neutral-700">
+            <p class="mb-1 text-xs font-medium text-slate-700">Edition</p>
+            <p class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] text-slate-700">
                 {{ $registration->edition->name }}
             </p>
         </div>

@@ -3,45 +3,43 @@
 @section('title', __('directory.editions.title').' · '.$branding->shortName)
 
 @section('content')
-    <div class="mb-4">
-        <h1 class="text-base font-semibold text-neutral-900">{{ __('directory.editions.heading') }}</h1>
-    </div>
+    <x-public.page-header :title="__('directory.editions.heading')" />
 
-    <div class="rounded-lg border border-neutral-200 bg-white p-4">
-        <div class="overflow-x-auto">
-            <table class="w-full min-w-[480px] text-left text-[13px]">
-                <thead class="border-b border-neutral-200 text-[11px] uppercase tracking-wide text-neutral-400">
+    <x-public.card flush>
+        <div class="pub-table-wrap">
+            <table class="pub-table min-w-[420px]">
+                <thead>
                     <tr>
-                        <th class="px-2 py-1.5 font-medium">{{ __('directory.editions.edition') }}</th>
-                        <th class="px-2 py-1.5 font-medium">{{ __('directory.editions.status') }}</th>
-                        <th class="hidden px-2 py-1.5 text-right font-medium sm:table-cell">{{ __('directory.editions.teams') }}</th>
-                        <th class="hidden px-2 py-1.5 text-right font-medium sm:table-cell">{{ __('directory.editions.matches') }}</th>
-                        <th></th>
+                        <th>{{ __('directory.editions.edition') }}</th>
+                        <th>{{ __('directory.editions.status') }}</th>
+                        <th class="hidden text-right sm:table-cell">{{ __('directory.editions.teams') }}</th>
+                        <th class="hidden text-right sm:table-cell">{{ __('directory.editions.matches') }}</th>
+                        <th><span class="sr-only">{{ __('directory.editions.view') }}</span></th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-neutral-100">
+                <tbody>
                     @forelse($editions as $edition)
                         <tr>
-                            <td class="px-2 py-2">
-                                <a href="{{ route('public.editions.show', $edition) }}" class="font-medium text-neutral-800 hover:underline">
+                            <td>
+                                <a href="{{ route('public.editions.show', $edition) }}" class="font-semibold text-slate-900 hover:text-green-700">
                                     {{ $edition->name }}
                                 </a>
-                                <p class="text-[11px] text-neutral-500">{{ $edition->year }}</p>
+                                <p class="pub-meta">{{ $edition->year }}</p>
                             </td>
-                            <td class="px-2 py-2"><x-status-badge :status="$edition->status" /></td>
-                            <td class="hidden px-2 py-2 text-right text-neutral-600 sm:table-cell">{{ $edition->edition_teams_count }}</td>
-                            <td class="hidden px-2 py-2 text-right text-neutral-600 sm:table-cell">{{ $edition->matches_count }}</td>
-                            <td class="px-2 py-2 text-right">
-                                <a href="{{ route('public.editions.show', $edition) }}" class="text-xs theme-link hover:underline">{{ __('directory.editions.view') }} &rarr;</a>
+                            <td><x-public.status-pill :status="$edition->status" /></td>
+                            <td class="hidden text-right tabular-nums sm:table-cell">{{ $edition->edition_teams_count }}</td>
+                            <td class="hidden text-right tabular-nums sm:table-cell">{{ $edition->matches_count }}</td>
+                            <td class="whitespace-nowrap text-right">
+                                <a href="{{ route('public.editions.show', $edition) }}" class="pub-link text-xs">{{ __('directory.editions.view') }} &rarr;</a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-2 py-8 text-center text-neutral-400">{{ __('directory.editions.empty') }}</td>
+                            <td colspan="5"><x-public.empty>{{ __('directory.editions.empty') }}</x-public.empty></td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-    </div>
+    </x-public.card>
 @endsection

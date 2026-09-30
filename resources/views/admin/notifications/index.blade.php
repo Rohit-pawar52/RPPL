@@ -2,30 +2,26 @@
 
 @section('title', 'Notifications')
 
+@section('subtitle', "Push notifications sent to subscribed visitors.")
+
+@section('actions')
+    <x-admin.button href="{{ route('admin.data-cleanup.index') }}" variant="ghost">Data Cleanup</x-admin.button>
+    <x-admin.button href="{{ route('admin.notifications.create') }}" variant="primary">+ New notification</x-admin.button>
+@endsection
+
 @section('content')
-    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div class="mb-4">
         <div class="max-w-xs">
             {{-- Informational only — never a subscriber list/token export;
                  see NotificationController::index()'s docblock. --}}
             <x-stat-card label="Active Subscribers" :value="$activeSubscriberCount" icon="bell" />
         </div>
 
-        <div class="flex items-center gap-3">
-            <a href="{{ route('admin.data-cleanup.index') }}" class="text-xs text-neutral-500 hover:text-neutral-700">
-                Clean up old data? Go to Data Cleanup &rarr;
-            </a>
-            <a
-                href="{{ route('admin.notifications.create') }}"
-                class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
-            >
-                + New notification
-            </a>
-        </div>
     </div>
 
-    <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+    <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
         <table class="w-full min-w-[720px] text-left text-[13px]">
-            <thead class="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-400">
+            <thead class="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-400">
                 <tr>
                     <th class="px-4 py-2 font-medium">Title</th>
                     <th class="hidden px-4 py-2 font-medium md:table-cell">Created By</th>
@@ -35,7 +31,7 @@
                     <th class="px-4 py-2 text-right font-medium">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-neutral-100">
+            <tbody class="divide-y divide-slate-100">
                 @forelse($notifications as $notification)
                     @php
                         // sends is already fully eager-loaded (see the
@@ -43,26 +39,26 @@
                         // per-row query.
                         $latestSend = $notification->sends->sortByDesc('id')->first();
                     @endphp
-                    <tr class="hover:bg-neutral-50">
-                        <td class="px-4 py-2 font-medium text-neutral-800">
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-2 font-medium text-slate-800">
                             <a href="{{ route('admin.notifications.show', $notification) }}" class="hover:underline">
                                 {{ $notification->title }}
                             </a>
                         </td>
-                        <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">
+                        <td class="hidden px-4 py-2 text-slate-600 md:table-cell">
                             {{ $notification->creator?->name ?? '—' }}
                         </td>
-                        <td class="hidden px-4 py-2 text-neutral-500 md:table-cell">
+                        <td class="hidden px-4 py-2 text-slate-500 md:table-cell">
                             {{ $notification->created_at->format('d M Y') }}
                         </td>
-                        <td class="px-4 py-2 text-neutral-600">
+                        <td class="px-4 py-2 text-slate-600">
                             {{ $notification->sends->count() }}
                         </td>
-                        <td class="px-4 py-2 text-neutral-600">
+                        <td class="px-4 py-2 text-slate-600">
                             @if($latestSend)
                                 {{ $latestSend->created_at->format('d M Y, H:i') }}
                             @else
-                                <span class="text-neutral-400">Never sent</span>
+                                <span class="text-slate-400">Never sent</span>
                             @endif
                         </td>
                         <td class="px-4 py-2">
@@ -71,7 +67,7 @@
                                     href="{{ route('admin.notifications.show', $notification) }}"
                                     title="View"
                                     aria-label="View {{ $notification->title }}"
-                                    class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
+                                    class="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                                 >
                                     <x-icon name="eye" class="h-4 w-4" />
                                 </a>
@@ -79,7 +75,7 @@
                                     href="{{ route('admin.notifications.edit', $notification) }}"
                                     title="Edit"
                                     aria-label="Edit {{ $notification->title }}"
-                                    class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 theme-hover-primary"
+                                    class="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-green-700"
                                 >
                                     <x-icon name="pencil" class="h-4 w-4" />
                                 </a>
@@ -96,7 +92,7 @@
                                         type="submit"
                                         title="{{ $latestSend ? 'Resend' : 'Send' }}"
                                         aria-label="{{ $latestSend ? 'Resend' : 'Send' }} {{ $notification->title }}"
-                                        class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 theme-hover-primary"
+                                        class="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-green-700"
                                     >
                                         <x-icon name="bell" class="h-4 w-4" />
                                     </button>
@@ -105,11 +101,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-neutral-400">
-                            No notifications found.
-                        </td>
-                    </tr>
+                    <x-admin.empty table colspan="6">No notifications found.</x-admin.empty>
                 @endforelse
             </tbody>
         </table>
