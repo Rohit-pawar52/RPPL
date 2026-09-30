@@ -40,6 +40,11 @@ class UpdateSystemSettingsRequest extends FormRequest
             // currently stored values rather than resetting them.
             'tournament_day_reminder_enabled' => ['nullable', 'boolean'],
             'tournament_day_reminder_time' => ['nullable', 'date_format:H:i'],
+            // Automatic failed-job cleanup — optional like the two above.
+            // 7..365 days: never aggressive enough to remove failures
+            // before anyone could inspect them.
+            'failed_jobs_auto_cleanup_enabled' => ['nullable', 'boolean'],
+            'failed_jobs_retention_days' => ['nullable', 'integer', 'min:7', 'max:365'],
         ];
     }
 }

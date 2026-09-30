@@ -130,6 +130,14 @@ class SettingsController extends Controller
             $values['notifications.tournament_day_reminder_time'] = $data['tournament_day_reminder_time'];
         }
 
+        if ($request->filled('failed_jobs_auto_cleanup_enabled')) {
+            $values['system.failed_jobs_auto_cleanup_enabled'] = $request->boolean('failed_jobs_auto_cleanup_enabled');
+        }
+
+        if (! empty($data['failed_jobs_retention_days'])) {
+            $values['system.failed_jobs_retention_days'] = (int) $data['failed_jobs_retention_days'];
+        }
+
         $this->settings->setMany($values);
 
         return redirect()->route('admin.settings.index', ['tab' => 'system'])

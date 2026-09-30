@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\CleanupFailedJobs;
 use App\Console\Commands\DispatchMatchReminders;
 use App\Console\Commands\DispatchRegistrationClosingReminders;
 use App\Console\Commands\DispatchScheduledAnnouncements;
@@ -64,6 +65,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // and is checked inside TournamentDayReminderService.
         $schedule->command(DispatchTournamentDayReminders::class)
             ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        // Day-based retention, so once a day is enough (03:00 in the
+        // app timezone). A no-op unless enabled in Settings -> System.
+        $schedule->command(CleanupFailedJobs::class)
+            ->dailyAt('03:00')
             ->withoutOverlapping()
             ->onOneServer();
     })
