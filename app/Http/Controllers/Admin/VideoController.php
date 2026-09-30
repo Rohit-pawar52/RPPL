@@ -14,8 +14,8 @@ use Illuminate\View\View;
  * Admin CRUD for short RPPL clips shown on the public homepage's
  * Featured Videos section. All file storage/replacement/cleanup goes
  * through VideoService — this controller never touches Storage directly.
- * Activate/deactivate is simply the `status` field on the edit form; there
- * is deliberately no separate toggle route.
+ * Activate/deactivate is the `status` field on the edit form, and also a
+ * one-click toggle straight from the index table (toggleStatus()).
  */
 class VideoController extends Controller
 {
@@ -83,6 +83,21 @@ class VideoController extends Controller
         return redirect()
             ->route('admin.videos.index')
             ->with('success', 'Video updated successfully.');
+    }
+
+    /**
+     * Flips the current value server-side, so no client-supplied status
+     * is ever trusted.
+     */
+    public function toggleStatus(Video $video): RedirectResponse
+    {
+        $this->authorize('update', $video);
+
+        $this->videos->toggleStatus($video);
+
+        return redirect()
+            ->back(fallback: route('admin.videos.index'))
+            ->with('success', $video->status === 'active' ? 'Video activated successfully.' : 'Video deactivated successfully.');
     }
 
     public function destroy(Video $video): RedirectResponse
