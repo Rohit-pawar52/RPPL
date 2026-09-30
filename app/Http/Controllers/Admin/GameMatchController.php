@@ -15,6 +15,7 @@ use App\Services\GameMatch\MatchFlowService;
 use App\Services\GameMatch\MatchResultService;
 use App\Services\Innings\InningsService;
 use App\Services\Settings\DisplayTimezoneFormatter;
+use App\Support\CsvSafe;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -123,7 +124,7 @@ class GameMatchController extends Controller
 
             $query->chunkById(200, function ($matches) use ($handle) {
                 foreach ($matches as $match) {
-                    fputcsv($handle, [
+                    fputcsv($handle, CsvSafe::row([
                         $match->match_number,
                         $match->edition->name,
                         $match->teamA->team->name,
@@ -133,7 +134,7 @@ class GameMatchController extends Controller
                         ucfirst($match->match_status),
                         $match->match_stage ? ucfirst(str_replace('_', ' ', $match->match_stage)) : '',
                         $match->match_result ?? '',
-                    ]);
+                    ]));
                 }
             });
 

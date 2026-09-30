@@ -12,6 +12,7 @@ use App\Models\Player;
 use App\Models\PlayerRegistration;
 use App\Services\PlayerRegistration\PlayerRegistrationService;
 use App\Services\Registration\PlayerRegistrationImportService;
+use App\Support\CsvSafe;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -119,7 +120,7 @@ class PlayerRegistrationController extends Controller
 
             $query->chunkById(200, function ($registrations) use ($handle) {
                 foreach ($registrations as $registration) {
-                    fputcsv($handle, [
+                    fputcsv($handle, CsvSafe::row([
                         $registration->registration_number,
                         $registration->edition->name,
                         $registration->player->name,
@@ -130,7 +131,7 @@ class PlayerRegistrationController extends Controller
                             ? number_format($registration->registration_fee, 2, '.', '')
                             : '',
                         $registration->registered_at?->format('Y-m-d') ?? '',
-                    ]);
+                    ]));
                 }
             });
 
