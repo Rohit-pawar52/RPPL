@@ -7,37 +7,23 @@
 
 <x-form.input name="title" label="Heading" :value="$news->title ?? ''" maxlength="255" required autofocus />
 
-<div class="mb-3.5">
-    <label for="content" class="mb-1 block text-xs font-medium text-neutral-700">News text</label>
-    <textarea
-        id="content"
-        name="content"
-        rows="8"
-        maxlength="20000"
-        required
-        class="w-full rounded-md border px-3 py-2 text-[13px] focus:outline-none focus:ring-2 {{ $errors->has('content') ? 'border-red-400 focus:ring-red-100' : 'border-neutral-300 theme-focus-ring' }}"
-    >{{ old('content', $news->content ?? '') }}</textarea>
-    <p class="mt-1 text-[11px] text-neutral-400">Plain text only. Line breaks are kept; HTML is shown as typed, not rendered.</p>
-    @error('content')
-        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-    @enderror
-</div>
+<x-form.textarea name="content" label="News text" :value="$news->content ?? ''" rows="8" maxlength="20000" required help="Plain text only. Line breaks are kept; HTML is shown as typed, not rendered." />
 
 <div class="mb-3.5">
-    <p class="mb-1 text-xs font-medium text-neutral-700">Images <span class="font-normal text-neutral-400">(optional)</span></p>
+    <p class="mb-1 text-xs font-medium text-slate-700">Images <span class="font-normal text-slate-400">(optional)</span></p>
 
     @if($news && $news->images->isNotEmpty())
         <div class="mb-2 flex flex-wrap gap-2">
             @foreach($news->images as $image)
                 <label class="block w-24 cursor-pointer">
-                    <span class="flex h-16 w-24 items-center justify-center overflow-hidden rounded-md border border-neutral-200 bg-neutral-50">
+                    <span class="flex h-16 w-24 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
                         <img
                             src="{{ Illuminate\Support\Facades\Storage::url($image->image_path) }}"
                             alt="{{ $news->title }}"
                             class="h-full w-full object-cover"
                         />
                     </span>
-                    <span class="mt-1 flex items-center gap-1 text-[11px] text-neutral-500">
+                    <span class="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
                         <input
                             type="checkbox"
                             name="remove_images[]"
@@ -49,11 +35,11 @@
                 </label>
             @endforeach
         </div>
-        <p class="mb-2 text-[11px] text-neutral-400">Tick Remove on any image to delete it when you save. The first image is used as the cover.</p>
+        <p class="mb-2 text-[11px] text-slate-400">Tick Remove on any image to delete it when you save. The first image is used as the cover.</p>
     @endif
 
-    <div class="rounded-md border border-dashed px-3 py-3 {{ $errors->has('images') || $errors->has('images.*') ? 'border-red-400' : 'border-neutral-300' }}">
-        <label class="cursor-pointer text-[12px] font-medium theme-link">
+    <div class="rounded-md border border-dashed px-3 py-3 {{ $errors->has('images') || $errors->has('images.*') ? 'border-red-400' : 'border-slate-300' }}">
+        <label class="cursor-pointer text-[12px] font-medium text-green-700">
             {{ $news ? 'Add images' : 'Choose images' }}
             <input
                 type="file"
@@ -64,9 +50,9 @@
                 onchange="document.getElementById('news-images-count').textContent = this.files.length ? this.files.length + ' file(s) selected' : ''"
             />
         </label>
-        <p id="news-images-count" class="mt-1 text-[11px] text-neutral-500"></p>
+        <p id="news-images-count" class="mt-1 text-[11px] text-slate-500"></p>
     </div>
-    <p class="mt-1 text-[11px] text-neutral-400">JPG, PNG or WebP, up to 5 MB each, at most {{ $maxImages }} images per post.</p>
+    <p class="mt-1 text-[11px] text-slate-400">JPG, PNG or WebP, up to 5 MB each, at most {{ $maxImages }} images per post.</p>
     @error('images')
         <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
     @enderror
@@ -93,7 +79,7 @@
         :value="$news->priority ?? 100"
     />
 </div>
-<p class="-mt-2.5 mb-3.5 text-[11px] text-neutral-400">
+<p class="-mt-2.5 mb-3.5 text-[11px] text-slate-400">
     Only Active posts appear on the public website. Lower priority numbers are shown first, then the newest.
 </p>
 
@@ -103,6 +89,6 @@
     type="datetime-local"
     :value="$news?->published_at ? display_datetime($news->published_at, 'Y-m-d\TH:i') : ''"
 />
-<p class="-mt-2.5 mb-3.5 text-[11px] text-neutral-400">
+<p class="-mt-2.5 mb-3.5 text-[11px] text-slate-400">
     Times are in the display timezone ({{ $timezone }}). Leave blank to publish now (on create) or keep the current time (on edit). A future time keeps the post hidden until then.
 </p>

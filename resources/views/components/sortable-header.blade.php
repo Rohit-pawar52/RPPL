@@ -18,7 +18,7 @@
     "&amp;darr;" instead of a glyph — same failure mode already fixed
     once for the '&middot;' page-title bug earlier this project.
 --}}
-<a href="{{ $url }}" class="inline-flex items-center gap-0.5 hover:text-neutral-700">
+<a href="{{ $url }}" class="inline-flex items-center gap-0.5 hover:text-slate-700 focus:outline-none focus-visible:underline">
     {{ $slot }}
     @if($isActive)
         <span class="text-neutral-400">{{ $direction === 'asc' ? '↑' : '↓' }}</span>

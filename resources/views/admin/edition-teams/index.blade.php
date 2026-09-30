@@ -2,18 +2,24 @@
 
 @section('title', 'Edition Teams')
 
+@section('subtitle', 'Teams taking part in each edition.')
+
+@section('actions')
+    <x-admin.button href="{{ route('admin.edition-teams.create') }}" variant="primary">+ Add team to edition</x-admin.button>
+@endsection
+
 @section('content')
-    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div class="mb-4">
         <form method="GET" action="{{ route('admin.edition-teams.index') }}" class="flex flex-wrap items-center gap-2">
             <input
                 type="text"
                 name="search"
                 value="{{ $filters['search'] ?? '' }}"
                 placeholder="Search team name&hellip;"
-                class="w-full max-w-[220px] rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
+                class="w-full max-w-[220px] rounded-md border border-slate-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100"
             />
 
-            <select name="edition_id" class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring">
+            <select name="edition_id" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100">
                 <option value="">All editions</option>
                 @foreach($editions as $edition)
                     <option value="{{ $edition->id }}" @selected(($filters['edition_id'] ?? '') == $edition->id)>
@@ -22,28 +28,19 @@
                 @endforeach
             </select>
 
-            <button type="submit" class="rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
-                Filter
-            </button>
+            <x-admin.button variant="secondary">Filter</x-admin.button>
 
             @if(array_filter($filters))
-                <a href="{{ route('admin.edition-teams.index') }}" class="text-[13px] text-neutral-400 hover:text-neutral-600">
+                <a href="{{ route('admin.edition-teams.index') }}" class="text-[13px] text-slate-400 hover:text-slate-600">
                     Clear filters
                 </a>
             @endif
         </form>
-
-        <a
-            href="{{ route('admin.edition-teams.create') }}"
-            class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
-        >
-            + Add team to edition
-        </a>
     </div>
 
-    <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+    <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
         <table class="w-full min-w-[640px] text-left text-[13px]">
-            <thead class="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-400">
+            <thead class="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-400">
                 <tr>
                     <th class="px-4 py-2 font-medium">Edition</th>
                     <th class="px-4 py-2 font-medium">Team</th>
@@ -53,11 +50,11 @@
                     <th class="px-4 py-2 text-right font-medium">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-neutral-100">
+            <tbody class="divide-y divide-slate-100">
                 @forelse($editionTeams as $editionTeam)
-                    <tr class="hover:bg-neutral-50">
-                        <td class="px-4 py-2 text-neutral-600">{{ $editionTeam->edition->name }}</td>
-                        <td class="px-4 py-2 font-medium text-neutral-800">
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-2 text-slate-600">{{ $editionTeam->edition->name }}</td>
+                        <td class="px-4 py-2 font-medium text-slate-800">
                             <a href="{{ route('admin.edition-teams.show', $editionTeam) }}" class="hover:underline">
                                 {{ $editionTeam->team->name }}
                             </a>
@@ -65,10 +62,10 @@
                         <td class="hidden px-4 py-2 md:table-cell">
                             <x-status-badge :status="$editionTeam->team->is_active ? 'active' : 'inactive'" />
                         </td>
-                        <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">
+                        <td class="hidden px-4 py-2 text-slate-600 md:table-cell">
                             {{ $editionTeam->team_players_count }}
                         </td>
-                        <td class="hidden px-4 py-2 text-neutral-500 lg:table-cell">
+                        <td class="hidden px-4 py-2 text-slate-500 lg:table-cell">
                             {{ $editionTeam->created_at->format('d M Y') }}
                         </td>
                         <td class="px-4 py-2">
@@ -77,7 +74,7 @@
                                     href="{{ route('admin.edition-teams.show', $editionTeam) }}"
                                     title="View"
                                     aria-label="View {{ $editionTeam->team->name }} in {{ $editionTeam->edition->name }}"
-                                    class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
+                                    class="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                                 >
                                     <x-icon name="eye" class="h-4 w-4" />
                                 </a>
@@ -94,7 +91,7 @@
                                         type="submit"
                                         title="Remove"
                                         aria-label="Remove {{ $editionTeam->team->name }} from {{ $editionTeam->edition->name }}"
-                                        class="rounded p-1.5 text-neutral-500 hover:bg-red-50 hover:text-red-600"
+                                        class="rounded p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600"
                                     >
                                         <x-icon name="trash" class="h-4 w-4" />
                                     </button>
@@ -103,11 +100,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-neutral-400">
-                            No teams have been added to any edition yet.
-                        </td>
-                    </tr>
+                    <x-admin.empty table colspan="6">No teams have been added to any edition yet.</x-admin.empty>
                 @endforelse
             </tbody>
         </table>

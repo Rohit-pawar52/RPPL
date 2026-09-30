@@ -9,14 +9,14 @@
 @if($teamPlayer)
     <div class="grid gap-4 sm:grid-cols-2">
         <div>
-            <p class="mb-1 text-xs font-medium text-neutral-700">Player</p>
-            <p class="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-[13px] text-neutral-700">
+            <p class="mb-1 text-xs font-medium text-slate-700">Player</p>
+            <p class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] text-slate-700">
                 {{ $teamPlayer->playerRegistration->player->name }}
             </p>
         </div>
         <div>
-            <p class="mb-1 text-xs font-medium text-neutral-700">Team / Edition</p>
-            <p class="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-[13px] text-neutral-700">
+            <p class="mb-1 text-xs font-medium text-slate-700">Team / Edition</p>
+            <p class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] text-slate-700">
                 {{ $teamPlayer->editionTeam->team->name }} &middot; {{ $teamPlayer->editionTeam->edition->name }}
             </p>
         </div>

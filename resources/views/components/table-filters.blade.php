@@ -12,12 +12,12 @@
 
     @if($perPage !== null)
         <div class="flex flex-col gap-0.5">
-            <label class="text-[11px] font-medium text-neutral-500">Rows</label>
+            <label class="text-[11px] font-medium text-slate-500">Rows</label>
             <select
                 name="per_page"
                 onchange="this.form.submit()"
                 aria-label="Rows per page"
-                class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
+                class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100"
             >
                 @foreach([10, 20, 50, 100, 200] as $option)
                     <option value="{{ $option }}" @selected((int) $perPage === $option)>{{ $option }} / page</option>
@@ -28,31 +28,31 @@
 
     @if($dateRange)
         <div class="flex flex-col gap-0.5">
-            <label class="text-[11px] font-medium text-neutral-500">From</label>
+            <label class="text-[11px] font-medium text-slate-500">From</label>
             <input
                 type="date"
                 name="from_date"
                 value="{{ $filters['from_date'] ?? '' }}"
-                class="rounded-md border border-neutral-300 px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
+                class="rounded-md border border-slate-300 px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100"
             />
         </div>
         <div class="flex flex-col gap-0.5">
-            <label class="text-[11px] font-medium text-neutral-500">To</label>
+            <label class="text-[11px] font-medium text-slate-500">To</label>
             <input
                 type="date"
                 name="to_date"
                 value="{{ $filters['to_date'] ?? '' }}"
-                class="rounded-md border border-neutral-300 px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
+                class="rounded-md border border-slate-300 px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100"
             />
         </div>
     @endif
 
-    <button type="submit" class="rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
+    <button type="submit" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-[13px] font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500">
         Filter
     </button>
 
     @if(array_filter($filters))
-        <a href="{{ $action }}" class="text-[13px] text-neutral-400 hover:text-neutral-600">
+        <a href="{{ $action }}" class="text-[13px] text-slate-500 hover:text-slate-700">
             Clear filters
         </a>
     @endif

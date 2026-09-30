@@ -8,7 +8,7 @@
 
 <div class="mb-3.5">
     @if($label)
-        <label for="{{ $name }}" class="mb-1 block text-xs font-medium text-neutral-700">{{ $label }}</label>
+        <label for="{{ $name }}" class="mb-1 block text-xs font-medium text-slate-700">{{ $label }}@if($attributes->has('required'))<span class="text-red-500" aria-hidden="true"> *</span>@endif</label>
     @endif
 
     <div class="flex items-center gap-2">
@@ -16,7 +16,7 @@
             type="color"
             id="{{ $name }}_swatch"
             value="{{ old($name, $value) }}"
-            class="h-9 w-11 shrink-0 cursor-pointer rounded border border-neutral-300 bg-white p-0.5"
+            class="h-10 w-11 shrink-0 cursor-pointer rounded-md border border-slate-300 bg-white p-0.5"
             onchange="document.getElementById('{{ $name }}').value = this.value"
             aria-hidden="true"
             tabindex="-1"
@@ -30,8 +30,8 @@
             placeholder="#2563EB"
             oninput="if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) { document.getElementById('{{ $name }}_swatch').value = this.value; }"
             {{ $attributes->merge([
-                'class' => 'w-full rounded-md border px-3 py-2 text-[13px] font-mono focus:outline-none focus:ring-2 '
-                    . ($errors->has($name) ? 'border-red-400 focus:ring-red-100' : 'border-neutral-300 theme-focus-ring'),
+                'class' => 'h-10 w-full rounded-md border bg-white px-3 text-[13px] font-mono focus:outline-none focus:ring-2 '
+                    . ($errors->has($name) ? 'border-red-400 focus:ring-red-100' : 'border-slate-300 focus:border-green-500 focus:ring-green-100'),
             ]) }}
         />
     </div>

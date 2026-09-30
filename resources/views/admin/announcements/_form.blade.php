@@ -3,21 +3,7 @@
     $announcement = $announcement ?? null;
 @endphp
 
-<div class="mb-3.5">
-    <label for="message" class="mb-1 block text-xs font-medium text-neutral-700">Message</label>
-    <textarea
-        id="message"
-        name="message"
-        rows="3"
-        maxlength="500"
-        required
-        class="w-full rounded-md border px-3 py-2 text-[13px] focus:outline-none focus:ring-2 {{ $errors->has('message') ? 'border-red-400 focus:ring-red-100' : 'border-neutral-300 theme-focus-ring' }}"
-    >{{ old('message', $announcement->message ?? '') }}</textarea>
-    <p class="mt-1 text-[11px] text-neutral-400">Plain text only — emoji are welcome (e.g. 🏏 📢 ⚠️ 🎉). HTML is not supported and will display as-is.</p>
-    @error('message')
-        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-    @enderror
-</div>
+<x-form.textarea name="message" label="Message" :value="$announcement->message ?? ''" rows="3" maxlength="500" required help="Plain text only — emoji are welcome (e.g. 🏏 📢 ⚠️ 🎉). HTML is not supported and will display as-is." />
 
 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
     <x-form.input
@@ -33,7 +19,7 @@
         :value="$announcement?->ends_at ? display_datetime($announcement->ends_at, 'Y-m-d\TH:i') : old('ends_at', '')"
     />
 </div>
-<p class="-mt-2.5 mb-3.5 text-[11px] text-neutral-400">
+<p class="-mt-2.5 mb-3.5 text-[11px] text-slate-400">
     Both optional — leave blank for no boundary on that side. Times are entered and shown in the site's configured display timezone.
 </p>
 
@@ -53,7 +39,7 @@
         :value="$announcement->sort_order ?? 0"
     />
 </div>
-<p class="-mt-2.5 mb-3.5 text-[11px] text-neutral-400">
+<p class="-mt-2.5 mb-3.5 text-[11px] text-slate-400">
     Lower display order numbers appear first when multiple announcements are active at once.
 </p>
 
@@ -72,21 +58,21 @@
     $choice = old('notification_choice', $defaultChoice);
 @endphp
 
-<div class="mb-1 border-t border-neutral-100 pt-3.5">
-    <p class="mb-2 text-xs font-medium text-neutral-700">Push Notification</p>
+<div class="mb-1 border-t border-slate-100 pt-3.5">
+    <p class="mb-2 text-xs font-medium text-slate-700">Push Notification</p>
 
     @if($alreadyDispatched)
-        <p class="rounded-md bg-neutral-50 px-3 py-2 text-[11px] text-neutral-500">
+        <p class="rounded-md bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
             A push notification for this announcement has already been sent — editing the message/ticker window above will not send another one.
         </p>
     @else
-        <div class="flex flex-col gap-1.5 text-[13px] text-neutral-700">
+        <div class="flex flex-col gap-1.5 text-[13px] text-slate-700">
             <label class="flex items-center gap-2">
-                <input type="radio" name="notification_choice" value="none" {{ $choice === 'none' ? 'checked' : '' }} class="theme-focus-ring" />
+                <input type="radio" name="notification_choice" value="none" {{ $choice === 'none' ? 'checked' : '' }} class="focus:border-green-500 focus:ring-green-100" />
                 Do not send
             </label>
             <label class="flex items-center gap-2">
-                <input type="radio" name="notification_choice" value="now" {{ $choice === 'now' ? 'checked' : '' }} class="theme-focus-ring" />
+                <input type="radio" name="notification_choice" value="now" {{ $choice === 'now' ? 'checked' : '' }} class="focus:border-green-500 focus:ring-green-100" />
                 Send now
             </label>
             <label class="flex items-center gap-2">
@@ -95,7 +81,7 @@
                     name="notification_choice"
                     value="later"
                     {{ $choice === 'later' ? 'checked' : '' }}
-                    class="theme-focus-ring"
+                    class="focus:border-green-500 focus:ring-green-100"
                 />
                 Schedule for later
             </label>
@@ -109,7 +95,7 @@
                 :value="$announcement?->notification_scheduled_at ? display_datetime($announcement->notification_scheduled_at, 'Y-m-d\TH:i') : old('notification_scheduled_at', '')"
             />
         </div>
-        <p class="mt-1 text-[11px] text-neutral-400">
+        <p class="mt-1 text-[11px] text-slate-400">
             Times are entered and shown in the site's configured display timezone. "Send now" and "Schedule for later" both reuse the existing notification system — see Notifications for send history.
         </p>
         @error('notification_scheduled_at')

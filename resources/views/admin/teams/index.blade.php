@@ -2,45 +2,42 @@
 
 @section('title', 'Teams')
 
+@section('subtitle', 'Master list of teams, separate from any edition.')
+
+@section('actions')
+    <x-admin.button href="{{ route('admin.teams.create') }}" variant="primary">+ New team</x-admin.button>
+@endsection
+
 @section('content')
-    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div class="mb-4">
         <form method="GET" action="{{ route('admin.teams.index') }}" class="flex flex-wrap items-center gap-2">
             <input
                 type="text"
                 name="search"
                 value="{{ $filters['search'] ?? '' }}"
                 placeholder="Search by name&hellip;"
-                class="w-full max-w-[220px] rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
+                class="w-full max-w-[220px] rounded-md border border-slate-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100"
             />
 
-            <select name="status" class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring">
+            <select name="status" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100">
                 <option value="">All statuses</option>
                 <option value="active" @selected(($filters['status'] ?? '') === 'active')>Active</option>
                 <option value="inactive" @selected(($filters['status'] ?? '') === 'inactive')>Inactive</option>
             </select>
 
-            <button type="submit" class="rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
-                Filter
-            </button>
+            <x-admin.button variant="secondary">Filter</x-admin.button>
 
             @if(array_filter($filters))
-                <a href="{{ route('admin.teams.index') }}" class="text-[13px] text-neutral-400 hover:text-neutral-600">
+                <a href="{{ route('admin.teams.index') }}" class="text-[13px] text-slate-400 hover:text-slate-600">
                     Clear filters
                 </a>
             @endif
         </form>
-
-        <a
-            href="{{ route('admin.teams.create') }}"
-            class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
-        >
-            + New team
-        </a>
     </div>
 
-    <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+    <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
         <table class="w-full min-w-[640px] text-left text-[13px]">
-            <thead class="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-400">
+            <thead class="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-400">
                 <tr>
                     <th class="px-4 py-2 font-medium">Logo</th>
                     <th class="px-4 py-2 font-medium">Team</th>
@@ -49,11 +46,11 @@
                     <th class="px-4 py-2 text-right font-medium">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-neutral-100">
+            <tbody class="divide-y divide-slate-100">
                 @forelse($teams as $team)
-                    <tr class="hover:bg-neutral-50">
+                    <tr class="hover:bg-slate-50">
                         <td class="px-4 py-2">
-                            <div class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-50 text-neutral-300">
+                            <div class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-slate-300">
                                 @if($team->logo_path)
                                     <img
                                         src="{{ Illuminate\Support\Facades\Storage::url($team->logo_path) }}"
@@ -65,18 +62,18 @@
                                 @endif
                             </div>
                         </td>
-                        <td class="px-4 py-2 font-medium text-neutral-800">
+                        <td class="px-4 py-2 font-medium text-slate-800">
                             <a href="{{ route('admin.teams.show', $team) }}" class="hover:underline">
                                 {{ $team->name }}
                             </a>
                             @if($team->short_name)
-                                <span class="ml-1 text-[11px] font-normal text-neutral-400">({{ $team->short_name }})</span>
+                                <span class="ml-1 text-[11px] font-normal text-slate-400">({{ $team->short_name }})</span>
                             @endif
                         </td>
                         <td class="px-4 py-2">
                             <x-status-badge :status="$team->is_active ? 'active' : 'inactive'" />
                         </td>
-                        <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">
+                        <td class="hidden px-4 py-2 text-slate-600 md:table-cell">
                             {{ $team->edition_teams_count }}
                         </td>
                         <td class="px-4 py-2">
@@ -85,7 +82,7 @@
                                     href="{{ route('admin.teams.show', $team) }}"
                                     title="View"
                                     aria-label="View {{ $team->name }}"
-                                    class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
+                                    class="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                                 >
                                     <x-icon name="eye" class="h-4 w-4" />
                                 </a>
@@ -93,7 +90,7 @@
                                     href="{{ route('admin.teams.edit', $team) }}"
                                     title="Edit"
                                     aria-label="Edit {{ $team->name }}"
-                                    class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 theme-hover-primary"
+                                    class="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-green-700"
                                 >
                                     <x-icon name="pencil" class="h-4 w-4" />
                                 </a>
@@ -110,7 +107,7 @@
                                         type="submit"
                                         title="Delete"
                                         aria-label="Delete {{ $team->name }}"
-                                        class="rounded p-1.5 text-neutral-500 hover:bg-red-50 hover:text-red-600"
+                                        class="rounded p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600"
                                     >
                                         <x-icon name="trash" class="h-4 w-4" />
                                     </button>
@@ -119,11 +116,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="5" class="px-4 py-8 text-center text-neutral-400">
-                            No teams found.
-                        </td>
-                    </tr>
+                    <x-admin.empty table colspan="5">No teams found.</x-admin.empty>
                 @endforelse
             </tbody>
         </table>
