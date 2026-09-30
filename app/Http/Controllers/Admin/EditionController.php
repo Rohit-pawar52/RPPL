@@ -10,6 +10,7 @@ use App\Models\EditionContribution;
 use App\Models\EditionTransaction;
 use App\Models\PlayerRegistration;
 use App\Services\Edition\EditionService;
+use App\Services\Settings\DisplayTimezoneFormatter;
 use App\Services\Statistics\PlayerStatisticsService;
 use App\Services\Statistics\StandingsService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -25,6 +26,7 @@ class EditionController extends Controller
         private readonly EditionService $editions,
         private readonly PlayerStatisticsService $statistics,
         private readonly StandingsService $standings,
+        private readonly DisplayTimezoneFormatter $displayTimezone,
     ) {}
 
     public function index(Request $request): View
@@ -70,7 +72,7 @@ class EditionController extends Controller
     {
         $this->authorize('create', Edition::class);
 
-        $this->editions->createEdition($request->validated());
+        $this->editions->createEdition($this->withRegistrationPeriod($request->validated(), $request));
 
         return redirect()
             ->route('admin.editions.index')
@@ -184,7 +186,7 @@ class EditionController extends Controller
     {
         $this->authorize('update', $edition);
 
-        $this->editions->updateEdition($edition, $request->validated());
+        $this->editions->updateEdition($edition, $this->withRegistrationPeriod($request->validated(), $request, $edition));
 
         return redirect()
             ->route('admin.editions.index')
@@ -204,5 +206,30 @@ class EditionController extends Controller
         return redirect()
             ->route('admin.editions.index')
             ->with('success', 'Edition deleted successfully.');
+    }
+
+    /**
+     * Converts the naive display-timezone datetime-local inputs to UTC
+     * (same convention as GameMatchController's scheduled_at). An already
+     * dispatched closing reminder is left untouched: V1 never re-arms it.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function withRegistrationPeriod(array $data, Request $request, ?Edition $edition = null): array
+    {
+        foreach (['registration_opens_at', 'registration_closes_at'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = $this->displayTimezone->parseFromDisplayTimezone($data[$field]);
+            }
+        }
+
+        if ($edition?->registration_reminder_dispatched_at !== null) {
+            unset($data['registration_reminder_enabled'], $data['registration_reminder_minutes_before']);
+        } else {
+            $data['registration_reminder_enabled'] = $request->boolean('registration_reminder_enabled');
+        }
+
+        return $data;
     }
 }

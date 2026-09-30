@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Edition;
 
+use App\Http\Requests\Admin\Edition\Concerns\ValidatesRegistrationPeriod;
 use App\Models\Edition;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -9,6 +10,8 @@ use Illuminate\Validation\Validator;
 
 class UpdateEditionRequest extends FormRequest
 {
+    use ValidatesRegistrationPeriod;
+
     /**
      * Authorization is handled by EditionController's authorizeResource()
      * (EditionPolicy), so this stays true to avoid duplicating that check.
@@ -51,6 +54,7 @@ class UpdateEditionRequest extends FormRequest
             'status' => ['required', 'string', Rule::in(Edition::STATUSES)],
             'registration_open' => ['required', 'boolean'],
             'registration_fee' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            ...$this->registrationPeriodRules(),
         ];
     }
 
@@ -63,6 +67,8 @@ class UpdateEditionRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            $this->validateRegistrationPeriod($validator);
+
             if (! $this->boolean('registration_open')) {
                 return;
             }
