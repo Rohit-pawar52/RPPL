@@ -43,8 +43,8 @@ class DemoDataSeederTest extends TestCase
         $this->seed();
 
         $this->assertDemoUsersExist();
-        $this->assertSingleActiveEditionWithFourTeams();
-        $this->assertSixtyPlayersFullyRegisteredAndSquadded();
+        $this->assertTwoEditionsSharingFourTeams();
+        $this->assertSixtyPlayersRegisteredAndSquadded();
         $this->assertSixFixturesWithThreeCompletedAndThreeScheduled();
         $this->assertCompletedMatchesHaveConsistentBallByBallData();
         $this->assertStandingsDeriveFromSeededResults();
@@ -65,16 +65,33 @@ class DemoDataSeederTest extends TestCase
         $this->assertSame('scorer', $scorer->role->slug);
     }
 
-    private function assertSingleActiveEditionWithFourTeams(): void
+    /**
+     * The active RPPL 2026 season (this test's original subject) — every
+     * 2026 assertion below is scoped to it, because the completed RPPL
+     * 2025 season now lives alongside it (see Rppl2025SeederTest).
+     */
+    private function edition2026(): Edition
     {
-        $this->assertSame(1, Edition::count());
+        return Edition::where('year', 2026)->firstOrFail();
+    }
 
-        $edition = Edition::firstOrFail();
+    private function assertTwoEditionsSharingFourTeams(): void
+    {
+        $this->assertSame(2, Edition::count());
+
+        $edition = $this->edition2026();
         $this->assertSame('RPPL 2026', $edition->name);
         $this->assertSame('active', $edition->status);
 
+        $previous = Edition::where('year', 2025)->firstOrFail();
+        $this->assertSame('RPPL 2025', $previous->name);
+        $this->assertSame('completed', $previous->status);
+
         $this->assertSame(4, Team::count());
         $this->assertSame(4, EditionTeam::where('edition_id', $edition->id)->count());
+        $this->assertSame(4, EditionTeam::where('edition_id', $previous->id)->count());
+        // Same master teams, but each season has its own participation rows.
+        $this->assertSame([], EditionTeam::where('edition_id', $previous->id)->pluck('id')->intersect(EditionTeam::where('edition_id', $edition->id)->pluck('id'))->all());
 
         $this->assertEqualsCanonicalizing(
             ['MI', 'RCB', 'CSK', 'KKR'],
@@ -82,12 +99,16 @@ class DemoDataSeederTest extends TestCase
         );
     }
 
-    private function assertSixtyPlayersFullyRegisteredAndSquadded(): void
+    private function assertSixtyPlayersRegisteredAndSquadded(): void
     {
-        $this->assertSame(60, Player::count());
+        // 60 squad players plus 4 extra 2026 registrants who are not (yet)
+        // squadded and sit in pending/failed/refunded payment states.
+        $this->assertSame(64, Player::count());
 
-        $edition = Edition::firstOrFail();
-        $this->assertSame(60, PlayerRegistration::where('edition_id', $edition->id)->count());
+        $edition = $this->edition2026();
+        $this->assertSame(64, PlayerRegistration::where('edition_id', $edition->id)->count());
+        $this->assertSame(60, TeamPlayer::whereIn('edition_team_id', EditionTeam::where('edition_id', $edition->id)->pluck('id'))->count());
+        $this->assertSame(2, PlayerRegistration::where('edition_id', $edition->id)->where('payment_status', 'pending')->count());
 
         // Every seeded registration was created without a payment proof
         // and without ever dispatching OCR — ocr_status must reflect
@@ -104,7 +125,7 @@ class DemoDataSeederTest extends TestCase
 
     private function assertSixFixturesWithThreeCompletedAndThreeScheduled(): void
     {
-        $edition = Edition::firstOrFail();
+        $edition = $this->edition2026();
 
         $this->assertSame(6, GameMatch::where('edition_id', $edition->id)->count());
         $this->assertSame(3, GameMatch::where('edition_id', $edition->id)->where('match_status', 'completed')->count());
@@ -121,7 +142,7 @@ class DemoDataSeederTest extends TestCase
 
     private function assertCompletedMatchesHaveConsistentBallByBallData(): void
     {
-        $completed = GameMatch::where('match_status', 'completed')->get();
+        $completed = GameMatch::where('edition_id', $this->edition2026()->id)->where('match_status', 'completed')->get();
         $this->assertCount(3, $completed);
 
         foreach ($completed as $match) {
@@ -160,7 +181,7 @@ class DemoDataSeederTest extends TestCase
 
     private function assertStandingsDeriveFromSeededResults(): void
     {
-        $edition = Edition::firstOrFail();
+        $edition = $this->edition2026();
 
         // Must not throw for a seeded edition with real completed-match
         // Delivery data — the same service the public standings page and
@@ -179,7 +200,7 @@ class DemoDataSeederTest extends TestCase
 
     private function assertSmallFinanceDatasetExists(): void
     {
-        $edition = Edition::firstOrFail();
+        $edition = $this->edition2026();
 
         $this->assertGreaterThan(0, EditionTransaction::where('edition_id', $edition->id)->count());
         $this->assertGreaterThan(0, EditionContribution::where('edition_id', $edition->id)->count());

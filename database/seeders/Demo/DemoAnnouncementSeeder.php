@@ -23,6 +23,19 @@ class DemoAnnouncementSeeder extends Seeder
         ['message' => '🏆 Follow RPPL tournament updates here', 'sort_order' => 2],
     ];
 
+    /**
+     * Historical announcements that never reach the live ticker: one
+     * whose window has ended (computed status "expired") and one switched
+     * off (computed status "disabled"). Absolute dates keep them in the
+     * past forever.
+     *
+     * @var list<array{message: string, sort_order: int, is_active: bool, starts_at: string|null, ends_at: string|null}>
+     */
+    private const HISTORICAL = [
+        ['message' => 'RPPL 2025 player registration is open until 15 March', 'sort_order' => 10, 'is_active' => true, 'starts_at' => '2025-02-01 04:30:00', 'ends_at' => '2025-03-15 14:30:00'],
+        ['message' => 'Match day schedule for RPPL 2025 will be shared soon', 'sort_order' => 11, 'is_active' => false, 'starts_at' => null, 'ends_at' => null],
+    ];
+
     public function run(): void
     {
         $admin = User::where('email', 'admin@rppl.test')->first();
@@ -37,6 +50,19 @@ class DemoAnnouncementSeeder extends Seeder
                 [
                     'sort_order' => $announcement['sort_order'],
                     'is_active' => true,
+                    'created_by' => $admin->id,
+                ]
+            );
+        }
+
+        foreach (self::HISTORICAL as $announcement) {
+            Announcement::firstOrCreate(
+                ['message' => $announcement['message']],
+                [
+                    'sort_order' => $announcement['sort_order'],
+                    'is_active' => $announcement['is_active'],
+                    'starts_at' => $announcement['starts_at'],
+                    'ends_at' => $announcement['ends_at'],
                     'created_by' => $admin->id,
                 ]
             );
