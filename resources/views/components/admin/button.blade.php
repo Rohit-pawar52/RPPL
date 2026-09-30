@@ -2,7 +2,9 @@
 
 @php
     $variants = [
-        'primary' => 'bg-green-600 text-white hover:bg-green-700 border border-green-600 hover:border-green-700',
+        // Follows the colours set in Settings -> General (theme-button reads the
+        // runtime --rppl-button variables), not a fixed colour.
+        'primary' => 'theme-button border border-transparent',
         'secondary' => 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-300',
         'danger' => 'bg-red-600 text-white hover:bg-red-700 border border-red-600 hover:border-red-700',
         'ghost' => 'bg-transparent text-slate-600 hover:bg-slate-100 border border-transparent',
@@ -12,7 +14,7 @@
         'md' => 'px-3.5 py-2 text-[13px] gap-1.5',
     ];
     $classes = 'inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-md font-medium transition-colors '
-        . 'focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 '
+        . 'focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 '
         . 'disabled:cursor-not-allowed disabled:opacity-60 '
         . ($variants[$variant] ?? $variants['primary']) . ' ' . ($sizes[$size] ?? $sizes['md']);
 @endphp

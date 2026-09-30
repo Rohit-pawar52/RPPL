@@ -24,7 +24,8 @@
                     @if($breadcrumb['group'])
                         <span class="hidden sm:inline">{{ $breadcrumb['group'] }}<span class="mx-1.5 text-slate-300" aria-hidden="true">/</span></span>
                     @endif
-                    <span class="font-medium text-slate-800">{{ $breadcrumb['item'] }}</span>
+                    {{-- The current page follows the configured primary colour (Settings -> General). --}}
+                    <span class="theme-primary-soft-bg theme-primary-text rounded-md px-2 py-0.5 font-medium">{{ $breadcrumb['item'] }}</span>
                 @else
                     <span class="font-medium text-slate-800">{{ $branding->shortName }} Admin</span>
                 @endif
