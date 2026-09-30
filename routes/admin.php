@@ -106,6 +106,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('super-over', [MatchFlowController::class, 'recordSuperOverResult'])->name('super-over');
             Route::post('reopen', [MatchFlowController::class, 'reopen'])->name('reopen');
 
+            // Manual recovery for the rare case where finalize's own
+            // automatic result-notification attempt failed to queue —
+            // reuses the same atomic claim, so it's a safe no-op if
+            // already dispatched or the match isn't eligible.
+            Route::post('resend-result-notification', [MatchFlowController::class, 'resendResultNotification'])->name('resend-result-notification');
+
             // Innings lifecycle (Phase 3.12) — explicit workflow actions,
             // not Route::resource('innings'): innings identity is derived
             // domain data, never a generic create/edit form.
@@ -240,6 +246,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('fcm-tokens/stale', [DataCleanupController::class, 'destroyStaleFcmTokens'])->name('fcm-tokens.destroy-stale');
             Route::delete('registration-documents', [DataCleanupController::class, 'destroyRegistrationDocuments'])->name('registration-documents.destroy');
             Route::delete('failed-jobs', [DataCleanupController::class, 'destroyFailedJobs'])->name('failed-jobs.destroy');
+            Route::get('failed-jobs/{uuid}', [DataCleanupController::class, 'failedJobDetail'])->name('failed-jobs.show');
         });
         Route::prefix('edition-contributions/{edition_contribution}')->name('edition-contributions.')->group(function () {
             Route::get('receipt', [EditionContributionController::class, 'receipt'])->name('receipt');

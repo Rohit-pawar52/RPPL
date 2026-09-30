@@ -109,14 +109,28 @@ class SettingsController extends Controller
 
         $data = $request->validated();
 
-        $this->settings->setMany([
+        $values = [
             'system.maintenance_mode' => $request->boolean('maintenance_mode'),
             'system.maintenance_message' => $data['maintenance_message'] ?? null,
             'system.currency' => $data['currency'],
             'system.currency_symbol' => $data['currency_symbol'],
             'system.display_timezone' => $data['display_timezone'],
             'finance.committee_minimum_contribution' => $data['committee_minimum_contribution'],
-        ]);
+        ];
+
+        // Tournament-Day Morning Reminder fields are only written when
+        // actually submitted — the System tab form always posts both (the
+        // checkbox via a hidden "0" fallback), but any other caller that
+        // omits them keeps the currently stored values untouched.
+        if ($request->filled('tournament_day_reminder_enabled')) {
+            $values['notifications.tournament_day_reminder_enabled'] = $request->boolean('tournament_day_reminder_enabled');
+        }
+
+        if (! empty($data['tournament_day_reminder_time'])) {
+            $values['notifications.tournament_day_reminder_time'] = $data['tournament_day_reminder_time'];
+        }
+
+        $this->settings->setMany($values);
 
         return redirect()->route('admin.settings.index', ['tab' => 'system'])
             ->with('success', 'System settings updated.');

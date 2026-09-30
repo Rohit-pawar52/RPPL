@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Edition extends Model
@@ -22,14 +23,36 @@ class Edition extends Model
         'status',
         'registration_open',
         'registration_fee',
+        'registration_opens_at',
+        'registration_closes_at',
+        'registration_reminder_enabled',
+        'registration_reminder_minutes_before',
+        'registration_reminder_dispatched_at',
+        'registration_reminder_notification_id',
     ];
+
+    public const REGISTRATION_STATE_OPEN = 'open';
+
+    public const REGISTRATION_STATE_NOT_YET_OPEN = 'not_yet_open';
+
+    public const REGISTRATION_STATE_CLOSED = 'closed';
 
     protected function casts(): array
     {
         return [
             'registration_open' => 'boolean',
             'registration_fee' => 'decimal:2',
+            'registration_opens_at' => 'datetime',
+            'registration_closes_at' => 'datetime',
+            'registration_reminder_enabled' => 'boolean',
+            'registration_reminder_minutes_before' => 'integer',
+            'registration_reminder_dispatched_at' => 'datetime',
         ];
+    }
+
+    public function registrationReminderNotification(): BelongsTo
+    {
+        return $this->belongsTo(Notification::class, 'registration_reminder_notification_id');
     }
 
     public function playerRegistrations(): HasMany
@@ -107,9 +130,47 @@ class Edition extends Model
      */
     public function scopeAcceptingPublicRegistration(Builder $query): Builder
     {
+        $now = now();
+
+        return $query->publicRegistrationEnabled()
+            ->where(fn (Builder $q) => $q->whereNull('registration_opens_at')->orWhere('registration_opens_at', '<=', $now))
+            ->where(fn (Builder $q) => $q->whereNull('registration_closes_at')->orWhere('registration_closes_at', '>', $now));
+    }
+
+    /**
+     * The admin-controlled switch alone (status/registration_open/fee),
+     * ignoring the optional opens_at/closes_at window — used to find the
+     * edition whose window hasn't started yet, so the public page can
+     * say "not opened yet" rather than "closed".
+     */
+    public function scopePublicRegistrationEnabled(Builder $query): Builder
+    {
         return $query->openForParticipation()
             ->where('registration_open', true)
             ->whereNotNull('registration_fee');
+    }
+
+    /**
+     * The single source of truth for public registration availability:
+     * the existing switch must be on, and when a window is configured,
+     * now must fall inside it (opens_at inclusive, closes_at exclusive).
+     * Null dates impose no limit, so pre-window editions are unaffected.
+     */
+    public function publicRegistrationState(): string
+    {
+        if ($this->status === 'completed' || ! $this->registration_open || $this->registration_fee === null) {
+            return self::REGISTRATION_STATE_CLOSED;
+        }
+
+        if ($this->registration_closes_at !== null && ! $this->registration_closes_at->isFuture()) {
+            return self::REGISTRATION_STATE_CLOSED;
+        }
+
+        if ($this->registration_opens_at !== null && $this->registration_opens_at->isFuture()) {
+            return self::REGISTRATION_STATE_NOT_YET_OPEN;
+        }
+
+        return self::REGISTRATION_STATE_OPEN;
     }
 
     /**
@@ -119,9 +180,21 @@ class Edition extends Model
      */
     public function isAcceptingPublicRegistration(): bool
     {
-        return $this->status !== 'completed'
-            && $this->registration_open
-            && $this->registration_fee !== null;
+        return $this->publicRegistrationState() === self::REGISTRATION_STATE_OPEN;
+    }
+
+    /**
+     * Structural candidates only; the derived due instant
+     * (closes_at - minutes_before) is checked per row in
+     * RegistrationClosingReminderService, like GameMatch::scopeDueForReminder().
+     */
+    public function scopeDueForRegistrationReminder(Builder $query): Builder
+    {
+        return $query->acceptingPublicRegistration()
+            ->where('registration_reminder_enabled', true)
+            ->whereNotNull('registration_reminder_minutes_before')
+            ->whereNotNull('registration_closes_at')
+            ->whereNull('registration_reminder_dispatched_at');
     }
 
     /**

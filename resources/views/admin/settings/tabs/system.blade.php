@@ -40,6 +40,37 @@
         Target total contribution expected from each committee member — reachable across several smaller payments (installments), not a minimum per payment. Changing this changes the displayed dues target for every edition, including past ones; already-recorded contribution amounts are never affected.
     </p>
 
+    @php
+        $tournamentDayReminderChecked = old('tournament_day_reminder_enabled', $settings->boolean('notifications.tournament_day_reminder_enabled') ? '1' : '0') === '1';
+    @endphp
+    <div class="mb-3.5 border-t border-neutral-100 pt-3.5">
+        <p class="mb-2 text-xs font-medium text-neutral-700">Tournament Day Morning Reminder</p>
+
+        <input type="hidden" name="tournament_day_reminder_enabled" value="0" />
+        <label class="flex items-center gap-2 text-[13px] text-neutral-700">
+            <input
+                type="checkbox"
+                name="tournament_day_reminder_enabled"
+                value="1"
+                {{ $tournamentDayReminderChecked ? 'checked' : '' }}
+                class="theme-focus-ring"
+            />
+            Send one morning push summarizing each edition's matches on a match day
+        </label>
+
+        <div class="mt-2 max-w-40">
+            <x-form.input
+                name="tournament_day_reminder_time"
+                label="Send at (display timezone)"
+                type="time"
+                :value="$settings->get('notifications.tournament_day_reminder_time')"
+            />
+        </div>
+        <p class="-mt-3 text-[11px] text-neutral-400">
+            Sent once per edition per match day, at or after this time. Nothing is sent after 12:00 noon, so choose a morning time.
+        </p>
+    </div>
+
     <p class="mb-3.5 text-[11px] text-neutral-400">
         Maintenance mode and display timezone are live — enabling maintenance mode immediately blocks the public website, and the display timezone controls how dates/times are shown across the site. Currency/currency symbol are consumed application-wide via the <code>money()</code> helper (dashboard, reports, PDFs, the public registration flow).
     </p>

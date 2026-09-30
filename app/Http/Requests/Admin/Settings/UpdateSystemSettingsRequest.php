@@ -35,6 +35,11 @@ class UpdateSystemSettingsRequest extends FormRequest
             // runtime timezone in this phase.
             'display_timezone' => ['required', 'timezone'],
             'committee_minimum_contribution' => ['required', 'numeric', 'min:0'],
+            // Tournament-Day Morning Reminder — both optional: when a
+            // request omits them entirely, SettingsController keeps the
+            // currently stored values rather than resetting them.
+            'tournament_day_reminder_enabled' => ['nullable', 'boolean'],
+            'tournament_day_reminder_time' => ['nullable', 'date_format:H:i'],
         ];
     }
 }

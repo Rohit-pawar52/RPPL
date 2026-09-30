@@ -14,6 +14,7 @@ use App\Models\Notification;
 use App\Models\NotificationSend;
 use App\Services\DataCleanup\DataCleanupLogger;
 use App\Services\DataCleanup\FailedJobCleanupService;
+use App\Services\DataCleanup\FailedJobViewService;
 use App\Services\DataCleanup\RegistrationDocumentCleanupService;
 use App\Services\Notification\NotificationDataCleanupService;
 use App\Services\Settings\DisplayTimezoneFormatter;
@@ -44,10 +45,13 @@ class DataCleanupController extends Controller
 {
     private const TABS = ['notifications', 'registration-documents', 'system'];
 
+    private const FAILED_JOBS_PER_PAGE = 20;
+
     public function __construct(
         private readonly NotificationDataCleanupService $notifications,
         private readonly RegistrationDocumentCleanupService $documents,
         private readonly FailedJobCleanupService $failedJobs,
+        private readonly FailedJobViewService $failedJobViews,
         private readonly DataCleanupLogger $logger,
         private readonly DisplayTimezoneFormatter $timezoneFormatter,
         private readonly SettingsService $settings,
@@ -74,6 +78,30 @@ class DataCleanupController extends Controller
             'editions' => Edition::orderByDesc('year')->get(['id', 'name', 'year', 'registration_open']),
             'documentTypes' => RegistrationDocumentCleanupService::TYPES,
             'failedJobCount' => DB::table('failed_jobs')->count(),
+            // Read-only Failed Jobs list — only queried when the System
+            // tab is actually open, so the other tabs pay nothing for it.
+            'failedJobList' => $tab === 'system'
+                ? $this->failedJobViews->paginate(self::FAILED_JOBS_PER_PAGE)->withQueryString()
+                : null,
+        ]);
+    }
+
+    /**
+     * Read-only detail for one failed job (inspection only — no retry,
+     * no delete). Shows derived safe fields plus the full exception
+     * text; the raw payload is never passed to the view. An unknown or
+     * already-cleaned-up UUID is a plain 404, never a crash.
+     */
+    public function failedJobDetail(string $uuid): View
+    {
+        $this->authorize('manage-tournament');
+
+        $failedJob = $this->failedJobViews->find($uuid);
+
+        abort_if($failedJob === null, 404);
+
+        return view('admin.data-cleanup.failed-jobs.show', [
+            'failedJob' => $failedJob,
         ]);
     }
 

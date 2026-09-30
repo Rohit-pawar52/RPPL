@@ -6,8 +6,13 @@
     @if(! $edition)
         <div class="rounded-lg border border-neutral-200 bg-white p-6 text-center">
             <h1 class="text-base font-semibold text-neutral-900">{{ __('registration.form.heading') }}</h1>
-            <p class="mt-2 text-sm text-neutral-500">{{ __('registration.closed.message') }}</p>
-            <p class="mt-1 text-xs text-neutral-400">{{ __('registration.closed.contact', ['league' => $branding->shortName]) }}</p>
+            @if($upcomingEdition ?? null)
+                <p class="mt-2 text-sm text-neutral-500">{{ __('registration.window.not_yet_open') }}</p>
+                <p class="mt-1 text-xs text-neutral-400">{{ __('registration.window.opens_on', ['date' => display_datetime($upcomingEdition->registration_opens_at, 'd M Y, h:i A')]) }}</p>
+            @else
+                <p class="mt-2 text-sm text-neutral-500">{{ __('registration.closed.message') }}</p>
+                <p class="mt-1 text-xs text-neutral-400">{{ __('registration.closed.contact', ['league' => $branding->shortName]) }}</p>
+            @endif
             <p class="mt-4 text-xs text-neutral-500">
                 {{ __('registration.form.already_registered') }}
                 <a href="{{ route('public.player-registration.status') }}" class="font-medium theme-link hover:underline">{{ __('registration.form.check_status_link') }}</a>
@@ -19,6 +24,9 @@
             <p class="mt-1 text-xs text-neutral-500">
                 {{ __('registration.form.fee_label') }} <span class="font-medium text-neutral-800">{{ money($edition->registration_fee) }}</span>
             </p>
+            @if($edition->registration_closes_at)
+                <p class="mt-1 text-xs text-neutral-500">{{ __('registration.window.closes_on', ['date' => display_datetime($edition->registration_closes_at, 'd M Y, h:i A')]) }}</p>
+            @endif
             <p class="mt-2 text-xs text-neutral-500">
                 {{ __('registration.form.payment_instructions', ['league' => $branding->shortName]) }}
             </p>
