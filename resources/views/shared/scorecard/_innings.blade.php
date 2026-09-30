@@ -39,7 +39,7 @@
 
     {{-- Batting --}}
     <div class="mt-4 overflow-x-auto">
-        <table class="w-full min-w-[520px] text-left text-[13px]">
+        <table class="w-full min-w-[340px] md:min-w-[520px] text-left text-[13px]">
             <thead class="border-b border-neutral-200 text-[11px] uppercase tracking-wide text-neutral-400">
                 <tr>
                     <th class="px-2 py-1.5 font-medium">Batter</th>
@@ -111,7 +111,7 @@
 
     {{-- Bowling --}}
     <div class="mt-4 overflow-x-auto">
-        <table class="w-full min-w-[520px] text-left text-[13px]">
+        <table class="w-full min-w-[340px] md:min-w-[520px] text-left text-[13px]">
             <thead class="border-b border-neutral-200 text-[11px] uppercase tracking-wide text-neutral-400">
                 <tr>
                     <th class="px-2 py-1.5 font-medium">Bowler</th>

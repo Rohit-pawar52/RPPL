@@ -428,3 +428,53 @@ details[open] > .rppl-pop {
 .pub-shell summary::-webkit-details-marker {
     display: none;
 }
+
+/* Match experience */
+@layer components {
+    /* Ball-by-ball outcome badge (commentary + recent deliveries) */
+    .ball-badge {
+        @apply flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 px-1.5 text-[11px] font-bold tabular-nums text-slate-600;
+    }
+    .ball-badge-four {
+        @apply bg-indigo-600 text-white;
+    }
+    .ball-badge-six {
+        @apply bg-green-600 text-white;
+    }
+    .ball-badge-wicket {
+        @apply bg-red-600 text-white;
+    }
+    .ball-badge-extra {
+        @apply bg-amber-100 text-amber-800;
+    }
+
+    /* Match card: LIVE stands out with a green edge + tint */
+    .match-card {
+        @apply relative flex flex-1 flex-col gap-3 rounded-xl border border-line bg-white p-4 shadow-[0_1px_2px_rgba(15,34,51,0.05)] transition duration-150 hover:-translate-y-px hover:border-slate-300 hover:shadow-md;
+    }
+    .match-card-live {
+        @apply border-green-200 border-l-4 border-l-green-500 bg-green-50/50 hover:border-green-300;
+    }
+    .match-card-live:hover {
+        border-left-color: var(--color-green-600);
+    }
+
+    /* Compact list row used inside cards (edition / venue pages, home lists) */
+    .match-row {
+        @apply flex items-center justify-between gap-3 border-b border-line px-4 py-3 text-[13px] last:border-b-0;
+    }
+    a.match-row {
+        @apply transition hover:bg-slate-50;
+    }
+
+    /* Score figure */
+    .score-figure {
+        @apply text-2xl font-bold leading-none tracking-tight tabular-nums text-slate-900;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .match-card {
+        transition: none;
+    }
+}

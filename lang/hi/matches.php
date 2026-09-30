@@ -70,6 +70,7 @@ return [
         'no_scheduled' => 'अभी कोई मैच तय नहीं है।',
         'no_completed' => 'अभी तक कोई मैच पूरा नहीं हुआ।',
         'follow_live' => 'लाइव देखें',
+        'subtitle' => 'मैच, लाइव स्कोर और नतीजे',
     ],
 
     'info' => [
@@ -85,6 +86,11 @@ return [
             'bowl' => 'गेंदबाज़ी',
         ],
         'innings' => 'पारी',
+        'details' => 'मैच विवरण',
+        'format' => 'प्रारूप',
+        'date' => 'दिनांक और समय',
+        'edition' => 'संस्करण',
+        'stage' => 'चरण',
     ],
 
     'squads' => [
@@ -107,6 +113,8 @@ return [
 
     'live' => [
         'this_over' => 'यह ओवर',
+        'commentary' => 'कमेंट्री',
+        'auto_updates' => 'अपने-आप अपडेट होता है',
     ],
 
     'chase' => [
