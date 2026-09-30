@@ -64,6 +64,12 @@ Phase 3.48 collapsed what used to be three separate concepts (Finance ledger, Co
 - Contributors can have an optional public profile photo, managed from the admin Contributor form.
 - The legacy `committee_members` table and a few pre-3.48 rows' `committee_member_id` columns are kept (not physically dropped) purely for historical traceability — no admin UI reads or writes them any more; old `admin/committee-members/*` links redirect to the new Finance/Committee/Contributor pages instead of 404ing.
 
+### Public website design
+
+- The whole public site shares one design: a deep navy header and footer, a light blue-grey page, white cards, green for live/active states and slate for secondary text, with compact spacing and no large banners. A small set of shared styles and components (cards, buttons, status pills, tabs, responsive tables) keeps every page consistent.
+- Matches read like a live-cricket platform: a live match shows a green "LIVE" card on the homepage and a match page with the score, chase info, colour-coded ball-by-ball commentary (4 / 6 / wicket / extras) and a Match Details panel; scorecards, squads and match info share one header with tabs. Everything shown comes from existing match data.
+- Fully responsive: the header becomes a single menu on phones and tablets, tables scroll sideways instead of breaking the page, and pages (including the live page) are laid out for a phone rather than just stacked. English and Hindi are unchanged.
+
 ### Public player registration (guest, no login)
 
 A self-serve replacement for collecting player registrations via a form, entirely on the public site:

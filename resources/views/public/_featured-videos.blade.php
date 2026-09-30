@@ -5,15 +5,15 @@
     loses no vertical space to an unused section.
 --}}
 @if($featuredVideos->isNotEmpty())
-    <section class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
+    <section class="mt-4">
         <div class="mb-2 flex items-center justify-between gap-2">
-            <h2 class="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
-                <x-icon name="play" class="h-4 w-4" />
+            <h2 class="pub-h2 inline-flex items-center gap-1.5">
+                <x-icon name="play" class="h-4 w-4 text-green-600" />
                 {{ __('directory.videos.featured') }}
             </h2>
-            <a href="{{ route('public.videos.index') }}" class="text-[11px] font-medium theme-link hover:underline">{{ __('directory.videos.view_all') }} &rarr;</a>
+            <a href="{{ route('public.videos.index') }}" class="pub-link text-xs">{{ __('directory.videos.view_all') }} &rarr;</a>
         </div>
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach($featuredVideos as $video)
                 @include('public._video-card', ['video' => $video])
             @endforeach

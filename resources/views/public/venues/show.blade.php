@@ -3,40 +3,36 @@
 @section('title', $venue->name.' · '.$branding->shortName)
 
 @section('content')
-    <a href="{{ route('public.venues.index') }}" class="mb-4 inline-block text-xs text-neutral-500 hover:text-neutral-700">
-        &larr; {{ __('directory.venues.back') }}
+    <a href="{{ route('public.venues.index') }}" class="mb-2 inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-900">
+        <span aria-hidden="true">&larr;</span> {{ __('directory.venues.back') }}
     </a>
 
-    <div class="rounded-lg border border-neutral-200 bg-white p-4">
-        <div class="flex items-center gap-4">
-            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-neutral-300">
-                <x-icon name="map-pin" class="h-5 w-5" />
-            </div>
-            <div>
-                <h1 class="text-base font-semibold text-neutral-900">{{ $venue->name }}</h1>
-                <p class="text-xs text-neutral-500">
-                    {{ collect([$venue->city, $venue->country])->filter()->implode(', ') ?: __('directory.venues.location_unavailable') }}
-                    &middot; {{ trans_choice('directory.venues.match_count', $venue->matches_count) }}
-                </p>
-            </div>
+    <div class="pub-card flex items-center gap-4 p-4 sm:p-5">
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-green-50 text-green-700">
+            <x-icon name="map-pin" class="h-6 w-6" />
+        </div>
+        <div class="min-w-0">
+            <h1 class="pub-h1 break-words">{{ $venue->name }}</h1>
+            <p class="pub-meta mt-0.5">
+                {{ collect([$venue->city, $venue->country])->filter()->implode(', ') ?: __('directory.venues.location_unavailable') }}
+                &middot; {{ trans_choice('directory.venues.match_count', $venue->matches_count) }}
+            </p>
         </div>
     </div>
 
-    <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{{ __('directory.venues.upcoming_live') }}</h3>
+    <x-public.card class="mt-4" :title="__('directory.venues.upcoming_live')">
         @forelse($upcomingMatches as $match)
             @include('public.matches._list-row', ['match' => $match])
         @empty
-            <p class="py-4 text-center text-xs text-neutral-400">{{ __('directory.venues.upcoming_empty') }}</p>
+            <x-public.empty class="!py-4">{{ __('directory.venues.upcoming_empty') }}</x-public.empty>
         @endforelse
-    </div>
+    </x-public.card>
 
-    <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{{ __('directory.venues.recent_completed') }}</h3>
+    <x-public.card class="mt-4" :title="__('directory.venues.recent_completed')">
         @forelse($completedMatches as $match)
             @include('public.matches._list-row', ['match' => $match])
         @empty
-            <p class="py-4 text-center text-xs text-neutral-400">{{ __('directory.venues.completed_empty') }}</p>
+            <x-public.empty class="!py-4">{{ __('directory.venues.completed_empty') }}</x-public.empty>
         @endforelse
-    </div>
+    </x-public.card>
 @endsection
