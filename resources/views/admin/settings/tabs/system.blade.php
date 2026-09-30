@@ -71,6 +71,39 @@
         </p>
     </div>
 
+    @php
+        $failedJobsAutoCleanupChecked = old('failed_jobs_auto_cleanup_enabled', $settings->boolean('system.failed_jobs_auto_cleanup_enabled') ? '1' : '0') === '1';
+    @endphp
+    <div class="mb-3.5 border-t border-neutral-100 pt-3.5">
+        <p class="mb-2 text-xs font-medium text-neutral-700">Failed Job Cleanup</p>
+
+        <input type="hidden" name="failed_jobs_auto_cleanup_enabled" value="0" />
+        <label class="flex items-center gap-2 text-[13px] text-neutral-700">
+            <input
+                type="checkbox"
+                name="failed_jobs_auto_cleanup_enabled"
+                value="1"
+                {{ $failedJobsAutoCleanupChecked ? 'checked' : '' }}
+                class="theme-focus-ring"
+            />
+            Automatically delete old failed jobs
+        </label>
+
+        <div class="mt-2 max-w-40">
+            <x-form.input
+                name="failed_jobs_retention_days"
+                label="Retention period (days)"
+                type="number"
+                min="7"
+                max="365"
+                :value="$settings->integer('system.failed_jobs_retention_days')"
+            />
+        </div>
+        <p class="-mt-3 text-[11px] text-neutral-400">
+            Failed jobs older than this retention period will be automatically removed once a day. Recent failed jobs remain available in Data Cleanup for inspection.
+        </p>
+    </div>
+
     <p class="mb-3.5 text-[11px] text-neutral-400">
         Maintenance mode and display timezone are live — enabling maintenance mode immediately blocks the public website, and the display timezone controls how dates/times are shown across the site. Currency/currency symbol are consumed application-wide via the <code>money()</code> helper (dashboard, reports, PDFs, the public registration flow).
     </p>
