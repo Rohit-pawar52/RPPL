@@ -36,8 +36,18 @@
         'not paid' => 'bg-red-50 text-red-700 ring-red-200',
     ];
     $style = $styles[$status] ?? 'bg-neutral-100 text-neutral-600 ring-neutral-200';
+
+    // Shared by Admin and Public — Admin never runs with locale 'hi'
+    // (SetPublicLocale is only ever registered on the public route
+    // group), so this is a no-op there regardless. On a public Hindi
+    // request, translate only when a key actually exists for $status;
+    // otherwise fall back to the exact original (English) value rather
+    // than ever printing a missing-translation key literal.
+    $displayStatus = app()->getLocale() !== 'en' && \Illuminate\Support\Facades\Lang::has('public.status.'.$status)
+        ? __('public.status.'.$status)
+        : $status;
 @endphp
 
 <span class="inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ring-1 ring-inset {{ $style }}">
-    {{ $status }}
+    {{ $displayStatus }}
 </span>

@@ -1,10 +1,10 @@
 @extends('layouts.public')
 
-@section('title', 'Videos · '.$branding->shortName)
+@section('title', __('directory.videos.title').' · '.$branding->shortName)
 
 @section('content')
     <div class="mb-4">
-        <h1 class="text-base font-semibold text-neutral-900">Videos</h1>
+        <h1 class="text-base font-semibold text-neutral-900">{{ __('directory.videos.title') }}</h1>
     </div>
 
     <div class="rounded-lg border border-neutral-200 bg-white p-4">
@@ -12,7 +12,7 @@
             @forelse($videos as $video)
                 @include('public._video-card', ['video' => $video])
             @empty
-                <p class="col-span-full py-4 text-center text-xs text-neutral-400">No videos available yet.</p>
+                <p class="col-span-full py-4 text-center text-xs text-neutral-400">{{ __('directory.videos.empty') }}</p>
             @endforelse
         </div>
 

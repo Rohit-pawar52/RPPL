@@ -19,7 +19,7 @@
             @if($video->thumbnail_path) poster="{{ Illuminate\Support\Facades\Storage::url($video->thumbnail_path) }}" @endif
         >
             <source src="{{ Illuminate\Support\Facades\Storage::url($video->video_path) }}" />
-            Your browser does not support embedded video.
+            {{ __('directory.videos.unsupported') }}
         </video>
     </div>
     <div class="p-3">

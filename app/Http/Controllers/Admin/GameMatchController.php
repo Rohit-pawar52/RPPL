@@ -161,6 +161,11 @@ class GameMatchController extends Controller
 
         $data = $request->validated();
         $data['scheduled_at'] = $this->displayTimezone->parseFromDisplayTimezone($data['scheduled_at']);
+        // A checkbox omits itself from the request entirely when
+        // unchecked, so validated() would simply not include the key —
+        // read it explicitly rather than trusting an absent key to mean
+        // "leave unset" (mirrors AnnouncementController's is_active).
+        $data['reminder_enabled'] = $request->boolean('reminder_enabled');
 
         $this->matches->createMatch($data);
 
@@ -261,6 +266,7 @@ class GameMatchController extends Controller
         if (array_key_exists('scheduled_at', $data)) {
             $data['scheduled_at'] = $this->displayTimezone->parseFromDisplayTimezone($data['scheduled_at']);
         }
+        $data['reminder_enabled'] = $request->boolean('reminder_enabled');
 
         $this->matches->updateMatch($match, $data);
 

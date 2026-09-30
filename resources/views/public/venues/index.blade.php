@@ -1,21 +1,21 @@
 @extends('layouts.public')
 
-@section('title', 'Venues · '.$branding->shortName)
+@section('title', __('directory.venues.title').' · '.$branding->shortName)
 
 @section('content')
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 class="text-base font-semibold text-neutral-900">Venues</h1>
+        <h1 class="text-base font-semibold text-neutral-900">{{ __('directory.venues.title') }}</h1>
 
         <form method="GET" action="{{ route('public.venues.index') }}" class="flex items-center gap-2">
             <input
                 type="text"
                 name="search"
                 value="{{ $search }}"
-                placeholder="Search by name or city"
+                placeholder="{{ __('directory.venues.search_placeholder') }}"
                 class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
             />
             <button type="submit" class="rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
-                Search
+                {{ __('directory.common.search') }}
             </button>
         </form>
     </div>
@@ -33,12 +33,12 @@
                     <div class="min-w-0">
                         <p class="truncate text-sm font-medium text-neutral-900">{{ $venue->name }}</p>
                         <p class="truncate text-xs text-neutral-500">
-                            {{ collect([$venue->city, $venue->country])->filter()->implode(', ') ?: 'Location unavailable' }}
+                            {{ collect([$venue->city, $venue->country])->filter()->implode(', ') ?: __('directory.venues.location_unavailable') }}
                         </p>
                     </div>
                 </a>
             @empty
-                <p class="col-span-full py-4 text-center text-xs text-neutral-400">No venues available yet.</p>
+                <p class="col-span-full py-4 text-center text-xs text-neutral-400">{{ __('directory.venues.empty') }}</p>
             @endforelse
         </div>
 

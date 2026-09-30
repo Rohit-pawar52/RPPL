@@ -101,3 +101,54 @@
         required
     />
 </div>
+
+{{--
+    Match reminder — a push notification sent shortly before the match,
+    via the same Notification/NotificationSend pipeline every other push
+    uses (see MatchReminderService). The due instant is always DERIVED
+    as scheduled_at minus the minutes below, never stored separately, so
+    rescheduling the match above automatically moves an unsent reminder
+    with it.
+--}}
+@php
+    $reminderAlreadySent = $match?->reminder_dispatched_at !== null;
+    $reminderChecked = old('reminder_enabled', $match->reminder_enabled ?? false);
+@endphp
+
+<div class="mt-4 border-t border-neutral-100 pt-3.5">
+    <p class="mb-2 text-xs font-medium text-neutral-700">Match Reminder</p>
+
+    @if($reminderAlreadySent)
+        <p class="rounded-md bg-neutral-50 px-3 py-2 text-[11px] text-neutral-500">
+            A reminder for this match has already been sent.
+        </p>
+    @else
+        <label class="flex items-center gap-2 text-[13px] text-neutral-700">
+            <input
+                type="checkbox"
+                name="reminder_enabled"
+                value="1"
+                {{ $reminderChecked ? 'checked' : '' }}
+                class="theme-focus-ring"
+            />
+            Send reminder before match
+        </label>
+
+        <div class="mt-2 max-w-40">
+            <x-form.input
+                name="reminder_minutes_before"
+                label="Reminder before (minutes)"
+                type="number"
+                min="1"
+                max="1440"
+                :value="$match->reminder_minutes_before ?? old('reminder_minutes_before', 30)"
+            />
+        </div>
+        <p class="mt-1 text-[11px] text-neutral-400">
+            Only used when "Send reminder before match" is checked.
+        </p>
+        @error('reminder_minutes_before')
+            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+        @enderror
+    @endif
+</div>

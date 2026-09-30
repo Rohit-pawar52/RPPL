@@ -24,7 +24,7 @@
                         <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75"></span>
                         <span class="relative inline-flex h-2 w-2 rounded-full bg-green-600"></span>
                     </span>
-                    Live
+                    {{ __('matches.centre.live') }}
                 </span>
 
                 @foreach($liveMatchData['innings'] as $innings)
@@ -37,21 +37,21 @@
 
                 @if($liveMatchData['chase'])
                     <p class="text-[11px] text-neutral-600">
-                        Need {{ $liveMatchData['chase']['runs_needed'] }} from {{ $liveMatchData['chase']['balls_remaining'] }} balls
+                        {{ __('matches.chase.need_from_balls', ['runs' => $liveMatchData['chase']['runs_needed'], 'balls' => $liveMatchData['chase']['balls_remaining']]) }}
                     </p>
                 @endif
 
-                <span class="mt-auto text-[11px] font-medium theme-link">View Live &rarr;</span>
+                <span class="mt-auto text-[11px] font-medium theme-link">{{ __('matches.centre.view_live') }} &rarr;</span>
             </a>
         @elseif($nextMatch)
             <a
                 href="{{ route('public.matches.show', $nextMatch) }}"
                 class="flex w-64 shrink-0 flex-col gap-1.5 rounded-lg border border-blue-200 bg-blue-50/60 p-3 hover:border-blue-300 hover:bg-blue-50"
             >
-                <span class="text-[11px] font-semibold uppercase tracking-wide text-blue-700">Next Match</span>
+                <span class="text-[11px] font-semibold uppercase tracking-wide text-blue-700">{{ __('matches.centre.next_match') }}</span>
                 <p class="text-[13px] font-medium text-neutral-800">
                     {{ $nextMatch->teamA->team->short_name ?: $nextMatch->teamA->team->name }}
-                    vs
+                    {{ __('matches.common.vs') }}
                     {{ $nextMatch->teamB->team->short_name ?: $nextMatch->teamB->team->name }}
                 </p>
                 <p class="text-[11px] text-neutral-600">
@@ -60,7 +60,7 @@
                         &middot; {{ $nextMatch->venue->name }}
                     @endif
                 </p>
-                <span class="mt-auto text-[11px] font-medium theme-link">Match Info &rarr;</span>
+                <span class="mt-auto text-[11px] font-medium theme-link">{{ __('matches.centre.match_info') }} &rarr;</span>
             </a>
         @endif
 
@@ -69,7 +69,7 @@
                 href="{{ route('public.matches.scorecard', $recentMatch) }}"
                 class="flex w-64 shrink-0 flex-col gap-1.5 rounded-lg border border-neutral-200 bg-white p-3 hover:bg-neutral-50"
             >
-                <span class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Recent Result</span>
+                <span class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{{ __('matches.centre.recent_result') }}</span>
 
                 @if($recentMatch->firstInnings)
                     <p class="text-[13px] text-neutral-800">
@@ -84,8 +84,8 @@
                     </p>
                 @endif
 
-                <p class="text-[11px] text-neutral-600">{{ $recentMatch->match_result ?: 'Result unavailable' }}</p>
-                <span class="mt-auto text-[11px] font-medium theme-link">Scorecard &rarr;</span>
+                <p class="text-[11px] text-neutral-600">{{ $recentMatch->match_result ?: __('matches.common.result_unavailable') }}</p>
+                <span class="mt-auto text-[11px] font-medium theme-link">{{ __('matches.centre.scorecard') }} &rarr;</span>
             </a>
         @endif
     </div>

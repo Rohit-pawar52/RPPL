@@ -1,23 +1,23 @@
 @extends('layouts.public')
 
-@section('title', 'Matches · '.$branding->shortName)
+@section('title', __('matches.list.title').' · '.$branding->shortName)
 
 @section('content')
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 class="text-base font-semibold text-neutral-900">Matches</h1>
+        <h1 class="text-base font-semibold text-neutral-900">{{ __('matches.list.title') }}</h1>
 
         <form method="GET" action="{{ route('public.matches.index') }}" class="flex items-center gap-2">
             <select
                 name="edition_id"
                 class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
             >
-                <option value="">All editions</option>
+                <option value="">{{ __('matches.list.all_editions') }}</option>
                 @foreach($editions as $edition)
                     <option value="{{ $edition->id }}" @selected($selectedEditionId === $edition->id)>{{ $edition->name }}</option>
                 @endforeach
             </select>
             <button type="submit" class="rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
-                Filter
+                {{ __('matches.list.filter') }}
             </button>
         </form>
     </div>
@@ -37,7 +37,7 @@
                     <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
                     <span class="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
                 </span>
-                Live Now
+                {{ __('matches.list.live_now') }}
             </h3>
             @foreach($liveMatches as $match)
                 @include('public.matches._list-row', ['match' => $match])
@@ -46,22 +46,22 @@
     @endif
 
     <div class="rounded-lg border border-neutral-200 bg-white p-3 sm:p-4">
-        <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Upcoming</h3>
+        <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{{ __('matches.list.upcoming') }}</h3>
         @forelse($scheduledMatches as $match)
             @include('public.matches._list-row', ['match' => $match])
         @empty
             <p class="py-4 text-center text-xs text-neutral-400">
-                {{ $liveMatches->isNotEmpty() ? 'No other matches scheduled yet.' : 'No matches scheduled yet.' }}
+                {{ $liveMatches->isNotEmpty() ? __('matches.list.no_other_scheduled') : __('matches.list.no_scheduled') }}
             </p>
         @endforelse
     </div>
 
     <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-3 sm:p-4">
-        <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Results</h3>
+        <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{{ __('matches.list.results') }}</h3>
         @forelse($past as $match)
             @include('public.matches._list-row', ['match' => $match])
         @empty
-            <p class="py-4 text-center text-xs text-neutral-400">No completed matches yet.</p>
+            <p class="py-4 text-center text-xs text-neutral-400">{{ __('matches.list.no_completed') }}</p>
         @endforelse
 
         @if($past->hasPages())

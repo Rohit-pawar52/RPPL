@@ -56,8 +56,8 @@ class StatusLookupPlayerRegistrationRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'registration_number.regex' => 'Enter your Registration Number exactly as given, e.g. RPPL-2026-000125.',
-            'phone.regex' => 'Enter a valid 10-digit Indian mobile number.',
+            'registration_number.regex' => __('registration.validation.registration_number_regex'),
+            'phone.regex' => __('registration.validation.phone_regex'),
         ];
     }
 }

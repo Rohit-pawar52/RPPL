@@ -8,7 +8,7 @@
     Optional: $ignoredMatchesCount
 --}}
 <div class="rounded-lg border border-neutral-200 bg-white p-4">
-    <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Points Table</h3>
+    <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{{ __('directory.standings.points_table') }}</h3>
 
     @isset($ignoredMatchesCount)
         @if($ignoredMatchesCount > 0)
@@ -24,13 +24,13 @@
             <thead class="border-b border-neutral-200 text-[11px] uppercase tracking-wide text-neutral-400">
                 <tr>
                     <th class="px-2 py-1.5 font-medium">#</th>
-                    <th class="px-2 py-1.5 font-medium">Team</th>
-                    <th class="px-2 py-1.5 text-right font-medium">P</th>
-                    <th class="hidden px-2 py-1.5 text-right font-medium sm:table-cell">W</th>
-                    <th class="hidden px-2 py-1.5 text-right font-medium sm:table-cell">L</th>
-                    <th class="hidden px-2 py-1.5 text-right font-medium sm:table-cell">T</th>
-                    <th class="hidden px-2 py-1.5 text-right font-medium sm:table-cell">NR</th>
-                    <th class="px-2 py-1.5 text-right font-medium">Pts</th>
+                    <th class="px-2 py-1.5 font-medium">{{ __('directory.standings.team') }}</th>
+                    <th class="px-2 py-1.5 text-right font-medium">{{ __('directory.standings.played') }}</th>
+                    <th class="hidden px-2 py-1.5 text-right font-medium sm:table-cell">{{ __('directory.standings.won') }}</th>
+                    <th class="hidden px-2 py-1.5 text-right font-medium sm:table-cell">{{ __('directory.standings.lost') }}</th>
+                    <th class="hidden px-2 py-1.5 text-right font-medium sm:table-cell">{{ __('directory.standings.tied') }}</th>
+                    <th class="hidden px-2 py-1.5 text-right font-medium sm:table-cell">{{ __('directory.standings.no_result') }}</th>
+                    <th class="px-2 py-1.5 text-right font-medium">{{ __('directory.standings.points') }}</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
@@ -47,7 +47,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="px-2 py-4 text-center text-neutral-400">No teams in this edition yet.</td>
+                        <td colspan="8" class="px-2 py-4 text-center text-neutral-400">{{ __('directory.standings.empty') }}</td>
                     </tr>
                 @endforelse
             </tbody>

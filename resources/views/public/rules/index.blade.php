@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Rules & Regulations · '.$branding->shortName)
+@section('title', __('directory.rules.title').' · '.$branding->shortName)
 
 {{--
     Public Rules & Regulations. Category tabs are plain links carrying
@@ -14,22 +14,22 @@
             <x-icon name="book" class="h-4 w-4" />
         </span>
         <div class="min-w-0">
-            <h1 class="text-base font-semibold text-neutral-900">Rules &amp; Regulations</h1>
+            <h1 class="text-base font-semibold text-neutral-900">{{ __('directory.rules.title') }}</h1>
             <p class="truncate text-[11px] text-neutral-500">{{ $branding->applicationName }}</p>
         </div>
     </div>
 
     @if($activeTypes->isEmpty())
         <div class="rounded-lg border border-neutral-200 bg-white p-4">
-            <p class="py-4 text-center text-xs text-neutral-400">Rules &amp; Regulations will be published here soon.</p>
+            <p class="py-4 text-center text-xs text-neutral-400">{{ __('directory.rules.empty') }}</p>
         </div>
     @else
         <div class="mb-4 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs leading-relaxed text-neutral-600" role="note">
-            <span class="font-semibold text-neutral-800">Committee decision:</span>
-            In any critical, exceptional, disputed, or unforeseen situation not clearly covered by these rules, the decision of the RPPL Committee shall be final.
+            <span class="font-semibold text-neutral-800">{{ __('directory.rules.committee_label') }}</span>
+            {{ __('directory.rules.committee_notice') }}
         </div>
 
-        <nav class="-mx-4 mb-4 overflow-x-auto border-b border-neutral-200 px-4 sm:mx-0 sm:px-0" aria-label="Rule categories">
+        <nav class="-mx-4 mb-4 overflow-x-auto border-b border-neutral-200 px-4 sm:mx-0 sm:px-0" aria-label="{{ __('directory.rules.categories') }}">
             <ul class="flex min-w-max items-center gap-1">
                 @foreach($activeTypes as $type)
                     @php $current = $type->id === $selectedType->id; @endphp
@@ -69,7 +69,7 @@
                                 @if($rule->is_important)
                                     <span class="theme-primary-soft-bg theme-primary-text inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium">
                                         <x-icon name="star" class="h-3 w-3" />
-                                        Important
+                                        {{ __('directory.rules.important') }}
                                     </span>
                                 @endif
                             </div>

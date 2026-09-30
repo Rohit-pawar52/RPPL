@@ -17,30 +17,30 @@
 
     if ($match->innings_count > 0) {
         $tabs['live'] = [
-            'label' => 'Live',
+            'label' => __('matches.nav.live'),
             'url' => route('public.matches.live', $match),
             'icon' => 'chart-bar',
         ];
         $tabs['scorecard'] = [
-            'label' => 'Scorecard',
+            'label' => __('matches.nav.scorecard'),
             'url' => route('public.matches.scorecard', $match),
             'icon' => 'document-chart',
         ];
     }
 
     $tabs['squads'] = [
-        'label' => 'Squads',
+        'label' => __('matches.nav.squads'),
         'url' => route('public.matches.squads', $match),
         'icon' => 'users',
     ];
     $tabs['info'] = [
-        'label' => 'Match Info',
+        'label' => __('matches.nav.match_info'),
         'url' => route('public.matches.show', $match),
         'icon' => 'clipboard',
     ];
 @endphp
 
-<nav class="-mx-4 mb-4 overflow-x-auto border-b border-neutral-200 px-4 sm:mx-0 sm:px-0" aria-label="Match sections">
+<nav class="-mx-4 mb-4 overflow-x-auto border-b border-neutral-200 px-4 sm:mx-0 sm:px-0" aria-label="{{ __('matches.nav.match_sections') }}">
     <ul class="flex min-w-max items-center gap-1">
         @foreach($tabs as $key => $tab)
             @php $current = $active === $key; @endphp

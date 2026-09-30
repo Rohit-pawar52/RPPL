@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -55,7 +56,19 @@ class GameMatch extends Model
         'result_note',
         'win_margin_type',
         'win_margin',
+        'reminder_enabled',
+        'reminder_minutes_before',
+        'reminder_dispatched_at',
+        'notification_id',
     ];
+
+    /**
+     * Match statuses a reminder may still fire for — "upcoming", not yet
+     * started. Deliberately excludes 'live' (the match has already
+     * started; "starts soon" would be stale) as well as the terminal
+     * statuses (see scopeDueForReminder()).
+     */
+    private const REMINDER_ELIGIBLE_STATUSES = ['scheduled', 'toss'];
 
     protected function casts(): array
     {
@@ -63,12 +76,44 @@ class GameMatch extends Model
             'scheduled_at' => 'datetime',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
+            'reminder_enabled' => 'boolean',
+            'reminder_minutes_before' => 'integer',
+            'reminder_dispatched_at' => 'datetime',
         ];
     }
 
     public function edition(): BelongsTo
     {
         return $this->belongsTo(Edition::class);
+    }
+
+    /**
+     * The Notification created for this match's reminder push, once
+     * dispatched — null before that.
+     */
+    public function notification(): BelongsTo
+    {
+        return $this->belongsTo(Notification::class);
+    }
+
+    /**
+     * The structural half of reminder eligibility (portable across the
+     * app's dev/SQLite-test and MySQL-production connections — never a
+     * DB-specific date-arithmetic expression): enabled, not yet
+     * dispatched, still an upcoming (not live/completed/abandoned/
+     * cancelled) status, and the match itself hasn't started yet. This
+     * intentionally does NOT check the due instant (scheduled_at minus
+     * reminder_minutes_before) — that varies per row and is cheap to
+     * finish checking in PHP once this narrow candidate set is loaded;
+     * see MatchReminderService::isDueNow().
+     */
+    public function scopeDueForReminder(Builder $query): Builder
+    {
+        return $query
+            ->where('reminder_enabled', true)
+            ->whereNull('reminder_dispatched_at')
+            ->whereIn('match_status', self::REMINDER_ELIGIBLE_STATUSES)
+            ->where('scheduled_at', '>', now());
     }
 
     public function teamA(): BelongsTo
