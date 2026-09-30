@@ -64,6 +64,12 @@ Phase 3.48 collapsed what used to be three separate concepts (Finance ledger, Co
 - Contributors can have an optional public profile photo, managed from the admin Contributor form.
 - The legacy `committee_members` table and a few pre-3.48 rows' `committee_member_id` columns are kept (not physically dropped) purely for historical traceability — no admin UI reads or writes them any more; old `admin/committee-members/*` links redirect to the new Finance/Committee/Contributor pages instead of 404ing.
 
+### Admin panel navigation
+
+- The admin sidebar is grouped into "Management" sections — Tournament, Player, Content, Finance, Communication and System — each expanding to its own pages (for example Content Management → News, Videos, Photos, Announcements, Rules & Regulations, Content Pages), with Dashboard, Matches and Reports above them. The group holding the current page opens automatically and the current page is highlighted, including on create/edit/detail pages and filtered lists. The whole menu is defined in one place, `config/admin_navigation.php`; adding or moving a page never means editing Blade.
+- Scorers only see Dashboard and Matches; everything else is admin-only (backend policies remain the real boundary). On a desktop the sidebar can collapse to an icon rail (remembered in the browser); on phones and tablets it is a drawer. The top bar shows where you are ("Group / Page"), a View site link and the account menu with Logout.
+- Admin pages share one header pattern (title, one-line description, action buttons) and shared form, button, empty-state and status components; forms lock their submit button while saving to prevent double submits.
+
 ### Public website design
 
 - The whole public site shares one design: a deep navy header and footer, a light blue-grey page, white cards, green for live/active states and slate for secondary text, with compact spacing and no large banners. A small set of shared styles and components (cards, buttons, status pills, tabs, responsive tables) keeps every page consistent.
