@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\GameMatchController;
 use App\Http\Controllers\Admin\InningsController;
 use App\Http\Controllers\Admin\MatchFlowController;
 use App\Http\Controllers\Admin\MatchPlayerController;
+use App\Http\Controllers\Admin\NewsController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PhotoController;
 use App\Http\Controllers\Admin\PlayerController;
@@ -286,6 +287,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // one-click toggle from the index table.
         Route::patch('videos/{video}/toggle-status', [VideoController::class, 'toggleStatus'])->name('videos.toggle-status');
         Route::resource('videos', VideoController::class)->except(['show']);
+
+        // News posts (text + optional images) for the public /news pages.
+        Route::patch('news/{news}/toggle-status', [NewsController::class, 'toggleStatus'])->name('news.toggle-status');
+        Route::resource('news', NewsController::class)->except(['show']);
 
         // Public photo gallery — same shape as videos.
         Route::patch('photos/{photo}/toggle-status', [PhotoController::class, 'toggleStatus'])->name('photos.toggle-status');

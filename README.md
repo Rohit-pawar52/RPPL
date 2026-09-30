@@ -124,7 +124,15 @@ One Laravel Scheduler, registered in `bootstrap/app.php`, running the reminder/a
 - Admin → Photos manages a simple photo gallery, modelled on Videos: title, optional description, an uploaded image (JPG, PNG or WebP up to 5 MB — never SVG or other file types), Active/Inactive status and a priority (lower number shows first, newest first among ties). Files are stored under randomly generated names; replacing a photo only removes the old file once the new one is saved, and deleting a photo removes its file (a file that is already missing never blocks the delete).
 - A public **Photos** page (`/photos`) shows only Active photos as a responsive grid (2 columns on phones, 3 on large screens), 12 per page, with a simple in-page viewer when a photo is clicked (it falls back to opening the image if the browser doesn't support it). The empty state and labels are available in English and Hindi; photo titles and descriptions are shown exactly as entered.
 - Like Videos, each Photos table row has a one-click Active/Inactive control.
-- **Videos** and **Photos** are reachable from the public header's **More** menu on desktop and from the mobile menu.
+- **News**, **Videos** and **Photos** are reachable from the public header's **More** menu on desktop and from the mobile menu.
+
+### News (public)
+
+- Admin → News manages tournament news posts: a heading, the news text (plain text — line breaks are kept and any HTML is shown as typed, never rendered), zero to ten optional images (JPG, PNG or WebP up to 5 MB each — never SVG or other file types), Active/Inactive status, a priority (lower number shows first, then newest published) and a **Published at** date/time entered and shown in the display timezone (blank = publish now on create, keep the current time on edit).
+- A post is public only while it is **Active and its published time has passed**, so a future time schedules it without any extra setup. Nothing is sent as a push notification.
+- Each post gets a clean, unique web address generated from its heading (e.g. `/news/rppl-season-3-registration-starts`, with `-2`, `-3`… added for repeated headings). The address is kept when the heading is edited later, so links that were already shared keep working.
+- On edit, existing images can be removed individually (tick Remove) and more can be added, up to ten in total; removed images and the files of a deleted post are cleaned up from storage. Each News table row has the same one-click Active/Inactive control as Videos and Photos.
+- The public **News** page (`/news`) lists posts as cards (cover image = the first image, date, heading, short excerpt, Read More), 9 per page; each post has its own page with the full text and all its images (clickable, in the same simple viewer as Photos). Labels and empty states are in English and Hindi; the post text itself is never translated.
 
 
 ### Rules & Regulations (public page)

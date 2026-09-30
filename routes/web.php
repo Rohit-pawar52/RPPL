@@ -6,6 +6,7 @@ use App\Http\Controllers\Public\FcmTokenController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\LanguageController;
 use App\Http\Controllers\Public\MatchController;
+use App\Http\Controllers\Public\NewsController;
 use App\Http\Controllers\Public\PhotoController;
 use App\Http\Controllers\Public\PlayerController;
 use App\Http\Controllers\Public\PlayerRegistrationController;
@@ -68,6 +69,11 @@ Route::middleware([EnsurePublicSiteIsNotUnderMaintenance::class, SetPublicLocale
 
     Route::prefix('videos')->name('public.videos.')->group(function () {
         Route::get('/', [VideoController::class, 'index'])->name('index');
+    });
+
+    Route::prefix('news')->name('public.news.')->group(function () {
+        Route::get('/', [NewsController::class, 'index'])->name('index');
+        Route::get('/{slug}', [NewsController::class, 'show'])->name('show');
     });
 
     Route::prefix('photos')->name('public.photos.')->group(function () {

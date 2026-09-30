@@ -145,6 +145,14 @@ return [
         'most_sixes' => 'Most sixes',
     ],
 
+    'news' => [
+        'title' => 'News',
+        'empty' => 'No news available yet.',
+        'read_more' => 'Read More',
+        'published' => 'Published',
+        'back' => 'Back to News',
+    ],
+
     'photos' => [
         'title' => 'Photos',
         'empty' => 'No photos available yet.',

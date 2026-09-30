@@ -33,6 +33,7 @@
                     <a href="{{ route('public.editions.index') }}" class="block px-3 py-1.5 hover:bg-neutral-50">{{ __('public.nav.editions') }}</a>
                     <a href="{{ route('public.player-registration.create') }}" class="block px-3 py-1.5 hover:bg-neutral-50">{{ __('public.nav.player_registration') }}</a>
                     <a href="{{ route('public.rules.index') }}" class="block px-3 py-1.5 hover:bg-neutral-50">{{ __('public.nav.rules') }}</a>
+                    <a href="{{ route('public.news.index') }}" class="block px-3 py-1.5 hover:bg-neutral-50">{{ __('directory.news.title') }}</a>
                     <a href="{{ route('public.videos.index') }}" class="block px-3 py-1.5 hover:bg-neutral-50">{{ __('directory.videos.title') }}</a>
                     <a href="{{ route('public.photos.index') }}" class="block px-3 py-1.5 hover:bg-neutral-50">{{ __('directory.photos.title') }}</a>
                     <a href="{{ route('public.faqs') }}" class="block px-3 py-1.5 hover:bg-neutral-50">{{ __('public.nav.faqs') }}</a>
@@ -105,6 +106,7 @@
                 <a href="{{ route('public.editions.index') }}" class="block px-3 py-2 hover:bg-neutral-50">{{ __('public.nav.editions') }}</a>
                 <a href="{{ route('public.player-registration.create') }}" class="block px-3 py-2 hover:bg-neutral-50">{{ __('public.nav.player_registration') }}</a>
                 <a href="{{ route('public.rules.index') }}" class="block px-3 py-2 hover:bg-neutral-50">{{ __('public.nav.rules') }}</a>
+                <a href="{{ route('public.news.index') }}" class="block px-3 py-2 hover:bg-neutral-50">{{ __('directory.news.title') }}</a>
                 <a href="{{ route('public.videos.index') }}" class="block px-3 py-2 hover:bg-neutral-50">{{ __('directory.videos.title') }}</a>
                 <a href="{{ route('public.photos.index') }}" class="block px-3 py-2 hover:bg-neutral-50">{{ __('directory.photos.title') }}</a>
                 <a href="{{ route('public.faqs') }}" class="block px-3 py-2 hover:bg-neutral-50">{{ __('public.nav.faqs') }}</a>
