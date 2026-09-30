@@ -68,6 +68,9 @@
             <x-nav-item :route="route('admin.videos.index')" icon="play" :active="request()->routeIs('admin.videos.*')">
                 Videos
             </x-nav-item>
+            <x-nav-item :route="route('admin.photos.index')" icon="camera" :active="request()->routeIs('admin.photos.*')">
+                Photos
+            </x-nav-item>
             {{-- One entry point for both Rules and Rule Types; Rule Types are reached from a link on the Rules index. --}}
             <x-nav-item :route="route('admin.rules.index')" icon="book" :active="request()->routeIs('admin.rules.*') || request()->routeIs('admin.rule-types.*')">
                 Rules &amp; Regulations

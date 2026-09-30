@@ -6,6 +6,7 @@ use App\Http\Controllers\Public\FcmTokenController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\LanguageController;
 use App\Http\Controllers\Public\MatchController;
+use App\Http\Controllers\Public\PhotoController;
 use App\Http\Controllers\Public\PlayerController;
 use App\Http\Controllers\Public\PlayerRegistrationController;
 use App\Http\Controllers\Public\RuleController;
@@ -67,6 +68,10 @@ Route::middleware([EnsurePublicSiteIsNotUnderMaintenance::class, SetPublicLocale
 
     Route::prefix('videos')->name('public.videos.')->group(function () {
         Route::get('/', [VideoController::class, 'index'])->name('index');
+    });
+
+    Route::prefix('photos')->name('public.photos.')->group(function () {
+        Route::get('/', [PhotoController::class, 'index'])->name('index');
     });
 
     // One page; the selected category is a ?type=<slug> query string

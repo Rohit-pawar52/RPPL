@@ -117,6 +117,15 @@ One Laravel Scheduler, registered in `bootstrap/app.php`, running the reminder/a
 - The public homepage shows up to 3 active videos in a compact **Featured Videos** section, placed below the Match Centre and Featured Match (live and match info always come first) and above the Points Table. The section disappears entirely when there are no active videos.
 - A public **Videos** page (`/videos`) lists every active video, 12 per page, in the same order (lowest priority number first, then newest). Inactive videos never appear on either page.
 - Videos never autoplay. Each card uses the browser's own player (thumbnail as the poster when one exists, only metadata loaded until the viewer presses Play). Starting one video pauses any other that's playing on the page.
+- Admins can switch a video Active/Inactive with one click straight from the Admin → Videos table (no need to open Edit); the change is applied server-side and only admins can do it.
+
+### Photos (public gallery)
+
+- Admin → Photos manages a simple photo gallery, modelled on Videos: title, optional description, an uploaded image (JPG, PNG or WebP up to 5 MB — never SVG or other file types), Active/Inactive status and a priority (lower number shows first, newest first among ties). Files are stored under randomly generated names; replacing a photo only removes the old file once the new one is saved, and deleting a photo removes its file (a file that is already missing never blocks the delete).
+- A public **Photos** page (`/photos`) shows only Active photos as a responsive grid (2 columns on phones, 3 on large screens), 12 per page, with a simple in-page viewer when a photo is clicked (it falls back to opening the image if the browser doesn't support it). The empty state and labels are available in English and Hindi; photo titles and descriptions are shown exactly as entered.
+- Like Videos, each Photos table row has a one-click Active/Inactive control.
+- **Videos** and **Photos** are reachable from the public header's **More** menu on desktop and from the mobile menu.
+
 
 ### Rules & Regulations (public page)
 

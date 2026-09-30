@@ -145,6 +145,12 @@ return [
         'most_sixes' => 'Most sixes',
     ],
 
+    'photos' => [
+        'title' => 'Photos',
+        'empty' => 'No photos available yet.',
+        'close' => 'Close',
+    ],
+
     'videos' => [
         'title' => 'Videos',
         'empty' => 'No videos available yet.',

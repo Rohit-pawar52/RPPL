@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\InningsController;
 use App\Http\Controllers\Admin\MatchFlowController;
 use App\Http\Controllers\Admin\MatchPlayerController;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\PhotoController;
 use App\Http\Controllers\Admin\PlayerController;
 use App\Http\Controllers\Admin\PlayerRegistrationController;
 use App\Http\Controllers\Admin\ReportsController;
@@ -281,8 +282,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Admin-uploaded short RPPL clips for the public homepage's
         // Featured Videos section — no show(), same as announcements.
-        // Activate/deactivate is just the status field on the edit form.
+        // Activate/deactivate is the status field on the edit form, or the
+        // one-click toggle from the index table.
+        Route::patch('videos/{video}/toggle-status', [VideoController::class, 'toggleStatus'])->name('videos.toggle-status');
         Route::resource('videos', VideoController::class)->except(['show']);
+
+        // Public photo gallery — same shape as videos.
+        Route::patch('photos/{photo}/toggle-status', [PhotoController::class, 'toggleStatus'])->name('photos.toggle-status');
+        Route::resource('photos', PhotoController::class)->except(['show']);
 
         // Rules & Regulations — Rule Types (categories) and the Rules
         // under them. No show(): manage/edit in place, same as videos.
