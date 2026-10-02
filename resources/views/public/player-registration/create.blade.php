@@ -75,7 +75,6 @@
                             'min' => \App\Models\PlayerRegistration::AGE_MIN,
                             'max' => \App\Models\PlayerRegistration::AGE_MAX,
                             'placeholder' => __('registration.fields.age_placeholder'),
-                            'required' => true,
                         ])
                         @include('public.player-registration._field', [
                             'name' => 'phone',
@@ -177,7 +176,6 @@
                         'hint' => __('registration.fields.submitted_utr_hint'),
                         'autocomplete' => 'off',
                         'maxlength' => 40,
-                        'required' => true,
                     ])
 
                     <div class="mb-5">

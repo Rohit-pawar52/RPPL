@@ -6,10 +6,12 @@ use App\Models\Edition;
 use App\Models\Player;
 use App\Models\PlayerRegistration;
 use App\Services\Settings\SettingsService;
+use App\Support\XlsxReader;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 /**
  * Imports a CSV into Players + PlayerRegistrations for one edition. It
@@ -61,10 +63,14 @@ class PlayerRegistrationImportService
     {
         $parser = new RegistrationImportParser((string) $this->settings->get('system.display_timezone'));
 
-        $sheet = $this->parseCsv($file, $parser);
+        try {
+            $sheet = $this->parseCsv($file, $parser);
+        } catch (RuntimeException $e) {
+            return $this->failure([$e->getMessage()]);
+        }
 
         if ($sheet === null) {
-            return $this->failure(['The CSV must include a "name" column.']);
+            return $this->failure(['The file must include a "name" column.']);
         }
 
         if (count($sheet['rows']) === 0) {
@@ -72,7 +78,7 @@ class PlayerRegistrationImportService
         }
 
         if (count($sheet['rows']) > self::MAX_ROWS) {
-            return $this->failure(['The CSV contains more than '.self::MAX_ROWS.' rows. Split the file and import in smaller batches.']);
+            return $this->failure(['The file contains more than '.self::MAX_ROWS.' rows. Split the file and import in smaller batches.']);
         }
 
         $plan = $this->buildPlan($edition, $sheet, $parser);
@@ -101,23 +107,8 @@ class PlayerRegistrationImportService
      */
     private function parseCsv(UploadedFile $file, RegistrationImportParser $parser): ?array
     {
-        $content = (string) file_get_contents($file->getRealPath());
-
-        // Strip a UTF-8 BOM that may prefix the first header cell.
-        $content = (string) preg_replace('/^\xEF\xBB\xBF/', '', $content);
-
-        // A sheet saved from Excel as plain "CSV" is Windows-1252, not
-        // UTF-8, and MySQL would refuse its bytes half-way through the
-        // import. Valid UTF-8 (what Google Sheets exports) is untouched.
-        if (! mb_check_encoding($content, 'UTF-8')) {
-            $content = mb_convert_encoding($content, 'UTF-8', 'Windows-1252');
-        }
-
-        $handle = fopen('php://temp', 'r+');
-        fwrite($handle, $content);
-        rewind($handle);
-
-        $header = fgetcsv($handle) ?: [];
+        $records = $this->readRecords($file);
+        $header = $records[0] ?? [];
 
         $columns = [];
         $ignored = [];
@@ -147,16 +138,13 @@ class PlayerRegistrationImportService
         }
 
         if (! in_array('name', $columns, true)) {
-            fclose($handle);
-
             return null;
         }
 
         $rows = [];
-        $rowNumber = 1;
 
-        while (($data = fgetcsv($handle)) !== false) {
-            $rowNumber++;
+        foreach (array_slice($records, 1, null, true) as $index => $data) {
+            $rowNumber = $index + 1;
 
             if ($this->isBlankRow($data)) {
                 continue;
@@ -172,9 +160,49 @@ class PlayerRegistrationImportService
             $rows[] = ['row' => $rowNumber, 'values' => $values];
         }
 
+        return ['rows' => $rows, 'ignored' => $ignored, 'google' => $google];
+    }
+
+    /**
+     * The file as rows of cell text, whether it is an Excel .xlsx (detected
+     * by its zip signature, not its name) or a CSV. Row 1 is the header and
+     * the list index + 1 is the spreadsheet row number.
+     *
+     * @return list<list<?string>>
+     *
+     * @throws RuntimeException when an .xlsx cannot be read
+     */
+    private function readRecords(UploadedFile $file): array
+    {
+        $content = (string) file_get_contents($file->getRealPath());
+
+        if (XlsxReader::looksLikeXlsx($content)) {
+            return XlsxReader::records($file->getRealPath());
+        }
+
+        // Strip a UTF-8 BOM that may prefix the first header cell.
+        $content = (string) preg_replace('/^\xEF\xBB\xBF/', '', $content);
+
+        // A sheet saved from Excel as plain "CSV" is Windows-1252, not
+        // UTF-8, and MySQL would refuse its bytes half-way through the
+        // import. Valid UTF-8 (what Google Sheets exports) is untouched.
+        if (! mb_check_encoding($content, 'UTF-8')) {
+            $content = mb_convert_encoding($content, 'UTF-8', 'Windows-1252');
+        }
+
+        $handle = fopen('php://temp', 'r+');
+        fwrite($handle, $content);
+        rewind($handle);
+
+        $records = [];
+
+        while (($data = fgetcsv($handle)) !== false) {
+            $records[] = $data;
+        }
+
         fclose($handle);
 
-        return ['rows' => $rows, 'ignored' => $ignored, 'google' => $google];
+        return $records;
     }
 
     private function isBlankRow(array $data): bool
@@ -302,6 +330,7 @@ class PlayerRegistrationImportService
                 'age' => $parser->age($values['age'] ?? null),
                 'primary_role' => $parser->role($values['primary_role'] ?? null),
                 'batting_style' => $parser->battingHand($values['batting_style'] ?? null),
+                'bowling_style' => $parser->bowlingArm($values['bowling_style'] ?? null),
                 'village' => $parser->text($values['village'] ?? null, 100, 'village'),
                 'tehsil' => $parser->text($values['tehsil'] ?? null, 100, 'tehsil'),
                 'district' => $parser->text($values['district'] ?? null, 100, 'district'),
@@ -404,6 +433,7 @@ class PlayerRegistrationImportService
                     'email' => $storedEmail,
                     'primary_role' => $fields['primary_role'],
                     'batting_style' => $fields['batting_style'],
+                    'bowling_style' => $fields['bowling_style'],
                 ],
                 'registration' => [
                     'payment_status' => $paymentStatus,

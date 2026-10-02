@@ -53,7 +53,12 @@
                 :value="old('edition_id')"
             />
 
-            <x-form.input name="csv_file" label="CSV File" type="file" accept=".csv,text/csv,text/plain" required />
+            <x-form.input name="csv_file" label="Excel or CSV file" type="file" accept=".xlsx,.csv,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required />
+            <p class="-mt-2 mb-3 text-[11px] text-slate-500">
+                An Excel file (.xlsx, first sheet) or a CSV.
+                <a href="{{ route('admin.player-registrations.import.sample') }}" class="font-medium text-green-700 hover:underline">Download a sample Excel sheet</a>
+                with the columns and two example players &mdash; replace them with your data and upload it.
+            </p>
 
             <x-form.checkbox
                 name="dry_run"
@@ -64,7 +69,8 @@
                 <p class="mb-1 font-medium text-slate-700">Importing the Google Form sheet</p>
                 <p class="mb-2">
                     Download the response sheet from Google Sheets
-                    (<em>File &rarr; Download &rarr; Comma-separated values (.csv)</em>) and upload it as it is &mdash;
+                    (<em>File &rarr; Download &rarr; Microsoft Excel (.xlsx)</em> or <em>Comma-separated values (.csv)</em>)
+                    and upload it as it is &mdash;
                     there is no need to rename or delete any column. Only <strong>Name</strong> is required; every
                     other answer is optional.
                 </p>
@@ -80,7 +86,7 @@
                     </li>
                     <li>
                         <strong>Age</strong> is saved as entered (the date of birth stays empty). <strong>Role</strong> and
-                        <strong>Left hand/right hand</strong> (saved as the batting hand) fill the player's profile.
+                        <strong>Left hand/right hand</strong> (saved as the batting hand) and, if the sheet has it, <strong>Bowling arm</strong> fill the player's profile.
                     </li>
                     <li>
                         <strong>Gram, Tehsil, District</strong> and the payment answer

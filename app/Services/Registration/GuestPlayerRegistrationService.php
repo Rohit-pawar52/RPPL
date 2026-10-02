@@ -107,11 +107,11 @@ class GuestPlayerRegistrationService
                     'payment_status' => 'pending',
                     'registration_fee' => $lockedEdition->registration_fee,
                     'registered_at' => now(),
-                    'age' => $data['age'],
+                    'age' => $data['age'] ?? null,
                     'village' => $data['village'],
                     'tehsil' => $data['tehsil'],
                     'district' => $data['district'],
-                    'submitted_utr' => $data['submitted_utr'],
+                    'submitted_utr' => $data['submitted_utr'] ?? null,
                     'photo_path' => $photoPath,
                     'payment_proof_path' => $paymentProofPath,
                 ]);

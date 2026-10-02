@@ -19,8 +19,9 @@ use Illuminate\Validation\Rule;
  *
  * The questions are the ones the Google Form it replaces asked, made
  * stricter where that form had no checks at all: the mobile number, role,
- * hands, address, photo, UTR and payment screenshot are all required, and
- * age, mobile and UTR have to look like what they are. Aadhaar and date of
+ * hands, address, photo and payment screenshot are required (age and the
+ * UTR are optional), and age, mobile and UTR have to look like what they are
+ * when given. Aadhaar and date of
  * birth are no longer asked.
  */
 class StorePublicPlayerRegistrationRequest extends FormRequest
@@ -91,7 +92,7 @@ class StorePublicPlayerRegistrationRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'age' => ['required', 'integer', 'between:'.PlayerRegistration::AGE_MIN.','.PlayerRegistration::AGE_MAX],
+            'age' => ['nullable', 'integer', 'between:'.PlayerRegistration::AGE_MIN.','.PlayerRegistration::AGE_MAX],
             'phone' => ['required', 'string', 'regex:/^[6-9]\d{9}$/'],
             'email' => ['nullable', 'email', 'max:255'],
             'primary_role' => ['required', 'string', Rule::in(Player::PRIMARY_ROLES)],
@@ -103,7 +104,7 @@ class StorePublicPlayerRegistrationRequest extends FormRequest
             'photo' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.$maxKilobytes],
             // UPI transaction ids are 12 digits, a bank transfer's are
             // longer and mixed — letters and digits, with room either way.
-            'submitted_utr' => ['required', 'string', 'regex:/^[A-Z0-9]{8,30}$/'],
+            'submitted_utr' => ['nullable', 'string', 'regex:/^[A-Z0-9]{8,30}$/'],
             'payment_proof' => ['required', 'image', 'mimes:jpeg,jpg,png', 'max:'.$maxKilobytes],
         ];
     }
