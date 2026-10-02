@@ -12,6 +12,7 @@ use App\Models\Player;
 use App\Models\PlayerRegistration;
 use App\Services\PlayerRegistration\PlayerRegistrationService;
 use App\Services\Registration\PlayerRegistrationImportService;
+use App\Services\Settings\DisplayTimezoneFormatter;
 use App\Support\CsvSafe;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -30,6 +31,7 @@ class PlayerRegistrationController extends Controller
     public function __construct(
         private readonly PlayerRegistrationService $registrations,
         private readonly PlayerRegistrationImportService $imports,
+        private readonly DisplayTimezoneFormatter $displayTimezone,
     ) {}
 
     public function index(Request $request): View
@@ -130,7 +132,7 @@ class PlayerRegistrationController extends Controller
                         $registration->registration_fee !== null
                             ? number_format($registration->registration_fee, 2, '.', '')
                             : '',
-                        $registration->registered_at?->format('Y-m-d') ?? '',
+                        $this->displayTimezone->format($registration->registered_at, 'Y-m-d') ?? '',
                     ]));
                 }
             });
@@ -154,7 +156,11 @@ class PlayerRegistrationController extends Controller
      * Two-pass, create-only import (see PlayerRegistrationImportService)
      * — never overwrites an existing Player or PlayerRegistration, and
      * never touches the finance ledger. Any fatal row problem rejects
-     * the whole file with zero writes.
+     * the whole file with zero writes. "Check only" runs the same first
+     * pass and shows what would happen without writing anything; the
+     * notes (rows skipped, values that were cleaned up) are carried to
+     * the next page so the admin can review and fix them from the
+     * registration's edit page.
      */
     public function importStore(ImportPlayerRegistrationsRequest $request): RedirectResponse
     {
@@ -162,13 +168,21 @@ class PlayerRegistrationController extends Controller
 
         $edition = Edition::findOrFail($request->validated('edition_id'));
 
-        $result = $this->imports->import($edition, $request->file('csv_file'));
+        $result = $this->imports->import($edition, $request->file('csv_file'), $request->boolean('dry_run'));
 
         if (! $result['success']) {
             return redirect()
                 ->route('admin.player-registrations.import')
                 ->withErrors(['csv_file' => $result['errors']])
                 ->withInput();
+        }
+
+        if ($result['dry_run']) {
+            // A file input can't be refilled, so only the edition is kept.
+            return redirect()
+                ->route('admin.player-registrations.import')
+                ->withInput($request->only('edition_id'))
+                ->with('import_check', $result);
         }
 
         return redirect()
@@ -180,7 +194,8 @@ class PlayerRegistrationController extends Controller
                 $result['skipped'],
                 $result['created_players'],
                 $result['created_players'] === 1 ? '' : 's',
-            ));
+            ))
+            ->with('import_notes', $result['notes']);
     }
 
     public function create(): View
@@ -198,7 +213,7 @@ class PlayerRegistrationController extends Controller
     {
         $this->authorize('create', PlayerRegistration::class);
 
-        $this->registrations->createRegistration($request->validated());
+        $this->registrations->createRegistration($this->withRegisteredAtInUtc($request->validated()));
 
         return redirect()
             ->route('admin.player-registrations.index')
@@ -256,11 +271,27 @@ class PlayerRegistrationController extends Controller
         );
     }
 
+    /**
+     * The photo the player uploaded on the public form. Private like the
+     * documents above (it is not the public player photo), so only an admin
+     * can see it, through this same path-from-the-row-only route.
+     */
+    public function photo(PlayerRegistration $playerRegistration): StreamedResponse
+    {
+        $this->authorize('view', $playerRegistration);
+
+        return $this->privateDocumentResponse(
+            $playerRegistration->photo_path,
+            $playerRegistration,
+            'photo'
+        );
+    }
+
     public function update(UpdatePlayerRegistrationRequest $request, PlayerRegistration $playerRegistration): RedirectResponse
     {
         $this->authorize('update', $playerRegistration);
 
-        $this->registrations->updateRegistration($playerRegistration, $request->validated());
+        $this->registrations->updateRegistration($playerRegistration, $this->withRegisteredAtInUtc($request->validated()));
 
         return redirect()
             ->route('admin.player-registrations.index')
@@ -283,6 +314,23 @@ class PlayerRegistrationController extends Controller
     }
 
     /**
+     * The "Registered at" an admin types is a wall-clock time in the
+     * display timezone (the form shows it that way); it is stored in UTC
+     * like every other datetime.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function withRegisteredAtInUtc(array $data): array
+    {
+        if (array_key_exists('registered_at', $data)) {
+            $data['registered_at'] = $this->displayTimezone->parseLenientFromDisplayTimezone($data['registered_at']);
+        }
+
+        return $data;
+    }
+
+    /**
      * The single source of truth for registration filtering, shared by
      * index() and export() so the two can never quietly diverge.
      * $filters values are whitelisted exactly as before: payment_status
@@ -298,6 +346,10 @@ class PlayerRegistrationController extends Controller
                 $filters['search'] ?? null,
                 fn ($query, $search) => $query->where(function ($query) use ($search) {
                     $query->where('registration_number', 'like', '%'.$search.'%')
+                        ->orWhere('village', 'like', '%'.$search.'%')
+                        ->orWhere('tehsil', 'like', '%'.$search.'%')
+                        ->orWhere('district', 'like', '%'.$search.'%')
+                        ->orWhere('submitted_utr', 'like', '%'.$search.'%')
                         ->orWhereHas('player', function ($query) use ($search) {
                             $query->where('name', 'like', '%'.$search.'%')
                                 ->orWhere('phone', 'like', '%'.$search.'%')
@@ -313,7 +365,7 @@ class PlayerRegistrationController extends Controller
                 in_array($filters['payment_status'] ?? null, PlayerRegistration::PAYMENT_STATUSES, true),
                 fn ($query) => $query->where('payment_status', $filters['payment_status'])
             )
-            ->tap(fn ($query) => $this->dateRangeFilter($query, 'registered_at', $filters['from_date'] ?? null, $filters['to_date'] ?? null));
+            ->tap(fn ($query) => $this->dateTimeRangeFilter($query, 'registered_at', $filters['from_date'] ?? null, $filters['to_date'] ?? null));
     }
 
     /**

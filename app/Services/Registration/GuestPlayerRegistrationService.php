@@ -16,20 +16,22 @@ use Throwable;
 
 /**
  * Orchestrates one public/guest registration submission (Phase 3.39C):
- * identity resolution (reusing PlayerIdentityResolver — the same core
- * logic CSV import uses), private document storage, and registration
- * creation (reusing PlayerRegistrationService::createRegistration() —
- * the same mechanism admin-created registrations use, so
- * registration_number generation never has a second implementation).
+ * identity resolution, private file storage, and registration creation
+ * (reusing PlayerRegistrationService::createRegistration() — the same
+ * mechanism admin-created registrations use, so registration_number
+ * generation never has a second implementation).
  *
  * Guest submission can only ever CREATE a Player, never modify an
- * existing one — see registerNewOrExisting()'s docblock.
+ * existing one — see createPlayer()'s docblock. What the player answered
+ * for THIS edition (age, village, tehsil, district, the UTR they typed)
+ * therefore lives on the registration, so it is kept even when the player
+ * already existed.
  */
 class GuestPlayerRegistrationService
 {
     private const DISK = 'local';
 
-    private const AADHAAR_DIRECTORY = 'player-registrations/aadhaar';
+    private const PHOTO_DIRECTORY = 'player-registrations/photos';
 
     private const PAYMENT_PROOF_DIRECTORY = 'player-registrations/payment-proofs';
 
@@ -49,25 +51,28 @@ class GuestPlayerRegistrationService
     public const CLOSED_MESSAGE_KEY = 'registration.errors.closed';
 
     public function __construct(
-        private readonly PlayerIdentityResolver $identity,
         private readonly PlayerRegistrationService $registrations,
     ) {}
 
     /**
-     * @param  array{name: string, phone: string, email: ?string, date_of_birth: string, primary_role: string}  $data
+     * $data is the validated form (see StorePublicPlayerRegistrationRequest):
+     * name, phone, email (optional), age, primary_role, batting_style,
+     * bowling_style, village, tehsil, district, submitted_utr.
+     *
+     * @param  array<string, mixed>  $data
      */
-    public function register(Edition $edition, array $data, UploadedFile $aadhaar, UploadedFile $paymentProof): PlayerRegistration
+    public function register(Edition $edition, array $data, UploadedFile $photo, UploadedFile $paymentProof): PlayerRegistration
     {
         $phone = Player::normalizePhone($data['phone']);
         $email = Player::normalizeEmail($data['email'] ?? null);
 
-        $resolved = $this->identity->resolve($phone, $email);
-
-        if ($resolved['conflict']) {
-            throw ValidationException::withMessages(['phone' => __(self::GENERIC_REJECTION_MESSAGE_KEY)]);
-        }
-
-        $player = $resolved['player'];
+        // The mobile number IS the identity: it is required, unique per
+        // player, and the one thing a registrant has to give correctly to
+        // look their registration up later. The email is only contact
+        // information (often shared, often blank) — it never decides who
+        // someone is, so an address that already belongs to another player
+        // can neither merge two people nor block a registration.
+        $player = Player::where('phone', $phone)->first();
 
         if ($player && ! $player->is_active) {
             throw ValidationException::withMessages(['phone' => __(self::GENERIC_REJECTION_MESSAGE_KEY)]);
@@ -80,11 +85,11 @@ class GuestPlayerRegistrationService
         // Files are not transactional — stored before the DB transaction,
         // explicitly cleaned up below if anything after this point fails.
         // Never touches any file belonging to an existing registration.
-        $aadhaarPath = $aadhaar->store(self::AADHAAR_DIRECTORY, self::DISK);
+        $photoPath = $photo->store(self::PHOTO_DIRECTORY, self::DISK);
         $paymentProofPath = $paymentProof->store(self::PAYMENT_PROOF_DIRECTORY, self::DISK);
 
         try {
-            $registration = DB::transaction(function () use ($edition, $data, $phone, $email, $player, $aadhaarPath, $paymentProofPath) {
+            $registration = DB::transaction(function () use ($edition, $data, $phone, $email, $player, $photoPath, $paymentProofPath) {
                 // Authoritative re-check, locked: registration_open/
                 // status/fee may have changed between GET and this POST,
                 // or even between the pre-check above and right now.
@@ -102,12 +107,17 @@ class GuestPlayerRegistrationService
                     'payment_status' => 'pending',
                     'registration_fee' => $lockedEdition->registration_fee,
                     'registered_at' => now(),
-                    'aadhaar_document_path' => $aadhaarPath,
+                    'age' => $data['age'],
+                    'village' => $data['village'],
+                    'tehsil' => $data['tehsil'],
+                    'district' => $data['district'],
+                    'submitted_utr' => $data['submitted_utr'],
+                    'photo_path' => $photoPath,
                     'payment_proof_path' => $paymentProofPath,
                 ]);
             });
         } catch (Throwable $e) {
-            Storage::disk(self::DISK)->delete([$aadhaarPath, $paymentProofPath]);
+            Storage::disk(self::DISK)->delete([$photoPath, $paymentProofPath]);
 
             throw $e;
         }
@@ -131,42 +141,47 @@ class GuestPlayerRegistrationService
 
     /**
      * Guest submission may only ever CREATE a brand-new Player identity
-     * — an existing Player's name/phone/email/date_of_birth/primary_role
-     * are NEVER updated from guest input, even when a field is
-     * currently null. This is the one easy-to-reason-about invariant:
-     * the public form cannot become an unauthenticated profile-edit
-     * endpoint. Any correction/enrichment of an existing Player remains
-     * a manual admin action.
+     * — an existing Player's name/phone/email/role/hands are NEVER
+     * updated from guest input, even when a field is currently null. This
+     * is the one easy-to-reason-about invariant: the public form cannot
+     * become an unauthenticated profile-edit endpoint. Any correction/
+     * enrichment of an existing Player remains a manual admin action.
      *
-     * Handles the same-phone/email concurrent-new-submission race
-     * (two guests, previously-unseen identical phone, near-simultaneous
-     * requests) without a lock: if Player::create() hits the phone/email
-     * UNIQUE constraint, re-resolve identity fresh and reuse whichever
-     * Player now genuinely matches — never blindly assume "the race
-     * means it's the same submitter" without checking.
+     * players.email is unique, so a new player only gets the address when
+     * no one else has it (the registration goes ahead either way). The
+     * same-phone concurrent-new-submission race (two guests, previously-
+     * unseen identical phone, near-simultaneous requests) is handled
+     * without a lock: if Player::create() hits a UNIQUE constraint, the
+     * player that now owns the phone is reused, or — when it was only the
+     * email that collided — the player is created without it.
+     *
+     * @param  array<string, mixed>  $data
      */
-    private function createPlayer(array $data, ?string $phone, ?string $email): Player
+    private function createPlayer(array $data, string $phone, ?string $email): Player
     {
+        $attributes = [
+            'name' => $data['name'],
+            'phone' => $phone,
+            'email' => $email !== null && ! Player::where('email', $email)->exists() ? $email : null,
+            'primary_role' => $data['primary_role'],
+            'batting_style' => $data['batting_style'],
+            'bowling_style' => $data['bowling_style'],
+        ];
+
         try {
-            return Player::create([
-                'name' => $data['name'],
-                'phone' => $phone,
-                'email' => $email,
-                'date_of_birth' => $data['date_of_birth'],
-                'primary_role' => $data['primary_role'],
-            ]);
+            return Player::create($attributes);
         } catch (QueryException $e) {
             if ((int) $e->getCode() !== 23000) {
                 throw $e;
             }
 
-            $reResolved = $this->identity->resolve($phone, $email);
+            $owner = Player::where('phone', $phone)->first();
 
-            if ($reResolved['player'] === null || $reResolved['conflict']) {
-                throw $e;
+            if ($owner !== null) {
+                return $owner;
             }
 
-            return $reResolved['player'];
+            return Player::create(['email' => null] + $attributes);
         }
     }
 }

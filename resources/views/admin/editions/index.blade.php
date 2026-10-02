@@ -69,7 +69,7 @@
                         <td class="hidden px-4 py-2 text-slate-600 md:table-cell">{{ $edition->player_registrations_count }}</td>
                         <td class="hidden px-4 py-2 text-slate-600 md:table-cell">{{ $edition->edition_teams_count }}</td>
                         <td class="hidden px-4 py-2 text-slate-600 md:table-cell">{{ $edition->matches_count }}</td>
-                        <td class="hidden px-4 py-2 text-slate-500 lg:table-cell">{{ $edition->created_at->format('d M Y') }}</td>
+                        <td class="hidden px-4 py-2 text-slate-500 lg:table-cell">{{ display_datetime($edition->created_at, 'd M Y') }}</td>
                         <td class="px-4 py-2">
                             <div class="flex items-center justify-end gap-1">
                                 <a

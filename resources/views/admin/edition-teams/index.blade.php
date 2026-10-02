@@ -66,7 +66,7 @@
                             {{ $editionTeam->team_players_count }}
                         </td>
                         <td class="hidden px-4 py-2 text-slate-500 lg:table-cell">
-                            {{ $editionTeam->created_at->format('d M Y') }}
+                            {{ display_datetime($editionTeam->created_at, 'd M Y') }}
                         </td>
                         <td class="px-4 py-2">
                             <div class="flex items-center justify-end gap-1">

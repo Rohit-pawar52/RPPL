@@ -32,14 +32,15 @@
         <x-form.select
             name="document_type"
             label="Document type"
-            :options="['aadhaar' => 'Aadhaar', 'payment_proof' => 'Payment Proof', 'both' => 'Both']"
+            :options="['aadhaar' => 'Aadhaar', 'payment_proof' => 'Payment Proof', 'both' => 'Aadhaar + Payment Proof', 'photo' => 'Submitted photo']"
             value="both"
         />
 
         <div id="registration-documents-preview" class="mb-3.5 hidden rounded-md border border-amber-100 bg-amber-50 p-3 text-[12px] text-amber-900">
-            <dl class="grid grid-cols-2 gap-2">
+            <dl class="grid grid-cols-3 gap-2">
                 <div><dt class="text-amber-600">Aadhaar documents</dt><dd class="font-medium" data-preview-aadhaar>&mdash;</dd></div>
                 <div><dt class="text-amber-600">Payment proofs</dt><dd class="font-medium" data-preview-payment-proof>&mdash;</dd></div>
+                <div><dt class="text-amber-600">Submitted photos</dt><dd class="font-medium" data-preview-photo>&mdash;</dd></div>
             </dl>
         </div>
 
@@ -80,6 +81,7 @@
                 const data = await response.json();
                 panel.querySelector('[data-preview-aadhaar]').textContent = data.aadhaar;
                 panel.querySelector('[data-preview-payment-proof]').textContent = data.payment_proof;
+                panel.querySelector('[data-preview-photo]').textContent = data.photo;
                 panel.classList.remove('hidden');
             } catch (error) {
                 panel.classList.add('hidden');

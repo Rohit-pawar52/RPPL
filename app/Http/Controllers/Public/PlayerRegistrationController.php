@@ -8,8 +8,10 @@ use App\Http\Requests\Public\StorePublicPlayerRegistrationRequest;
 use App\Models\Edition;
 use App\Services\Registration\GuestPlayerRegistrationService;
 use App\Services\Registration\PlayerRegistrationStatusLookupService;
+use App\Services\Settings\SettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 /**
@@ -25,17 +27,46 @@ class PlayerRegistrationController extends Controller
     public function __construct(
         private readonly GuestPlayerRegistrationService $registrations,
         private readonly PlayerRegistrationStatusLookupService $statusLookup,
+        private readonly SettingsService $settings,
     ) {}
 
     public function create(): View
     {
         $candidate = Edition::publicRegistrationEnabled()->first();
         $state = $candidate?->publicRegistrationState() ?? Edition::REGISTRATION_STATE_CLOSED;
+        $edition = $state === Edition::REGISTRATION_STATE_OPEN ? $candidate : null;
 
         return view('public.player-registration.create', [
-            'edition' => $state === Edition::REGISTRATION_STATE_OPEN ? $candidate : null,
+            'edition' => $edition,
             'upcomingEdition' => $state === Edition::REGISTRATION_STATE_NOT_YET_OPEN ? $candidate : null,
+            'payment' => $edition ? $this->paymentDetails($edition) : null,
+            'maxFileKb' => StorePublicPlayerRegistrationRequest::maxFileKilobytes(),
         ]);
+    }
+
+    /**
+     * Where and how much to pay: the UPI ID / QR the admin configured in
+     * Settings, plus — when there is a UPI ID — a "pay with a UPI app" link,
+     * because a player filling this form on their phone cannot scan a QR
+     * code shown on that same phone.
+     *
+     * @return array{upi_id: ?string, qr_url: ?string, pay_link: ?string}
+     */
+    private function paymentDetails(Edition $edition): array
+    {
+        $upiId = $this->settings->get('payment.upi_id');
+        $qrPath = $this->settings->get('payment.upi_qr_path');
+
+        return [
+            'upi_id' => $upiId,
+            'qr_url' => $qrPath ? Storage::url($qrPath) : null,
+            'pay_link' => $upiId ? 'upi://pay?'.http_build_query([
+                'pa' => $upiId,
+                'pn' => $this->settings->get('general.short_name'),
+                'am' => number_format((float) $edition->registration_fee, 2, '.', ''),
+                'cu' => 'INR',
+            ], '', '&', PHP_QUERY_RFC3986) : null,
+        ];
     }
 
     public function store(StorePublicPlayerRegistrationRequest $request): RedirectResponse
@@ -51,7 +82,7 @@ class PlayerRegistrationController extends Controller
         $registration = $this->registrations->register(
             $edition,
             $request->validated(),
-            $request->file('aadhaar_document'),
+            $request->file('photo'),
             $request->file('payment_proof'),
         );
 

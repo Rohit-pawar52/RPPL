@@ -181,6 +181,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // read, never one supplied by the request.
         Route::get('player-registrations/{player_registration}/aadhaar', [PlayerRegistrationController::class, 'aadhaar'])->name('player-registrations.aadhaar');
         Route::get('player-registrations/{player_registration}/payment-proof', [PlayerRegistrationController::class, 'paymentProof'])->name('player-registrations.payment-proof');
+        Route::get('player-registrations/{player_registration}/photo', [PlayerRegistrationController::class, 'photo'])->name('player-registrations.photo');
         Route::resource('player-registrations', PlayerRegistrationController::class);
         Route::resource('teams', TeamController::class);
         Route::resource('team-players', TeamPlayerController::class);
@@ -270,6 +271,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::put('contact', [SettingsController::class, 'updateContact'])->name('contact.update');
             Route::put('system', [SettingsController::class, 'updateSystem'])->name('system.update');
             Route::put('payments', [SettingsController::class, 'updatePayments'])->name('payments.update');
+            Route::put('upi', [SettingsController::class, 'updateUpi'])->name('upi.update');
             Route::put('public-website', [SettingsController::class, 'updatePublicWebsite'])->name('public-website.update');
         });
 
