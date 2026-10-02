@@ -15,8 +15,10 @@ use App\Http\Controllers\Public\TeamController;
 use App\Http\Controllers\Public\VenueController;
 use App\Http\Controllers\Public\VideoController;
 use App\Http\Middleware\EnsurePublicSiteIsNotUnderMaintenance;
+use App\Http\Middleware\RecordPageView;
 use App\Http\Middleware\SetPublicLocale;
 use App\Models\ContentPage;
+use App\Models\PageView;
 use Illuminate\Support\Facades\Route;
 
 // Public tournament website — read-only, no auth/policy middleware.
@@ -39,12 +41,19 @@ Route::middleware([EnsurePublicSiteIsNotUnderMaintenance::class, SetPublicLocale
 
     Route::prefix('editions')->name('public.editions.')->group(function () {
         Route::get('/', [EditionController::class, 'index'])->name('index');
-        Route::get('/{edition}', [EditionController::class, 'show'])->name('show');
+        Route::get('/{edition}', [EditionController::class, 'show'])
+            ->middleware(RecordPageView::class.':'.PageView::EDITION_VIEW)
+            ->name('show');
     });
 
     Route::prefix('matches')->name('public.matches.')->group(function () {
         Route::get('/', [MatchController::class, 'index'])->name('index');
-        Route::get('/{match}', [MatchController::class, 'show'])->name('show');
+        // A "match view" is this Match Info page only — the scorecard,
+        // squads and live tabs and the live-data polling endpoint below are
+        // deliberately not tracked.
+        Route::get('/{match}', [MatchController::class, 'show'])
+            ->middleware(RecordPageView::class.':'.PageView::MATCH_VIEW)
+            ->name('show');
         Route::get('/{match}/scorecard', [MatchController::class, 'scorecard'])->name('scorecard');
         Route::get('/{match}/scorecard/pdf', [MatchController::class, 'scorecardPdf'])->name('scorecard.pdf');
         Route::get('/{match}/squads', [MatchController::class, 'squads'])->name('squads');
@@ -54,7 +63,9 @@ Route::middleware([EnsurePublicSiteIsNotUnderMaintenance::class, SetPublicLocale
 
     Route::prefix('players')->name('public.players.')->group(function () {
         Route::get('/', [PlayerController::class, 'index'])->name('index');
-        Route::get('/{player}', [PlayerController::class, 'show'])->name('show');
+        Route::get('/{player}', [PlayerController::class, 'show'])
+            ->middleware(RecordPageView::class.':'.PageView::PLAYER_VIEW)
+            ->name('show');
     });
 
     Route::prefix('teams')->name('public.teams.')->group(function () {

@@ -70,6 +70,13 @@ Phase 3.48 collapsed what used to be three separate concepts (Finance ledger, Co
 - Scorers only see Dashboard and Matches; everything else is admin-only (backend policies remain the real boundary). On a desktop the sidebar can collapse to an icon rail (remembered in the browser); on phones and tablets it is a drawer. The top bar shows where you are ("Group / Page"), a View site link and the account menu with Logout.
 - Admin pages share one header pattern (title, one-line description, action buttons) and shared form, button, empty-state and status components; forms lock their submit button while saving to prevent double submits.
 
+### Public page-view tracking (capture only)
+
+- The public site quietly records visits to three detail pages — a **match** (`/matches/{id}`, the Match Info page only, not its scorecard, squads or live tabs), an **edition** (`/editions/{id}`) and a **player profile** (`/players/{id}`) — into the `page_views` table, ready for a future admin Analytics page. Nothing reads them back yet, and no public page changes.
+- Only a successful browser visit counts: lists, the homepage, 404s and redirects, HEAD/AJAX/prefetch requests, the live-score polling endpoint and WebSocket traffic never do, and neither do logged-in admins/scorers or (best-effort) bots.
+- Visitors are told apart by a first-party random cookie, `rppl_vid` (about 2 years); only a keyed hash of it is stored, never the cookie value or the IP address. The same visitor opening the same match, edition or player again within 30 minutes counts once (a player page's `?edition_id=`/`?page=` links are the same player). Each row stores the time in UTC plus the date and hour in the configured display timezone at that moment.
+- Recording happens after the page has been sent and is best-effort: a failure is logged and never affects the visitor. **Privacy:** this adds a persistent analytics cookie, so mention it in the Privacy Policy page (editable under Admin → Content Pages).
+
 ### Public website design
 
 - The whole public site shares one design: a deep navy header and footer, a light blue-grey page, white cards, green for live/active states and slate for secondary text, with compact spacing and no large banners. A small set of shared styles and components (cards, buttons, status pills, tabs, responsive tables) keeps every page consistent.
