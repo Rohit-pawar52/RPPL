@@ -44,10 +44,16 @@ class RegistrationPeriodTest extends TestCase
     {
         return $this->post(route('public.player-registration.store'), [
             'name' => 'Ramesh Joshi',
+            'age' => 24,
             'phone' => '9876543210',
-            'date_of_birth' => '2000-01-01',
             'primary_role' => 'batter',
-            'aadhaar_document' => UploadedFile::fake()->create('aadhaar.jpg', 500, 'image/jpeg'),
+            'batting_style' => 'right_hand',
+            'bowling_style' => 'none',
+            'village' => 'Sendriya',
+            'tehsil' => 'Multai',
+            'district' => 'Betul',
+            'submitted_utr' => '402912345678',
+            'photo' => UploadedFile::fake()->create('photo.jpg', 500, 'image/jpeg'),
             'payment_proof' => UploadedFile::fake()->create('proof.jpg', 300, 'image/jpeg'),
         ]);
     }

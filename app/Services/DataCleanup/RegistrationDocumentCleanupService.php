@@ -7,8 +7,9 @@ use App\Models\PlayerRegistration;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Phase 3.49 — purges the private Aadhaar/payment-proof FILES a guest
- * registration uploaded, without ever touching the registration record
+ * Phase 3.49 — purges the private Aadhaar/payment-proof FILES (and, as its
+ * own type, the submitted photo) a guest registration uploaded, without
+ * ever touching the registration record
  * itself (player, payment status, registration number, fee, edition,
  * financial history all survive unchanged) — only the file and its own
  * path column are cleared. Edition-scoped and type-scoped on purpose:
@@ -22,10 +23,15 @@ use Illuminate\Support\Facades\Storage;
  */
 class RegistrationDocumentCleanupService
 {
-    public const TYPES = ['aadhaar', 'payment_proof', 'both'];
+    /**
+     * "both" is Aadhaar + payment proof, as it always was; the photo a
+     * player uploads on the public form is its own type (it is a personal
+     * photo, not an identity document, so it is never swept up by "both").
+     */
+    public const TYPES = ['aadhaar', 'payment_proof', 'both', 'photo'];
 
     /**
-     * @return array{aadhaar: int, payment_proof: int}
+     * @return array{aadhaar: int, payment_proof: int, photo: int}
      */
     public function previewCounts(Edition $edition, string $documentType): array
     {
@@ -35,6 +41,9 @@ class RegistrationDocumentCleanupService
                 : 0,
             'payment_proof' => $this->includesPaymentProof($documentType)
                 ? PlayerRegistration::where('edition_id', $edition->id)->whereNotNull('payment_proof_path')->count()
+                : 0,
+            'photo' => $this->includesPhoto($documentType)
+                ? PlayerRegistration::where('edition_id', $edition->id)->whereNotNull('photo_path')->count()
                 : 0,
         ];
     }
@@ -58,6 +67,7 @@ class RegistrationDocumentCleanupService
         $columns = array_filter([
             $this->includesAadhaar($documentType) ? 'aadhaar_document_path' : null,
             $this->includesPaymentProof($documentType) ? 'payment_proof_path' : null,
+            $this->includesPhoto($documentType) ? 'photo_path' : null,
         ]);
 
         if ($columns === []) {
@@ -119,5 +129,10 @@ class RegistrationDocumentCleanupService
     private function includesPaymentProof(string $documentType): bool
     {
         return in_array($documentType, ['payment_proof', 'both'], true);
+    }
+
+    private function includesPhoto(string $documentType): bool
+    {
+        return $documentType === 'photo';
     }
 }

@@ -107,6 +107,7 @@ class PlayerRegistrationService
             $ownedPaths = array_filter([
                 $locked->aadhaar_document_path,
                 $locked->payment_proof_path,
+                $locked->photo_path,
             ]);
 
             if (! $locked->delete()) {

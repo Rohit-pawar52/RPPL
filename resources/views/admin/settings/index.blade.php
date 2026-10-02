@@ -15,7 +15,7 @@
 @section('content')
     <div class="mb-4">
         <p class="text-[13px] text-neutral-500">
-            Site-wide configuration. Nothing here is consumed anywhere else on the site yet — saving a value only stores it.
+            Site-wide configuration: branding, contact details, system options, payment details and public-website text.
         </p>
     </div>
 

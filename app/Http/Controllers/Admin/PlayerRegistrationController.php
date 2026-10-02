@@ -269,6 +269,22 @@ class PlayerRegistrationController extends Controller
         );
     }
 
+    /**
+     * The photo the player uploaded on the public form. Private like the
+     * documents above (it is not the public player photo), so only an admin
+     * can see it, through this same path-from-the-row-only route.
+     */
+    public function photo(PlayerRegistration $playerRegistration): StreamedResponse
+    {
+        $this->authorize('view', $playerRegistration);
+
+        return $this->privateDocumentResponse(
+            $playerRegistration->photo_path,
+            $playerRegistration,
+            'photo'
+        );
+    }
+
     public function update(UpdatePlayerRegistrationRequest $request, PlayerRegistration $playerRegistration): RedirectResponse
     {
         $this->authorize('update', $playerRegistration);

@@ -68,6 +68,15 @@
                     {{ $registration->player->batting_style ? ucfirst(str_replace('_', ' ', $registration->player->batting_style)) : 'Not provided' }}
                 </dd>
             </div>
+            @php
+                $bowlingLabels = ['right_arm' => 'Right arm', 'left_arm' => 'Left arm', 'none' => "Doesn't bowl"];
+            @endphp
+            <div>
+                <dt class="text-slate-400">Bowling arm</dt>
+                <dd class="mt-0.5 font-medium text-slate-800">
+                    {{ $bowlingLabels[$registration->player->bowling_style] ?? 'Not provided' }}
+                </dd>
+            </div>
             <div>
                 <dt class="text-slate-400">Village (Gram)</dt>
                 <dd class="mt-0.5 font-medium text-slate-800">{{ $registration->village ?? 'Not provided' }}</dd>
@@ -95,7 +104,24 @@
                     UTR typed by the player
                     <span class="text-slate-300" title="What the player typed as their payment/transaction ID on the registration form. Unverified — compare it with the payment proof, then record the confirmed value as the Payment reference.">(?)</span>
                 </dt>
-                <dd class="mt-0.5 break-all font-medium text-slate-800">{{ $registration->submitted_utr ?? 'Not provided' }}</dd>
+                @php $utrMatchesScreenshot = $registration->ocrMatchesSubmittedUtr(); @endphp
+                <dd class="mt-0.5 break-all font-medium text-slate-800">
+                    {{ $registration->submitted_utr ?? 'Not provided' }}
+                    @if($registration->hasDuplicateSubmittedUtr())
+                        <span class="ml-1 inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-inset ring-amber-200">
+                            also typed on another registration
+                        </span>
+                    @endif
+                    @if($utrMatchesScreenshot === true)
+                        <span class="ml-1 inline-flex items-center rounded-full bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-700 ring-1 ring-inset ring-green-200">
+                            matches the screenshot
+                        </span>
+                    @elseif($utrMatchesScreenshot === false)
+                        <span class="ml-1 inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-inset ring-amber-200">
+                            differs from the screenshot
+                        </span>
+                    @endif
+                </dd>
             </div>
             <div>
                 <dt class="text-slate-400">
@@ -187,13 +213,22 @@
             <div class="flex items-center justify-between gap-3 rounded-md border border-slate-100 px-3 py-2">
                 <span class="font-medium text-slate-700">Photo</span>
                 <span class="flex flex-wrap items-center justify-end gap-2">
+                    @if($registration->photo_path)
+                        <a
+                            href="{{ route('admin.player-registrations.photo', $registration) }}"
+                            target="_blank" rel="noopener"
+                            class="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 font-medium text-green-700 hover:bg-green-50"
+                        >
+                            View submitted photo
+                        </a>
+                    @endif
                     @if($registration->player->photo_path)
                         <a
                             href="{{ \Illuminate\Support\Facades\Storage::url($registration->player->photo_path) }}"
                             target="_blank" rel="noopener"
                             class="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 font-medium text-green-700 hover:bg-green-50"
                         >
-                            View
+                            View profile photo
                         </a>
                     @endif
                     @if($registration->photo_url)
@@ -205,7 +240,7 @@
                             Open in Google Drive
                         </a>
                     @endif
-                    @if(! $registration->player->photo_path && ! $registration->photo_url)
+                    @if(! $registration->photo_path && ! $registration->player->photo_path && ! $registration->photo_url)
                         <span class="text-slate-400">Not provided</span>
                     @endif
                 </span>

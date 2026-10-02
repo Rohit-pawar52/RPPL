@@ -65,6 +65,7 @@ class PlayerRegistration extends Model
         'registered_at',
         'aadhaar_document_path',
         'payment_proof_path',
+        'photo_path',
         'payment_reference',
         'ocr_transaction_id',
         'ocr_status',
@@ -154,5 +155,40 @@ class PlayerRegistration extends Model
         return static::where('ocr_transaction_id', $this->ocr_transaction_id)
             ->where('id', '!=', $this->id)
             ->exists();
+    }
+
+    /**
+     * Whether the UTR this player typed also appears on a different
+     * registration — a cue to compare the two payments before approving,
+     * never a reason to reject: one payment can legitimately cover two
+     * team-mates. Case-insensitive on every database (the public form
+     * stores it upper-cased, an imported sheet may not).
+     */
+    public function hasDuplicateSubmittedUtr(): bool
+    {
+        if ($this->submitted_utr === null || $this->submitted_utr === '') {
+            return false;
+        }
+
+        return static::whereRaw('LOWER(submitted_utr) = ?', [mb_strtolower($this->submitted_utr)])
+            ->where('id', '!=', $this->id)
+            ->exists();
+    }
+
+    /**
+     * Whether the transaction id read off the payment screenshot agrees
+     * with the one the player typed. Null when either is missing, so the
+     * caller only shows a verdict when there is something to compare.
+     * Advisory like every OCR value — see hasDuplicateOcrTransactionId().
+     */
+    public function ocrMatchesSubmittedUtr(): ?bool
+    {
+        if ($this->ocr_status !== self::OCR_EXTRACTED || blank($this->ocr_transaction_id) || blank($this->submitted_utr)) {
+            return null;
+        }
+
+        $clean = fn (string $value) => mb_strtolower((string) preg_replace('/\s+/', '', $value));
+
+        return $clean($this->ocr_transaction_id) === $clean($this->submitted_utr);
     }
 }
