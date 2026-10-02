@@ -194,22 +194,24 @@ return [
     */
 
     // Player-registration fields where the generic line reads awkwardly
-    // in Hindi (file uploads, a select, "before today", sizes in MB
-    // rather than kilobytes).
+    // in Hindi (radio choices and file uploads). Size limits are not here:
+    // they depend on the server's upload limit, so the form request builds
+    // those messages (lang/hi/registration.php, validation.file_max).
     'custom' => [
         'primary_role' => [
             'required' => 'खिलाड़ी का प्रकार चुनना ज़रूरी है।',
         ],
-        'date_of_birth' => [
-            'before' => 'जन्म तिथि आज से पहले की होनी चाहिए।',
+        'batting_style' => [
+            'required' => 'बल्लेबाज़ी का हाथ चुनना ज़रूरी है।',
         ],
-        'aadhaar_document' => [
-            'required' => 'आधार कार्ड की फ़ाइल अपलोड करना ज़रूरी है।',
-            'max' => 'आधार कार्ड की फ़ाइल 4 MB से बड़ी नहीं होनी चाहिए।',
+        'bowling_style' => [
+            'required' => 'गेंदबाज़ी का हाथ चुनना ज़रूरी है।',
+        ],
+        'photo' => [
+            'required' => 'अपनी फ़ोटो अपलोड करना ज़रूरी है।',
         ],
         'payment_proof' => [
             'required' => 'भुगतान का सबूत (स्क्रीनशॉट) अपलोड करना ज़रूरी है।',
-            'max' => 'भुगतान के सबूत की फ़ाइल 2 MB से बड़ी नहीं होनी चाहिए।',
         ],
     ],
 
@@ -228,9 +230,7 @@ return [
         'name' => 'नाम',
         'phone' => 'मोबाइल नंबर',
         'email' => 'ईमेल',
-        'date_of_birth' => 'जन्म तिथि',
         'primary_role' => 'खिलाड़ी का प्रकार',
-        'aadhaar_document' => 'आधार कार्ड',
         'payment_proof' => 'भुगतान का सबूत',
         'registration_number' => 'पंजीकरण नंबर',
     ],

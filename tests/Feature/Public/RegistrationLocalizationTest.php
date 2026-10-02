@@ -32,6 +32,29 @@ class RegistrationLocalizationTest extends TestCase
         ]);
     }
 
+    /**
+     * A complete, valid submission (the fake files use ->create() — no GD here).
+     *
+     * @return array<string, mixed>
+     */
+    private function submission(): array
+    {
+        return [
+            'name' => 'Ramesh Joshi',
+            'age' => 24,
+            'phone' => '9876543210',
+            'primary_role' => 'batter',
+            'batting_style' => 'right_hand',
+            'bowling_style' => 'none',
+            'village' => 'Sendriya',
+            'tehsil' => 'Multai',
+            'district' => 'Betul',
+            'submitted_utr' => '402912345678',
+            'photo' => UploadedFile::fake()->create('photo.jpg', 500, 'image/jpeg'),
+            'payment_proof' => UploadedFile::fake()->create('proof.jpg', 300, 'image/jpeg'),
+        ];
+    }
+
     private function registrationFor(string $name, string $phone, string $status = 'pending'): PlayerRegistration
     {
         $player = Player::factory()->create(['name' => $name, 'phone' => $phone]);
@@ -58,7 +81,9 @@ class RegistrationLocalizationTest extends TestCase
         $this->get(route('public.player-registration.create'))
             ->assertOk()
             ->assertSee('Full Name')
-            ->assertSee('Aadhaar Document')
+            ->assertSee('Batting hand')
+            ->assertSee('Village (Gram)')
+            ->assertSee('Payment Screenshot')
             ->assertSee('Submit Registration')
             ->assertSee('Wicket Keeper')
             ->assertDontSee('पूरा नाम');
@@ -66,10 +91,13 @@ class RegistrationLocalizationTest extends TestCase
         $this->withCookie('rppl_locale', 'hi')->get(route('public.player-registration.create'))
             ->assertOk()
             ->assertSee('पूरा नाम')
-            ->assertSee('आधार कार्ड')
+            ->assertSee('बल्लेबाज़ी का हाथ')
+            ->assertSee('गाँव (ग्राम)')
+            ->assertSee('भुगतान का स्क्रीनशॉट')
             ->assertSee('पंजीकरण जमा करें')
             ->assertSee('विकेटकीपर')
             ->assertSee('value="wicket_keeper"', false) // option VALUE never translated
+            ->assertSee('value="right_hand"', false)
             ->assertSee('RPPL 2026')                   // edition name as stored
             ->assertDontSee('Submit Registration');
     }
@@ -126,12 +154,17 @@ class RegistrationLocalizationTest extends TestCase
             ]);
 
         // Hindi — generic rule + Hindi attribute name, a field-specific
-        // custom line, and the translated form-level override.
+        // custom line, a message built by the form request for the new
+        // fields, and the translated form-level override.
         $this->withCookie('rppl_locale', 'hi')
-            ->post(route('public.player-registration.store'), ['phone' => '12345'])
+            ->post(route('public.player-registration.store'), ['phone' => '12345', 'age' => '3', 'submitted_utr' => 'x'])
             ->assertSessionHasErrors([
                 'name' => 'नाम भरना ज़रूरी है।',
-                'aadhaar_document' => 'आधार कार्ड की फ़ाइल अपलोड करना ज़रूरी है।',
+                'photo' => 'अपनी फ़ोटो अपलोड करना ज़रूरी है।',
+                'batting_style' => 'बल्लेबाज़ी का हाथ चुनना ज़रूरी है।',
+                'village' => 'गाँव भरना ज़रूरी है।',
+                'age' => 'कृपया 5 से 99 के बीच की उम्र डालें।',
+                'submitted_utr' => 'अपने पेमेंट ऐप में दिखने वाला UTR / ट्रांज़ैक्शन ID डालें — सिर्फ़ अक्षर और अंक, 8 से 30 वर्ण।',
                 'phone' => 'कृपया सही 10 अंकों का भारतीय मोबाइल नंबर डालें।',
             ]);
 
@@ -148,14 +181,7 @@ class RegistrationLocalizationTest extends TestCase
         $this->openEdition();
 
         $this->withCookie('rppl_locale', 'hi')
-            ->post(route('public.player-registration.store'), [
-                'name' => 'Ramesh Joshi',
-                'phone' => '9876543210',
-                'date_of_birth' => '2000-01-01',
-                'primary_role' => 'batter',
-                'aadhaar_document' => UploadedFile::fake()->create('aadhaar.jpg', 500, 'image/jpeg'),
-                'payment_proof' => UploadedFile::fake()->create('proof.jpg', 300, 'image/jpeg'),
-            ])
+            ->post(route('public.player-registration.store'), $this->submission())
             ->assertRedirect(route('public.player-registration.success'));
 
         $registration = PlayerRegistration::firstOrFail();
@@ -177,14 +203,7 @@ class RegistrationLocalizationTest extends TestCase
         PlayerRegistration::factory()->create(['edition_id' => $edition->id, 'player_id' => $player->id]);
 
         $this->withCookie('rppl_locale', 'hi')
-            ->post(route('public.player-registration.store'), [
-                'name' => 'Ramesh Joshi',
-                'phone' => '9876543210',
-                'date_of_birth' => '2000-01-01',
-                'primary_role' => 'batter',
-                'aadhaar_document' => UploadedFile::fake()->create('aadhaar.jpg', 500, 'image/jpeg'),
-                'payment_proof' => UploadedFile::fake()->create('proof.jpg', 300, 'image/jpeg'),
-            ])
+            ->post(route('public.player-registration.store'), $this->submission())
             ->assertSessionHasErrors(['phone' => __('registration.errors.duplicate', [], 'hi')]);
     }
 }

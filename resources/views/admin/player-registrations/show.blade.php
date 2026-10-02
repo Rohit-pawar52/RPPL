@@ -46,10 +46,14 @@
                     {{ $registration->player->date_of_birth?->format('d M Y') ?? 'Not provided' }}
                 </dd>
             </div>
+            @php $ageFromDob = $registration->player->date_of_birth?->age; @endphp
             <div>
                 <dt class="text-slate-400">Age</dt>
                 <dd class="mt-0.5 font-medium text-slate-800">
-                    {{ $registration->player->date_of_birth?->age ?? '—' }}
+                    {{ $ageFromDob ?? $registration->age ?? '—' }}
+                    @if($ageFromDob === null && $registration->age !== null)
+                        <span class="font-normal text-slate-400">(as entered on the form)</span>
+                    @endif
                 </dd>
             </div>
             <div>
@@ -57,6 +61,33 @@
                 <dd class="mt-0.5 font-medium text-slate-800">
                     {{ \App\Models\Player::PRIMARY_ROLE_LABELS[$registration->player->primary_role] ?? 'Not provided' }}
                 </dd>
+            </div>
+            <div>
+                <dt class="text-slate-400">Batting hand</dt>
+                <dd class="mt-0.5 font-medium text-slate-800">
+                    {{ $registration->player->batting_style ? ucfirst(str_replace('_', ' ', $registration->player->batting_style)) : 'Not provided' }}
+                </dd>
+            </div>
+            @php
+                $bowlingLabels = ['right_arm' => 'Right arm', 'left_arm' => 'Left arm', 'none' => "Doesn't bowl"];
+            @endphp
+            <div>
+                <dt class="text-slate-400">Bowling arm</dt>
+                <dd class="mt-0.5 font-medium text-slate-800">
+                    {{ $bowlingLabels[$registration->player->bowling_style] ?? 'Not provided' }}
+                </dd>
+            </div>
+            <div>
+                <dt class="text-slate-400">Village (Gram)</dt>
+                <dd class="mt-0.5 font-medium text-slate-800">{{ $registration->village ?? 'Not provided' }}</dd>
+            </div>
+            <div>
+                <dt class="text-slate-400">Tehsil</dt>
+                <dd class="mt-0.5 font-medium text-slate-800">{{ $registration->tehsil ?? 'Not provided' }}</dd>
+            </div>
+            <div>
+                <dt class="text-slate-400">District</dt>
+                <dd class="mt-0.5 font-medium text-slate-800">{{ $registration->district ?? 'Not provided' }}</dd>
             </div>
             <div>
                 <dt class="text-slate-400">Registration fee</dt>
@@ -67,6 +98,30 @@
             <div>
                 <dt class="text-slate-400">Payment reference</dt>
                 <dd class="mt-0.5 font-medium text-slate-800">{{ $registration->payment_reference ?? 'Not provided' }}</dd>
+            </div>
+            <div>
+                <dt class="text-slate-400">
+                    UTR typed by the player
+                    <span class="text-slate-300" title="What the player typed as their payment/transaction ID on the registration form. Unverified — compare it with the payment proof, then record the confirmed value as the Payment reference.">(?)</span>
+                </dt>
+                @php $utrMatchesScreenshot = $registration->ocrMatchesSubmittedUtr(); @endphp
+                <dd class="mt-0.5 break-all font-medium text-slate-800">
+                    {{ $registration->submitted_utr ?? 'Not provided' }}
+                    @if($registration->hasDuplicateSubmittedUtr())
+                        <span class="ml-1 inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-inset ring-amber-200">
+                            also typed on another registration
+                        </span>
+                    @endif
+                    @if($utrMatchesScreenshot === true)
+                        <span class="ml-1 inline-flex items-center rounded-full bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-700 ring-1 ring-inset ring-green-200">
+                            matches the screenshot
+                        </span>
+                    @elseif($utrMatchesScreenshot === false)
+                        <span class="ml-1 inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-inset ring-amber-200">
+                            differs from the screenshot
+                        </span>
+                    @endif
+                </dd>
             </div>
             <div>
                 <dt class="text-slate-400">
@@ -95,7 +150,7 @@
             <div>
                 <dt class="text-slate-400">Registered at</dt>
                 <dd class="mt-0.5 font-medium text-slate-800">
-                    {{ $registration->registered_at?->format('d M Y, h:i A') ?? '—' }}
+                    {{ display_datetime($registration->registered_at, 'd M Y, h:i A') ?? '—' }}
                 </dd>
             </div>
             <div>
@@ -131,18 +186,73 @@
             </div>
             <div class="flex items-center justify-between gap-3 rounded-md border border-slate-100 px-3 py-2">
                 <span class="font-medium text-slate-700">Payment Proof</span>
-                @if($registration->payment_proof_path)
-                    <a
-                        href="{{ route('admin.player-registrations.payment-proof', $registration) }}"
-                        target="_blank" rel="noopener"
-                        class="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 font-medium text-green-700 hover:bg-green-50"
-                    >
-                        View
-                    </a>
-                @else
-                    <span class="text-slate-400">Not provided</span>
-                @endif
+                <span class="flex flex-wrap items-center justify-end gap-2">
+                    @if($registration->payment_proof_path)
+                        <a
+                            href="{{ route('admin.player-registrations.payment-proof', $registration) }}"
+                            target="_blank" rel="noopener"
+                            class="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 font-medium text-green-700 hover:bg-green-50"
+                        >
+                            View
+                        </a>
+                    @endif
+                    @if($registration->payment_proof_url)
+                        <a
+                            href="{{ $registration->payment_proof_url }}"
+                            target="_blank" rel="noopener noreferrer"
+                            class="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 font-medium text-green-700 hover:bg-green-50"
+                        >
+                            Open in Google Drive
+                        </a>
+                    @endif
+                    @if(! $registration->payment_proof_path && ! $registration->payment_proof_url)
+                        <span class="text-slate-400">Not provided</span>
+                    @endif
+                </span>
+            </div>
+            <div class="flex items-center justify-between gap-3 rounded-md border border-slate-100 px-3 py-2">
+                <span class="font-medium text-slate-700">Photo</span>
+                <span class="flex flex-wrap items-center justify-end gap-2">
+                    @if($registration->photo_path)
+                        <a
+                            href="{{ route('admin.player-registrations.photo', $registration) }}"
+                            target="_blank" rel="noopener"
+                            class="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 font-medium text-green-700 hover:bg-green-50"
+                        >
+                            View submitted photo
+                        </a>
+                    @endif
+                    @if($registration->player->photo_path)
+                        <a
+                            href="{{ \Illuminate\Support\Facades\Storage::url($registration->player->photo_path) }}"
+                            target="_blank" rel="noopener"
+                            class="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 font-medium text-green-700 hover:bg-green-50"
+                        >
+                            View profile photo
+                        </a>
+                    @endif
+                    @if($registration->photo_url)
+                        <a
+                            href="{{ $registration->photo_url }}"
+                            target="_blank" rel="noopener noreferrer"
+                            class="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 font-medium text-green-700 hover:bg-green-50"
+                        >
+                            Open in Google Drive
+                        </a>
+                    @endif
+                    @if(! $registration->photo_path && ! $registration->player->photo_path && ! $registration->photo_url)
+                        <span class="text-slate-400">Not provided</span>
+                    @endif
+                </span>
             </div>
         </dl>
+
+        @if($registration->photo_url || $registration->payment_proof_url)
+            <p class="mt-3 text-[11px] text-slate-400">
+                A Google Drive link comes from an imported Google Form sheet &mdash; the file itself stays on Drive, so
+                open it while signed in to the Google account that owns the form. The player's own photo can be uploaded
+                from Players &rarr; Edit.
+            </p>
+        @endif
     </div>
 @endsection

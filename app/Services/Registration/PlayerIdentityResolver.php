@@ -5,15 +5,18 @@ namespace App\Services\Registration;
 use App\Models\Player;
 
 /**
- * The one shared core of "does this phone/email already belong to a
- * Player, and do they agree" — used by both PlayerRegistrationImportService
- * (CSV import) and the public guest registration flow (Phase 3.39C), so
- * the two never develop contradictory identity rules. Deliberately tiny:
- * matching by phone/email independently and flagging a same-row
- * conflict is the entire shared concern — everything else (how a
- * conflict/inactive/duplicate-registration result is reported to an
- * admin importing a file vs. a public guest) legitimately differs per
- * caller and stays in each caller's own code.
+ * "Does this phone/email already belong to a Player, and do they agree" —
+ * the rule PlayerRegistrationImportService applies to a CSV in its simple
+ * column format. Deliberately tiny: matching by phone/email independently
+ * and flagging a same-row conflict is the entire concern — everything else
+ * (how a conflict/inactive/duplicate-registration result is reported)
+ * stays in the caller's own code.
+ *
+ * The public registration form and a Google Form sheet do NOT use it: there
+ * the mobile number alone identifies a person and an email is only contact
+ * information (often shared by a family or a whole team), so it must never
+ * merge two people or block a registration — see
+ * GuestPlayerRegistrationService and PlayerRegistrationImportService.
  */
 class PlayerIdentityResolver
 {

@@ -34,7 +34,7 @@
             @if($branding->footerText)
                 <p>{{ $branding->footerText }}</p>
             @else
-                <p>&copy; {{ now()->year }} {{ $branding->applicationName }}</p>
+                <p>&copy; {{ display_datetime(now(), 'Y') }} {{ $branding->applicationName }}</p>
             @endif
 
             @if($footerContentPages->isNotEmpty())

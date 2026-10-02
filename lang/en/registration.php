@@ -3,13 +3,15 @@
 /**
  * Public player-registration UI strings: the registration form, its
  * success page, the registration-status lookup page, the service-layer
- * rejection messages shown back on the form, and the two form-specific
- * validation messages (phone / registration-number format).
+ * rejection messages shown back on the form, and the form-specific
+ * validation messages (phone / UTR / file size / registration-number
+ * format).
  *
  * Only static app text lives here — never a player's name, phone,
  * registration number, edition name, or any other stored value; those
  * always render exactly as stored regardless of locale. `:league` is
- * replaced with the branding short name (e.g. "RPPL").
+ * replaced with the branding short name (e.g. "RPPL"); `:size` is the
+ * largest upload the server accepts, in MB.
  *
  * Generic validation-rule messages (required/max/mimes/...) for the
  * Hindi locale live in lang/hi/validation.php instead — that's where
@@ -26,10 +28,20 @@ return [
     'form' => [
         'heading' => 'Player Registration',
         'fee_label' => 'Registration fee:',
-        'payment_instructions' => 'Pay the registration fee via UPI/bank transfer and upload your payment proof below. Payment and document verification is done manually by :league administration after submission.',
+        'payment_instructions' => 'Pay the registration fee by UPI/bank transfer, then enter the UTR / Transaction ID and upload a screenshot of the payment below. Payment and details are verified manually by :league administration after submission.',
+        'payment_instructions_upi' => 'Pay the registration fee using the QR code or UPI ID below, then enter the UTR / Transaction ID and upload a screenshot of the payment. Payment and details are verified manually by :league administration after submission.',
         'already_registered' => 'Already registered?',
         'check_status_link' => 'Check Registration Status',
+        'required_note' => 'Fields marked * are required.',
         'submit' => 'Submit Registration',
+        'submitting' => 'Submitting…',
+        'sections' => [
+            'you' => 'About you',
+            'playing' => 'Playing details',
+            'address' => 'Where you live',
+            'photo' => 'Your photo',
+            'payment' => 'Payment',
+        ],
     ],
 
     'closed' => [
@@ -45,16 +57,23 @@ return [
 
     'fields' => [
         'name' => 'Full Name',
+        'age' => 'Age',
+        'age_placeholder' => 'Age in years',
         'phone' => 'Phone Number',
         'phone_placeholder' => '10-digit mobile number',
         'email' => 'Email (optional)',
-        'date_of_birth' => 'Date of Birth',
         'player_type' => 'Player Type',
-        'player_type_placeholder' => 'Select player type',
-        'aadhaar_document' => 'Aadhaar Document',
-        'aadhaar_hint' => 'JPEG, PNG, or PDF — up to 4 MB.',
-        'payment_proof' => 'Payment Proof',
-        'payment_proof_hint' => 'Screenshot of your UPI/bank payment — JPEG or PNG, up to 2 MB.',
+        'batting_style' => 'Batting hand',
+        'bowling_style' => 'Bowling arm',
+        'village' => 'Village (Gram)',
+        'tehsil' => 'Tehsil',
+        'district' => 'District',
+        'photo' => 'Your Photo',
+        'photo_hint' => 'A clear photo of your face — JPEG, PNG or WebP, up to :size MB.',
+        'submitted_utr' => 'UTR / Transaction ID',
+        'submitted_utr_hint' => 'Shown in your payment app after you pay — for UPI it is usually 12 digits.',
+        'payment_proof' => 'Payment Screenshot',
+        'payment_proof_hint' => 'Screenshot of your UPI/bank payment — JPEG or PNG, up to :size MB.',
         'registration_number' => 'Registration Number',
     ],
 
@@ -67,6 +86,34 @@ return [
         'wicket_keeper' => 'Wicket Keeper',
     ],
 
+    // Labels for Player::BATTING_STYLES / BOWLING_STYLES (values never
+    // translated).
+    'batting_styles' => [
+        'right_hand' => 'Right hand',
+        'left_hand' => 'Left hand',
+    ],
+
+    'bowling_styles' => [
+        'right_arm' => 'Right arm',
+        'left_arm' => 'Left arm',
+        'none' => "Doesn't bowl",
+    ],
+
+    'payment' => [
+        'amount' => 'Amount to pay',
+        'scan' => 'Scan this QR code with any UPI app',
+        'upi_id' => 'UPI ID',
+        'copy' => 'Copy',
+        'copied' => 'Copied',
+        'pay_with_app' => 'Pay with a UPI app',
+        'pay_with_app_hint' => 'On a phone you cannot scan a QR code shown on the same screen — tap this to open your UPI app instead.',
+    ],
+
+    // Browser-side messages (the file-size check before uploading).
+    'js' => [
+        'too_large' => 'This file is larger than :size MB. Please choose a smaller one.',
+    ],
+
     'success' => [
         'heading' => 'Registration Successful',
         'registration_number' => 'Registration Number',
@@ -76,7 +123,7 @@ return [
         'payment_status' => 'Payment Status',
         'pending' => 'Pending',
         'registration_fee' => 'Registration Fee',
-        'verification_notice' => 'Your payment and documents will be manually verified by :league administration. This may take a few days.',
+        'verification_notice' => 'Your payment and details will be manually verified by :league administration. This may take a few days.',
         'return_notice' => 'You can come back anytime and check your status using your Registration Number:',
         'back_home' => 'Back to :league home',
     ],
@@ -114,9 +161,26 @@ return [
         'closed' => 'Player registration is currently closed.',
     ],
 
+    // Plain-language names for the validation messages of the newer
+    // fields ("The village field is required."). The older fields use the
+    // names in lang/{locale}/validation.php.
+    'attributes' => [
+        'age' => 'age',
+        'batting_style' => 'batting hand',
+        'bowling_style' => 'bowling arm',
+        'village' => 'village',
+        'tehsil' => 'tehsil',
+        'district' => 'district',
+        'photo' => 'photo',
+        'submitted_utr' => 'UTR / transaction ID',
+    ],
+
     // Form-specific overrides returned from the FormRequests' messages().
     'validation' => [
         'phone_regex' => 'Enter a valid 10-digit Indian mobile number.',
+        'age_between' => 'Enter an age between :min and :max.',
+        'utr_regex' => 'Enter the UTR / Transaction ID from your payment app — letters and numbers only, 8 to 30 characters.',
+        'file_max' => 'The file is too large. Please choose one up to :size MB.',
         'registration_number_regex' => 'Enter your Registration Number exactly as given, e.g. RPPL-2026-000125.',
     ],
 

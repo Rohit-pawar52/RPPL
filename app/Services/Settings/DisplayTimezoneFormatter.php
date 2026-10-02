@@ -68,4 +68,36 @@ class DisplayTimezoneFormatter
             ->startOfDay()
             ->setTimezone('UTC');
     }
+
+    /**
+     * Midnight at the END of that display-timezone calendar day — i.e. the
+     * start of the next day — in UTC. Used as the exclusive upper bound
+     * of a "up to and including this date" filter on a UTC-stored
+     * datetime column, so a record at 11:59 PM on that day is in and one
+     * at 12:00 AM the next day is out.
+     */
+    public function startOfNextDisplayDate(string $date): Carbon
+    {
+        return Carbon::createFromFormat('Y-m-d', $date, $this->settings->get('system.display_timezone'))
+            ->startOfDay()
+            ->addDay()
+            ->setTimezone('UTC');
+    }
+
+    /**
+     * An admin-typed date or date-time of any shape the `date` validation
+     * rule lets through ("2026-10-03T00:20" from a datetime-local input,
+     * "2026-10-03 00:20:00", a plain "2026-10-03" meaning that day's
+     * midnight) read in the display timezone and returned in UTC, like
+     * every other stored datetime. A value that carries its own offset
+     * keeps it. Null for a blank value.
+     */
+    public function parseLenientFromDisplayTimezone(?string $value): ?Carbon
+    {
+        if (blank($value)) {
+            return null;
+        }
+
+        return Carbon::parse($value, $this->settings->get('system.display_timezone'))->setTimezone('UTC');
+    }
 }

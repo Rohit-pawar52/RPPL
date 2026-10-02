@@ -17,7 +17,7 @@
             <x-status-badge :status="$editionTeam->team->is_active ? 'active' : 'inactive'" />
         </div>
         <p class="mt-1 text-xs text-slate-500">
-            Added {{ $editionTeam->created_at->format('d M Y') }}
+            Added {{ display_datetime($editionTeam->created_at, 'd M Y') }}
             @unless($editionTeam->team->is_active)
                 &middot; <span class="text-slate-400">team is currently inactive</span>
             @endunless

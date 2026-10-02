@@ -52,11 +52,12 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Generous enough for real guests behind a shared/mobile network
-        // (e.g. several family members registering from the same
-        // connection) while still bounding abuse — not a CAPTCHA/OTP
-        // replacement, just a sane ceiling.
+        // (a whole team registering together from one connection, or
+        // someone retrying after a rejected upload — every attempt counts,
+        // not only the successful ones) while still bounding abuse — not a
+        // CAPTCHA/OTP replacement, just a sane ceiling.
         RateLimiter::for('player-registration', function (Request $request) {
-            return Limit::perMinute(5)->by($request->ip());
+            return Limit::perMinute(10)->by($request->ip());
         });
 
         // Registration numbers are somewhat predictable (sequential,

@@ -1,9 +1,11 @@
 {{--
-    One labelled public form field (text/email/date/select) in the RPPL
+    One labelled public form field (text/email/number/select) in the RPPL
     public style. Same contract as <x-form.input> / <x-form.select>:
     id = name, old() repopulation, inline validation error.
     Expects: $name, $label; optional: $type, $value, $placeholder,
-    $required, $autofocus, $autocomplete, $options (renders a <select>),
+    $required (adds the * and the browser's required check), $autofocus,
+    $autocomplete, $inputmode, $min, $max, $maxlength, $hint (small help
+    text under the field), $options (renders a <select>),
     $selectPlaceholder.
 --}}
 @php
@@ -15,7 +17,7 @@
 @endphp
 
 <div class="mb-4">
-    <label for="{{ $name }}" class="mb-1 block text-xs font-semibold text-slate-700">{{ $label }}</label>
+    <label for="{{ $name }}" class="mb-1 block text-xs font-semibold text-slate-700">{{ $label }}@if($required ?? false)<span class="text-red-500" aria-hidden="true"> *</span>@endif</label>
 
     @if(isset($options))
         <select id="{{ $name }}" name="{{ $name }}" class="{{ $fieldClass }}" @required($required ?? false)>
@@ -35,9 +37,17 @@
             class="{{ $fieldClass }}"
             @if(! empty($placeholder)) placeholder="{{ $placeholder }}" @endif
             @if(! empty($autocomplete)) autocomplete="{{ $autocomplete }}" @endif
+            @if(! empty($inputmode)) inputmode="{{ $inputmode }}" @endif
+            @if(isset($min)) min="{{ $min }}" @endif
+            @if(isset($max)) max="{{ $max }}" @endif
+            @if(! empty($maxlength)) maxlength="{{ $maxlength }}" @endif
             @required($required ?? false)
             @if(! empty($autofocus)) autofocus @endif
         />
+    @endif
+
+    @if(! empty($hint))
+        <p class="pub-meta mt-1">{{ $hint }}</p>
     @endif
 
     @error($name)

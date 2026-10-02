@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\Settings\UpdateGeneralSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdatePaymentSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdatePublicWebsiteSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateSystemSettingsRequest;
+use App\Http\Requests\Admin\Settings\UpdateUpiSettingsRequest;
 use App\Services\Settings\BrandingUploadService;
 use App\Services\Settings\SettingsService;
 use Illuminate\Http\RedirectResponse;
@@ -172,6 +173,33 @@ class SettingsController extends Controller
 
         return redirect()->route('admin.settings.index', ['tab' => 'payments'])
             ->with('success', 'Payment settings updated.');
+    }
+
+    /**
+     * The UPI ID and QR image the public registration form shows. Its own
+     * form and action (not part of updatePayments) so saving it can never
+     * touch the Razorpay values, and the reverse.
+     */
+    public function updateUpi(UpdateUpiSettingsRequest $request): RedirectResponse
+    {
+        $this->authorize('manage-tournament');
+
+        $data = $request->validated();
+
+        // Removal takes priority over a same-request replacement, exactly
+        // like the logo/favicon in updateGeneral().
+        if ($request->boolean('remove_upi_qr')) {
+            $this->branding->removeUpiQr();
+        } elseif ($request->hasFile('upi_qr')) {
+            $this->branding->replaceUpiQr($request->file('upi_qr'));
+        }
+
+        $this->settings->setMany([
+            'payment.upi_id' => filled($data['upi_id'] ?? null) ? $data['upi_id'] : null,
+        ]);
+
+        return redirect()->route('admin.settings.index', ['tab' => 'payments'])
+            ->with('success', 'UPI payment details updated.');
     }
 
     public function updatePublicWebsite(UpdatePublicWebsiteSettingsRequest $request): RedirectResponse

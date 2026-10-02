@@ -85,6 +85,11 @@ final class SettingsRegistry
         'payment.razorpay_key_id' => ['type' => Setting::TYPE_STRING, 'default' => null],
         'payment.razorpay_key_secret' => ['type' => Setting::TYPE_ENCRYPTED, 'default' => null],
         'payment.razorpay_webhook_secret' => ['type' => Setting::TYPE_ENCRYPTED, 'default' => null],
+        // Where a player pays the registration fee by hand: shown on the
+        // public registration form (the QR image lives on the public disk —
+        // it is meant to be seen by everyone).
+        'payment.upi_id' => ['type' => Setting::TYPE_STRING, 'default' => null],
+        'payment.upi_qr_path' => ['type' => Setting::TYPE_IMAGE, 'default' => null],
 
         // Notifications — the Tournament-Day Morning Reminder (see
         // TournamentDayReminderService). Opt-in (default off), same as
