@@ -40,11 +40,12 @@
 
 <x-form.input
     name="registration_fee"
-    label="Registration Fee (optional)"
+    label="Registration Fee"
     type="number"
     step="0.01"
     min="0"
     :value="$edition->registration_fee ?? ''"
+    help="Required to open public registration. The payment QR code shown on the registration page is uploaded under Settings → Payments."
 />
 
 {{--

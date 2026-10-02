@@ -28,8 +28,8 @@ return [
     'form' => [
         'heading' => 'Player Registration',
         'fee_label' => 'Registration fee:',
-        'payment_instructions' => 'Pay the registration fee by UPI/bank transfer, then enter the UTR / Transaction ID and upload a screenshot of the payment below. Payment and details are verified manually by :league administration after submission.',
-        'payment_instructions_upi' => 'Pay the registration fee using the QR code or UPI ID below, then enter the UTR / Transaction ID and upload a screenshot of the payment. Payment and details are verified manually by :league administration after submission.',
+        'payment_instructions' => 'Pay the registration fee by UPI/bank transfer, then upload a screenshot of the payment below (the UTR / Transaction ID is optional). Payment and details are verified manually by :league administration after submission.',
+        'payment_instructions_upi' => 'Pay the registration fee using the QR code or UPI ID below, then upload a screenshot of the payment (the UTR / Transaction ID is optional). Payment and details are verified manually by :league administration after submission.',
         'already_registered' => 'Already registered?',
         'check_status_link' => 'Check Registration Status',
         'required_note' => 'Fields marked * are required.',
@@ -57,7 +57,7 @@ return [
 
     'fields' => [
         'name' => 'Full Name',
-        'age' => 'Age',
+        'age' => 'Age (optional)',
         'age_placeholder' => 'Age in years',
         'phone' => 'Phone Number',
         'phone_placeholder' => '10-digit mobile number',
@@ -70,7 +70,7 @@ return [
         'district' => 'District',
         'photo' => 'Your Photo',
         'photo_hint' => 'A clear photo of your face — JPEG, PNG or WebP, up to :size MB.',
-        'submitted_utr' => 'UTR / Transaction ID',
+        'submitted_utr' => 'UTR / Transaction ID (optional)',
         'submitted_utr_hint' => 'Shown in your payment app after you pay — for UPI it is usually 12 digits.',
         'payment_proof' => 'Payment Screenshot',
         'payment_proof_hint' => 'Screenshot of your UPI/bank payment — JPEG or PNG, up to :size MB.',
