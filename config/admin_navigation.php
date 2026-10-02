@@ -23,6 +23,7 @@ return [
         // Scorers run matches too, so Matches has no ability requirement.
         ['label' => 'Matches', 'route' => 'admin.matches.index', 'icon' => 'trophy', 'active' => ['admin.matches.*']],
         ['label' => 'Reports', 'route' => 'admin.reports.index', 'icon' => 'document-chart', 'active' => ['admin.reports.*'], 'ability' => 'manage-tournament'],
+        ['label' => 'Analytics', 'route' => 'admin.analytics.index', 'icon' => 'chart-bar', 'active' => ['admin.analytics.*'], 'ability' => 'manage-tournament'],
     ],
 
     'groups' => [
