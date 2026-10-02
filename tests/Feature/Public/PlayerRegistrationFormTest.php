@@ -108,6 +108,21 @@ class PlayerRegistrationFormTest extends TestCase
             ->assertSee('Pay the registration fee using the QR code or UPI ID below');
     }
 
+    public function test_a_qr_code_alone_is_enough_and_shows_no_pay_link(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('payments/qr.png', 'fake-qr');
+        app(SettingsService::class)->setMany(['payment.upi_qr_path' => 'payments/qr.png']);
+
+        $this->get(route('public.player-registration.create'))
+            ->assertOk()
+            ->assertSee('Scan this QR code')
+            ->assertSee('payments/qr.png')
+            ->assertSee('Pay the registration fee using the QR code')
+            ->assertDontSee('upi://pay')
+            ->assertDontSee('Pay with a UPI app');
+    }
+
     public function test_without_upi_settings_only_the_general_payment_instructions_are_shown(): void
     {
         $this->get(route('public.player-registration.create'))
@@ -125,13 +140,13 @@ class PlayerRegistrationFormTest extends TestCase
     public static function requiredAnswers(): array
     {
         return array_combine(
-            $fields = ['name', 'age', 'phone', 'primary_role', 'batting_style', 'bowling_style', 'village', 'tehsil', 'district', 'submitted_utr', 'photo', 'payment_proof'],
+            $fields = ['name', 'phone', 'primary_role', 'batting_style', 'bowling_style', 'village', 'tehsil', 'district', 'photo', 'payment_proof'],
             array_map(fn (string $field) => [$field], $fields),
         );
     }
 
     #[DataProvider('requiredAnswers')]
-    public function test_every_answer_except_the_email_is_required(string $field): void
+    public function test_every_answer_except_email_age_and_utr_is_required(string $field): void
     {
         $payload = $this->answers();
         unset($payload[$field]);
@@ -140,6 +155,27 @@ class PlayerRegistrationFormTest extends TestCase
 
         $this->assertSame(0, PlayerRegistration::count());
         $this->assertEmpty(Storage::disk('local')->allFiles(), 'nothing is stored for a rejected form');
+    }
+
+    public function test_age_and_the_utr_may_be_left_out_but_are_checked_when_given(): void
+    {
+        $payload = $this->answers();
+        unset($payload['age'], $payload['submitted_utr']);
+
+        $this->post(route('public.player-registration.store'), $payload)
+            ->assertRedirect(route('public.player-registration.success'));
+
+        $registration = PlayerRegistration::sole();
+        $this->assertNull($registration->age);
+        $this->assertNull($registration->submitted_utr);
+
+        // Blank answers are the same as leaving them out.
+        $this->submit(['phone' => '9111111111', 'age' => '', 'submitted_utr' => ''])
+            ->assertRedirect(route('public.player-registration.success'));
+
+        $this->get(route('public.player-registration.create'))
+            ->assertSee('Age (optional)')
+            ->assertSee('UTR / Transaction ID (optional)');
     }
 
     public function test_the_email_is_optional_but_must_look_like_one(): void

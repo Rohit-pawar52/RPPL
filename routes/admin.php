@@ -173,6 +173,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('player-registrations/export', [PlayerRegistrationController::class, 'export'])->name('player-registrations.export');
         Route::post('player-registrations/export-selected', [PlayerRegistrationController::class, 'exportSelected'])->name('player-registrations.export-selected');
         Route::get('player-registrations/import', [PlayerRegistrationController::class, 'import'])->name('player-registrations.import');
+        Route::get('player-registrations/import/sample', [PlayerRegistrationController::class, 'importSample'])->name('player-registrations.import.sample');
         Route::post('player-registrations/import', [PlayerRegistrationController::class, 'importStore'])->name('player-registrations.import.store');
         // Private document review (Phase 3.39D) — served through the
         // controller after policy authorization, never via Storage::url()

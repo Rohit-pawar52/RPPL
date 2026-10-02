@@ -36,7 +36,10 @@ class ImportPlayerRegistrationsRequest extends FormRequest
                 'integer',
                 Rule::exists('editions', 'id')->where(fn ($query) => $query->where('status', '!=', 'completed')),
             ],
-            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
+            // The extension is checked (a real .xlsx is a zip, so its
+            // content-detected type is not a reliable "xlsx"); the importer
+            // itself tells an Excel file from a CSV by content.
+            'csv_file' => ['required', 'file', 'extensions:csv,txt,xlsx', 'max:2048'],
             'dry_run' => ['nullable', 'boolean'],
         ];
     }
@@ -48,7 +51,7 @@ class ImportPlayerRegistrationsRequest extends FormRequest
     {
         return [
             'edition_id.exists' => 'The selected edition is not currently accepting registrations.',
-            'csv_file.mimes' => 'The file must be a CSV file.',
+            'csv_file.extensions' => 'The file must be an Excel (.xlsx) or CSV file.',
         ];
     }
 }

@@ -14,6 +14,7 @@ use App\Services\PlayerRegistration\PlayerRegistrationService;
 use App\Services\Registration\PlayerRegistrationImportService;
 use App\Services\Settings\DisplayTimezoneFormatter;
 use App\Support\CsvSafe;
+use App\Support\XlsxWriter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -149,6 +150,29 @@ class PlayerRegistrationController extends Controller
 
         return view('admin.player-registrations.import', [
             'editions' => Edition::openForParticipation()->orderByDesc('year')->get(),
+        ]);
+    }
+
+    /**
+     * A ready-to-fill Excel sheet with the columns the importer reads and
+     * two example players (one with every answer, one with only the
+     * required ones), so an admin can replace the examples with real data
+     * and upload it as it is.
+     */
+    public function importSample(): StreamedResponse
+    {
+        $this->authorize('create', PlayerRegistration::class);
+
+        $rows = [
+            ['Timestamp', 'Name', 'Age', 'Mobile Number', 'Email Address', 'Role', 'Batting hand', 'Bowling arm', 'Gram', 'Tehsil', 'District', 'UTR / Transaction ID', 'Photo link', 'Payment screenshot link'],
+            ['03/10/2026 10:15:00', 'Ramesh Joshi', '24', '9876543210', 'ramesh@example.com', 'All rounder', 'Right hand', 'Right arm', 'Sendriya', 'Multai', 'Betul', '402912345678', 'https://drive.google.com/open?id=EXAMPLE-PHOTO', 'https://drive.google.com/open?id=EXAMPLE-PAYMENT'],
+            ['', 'Suresh Patil', '', '9123456780', '', 'Batter', '', '', '', '', '', '', '', ''],
+        ];
+
+        return response()->streamDownload(function () use ($rows) {
+            echo XlsxWriter::make($rows, 'Registrations');
+        }, 'rppl-registrations-sample.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
     }
 
