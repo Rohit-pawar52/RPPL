@@ -11,6 +11,7 @@ use App\Models\GameMatch;
 use App\Models\PlayerRegistration;
 use App\Models\TeamPlayer;
 use App\Services\Finance\ContributorRankingService;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 /**
@@ -33,6 +34,11 @@ class DashboardController extends Controller
     {
         $edition = $this->currentEdition();
 
+        // Payment and finance figures are admin-only: scorers reach this
+        // dashboard too (access-admin-panel), but those numbers are neither
+        // queried nor rendered for them.
+        $canViewFinance = Gate::allows('manage-tournament');
+
         $registeredPlayers = 0;
         $paidRegistrations = 0;
         $pendingRegistrations = 0;
@@ -53,38 +59,42 @@ class DashboardController extends Controller
         $recognizedContributorsCount = 0;
 
         if ($edition) {
-            // One grouped query for both counts and the paid-amount
-            // total — registration_fee is summed in SQL from each row's
-            // own stored value, never edition->registration_fee times a
-            // count, since historical rows may have charged a different
-            // fee than the edition's current one.
-            $registrationsByStatus = PlayerRegistration::query()
-                ->where('edition_id', $edition->id)
-                ->selectRaw('payment_status, count(*) as total, COALESCE(SUM(registration_fee), 0) as fee_total')
-                ->groupBy('payment_status')
-                ->get()
-                ->keyBy('payment_status');
+            if ($canViewFinance) {
+                // One grouped query for both counts and the paid-amount
+                // total — registration_fee is summed in SQL from each row's
+                // own stored value, never edition->registration_fee times a
+                // count, since historical rows may have charged a different
+                // fee than the edition's current one.
+                $registrationsByStatus = PlayerRegistration::query()
+                    ->where('edition_id', $edition->id)
+                    ->selectRaw('payment_status, count(*) as total, COALESCE(SUM(registration_fee), 0) as fee_total')
+                    ->groupBy('payment_status')
+                    ->get()
+                    ->keyBy('payment_status');
 
-            $registeredPlayers = (int) $registrationsByStatus->sum('total');
-            $paidRegistrations = (int) ($registrationsByStatus->get('paid')->total ?? 0);
-            $pendingRegistrations = (int) ($registrationsByStatus->get('pending')->total ?? 0);
-            $failedRegistrations = (int) ($registrationsByStatus->get('failed')->total ?? 0);
-            $refundedRegistrations = (int) ($registrationsByStatus->get('refunded')->total ?? 0);
-            $paidRegistrationAmount = (float) ($registrationsByStatus->get('paid')->fee_total ?? 0);
+                $registeredPlayers = (int) $registrationsByStatus->sum('total');
+                $paidRegistrations = (int) ($registrationsByStatus->get('paid')->total ?? 0);
+                $pendingRegistrations = (int) ($registrationsByStatus->get('pending')->total ?? 0);
+                $failedRegistrations = (int) ($registrationsByStatus->get('failed')->total ?? 0);
+                $refundedRegistrations = (int) ($registrationsByStatus->get('refunded')->total ?? 0);
+                $paidRegistrationAmount = (float) ($registrationsByStatus->get('paid')->fee_total ?? 0);
 
-            $financeSummary = EditionTransaction::summaryForEdition($edition->id);
+                $financeSummary = EditionTransaction::summaryForEdition($edition->id);
 
-            $contributionStats = EditionContribution::query()
-                ->where('edition_id', $edition->id)
-                ->selectRaw('count(*) as total, COALESCE(SUM(amount), 0) as amount_total')
-                ->first();
-            $contributionCount = (int) $contributionStats->total;
-            $contributionTotal = (float) $contributionStats->amount_total;
+                $contributionStats = EditionContribution::query()
+                    ->where('edition_id', $edition->id)
+                    ->selectRaw('count(*) as total, COALESCE(SUM(amount), 0) as amount_total')
+                    ->first();
+                $contributionCount = (int) $contributionStats->total;
+                $contributionTotal = (float) $contributionStats->amount_total;
 
-            // Reuses the existing ranking rather than a plain distinct
-            // count of contributor_id, so this always agrees with the
-            // public leaderboard's own contributor count exactly.
-            $recognizedContributorsCount = count($this->contributorRanking->getEditionRanking($edition));
+                // Reuses the existing ranking rather than a plain distinct
+                // count of contributor_id, so this always agrees with the
+                // public leaderboard's own contributor count exactly.
+                $recognizedContributorsCount = count($this->contributorRanking->getEditionRanking($edition));
+            } else {
+                $registeredPlayers = PlayerRegistration::query()->where('edition_id', $edition->id)->count();
+            }
 
             $teamsCount = EditionTeam::query()->where('edition_id', $edition->id)->count();
 
@@ -148,6 +158,7 @@ class DashboardController extends Controller
             'contributionTotal' => $contributionTotal,
             'contributionCount' => $contributionCount,
             'recognizedContributorsCount' => $recognizedContributorsCount,
+            'canViewFinance' => $canViewFinance,
         ]);
     }
 
