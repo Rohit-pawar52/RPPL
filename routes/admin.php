@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\Auth\LoginController;
 use App\Http\Controllers\Admin\ContentPageController;
@@ -58,6 +59,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/', [ReportsController::class, 'index'])->name('index');
             Route::get('/financial-summary', [ReportsController::class, 'financialSummary'])->name('financial-summary');
         });
+
+        // Public page-view analytics (read side of the page_views capture).
+        Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
 
         // EditionController and PlayerController additionally enforce their
         // policies (admin-only) via explicit $this->authorize() calls in
