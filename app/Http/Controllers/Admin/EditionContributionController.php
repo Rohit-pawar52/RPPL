@@ -10,6 +10,7 @@ use App\Models\Edition;
 use App\Models\EditionContribution;
 use App\Services\Finance\CommitteeDuesService;
 use App\Services\Finance\EditionContributionService;
+use App\Support\CsvSafe;
 use App\View\Composers\BrandingComposer;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
@@ -136,7 +137,7 @@ class EditionContributionController extends Controller
 
             $query->chunkById(200, function ($contributions) use ($handle) {
                 foreach ($contributions as $contribution) {
-                    fputcsv($handle, [
+                    fputcsv($handle, CsvSafe::row([
                         $contribution->receiptReference(),
                         $contribution->contributorName(),
                         $contribution->sourceLabel(),
@@ -145,7 +146,7 @@ class EditionContributionController extends Controller
                         $contribution->notes ?? '',
                         $contribution->createdBy->name,
                         $contribution->edition_transaction_id,
-                    ]);
+                    ]));
                 }
             });
 

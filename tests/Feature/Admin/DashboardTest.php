@@ -178,6 +178,81 @@ class DashboardTest extends TestCase
         $this->actingAs($this->scorer())->get(route('admin.dashboard'))->assertOk();
     }
 
+    // ----- Finance visibility by role -----
+
+    /**
+     * An edition with distinctive payment, ledger and contribution
+     * figures, so a leak would show up as one of these exact strings.
+     */
+    private function editionWithFinanceFigures(): Edition
+    {
+        $edition = Edition::factory()->create(['status' => 'active', 'year' => 2034]);
+
+        PlayerRegistration::factory()->create(['edition_id' => $edition->id, 'payment_status' => 'paid', 'registration_fee' => 777]);
+        PlayerRegistration::factory()->create(['edition_id' => $edition->id, 'payment_status' => 'pending', 'registration_fee' => 777]);
+        EditionTransaction::factory()->create(['edition_id' => $edition->id, 'type' => 'income', 'amount' => 54321]);
+        EditionContribution::factory()->create([
+            'edition_id' => $edition->id,
+            'contributor_id' => Contributor::factory()->create()->id,
+            'amount' => 4321,
+        ]);
+
+        return $edition;
+    }
+
+    public function test_admin_sees_the_payment_finance_and_contribution_blocks(): void
+    {
+        $this->editionWithFinanceFigures();
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('Registration Payments')
+            ->assertSee('Finance')
+            ->assertSee('Contributions')
+            ->assertSee('View ledger')
+            ->assertSee('View full Reports')
+            ->assertSee('1 paid, 1 pending')
+            ->assertSee('awaiting payment verification');
+    }
+
+    public function test_scorer_never_sees_payment_finance_or_contribution_data(): void
+    {
+        $this->editionWithFinanceFigures();
+
+        $response = $this->actingAs($this->scorer())->get(route('admin.dashboard'));
+
+        // The dashboard itself still works for a scorer, with the
+        // non-financial figures.
+        $response->assertOk()
+            ->assertSee('Registered Players')
+            ->assertSee('Matches');
+
+        $response->assertDontSee('Registration Payments')
+            ->assertDontSee('View ledger')
+            ->assertDontSee('View full Reports')
+            ->assertDontSee('paid,')
+            ->assertDontSee('awaiting payment verification')
+            ->assertDontSee(route('admin.edition-transactions.index'), false)
+            ->assertDontSee(route('admin.edition-contributions.index'), false)
+            ->assertDontSee(route('admin.player-registrations.index'), false);
+
+        // None of the distinctive amounts reach the page source.
+        foreach (['777', '54,321', '54321', '4,321', '4321'] as $amount) {
+            $response->assertDontSee($amount);
+        }
+    }
+
+    public function test_the_finance_queries_are_not_even_computed_for_a_scorer(): void
+    {
+        $this->editionWithFinanceFigures();
+
+        $data = $this->actingAs($this->scorer())->get(route('admin.dashboard'))->viewData('paidRegistrationAmount');
+
+        $this->assertSame(0.0, $data);
+        $this->assertFalse($this->actingAs($this->scorer())->get(route('admin.dashboard'))->viewData('canViewFinance'));
+    }
+
     // ----- Payment/finance/contribution metrics (Phase 3.42) -----
 
     /**

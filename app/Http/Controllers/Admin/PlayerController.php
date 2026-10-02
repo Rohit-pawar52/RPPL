@@ -10,6 +10,7 @@ use App\Models\Edition;
 use App\Models\Player;
 use App\Services\Player\PlayerService;
 use App\Services\Statistics\PlayerStatisticsService;
+use App\Support\CsvSafe;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -83,7 +84,7 @@ class PlayerController extends Controller
 
             $query->chunkById(200, function ($players) use ($handle) {
                 foreach ($players as $player) {
-                    fputcsv($handle, [
+                    fputcsv($handle, CsvSafe::row([
                         $player->name,
                         $player->phone ?? '',
                         $player->email ?? '',
@@ -92,7 +93,7 @@ class PlayerController extends Controller
                         $player->bowling_style ? ucfirst(str_replace('_', ' ', $player->bowling_style)) : '',
                         $player->is_active ? 'Active' : 'Inactive',
                         $player->player_registrations_count,
-                    ]);
+                    ]));
                 }
             });
 

@@ -276,7 +276,7 @@ This codebase deliberately stays small and boring rather than speculative:
 
 `.env.example` is a local-development template — flip these explicitly before going live:
 
-- `APP_ENV=production` and `APP_DEBUG=false` (`.env.example` defaults `APP_DEBUG=true`, which must never run in production — it leaks stack traces/config).
+- `APP_ENV=production` and `APP_DEBUG=false` (`.env.example` now defaults to `APP_DEBUG=false`; enable debugging only in your own local `.env`. `APP_DEBUG=true` must never run in production — it leaks stack traces and configuration). Also set `SESSION_SECURE_COOKIE=true` when serving over HTTPS.
 - `SESSION_SECURE_COOKIE=true`, served over HTTPS (not set by default; without it the session cookie is also sent over plain HTTP).
 - `php artisan storage:link` has been run on the deployed instance (see step 5 above — easy to forget on a fresh deploy).
 - A queue worker is running under a process supervisor (e.g. Supervisor/systemd), not just a one-off terminal — required for OCR and push notification sending (step 10 above), and now also for scheduled announcements/match reminders (see below).

@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\EditionTransaction\StoreEditionTransactionRequest;
 use App\Http\Requests\Admin\EditionTransaction\UpdateEditionTransactionRequest;
 use App\Models\Edition;
 use App\Models\EditionTransaction;
+use App\Support\CsvSafe;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -120,7 +121,7 @@ class EditionTransactionController extends Controller
 
             $query->chunkById(200, function ($transactions) use ($handle) {
                 foreach ($transactions as $transaction) {
-                    fputcsv($handle, [
+                    fputcsv($handle, CsvSafe::row([
                         $transaction->id,
                         $transaction->transaction_date->format('Y-m-d'),
                         $transaction->edition->name,
@@ -130,7 +131,7 @@ class EditionTransactionController extends Controller
                         number_format($transaction->amount, 2, '.', ''),
                         $transaction->contribution_exists ? 'Contribution' : 'Manual',
                         $transaction->createdBy->name,
-                    ]);
+                    ]));
                 }
             });
 
