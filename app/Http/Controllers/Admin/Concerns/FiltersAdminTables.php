@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Concerns;
 
+use App\Services\Settings\DisplayTimezoneFormatter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
@@ -43,6 +44,10 @@ trait FiltersAdminTables
         return in_array($perPage, self::ALLOWED_PER_PAGE, true) ? $perPage : $default;
     }
 
+    /**
+     * For a plain DATE column (a transaction date, a contribution date):
+     * the picked days are compared as calendar dates.
+     */
     protected function dateRangeFilter(Builder $query, string $column, ?string $from, ?string $to): Builder
     {
         return $query
@@ -51,13 +56,33 @@ trait FiltersAdminTables
     }
 
     /**
+     * For a date-TIME column stored in UTC (a registration time, a match
+     * start): the picked days are calendar days in the display timezone, so
+     * a registration at 12:20 AM on 3 October India time (18:50 on 2
+     * October UTC) is found by "3 October", not by "2 October" — exactly as
+     * the date is shown on screen. The upper bound is exclusive (the start
+     * of the day after "to"), so the whole last day is included.
+     */
+    protected function dateTimeRangeFilter(Builder $query, string $column, ?string $from, ?string $to): Builder
+    {
+        $timezone = app(DisplayTimezoneFormatter::class);
+
+        return $query
+            ->when($from, fn ($query, $value) => $query->where($column, '>=', $timezone->startOfDisplayDate($value)))
+            ->when($to, fn ($query, $value) => $query->where($column, '<', $timezone->startOfNextDisplayDate($value)));
+    }
+
+    /**
      * @return array{from_date: ?string, to_date: ?string}
      */
     protected function validateDateRange(Request $request): array
     {
+        // Y-m-d is what a date input submits and what the filters above
+        // read; anything else the looser `date` rule would let through
+        // (e.g. "03/01/2026") could only ever be misread.
         return $request->validate([
-            'from_date' => ['nullable', 'date'],
-            'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
+            'from_date' => ['nullable', 'date_format:Y-m-d'],
+            'to_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from_date'],
         ]);
     }
 }

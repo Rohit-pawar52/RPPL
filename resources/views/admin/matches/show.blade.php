@@ -62,9 +62,9 @@
             <div>
                 <dt class="text-neutral-400">Started / Completed</dt>
                 <dd class="mt-0.5 font-medium text-neutral-800">
-                    {{ $match->started_at?->format('d M Y, h:i A') ?? '—' }}
+                    {{ display_datetime($match->started_at, 'd M Y, h:i A') ?? '—' }}
                     /
-                    {{ $match->completed_at?->format('d M Y, h:i A') ?? '—' }}
+                    {{ display_datetime($match->completed_at, 'd M Y, h:i A') ?? '—' }}
                 </dd>
             </div>
         </dl>
@@ -276,7 +276,7 @@
                 <p class="text-xs text-neutral-500">
                     Status: <span class="font-medium capitalize text-neutral-800">{{ $match->match_status }}</span>
                     @if($match->started_at)
-                        &middot; Started: {{ $match->started_at->format('d M Y, h:i A') }}
+                        &middot; Started: {{ display_datetime($match->started_at, 'd M Y, h:i A') }}
                     @endif
                 </p>
 

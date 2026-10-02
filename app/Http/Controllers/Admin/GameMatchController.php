@@ -130,7 +130,7 @@ class GameMatchController extends Controller
                         $match->teamA->team->name,
                         $match->teamB->team->name,
                         $match->venue->name ?? '',
-                        $match->scheduled_at?->format('Y-m-d H:i') ?? '',
+                        $this->displayTimezone->format($match->scheduled_at, 'Y-m-d H:i') ?? '',
                         ucfirst($match->match_status),
                         $match->match_stage ? ucfirst(str_replace('_', ' ', $match->match_stage)) : '',
                         $match->match_result ?? '',
@@ -326,7 +326,7 @@ class GameMatchController extends Controller
                 in_array($filters['match_status'] ?? null, GameMatch::STATUSES, true),
                 fn ($query) => $query->where('match_status', $filters['match_status'])
             )
-            ->tap(fn ($query) => $this->dateRangeFilter($query, 'scheduled_at', $filters['from_date'] ?? null, $filters['to_date'] ?? null));
+            ->tap(fn ($query) => $this->dateTimeRangeFilter($query, 'scheduled_at', $filters['from_date'] ?? null, $filters['to_date'] ?? null));
     }
 
     /**

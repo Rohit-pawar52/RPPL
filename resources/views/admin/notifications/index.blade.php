@@ -49,14 +49,14 @@
                             {{ $notification->creator?->name ?? '—' }}
                         </td>
                         <td class="hidden px-4 py-2 text-slate-500 md:table-cell">
-                            {{ $notification->created_at->format('d M Y') }}
+                            {{ display_datetime($notification->created_at, 'd M Y') }}
                         </td>
                         <td class="px-4 py-2 text-slate-600">
                             {{ $notification->sends->count() }}
                         </td>
                         <td class="px-4 py-2 text-slate-600">
                             @if($latestSend)
-                                {{ $latestSend->created_at->format('d M Y, H:i') }}
+                                {{ display_datetime($latestSend->created_at, 'd M Y, h:i A') }}
                             @else
                                 <span class="text-slate-400">Never sent</span>
                             @endif

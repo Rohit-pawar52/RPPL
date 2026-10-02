@@ -12,6 +12,7 @@ use App\Models\Player;
 use App\Models\PlayerRegistration;
 use App\Services\PlayerRegistration\PlayerRegistrationService;
 use App\Services\Registration\PlayerRegistrationImportService;
+use App\Services\Settings\DisplayTimezoneFormatter;
 use App\Support\CsvSafe;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -30,6 +31,7 @@ class PlayerRegistrationController extends Controller
     public function __construct(
         private readonly PlayerRegistrationService $registrations,
         private readonly PlayerRegistrationImportService $imports,
+        private readonly DisplayTimezoneFormatter $displayTimezone,
     ) {}
 
     public function index(Request $request): View
@@ -130,7 +132,7 @@ class PlayerRegistrationController extends Controller
                         $registration->registration_fee !== null
                             ? number_format($registration->registration_fee, 2, '.', '')
                             : '',
-                        $registration->registered_at?->format('Y-m-d') ?? '',
+                        $this->displayTimezone->format($registration->registered_at, 'Y-m-d') ?? '',
                     ]));
                 }
             });
@@ -211,7 +213,7 @@ class PlayerRegistrationController extends Controller
     {
         $this->authorize('create', PlayerRegistration::class);
 
-        $this->registrations->createRegistration($request->validated());
+        $this->registrations->createRegistration($this->withRegisteredAtInUtc($request->validated()));
 
         return redirect()
             ->route('admin.player-registrations.index')
@@ -289,7 +291,7 @@ class PlayerRegistrationController extends Controller
     {
         $this->authorize('update', $playerRegistration);
 
-        $this->registrations->updateRegistration($playerRegistration, $request->validated());
+        $this->registrations->updateRegistration($playerRegistration, $this->withRegisteredAtInUtc($request->validated()));
 
         return redirect()
             ->route('admin.player-registrations.index')
@@ -309,6 +311,23 @@ class PlayerRegistrationController extends Controller
         return redirect()
             ->route('admin.player-registrations.index')
             ->with('success', 'Registration deleted successfully.');
+    }
+
+    /**
+     * The "Registered at" an admin types is a wall-clock time in the
+     * display timezone (the form shows it that way); it is stored in UTC
+     * like every other datetime.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function withRegisteredAtInUtc(array $data): array
+    {
+        if (array_key_exists('registered_at', $data)) {
+            $data['registered_at'] = $this->displayTimezone->parseLenientFromDisplayTimezone($data['registered_at']);
+        }
+
+        return $data;
     }
 
     /**
@@ -346,7 +365,7 @@ class PlayerRegistrationController extends Controller
                 in_array($filters['payment_status'] ?? null, PlayerRegistration::PAYMENT_STATUSES, true),
                 fn ($query) => $query->where('payment_status', $filters['payment_status'])
             )
-            ->tap(fn ($query) => $this->dateRangeFilter($query, 'registered_at', $filters['from_date'] ?? null, $filters['to_date'] ?? null));
+            ->tap(fn ($query) => $this->dateTimeRangeFilter($query, 'registered_at', $filters['from_date'] ?? null, $filters['to_date'] ?? null));
     }
 
     /**

@@ -37,11 +37,11 @@
             </div>
             <div>
                 <dt class="text-slate-400">Created</dt>
-                <dd class="mt-0.5 font-medium text-slate-800">{{ $edition->created_at->format('d M Y') }}</dd>
+                <dd class="mt-0.5 font-medium text-slate-800">{{ display_datetime($edition->created_at, 'd M Y') }}</dd>
             </div>
             <div>
                 <dt class="text-slate-400">Last updated</dt>
-                <dd class="mt-0.5 font-medium text-slate-800">{{ $edition->updated_at->format('d M Y') }}</dd>
+                <dd class="mt-0.5 font-medium text-slate-800">{{ display_datetime($edition->updated_at, 'd M Y') }}</dd>
             </div>
         </dl>
     </div>

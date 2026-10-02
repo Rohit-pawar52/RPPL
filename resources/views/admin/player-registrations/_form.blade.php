@@ -60,7 +60,8 @@
         name="registered_at"
         label="Registered at"
         type="datetime-local"
-        :value="$registration ? $registration->registered_at?->format('Y-m-d\TH:i') : now()->format('Y-m-d\TH:i')"
+        :value="$registration ? display_datetime($registration->registered_at, 'Y-m-d\TH:i') : display_datetime(now(), 'Y-m-d\TH:i')"
+        :help="'Time in '.app(\App\Services\Settings\SettingsService::class)->get('system.display_timezone').'.'"
     />
 </div>
 

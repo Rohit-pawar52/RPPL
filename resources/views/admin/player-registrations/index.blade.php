@@ -110,7 +110,7 @@
                             {{ $registration->registration_fee !== null ? money($registration->registration_fee) : '—' }}
                         </td>
                         <td class="hidden px-4 py-2 text-slate-500 lg:table-cell">
-                            {{ $registration->registered_at?->format('d M Y') ?? '—' }}
+                            {{ display_datetime($registration->registered_at, 'd M Y') ?? '—' }}
                         </td>
                         <td class="px-4 py-2">
                             <div class="flex items-center justify-end gap-1">

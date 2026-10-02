@@ -150,7 +150,7 @@
             <div>
                 <dt class="text-slate-400">Registered at</dt>
                 <dd class="mt-0.5 font-medium text-slate-800">
-                    {{ $registration->registered_at?->format('d M Y, h:i A') ?? '—' }}
+                    {{ display_datetime($registration->registered_at, 'd M Y, h:i A') ?? '—' }}
                 </dd>
             </div>
             <div>

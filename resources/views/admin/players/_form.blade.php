@@ -49,7 +49,7 @@
                 label="Date of birth"
                 type="date"
                 :value="optional($player?->date_of_birth)->format('Y-m-d')"
-                max="{{ now()->format('Y-m-d') }}"
+                max="{{ display_datetime(now(), 'Y-m-d') }}"
             />
             <x-form.input name="phone" label="Phone" :value="$player->phone ?? ''" maxlength="20" />
         </div>

@@ -73,7 +73,7 @@
                         </div>
                         <div>
                             <dt class="pub-eyebrow">{{ __('registration.status.registered_at') }}</dt>
-                            <dd class="mt-0.5 text-sm font-semibold text-slate-900">{{ $result->registered_at?->format('d M Y') ?? '—' }}</dd>
+                            <dd class="mt-0.5 text-sm font-semibold text-slate-900">{{ display_datetime($result->registered_at, 'd M Y') ?? '—' }}</dd>
                         </div>
                     </dl>
                     @if($paymentMessage)

@@ -48,7 +48,7 @@
             </div>
             <div>
                 <dt class="text-slate-400">Added</dt>
-                <dd class="mt-0.5 font-medium text-slate-800">{{ $teamPlayer->created_at->format('d M Y') }}</dd>
+                <dd class="mt-0.5 font-medium text-slate-800">{{ display_datetime($teamPlayer->created_at, 'd M Y') }}</dd>
             </div>
         </dl>
     </div>

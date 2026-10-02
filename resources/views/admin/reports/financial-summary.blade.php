@@ -28,7 +28,7 @@
             <div class="mb-4 flex items-center justify-between gap-3 border-b border-neutral-100 pb-3">
                 <div>
                     <h1 class="text-base font-semibold text-neutral-900">Financial Summary &mdash; {{ $edition->name }}</h1>
-                    <p class="text-[11px] text-neutral-400">Generated {{ $generatedAt->format('d M Y, h:i A') }}</p>
+                    <p class="text-[11px] text-neutral-400">Generated {{ display_datetime($generatedAt, 'd M Y, h:i A') }}</p>
                 </div>
             </div>
 

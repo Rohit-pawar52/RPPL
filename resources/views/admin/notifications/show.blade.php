@@ -60,11 +60,11 @@
             </div>
             <div>
                 <dt class="text-[11px] uppercase tracking-wide text-slate-400">Created At</dt>
-                <dd class="text-slate-700">{{ $notification->created_at->format('d M Y, H:i') }}</dd>
+                <dd class="text-slate-700">{{ display_datetime($notification->created_at, 'd M Y, h:i A') }}</dd>
             </div>
             <div>
                 <dt class="text-[11px] uppercase tracking-wide text-slate-400">Last Updated</dt>
-                <dd class="text-slate-700">{{ $notification->updated_at->format('d M Y, H:i') }}</dd>
+                <dd class="text-slate-700">{{ display_datetime($notification->updated_at, 'd M Y, h:i A') }}</dd>
             </div>
         </dl>
     </div>
@@ -83,7 +83,7 @@
             <div class="border-b border-slate-100 py-3 text-[13px] last:border-b-0">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <span class="font-medium text-slate-800">
-                        {{ $send->created_at->format('d M Y, H:i') }}
+                        {{ display_datetime($send->created_at, 'd M Y, h:i A') }}
                     </span>
                     <x-status-badge :status="$send->completed_at ? 'completed' : 'queued'" />
                 </div>
@@ -91,7 +91,7 @@
                 <p class="mt-1 text-slate-500">
                     Sent by {{ $send->sender?->name ?? '—' }}
                     @if($send->completed_at)
-                        &middot; Completed {{ $send->completed_at->format('d M Y, H:i') }}
+                        &middot; Completed {{ display_datetime($send->completed_at, 'd M Y, h:i A') }}
                     @endif
                 </p>
 
