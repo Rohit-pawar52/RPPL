@@ -61,6 +61,9 @@ class RegistrationImportParser
         'original photos' => 'photo_url',
         'photo' => 'photo_url',
         'photos' => 'photo_url',
+        'bowling arm' => 'bowling_style',
+        'bowling hand' => 'bowling_style',
+        'bowling style' => 'bowling_style',
         'payment screenshot' => 'payment_proof_url',
         'upload payment screenshot' => 'payment_proof_url',
         'payment proof' => 'payment_proof_url',
@@ -78,6 +81,7 @@ class RegistrationImportParser
         '/\b(photo|photos|picture)\b/' => 'photo_url',
         '/\b(mobile|phone|whatsapp)\b/' => 'phone',
         '/\b(utr|transaction)\b/' => 'submitted_utr',
+        '/\bbowling\b/' => 'bowling_style',
         '/\bhand\b/' => 'batting_style',
     ];
 
@@ -380,6 +384,37 @@ class RegistrationImportParser
         }
 
         return [null, "hand '{$this->shorten($raw)}' is not Right hand / Left hand — left empty"];
+    }
+
+    /**
+     * The bowling arm: right/left arm, or "none" for someone who doesn't
+     * bowl.
+     *
+     * @return array{0: ?string, 1: ?string} a Player::BOWLING_STYLES value
+     */
+    public function bowlingArm(?string $raw): array
+    {
+        $raw = trim((string) $raw);
+
+        if ($raw === '') {
+            return [null, null];
+        }
+
+        $key = (string) preg_replace('/[^a-z]/', '', mb_strtolower($raw));
+
+        if ($key === 'r' || str_starts_with($key, 'right')) {
+            return ['right_arm', null];
+        }
+
+        if ($key === 'l' || str_starts_with($key, 'left')) {
+            return ['left_arm', null];
+        }
+
+        if (in_array($key, ['none', 'no', 'na', 'doesntbowl', 'dontbowl', 'notbowling', 'nonbowler'], true)) {
+            return ['none', null];
+        }
+
+        return [null, "bowling arm '{$this->shorten($raw)}' is not Right arm / Left arm / None — left empty"];
     }
 
     /**

@@ -6,7 +6,7 @@
 
 @section('actions')
     <x-admin.button href="{{ route('admin.player-registrations.export', $filters) }}" variant="secondary" icon="document-chart">Export</x-admin.button>
-    <x-admin.button href="{{ route('admin.player-registrations.import') }}" variant="secondary" icon="document-chart">Import CSV</x-admin.button>
+    <x-admin.button href="{{ route('admin.player-registrations.import') }}" variant="secondary" icon="document-chart">Import Excel / CSV</x-admin.button>
     <x-admin.button href="{{ route('admin.player-registrations.create') }}" variant="primary">+ New registration</x-admin.button>
 @endsection
 

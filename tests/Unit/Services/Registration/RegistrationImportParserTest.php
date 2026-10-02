@@ -32,6 +32,8 @@ class RegistrationImportParserTest extends TestCase
             'mobile with the emoji from the form' => ['Mobile 📱 Number', 'phone'],
             'mobile with an emoji variation selector' => ["Mobile 📱\u{FE0F} Number", 'phone'],
             'role' => ['Role', 'primary_role'],
+            'bowling arm' => ['Bowling arm', 'bowling_style'],
+            'batting hand as a plain header' => ['Batting hand', 'batting_style'],
             'hand' => ['Left hand/right hand', 'batting_style'],
             'gram' => ['Gram', 'village'],
             'tehsil in capitals' => ['TEHSIL', 'tehsil'],
@@ -124,6 +126,12 @@ class RegistrationImportParserTest extends TestCase
         foreach (['Right hand' => 'right_hand', 'Left hand' => 'left_hand', 'left' => 'left_hand', 'R' => 'right_hand'] as $answer => $hand) {
             $this->assertSame([$hand, null], $parser->battingHand($answer), $answer);
         }
+
+        foreach (['Right arm' => 'right_arm', 'left' => 'left_arm', "Doesn't bowl" => 'none', 'None' => 'none'] as $answer => $arm) {
+            $this->assertSame([$arm, null], $parser->bowlingArm($answer), $answer);
+        }
+        $this->assertNull($parser->bowlingArm('Spin')[0]);
+        $this->assertNotNull($parser->bowlingArm('Spin')[1]);
 
         // Unknown answers are dropped with an explanation, never invented.
         $this->assertNull($parser->role('Captain')[0]);
