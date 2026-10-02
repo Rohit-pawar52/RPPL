@@ -5,25 +5,36 @@ namespace App\Services\Registration;
 use App\Models\Edition;
 use App\Models\Player;
 use App\Models\PlayerRegistration;
-use Carbon\Carbon;
+use App\Services\Settings\SettingsService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Throwable;
 
 /**
- * Imports a fixed-format CSV (as exported by a Google Form/Sheet) into
- * Players + PlayerRegistrations for one edition. Two-pass by design:
- * pass 1 parses/validates/resolves identity with zero writes, and only
- * if that pass finds no fatal problem does the write pass run, inside
- * one transaction. This guarantees a bad file never partially imports.
+ * Imports a CSV into Players + PlayerRegistrations for one edition. It
+ * understands two shapes: the simple column set the importer always had
+ * (name, phone, email, registration_fee, payment_status, registered_at),
+ * and a Google Form response sheet exactly as downloaded — its Timestamp,
+ * Email Address, Name, Age, Mobile Number, Role, Left hand/right hand,
+ * Gram, Tehsil, District, UTR and the two Drive links for the uploaded
+ * photo and payment screenshot (see RegistrationImportParser for how the
+ * headers and messy answers are read). Files cannot travel in a CSV, so
+ * only the Drive links are kept.
+ *
+ * Two-pass by design: pass 1 parses/validates/resolves identity with zero
+ * writes, and only if that pass finds no fatal problem does the write pass
+ * run, inside one transaction. A bad file therefore never partially
+ * imports, and the same pass 1 powers the "check only" run. Pass 1 is
+ * strict about the original columns (status, fee, date) and forgiving about
+ * the form's free-text answers: those never fail a row, they are cleaned up
+ * and reported as notes so the admin can correct them from the edit page.
  *
  * Import is create-only: an existing Player's fields are never
  * overwritten from the CSV, and an existing PlayerRegistration for this
- * edition is never updated — see resolveRow()'s "already registered"
- * handling. Finance (EditionTransaction) is deliberately untouched,
- * exactly as Phase 3.25 established.
+ * edition is never updated — so importing the same sheet again only adds
+ * the new responses. Finance (EditionTransaction) is deliberately
+ * untouched, exactly as Phase 3.25 established.
  */
 class PlayerRegistrationImportService
 {
@@ -32,93 +43,138 @@ class PlayerRegistrationImportService
      */
     private const MAX_ROWS = 1000;
 
-    public function __construct(private readonly PlayerIdentityResolver $identity) {}
+    /**
+     * How many lines of each kind of note are handed back (the rest are
+     * summarised), so a very messy sheet can't flood the session/page.
+     */
+    private const MAX_NOTES = 150;
+
+    public function __construct(
+        private readonly PlayerIdentityResolver $identity,
+        private readonly SettingsService $settings,
+    ) {}
 
     /**
-     * @return array{success: bool, created_registrations: int, created_players: int, skipped: int, errors: list<string>}
+     * @return array{success: bool, dry_run: bool, created_registrations: int, created_players: int, skipped: int, errors: list<string>, notes: array{info: list<string>, skipped: list<string>, adjustments: list<string>}}
      */
-    public function import(Edition $edition, UploadedFile $file): array
+    public function import(Edition $edition, UploadedFile $file, bool $dryRun = false): array
     {
-        $rows = $this->parseCsv($file);
+        $parser = new RegistrationImportParser((string) $this->settings->get('system.display_timezone'));
 
-        if ($rows === null) {
+        $sheet = $this->parseCsv($file, $parser);
+
+        if ($sheet === null) {
             return $this->failure(['The CSV must include a "name" column.']);
         }
 
-        if (count($rows) === 0) {
+        if (count($sheet['rows']) === 0) {
             return $this->failure(['No registration rows were found.']);
         }
 
-        if (count($rows) > self::MAX_ROWS) {
+        if (count($sheet['rows']) > self::MAX_ROWS) {
             return $this->failure(['The CSV contains more than '.self::MAX_ROWS.' rows. Split the file and import in smaller batches.']);
         }
 
-        $plan = $this->buildPlan($edition, $rows);
+        $plan = $this->buildPlan($edition, $sheet, $parser);
 
         if (! empty($plan['errors'])) {
             return $this->failure($plan['errors']);
         }
 
-        return $this->writePlan($edition, $plan['actions'], $plan['skipped']);
+        if ($dryRun) {
+            $newPlayers = count(array_filter($plan['actions'], fn (array $action) => $action['existing_player_id'] === null));
+
+            return $this->success(true, count($plan['actions']), $newPlayers, $plan);
+        }
+
+        return $this->writePlan($edition, $plan);
     }
 
     /**
-     * Parses the CSV into an array of associative row arrays keyed by
-     * normalized column name. Returns null when the required "name"
-     * header is missing (a structural problem, checked before any row
-     * is even looked at). Genuinely empty rows are dropped here rather
-     * than treated as validation errors.
+     * Reads the CSV into rows keyed by the column each header fills (see
+     * RegistrationImportParser::columnFor()). Returns null when no header
+     * fills "name" (a structural problem, checked before any row is looked
+     * at). Genuinely empty rows are dropped, but every row keeps its real
+     * spreadsheet row number so messages point at the right line.
      *
-     * @return list<array<string, string|null>>|null
+     * @return array{rows: list<array{row: int, values: array<string, ?string>}>, ignored: list<string>, google: bool}|null
      */
-    private function parseCsv(UploadedFile $file): ?array
+    private function parseCsv(UploadedFile $file, RegistrationImportParser $parser): ?array
     {
-        $handle = fopen($file->getRealPath(), 'r');
+        $content = (string) file_get_contents($file->getRealPath());
+
+        // Strip a UTF-8 BOM that may prefix the first header cell.
+        $content = (string) preg_replace('/^\xEF\xBB\xBF/', '', $content);
+
+        // A sheet saved from Excel as plain "CSV" is Windows-1252, not
+        // UTF-8, and MySQL would refuse its bytes half-way through the
+        // import. Valid UTF-8 (what Google Sheets exports) is untouched.
+        if (! mb_check_encoding($content, 'UTF-8')) {
+            $content = mb_convert_encoding($content, 'UTF-8', 'Windows-1252');
+        }
+
+        $handle = fopen('php://temp', 'r+');
+        fwrite($handle, $content);
+        rewind($handle);
 
         $header = fgetcsv($handle) ?: [];
 
-        // Strip a UTF-8 BOM that may prefix the first header cell.
-        if (isset($header[0])) {
-            $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', $header[0]);
+        $columns = [];
+        $ignored = [];
+        $google = false;
+
+        foreach ($header as $index => $title) {
+            $title = trim((string) $title);
+
+            if ($title === '') {
+                continue;
+            }
+
+            // Only a Google Form's response sheet has a "Timestamp" column.
+            if ($parser->normalizeHeader($title) === 'timestamp') {
+                $google = true;
+            }
+
+            $column = $parser->columnFor($title);
+
+            if ($column === null || in_array($column, $columns, true)) {
+                $ignored[] = $title;
+
+                continue;
+            }
+
+            $columns[$index] = $column;
         }
 
-        $normalizedHeader = array_map(fn ($column) => $this->normalizeHeader((string) $column), $header);
-
-        if (! in_array('name', $normalizedHeader, true)) {
+        if (! in_array('name', $columns, true)) {
             fclose($handle);
 
             return null;
         }
 
         $rows = [];
+        $rowNumber = 1;
 
         while (($data = fgetcsv($handle)) !== false) {
+            $rowNumber++;
+
             if ($this->isBlankRow($data)) {
                 continue;
             }
 
-            $row = [];
+            $values = [];
 
-            foreach ($normalizedHeader as $index => $key) {
-                if ($key === '') {
-                    continue;
-                }
-
+            foreach ($columns as $index => $column) {
                 $value = $data[$index] ?? null;
-                $row[$key] = $value === null ? null : trim($value);
+                $values[$column] = $value === null ? null : trim($value);
             }
 
-            $rows[] = $row;
+            $rows[] = ['row' => $rowNumber, 'values' => $values];
         }
 
         fclose($handle);
 
-        return $rows;
-    }
-
-    private function normalizeHeader(string $value): string
-    {
-        return strtolower(str_replace(' ', '_', trim($value)));
+        return ['rows' => $rows, 'ignored' => $ignored, 'google' => $google];
     }
 
     private function isBlankRow(array $data): bool
@@ -128,33 +184,67 @@ class PlayerRegistrationImportService
 
     /**
      * Pass 1: validates every row and resolves Player identity, without
-     * writing anything. Only two outcomes are non-fatal (counted as
-     * "skipped"): a match already registered for this edition, and a
-     * duplicate identity appearing more than once in this same CSV.
-     * Every other problem (missing name, invalid payment status/fee/
-     * date, an email/phone identity conflict, an inactive matched
-     * player) is fatal — its message is collected and, if any exist,
-     * the whole import is rejected before pass 2 ever runs.
+     * writing anything. Rows that can't be imported but aren't an error
+     * (already registered for this edition, or the same person appearing
+     * twice in the file) are listed under "skipped". Problems with the
+     * original columns (missing name, invalid payment status/fee/date, an
+     * email/phone identity conflict, an inactive matched player) are fatal:
+     * if any exist the whole import is rejected before pass 2 ever runs.
      *
-     * @param  list<array<string, string|null>>  $rows
-     * @return array{errors: list<string>, actions: list<array<string, mixed>>, skipped: int}
+     * Identity is matched with the same core logic the public guest
+     * registration uses (PlayerIdentityResolver) — except for a Google Form
+     * sheet. There the email is whichever Google account submitted the
+     * form, which is routinely shared (one person filling the form for a
+     * whole team), so it must never merge players or abort the import: the
+     * mobile number is the identity, and the email is only saved on a new
+     * player when no other player already has it.
+     *
+     * @param  array{rows: list<array{row: int, values: array<string, ?string>}>, ignored: list<string>, google: bool}  $sheet
+     * @return array{errors: list<string>, actions: list<array<string, mixed>>, skipped: list<string>, adjustments: list<string>, info: list<string>}
      */
-    private function buildPlan(Edition $edition, array $rows): array
+    private function buildPlan(Edition $edition, array $sheet, RegistrationImportParser $parser): array
     {
+        $google = $sheet['google'];
         $errors = [];
         $actions = [];
-        $skipped = 0;
+        $skipped = [];
+        $adjustments = [];
+        $info = [];
         $seenIdentities = [];
+        $claimedEmails = [];
 
-        foreach ($rows as $index => $row) {
-            $rowNumber = $index + 2; // +1 for the header row, +1 for 1-based numbering
+        $timestamps = array_map(fn (array $row) => $row['values']['registered_at'] ?? null, $sheet['rows']);
+        $dateOrder = $parser->dateOrder($timestamps);
 
-            $name = $this->blank($row['name'] ?? null);
-            $phone = $this->blank($row['phone'] ?? null);
-            $email = $this->blank($row['email'] ?? null);
-            $feeRaw = $this->blank($row['registration_fee'] ?? null);
-            $statusRaw = $this->blank($row['payment_status'] ?? null);
-            $registeredAtRaw = $this->blank($row['registered_at'] ?? null);
+        if ($dateOrder === 'conflict') {
+            return [
+                'errors' => ['The Timestamp column mixes day/month/year and month/day/year dates, so it cannot be read reliably. Make the dates consistent and try again.'],
+                'actions' => [],
+                'skipped' => [],
+                'adjustments' => [],
+                'info' => [],
+            ];
+        }
+
+        if ($google) {
+            $info[] = 'Google Form response sheet detected. Its Email Address is the account that submitted the form, so people are matched by mobile number, not by email.';
+        }
+
+        if ($parser->hasSlashDates($timestamps)) {
+            $info[] = 'Timestamp dates were read as '
+                .($dateOrder === 'mdy' ? 'month/day/year (MM/DD/YYYY)' : 'day/month/year (DD/MM/YYYY)')
+                .', in '.$this->settings->get('system.display_timezone').' time.';
+        }
+
+        if ($sheet['ignored'] !== []) {
+            $info[] = 'Columns not imported: '.implode(', ', $sheet['ignored']).'.';
+        }
+
+        foreach ($sheet['rows'] as $entry) {
+            $rowNumber = $entry['row'];
+            $values = $entry['values'];
+
+            $name = $parser->name($values['name'] ?? null);
 
             if ($name === null) {
                 $errors[] = "Row {$rowNumber}: name is required.";
@@ -162,8 +252,11 @@ class PlayerRegistrationImportService
                 continue;
             }
 
+            $label = "Row {$rowNumber} ({$name})";
+
             // Same default the database column itself uses for a
             // manually-created registration with no status chosen.
+            $statusRaw = $this->blank($values['payment_status'] ?? null);
             $paymentStatus = $statusRaw ?? 'pending';
 
             if (! in_array($paymentStatus, PlayerRegistration::PAYMENT_STATUSES, true)) {
@@ -172,6 +265,7 @@ class PlayerRegistrationImportService
                 continue;
             }
 
+            $feeRaw = $this->blank($values['registration_fee'] ?? null);
             $registrationFee = null;
 
             if ($feeRaw !== null) {
@@ -182,32 +276,69 @@ class PlayerRegistrationImportService
                 }
 
                 $registrationFee = round((float) $feeRaw, 2);
+            } elseif ($edition->registration_fee !== null) {
+                // A form response carries no fee; like a public sign-up,
+                // the registration owes the edition's fee.
+                $registrationFee = (float) $edition->registration_fee;
             }
 
+            $registeredAtRaw = $this->blank($values['registered_at'] ?? null);
             $registeredAt = null;
 
             if ($registeredAtRaw !== null) {
-                try {
-                    $registeredAt = Carbon::parse($registeredAtRaw);
-                } catch (Throwable) {
+                $registeredAt = $parser->timestamp($registeredAtRaw, $dateOrder);
+
+                if ($registeredAt === null) {
                     $errors[] = "Row {$rowNumber}: invalid registered_at date.";
 
                     continue;
                 }
             }
 
-            // Same core match/conflict logic the public guest
-            // registration flow uses (PlayerIdentityResolver) — never a
-            // second, independently-drifting identity algorithm.
-            $resolved = $this->identity->resolve($phone, $email);
+            // The form's own answers: cleaned up, never fatal.
+            $parsed = [
+                'phone' => $parser->phone($values['phone'] ?? null),
+                'email' => $parser->email($values['email'] ?? null),
+                'age' => $parser->age($values['age'] ?? null),
+                'primary_role' => $parser->role($values['primary_role'] ?? null),
+                'batting_style' => $parser->battingHand($values['batting_style'] ?? null),
+                'village' => $parser->text($values['village'] ?? null, 100, 'village'),
+                'tehsil' => $parser->text($values['tehsil'] ?? null, 100, 'tehsil'),
+                'district' => $parser->text($values['district'] ?? null, 100, 'district'),
+                'submitted_utr' => $parser->text($values['submitted_utr'] ?? null, 100, 'UTR'),
+                'photo_url' => $parser->link($values['photo_url'] ?? null, 'photo link'),
+                'payment_proof_url' => $parser->link($values['payment_proof_url'] ?? null, 'payment screenshot link'),
+            ];
 
-            if ($resolved['conflict']) {
-                $errors[] = "Row {$rowNumber}: email and phone belong to different players.";
+            $fields = [];
+            $rowNotes = [];
 
-                continue;
+            foreach ($parsed as $field => [$value, $note]) {
+                $fields[$field] = $value;
+
+                if ($note !== null) {
+                    $rowNotes[] = $note;
+                }
             }
 
-            $existingPlayer = $resolved['player'];
+            $phone = $fields['phone'];
+            $email = $fields['email'];
+
+            if ($google) {
+                $existingPlayer = $phone !== null
+                    ? Player::where('phone', $phone)->first()
+                    : ($email !== null ? Player::where('email', $email)->first() : null);
+            } else {
+                $resolved = $this->identity->resolve($phone, $email);
+
+                if ($resolved['conflict']) {
+                    $errors[] = "Row {$rowNumber}: email and phone belong to different players.";
+
+                    continue;
+                }
+
+                $existingPlayer = $resolved['player'];
+            }
 
             if ($existingPlayer && ! $existingPlayer->is_active) {
                 $errors[] = "Row {$rowNumber}: matched player is inactive and cannot be registered.";
@@ -215,46 +346,81 @@ class PlayerRegistrationImportService
                 continue;
             }
 
-            if ($existingPlayer) {
-                $alreadyRegistered = PlayerRegistration::where('edition_id', $edition->id)
-                    ->where('player_id', $existingPlayer->id)
-                    ->exists();
-
-                if ($alreadyRegistered) {
-                    $skipped++;
-
-                    continue;
-                }
-            }
-
-            // Identity used to catch the SAME person appearing twice in
-            // this CSV. A row with neither email nor phone can never be
-            // proven to be a duplicate of another such row, so each
-            // gets its own key (never collapsed together).
-            $identityKey = $existingPlayer
-                ? 'player:'.$existingPlayer->id
-                : 'new:'.($email ?? $phone ?? 'row:'.$rowNumber);
-
-            if (isset($seenIdentities[$identityKey])) {
-                $skipped++;
+            if ($existingPlayer && PlayerRegistration::where('edition_id', $edition->id)->where('player_id', $existingPlayer->id)->exists()) {
+                $skipped[] = "{$label}: already registered for this edition — left as it is.";
 
                 continue;
             }
 
-            $seenIdentities[$identityKey] = true;
+            // Identity used to catch the SAME person appearing twice in
+            // this CSV. A row with neither a mobile number nor an email can
+            // never be proven to be a duplicate of another such row, so
+            // each gets its own key (never collapsed together).
+            if ($existingPlayer) {
+                $identityKey = 'player:'.$existingPlayer->id;
+            } elseif ($google) {
+                $identityKey = $phone !== null ? 'phone:'.$phone : ($email !== null ? 'email:'.$email : 'row:'.$rowNumber);
+            } else {
+                $identityKey = 'new:'.($email ?? $phone ?? 'row:'.$rowNumber);
+            }
+
+            if (isset($seenIdentities[$identityKey])) {
+                $first = $seenIdentities[$identityKey];
+                $skipped[] = "{$label}: skipped — same person as row {$first['row']} ({$first['name']}), which is imported instead.";
+
+                continue;
+            }
+
+            $seenIdentities[$identityKey] = ['row' => $rowNumber, 'name' => $name];
+
+            if ($existingPlayer) {
+                $rowNotes[] = mb_strtolower($existingPlayer->name) === mb_strtolower($name)
+                    ? 'matched the existing player by mobile number/email, so the registration is added to that player and their profile is left unchanged'
+                    : "matched the existing player '{$existingPlayer->name}' by mobile number/email, so the registration is added to that player and their profile (including the name) is left unchanged";
+            }
+
+            // players.email is unique: a new player only gets the email if
+            // nobody else has it, and the row is imported either way.
+            $storedEmail = $email;
+
+            if ($existingPlayer === null && $email !== null) {
+                if (isset($claimedEmails[$email]) || Player::where('email', $email)->exists()) {
+                    $storedEmail = null;
+                    $rowNotes[] = "email {$email} already belongs to another player — not saved on this player";
+                } else {
+                    $claimedEmails[$email] = true;
+                }
+            }
+
+            foreach ($rowNotes as $note) {
+                $adjustments[] = "{$label}: {$note}.";
+            }
 
             $actions[] = [
                 'existing_player_id' => $existingPlayer?->id,
-                'name' => $name,
-                'phone' => $phone,
-                'email' => $email,
-                'payment_status' => $paymentStatus,
-                'registration_fee' => $registrationFee,
-                'registered_at' => $registeredAt,
+                'player' => [
+                    'name' => $name,
+                    'phone' => $phone,
+                    'email' => $storedEmail,
+                    'primary_role' => $fields['primary_role'],
+                    'batting_style' => $fields['batting_style'],
+                ],
+                'registration' => [
+                    'payment_status' => $paymentStatus,
+                    'registration_fee' => $registrationFee,
+                    'registered_at' => $registeredAt,
+                    'age' => $fields['age'],
+                    'village' => $fields['village'],
+                    'tehsil' => $fields['tehsil'],
+                    'district' => $fields['district'],
+                    'submitted_utr' => $fields['submitted_utr'],
+                    'photo_url' => $fields['photo_url'],
+                    'payment_proof_url' => $fields['payment_proof_url'],
+                ],
             ];
         }
 
-        return ['errors' => $errors, 'actions' => $actions, 'skipped' => $skipped];
+        return ['errors' => $errors, 'actions' => $actions, 'skipped' => $skipped, 'adjustments' => $adjustments, 'info' => $info];
     }
 
     /**
@@ -264,27 +430,21 @@ class PlayerRegistrationImportService
      * imports resolving the same identity concurrently) rolls back the
      * entire file rather than leaving it half-imported.
      *
-     * @param  list<array<string, mixed>>  $actions
-     * @return array{success: bool, created_registrations: int, created_players: int, skipped: int, errors: list<string>}
+     * @param  array{actions: list<array<string, mixed>>, skipped: list<string>, adjustments: list<string>, info: list<string>}  $plan
+     * @return array{success: bool, dry_run: bool, created_registrations: int, created_players: int, skipped: int, errors: list<string>, notes: array{info: list<string>, skipped: list<string>, adjustments: list<string>}}
      */
-    private function writePlan(Edition $edition, array $actions, int $skipped): array
+    private function writePlan(Edition $edition, array $plan): array
     {
         $createdPlayers = 0;
         $createdRegistrations = 0;
 
         try {
-            DB::transaction(function () use ($edition, $actions, &$createdPlayers, &$createdRegistrations) {
-                foreach ($actions as $action) {
+            DB::transaction(function () use ($edition, $plan, &$createdPlayers, &$createdRegistrations) {
+                foreach ($plan['actions'] as $action) {
                     $playerId = $action['existing_player_id'];
 
                     if ($playerId === null) {
-                        $player = Player::create([
-                            'name' => $action['name'],
-                            'phone' => $action['phone'],
-                            'email' => $action['email'],
-                        ]);
-
-                        $playerId = $player->id;
+                        $playerId = Player::create($action['player'])->id;
                         $createdPlayers++;
                     }
 
@@ -293,13 +453,9 @@ class PlayerRegistrationImportService
                     // PlayerRegistrationService::createRegistration()
                     // for the identical placeholder-then-assign pattern
                     // and why it's needed.
-                    $registration = new PlayerRegistration([
-                        'edition_id' => $edition->id,
-                        'player_id' => $playerId,
-                        'payment_status' => $action['payment_status'],
-                        'registration_fee' => $action['registration_fee'],
-                        'registered_at' => $action['registered_at'],
-                    ]);
+                    $registration = new PlayerRegistration(
+                        ['edition_id' => $edition->id, 'player_id' => $playerId] + $action['registration']
+                    );
                     $registration->registration_number = (string) Str::uuid();
                     $registration->save();
                     $registration->assignRegistrationNumber();
@@ -311,28 +467,60 @@ class PlayerRegistrationImportService
             return $this->failure(['The import could not be completed because of a data conflict. Please retry.']);
         }
 
+        return $this->success(false, $createdRegistrations, $createdPlayers, $plan);
+    }
+
+    /**
+     * @param  array{skipped: list<string>, adjustments: list<string>, info: list<string>}  $plan
+     * @return array{success: bool, dry_run: bool, created_registrations: int, created_players: int, skipped: int, errors: list<string>, notes: array{info: list<string>, skipped: list<string>, adjustments: list<string>}}
+     */
+    private function success(bool $dryRun, int $registrations, int $players, array $plan): array
+    {
         return [
             'success' => true,
-            'created_registrations' => $createdRegistrations,
-            'created_players' => $createdPlayers,
-            'skipped' => $skipped,
+            'dry_run' => $dryRun,
+            'created_registrations' => $registrations,
+            'created_players' => $players,
+            'skipped' => count($plan['skipped']),
             'errors' => [],
+            'notes' => [
+                'info' => $plan['info'],
+                'skipped' => $this->limit($plan['skipped']),
+                'adjustments' => $this->limit($plan['adjustments']),
+            ],
         ];
     }
 
     /**
      * @param  list<string>  $errors
-     * @return array{success: bool, created_registrations: int, created_players: int, skipped: int, errors: list<string>}
+     * @return array{success: bool, dry_run: bool, created_registrations: int, created_players: int, skipped: int, errors: list<string>, notes: array{info: list<string>, skipped: list<string>, adjustments: list<string>}}
      */
     private function failure(array $errors): array
     {
         return [
             'success' => false,
+            'dry_run' => false,
             'created_registrations' => 0,
             'created_players' => 0,
             'skipped' => 0,
             'errors' => $errors,
+            'notes' => ['info' => [], 'skipped' => [], 'adjustments' => []],
         ];
+    }
+
+    /**
+     * @param  list<string>  $notes
+     * @return list<string>
+     */
+    private function limit(array $notes): array
+    {
+        if (count($notes) <= self::MAX_NOTES) {
+            return $notes;
+        }
+
+        $more = count($notes) - self::MAX_NOTES;
+
+        return [...array_slice($notes, 0, self::MAX_NOTES), "…and {$more} more."];
     }
 
     private function blank(?string $value): ?string

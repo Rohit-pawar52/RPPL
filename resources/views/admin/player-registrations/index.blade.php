@@ -11,13 +11,25 @@
 @endsection
 
 @section('content')
+    {{-- Left behind by a CSV import: rows that were skipped and values that were
+         cleaned up. Only present on the page the import redirects to. --}}
+    @php $importNotes = session('import_notes'); @endphp
+    @if($importNotes && (($importNotes['info'] ?? []) || ($importNotes['skipped'] ?? []) || ($importNotes['adjustments'] ?? [])))
+        <details open class="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs">
+            <summary class="cursor-pointer font-medium text-amber-900">Import notes &mdash; please review</summary>
+            <div class="mt-3 rounded-md bg-white p-3">
+                @include('admin.player-registrations._import_notes', ['notes' => $importNotes])
+            </div>
+        </details>
+    @endif
+
     <div class="mb-4">
         <x-table-filters :action="route('admin.player-registrations.index')" :filters="$filters" :date-range="true" :per-page="$perPage">
             <input
                 type="text"
                 name="search"
                 value="{{ $filters['search'] ?? '' }}"
-                placeholder="Search registration #, name, phone&hellip;"
+                placeholder="Search registration #, name, phone, village&hellip;"
                 class="w-full max-w-[220px] rounded-md border border-slate-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100"
             />
 

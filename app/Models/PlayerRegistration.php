@@ -33,6 +33,15 @@ class PlayerRegistration extends Model
     public const OCR_FAILED = 'failed';
 
     /**
+     * The age range accepted for the "age as entered on the form" answer,
+     * shared by the CSV import and the admin edit form so a typo like 2004
+     * (a birth year) or 0 is never stored as an age.
+     */
+    public const AGE_MIN = 5;
+
+    public const AGE_MAX = 99;
+
+    /**
      * registration_number is deliberately NEVER listed here — it must
      * only ever be server-generated via assignRegistrationNumber(),
      * never settable through mass-assignment from any request (admin
@@ -59,6 +68,13 @@ class PlayerRegistration extends Model
         'payment_reference',
         'ocr_transaction_id',
         'ocr_status',
+        'age',
+        'village',
+        'tehsil',
+        'district',
+        'submitted_utr',
+        'photo_url',
+        'payment_proof_url',
     ];
 
     protected function casts(): array
@@ -66,6 +82,7 @@ class PlayerRegistration extends Model
         return [
             'registration_fee' => 'decimal:2',
             'registered_at' => 'datetime',
+            'age' => 'integer',
         ];
     }
 

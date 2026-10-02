@@ -77,4 +77,53 @@
             placeholder="e.g. UTR or transaction ID"
         />
     </div>
+
+    {{-- What the player answered on the registration form. A Google Form CSV
+         import fills these in; they stay editable so an imported registration
+         can be corrected or completed later. Role and batting hand live on the
+         player (Players → Edit). --}}
+    <div class="mt-5 border-t border-slate-100 pt-4">
+        <p class="text-xs font-medium text-slate-700">Details from the registration form (optional)</p>
+        <p class="mb-3 mt-0.5 text-[11px] text-slate-400">
+            Filled in automatically when a Google Form sheet is imported. Role and batting hand are on the player
+            (Players &rarr; Edit).
+        </p>
+        <div class="grid gap-x-4 sm:grid-cols-3">
+            <x-form.input
+                name="age"
+                label="Age"
+                type="number"
+                :min="\App\Models\PlayerRegistration::AGE_MIN"
+                :max="\App\Models\PlayerRegistration::AGE_MAX"
+                :value="$registration->age"
+            />
+            <x-form.input name="village" label="Village (Gram)" maxlength="100" :value="$registration->village" />
+            <x-form.input name="tehsil" label="Tehsil" maxlength="100" :value="$registration->tehsil" />
+            <x-form.input name="district" label="District" maxlength="100" :value="$registration->district" />
+            <x-form.input
+                name="submitted_utr"
+                label="UTR typed by the player"
+                maxlength="100"
+                :value="$registration->submitted_utr"
+            />
+        </div>
+        <div class="grid gap-x-4 sm:grid-cols-2">
+            <x-form.input
+                name="photo_url"
+                label="Photo (Google Drive link)"
+                type="url"
+                maxlength="512"
+                placeholder="https://drive.google.com/…"
+                :value="$registration->photo_url"
+            />
+            <x-form.input
+                name="payment_proof_url"
+                label="Payment screenshot (Google Drive link)"
+                type="url"
+                maxlength="512"
+                placeholder="https://drive.google.com/…"
+                :value="$registration->payment_proof_url"
+            />
+        </div>
+    </div>
 @endif

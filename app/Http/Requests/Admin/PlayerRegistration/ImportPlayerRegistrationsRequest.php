@@ -37,6 +37,7 @@ class ImportPlayerRegistrationsRequest extends FormRequest
                 Rule::exists('editions', 'id')->where(fn ($query) => $query->where('status', '!=', 'completed')),
             ],
             'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
+            'dry_run' => ['nullable', 'boolean'],
         ];
     }
 
