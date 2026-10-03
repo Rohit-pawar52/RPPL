@@ -10,8 +10,10 @@ use App\Http\Requests\Admin\PlayerRegistration\UpdatePlayerRegistrationRequest;
 use App\Models\Edition;
 use App\Models\Player;
 use App\Models\PlayerRegistration;
+use App\Services\Player\PlayerPhotoService;
 use App\Services\PlayerRegistration\PlayerRegistrationService;
 use App\Services\Registration\PlayerRegistrationImportService;
+use App\Services\Registration\RegistrationDriveFileService;
 use App\Services\Settings\DisplayTimezoneFormatter;
 use App\Support\CsvSafe;
 use App\Support\XlsxWriter;
@@ -21,6 +23,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PlayerRegistrationController extends Controller
@@ -309,6 +312,47 @@ class PlayerRegistrationController extends Controller
             $playerRegistration,
             'photo'
         );
+    }
+
+    /**
+     * Copies this registration's Google Drive photo / screenshot into
+     * private storage right now (the import does it in the background) and
+     * reports which could not be copied and why.
+     */
+    public function fetchFiles(PlayerRegistration $playerRegistration, RegistrationDriveFileService $files): RedirectResponse
+    {
+        $this->authorize('update', $playerRegistration);
+
+        $result = $files->fetchFor($playerRegistration);
+
+        if ($result['fetched'] === [] && $result['failed'] === []) {
+            return back()->with('info', 'Nothing to copy: there is no Google Drive link without a stored file.');
+        }
+
+        $message = $result['fetched'] === [] ? '' : 'Copied from Google Drive: '.implode(', ', $result['fetched']).'.';
+
+        foreach ($result['failed'] as $label => $reason) {
+            $message .= " The {$label} could not be copied: {$reason}.";
+        }
+
+        return back()->with($result['failed'] === [] ? 'success' : ($result['fetched'] === [] ? 'error' : 'warning'), trim($message));
+    }
+
+    /**
+     * Makes the registration's private photo the player's public profile
+     * photo, resized (see PlayerPhotoService).
+     */
+    public function useAsProfilePhoto(PlayerRegistration $playerRegistration, PlayerPhotoService $photos): RedirectResponse
+    {
+        $this->authorize('update', $playerRegistration);
+
+        try {
+            $photos->useRegistrationPhoto($playerRegistration);
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'The photo is now the profile photo of this player.');
     }
 
     public function update(UpdatePlayerRegistrationRequest $request, PlayerRegistration $playerRegistration): RedirectResponse

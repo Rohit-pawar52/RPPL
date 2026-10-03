@@ -2,6 +2,7 @@
 
 namespace App\Services\Registration;
 
+use App\Jobs\FetchRegistrationDriveFiles;
 use App\Models\Edition;
 use App\Models\Player;
 use App\Models\PlayerRegistration;
@@ -12,6 +13,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 /**
  * Imports a CSV into Players + PlayerRegistrations for one edition. It
@@ -467,9 +469,10 @@ class PlayerRegistrationImportService
     {
         $createdPlayers = 0;
         $createdRegistrations = 0;
+        $withLinks = [];
 
         try {
-            DB::transaction(function () use ($edition, $plan, &$createdPlayers, &$createdRegistrations) {
+            DB::transaction(function () use ($edition, $plan, &$createdPlayers, &$createdRegistrations, &$withLinks) {
                 foreach ($plan['actions'] as $action) {
                     $playerId = $action['existing_player_id'];
 
@@ -490,11 +493,30 @@ class PlayerRegistrationImportService
                     $registration->save();
                     $registration->assignRegistrationNumber();
 
+                    if ($registration->photo_url || $registration->payment_proof_url) {
+                        $withLinks[] = $registration;
+                    }
+
                     $createdRegistrations++;
                 }
             });
         } catch (QueryException) {
             return $this->failure(['The import could not be completed because of a data conflict. Please retry.']);
+        }
+
+        // After the commit, off the request: copy each registration's
+        // Drive photo / screenshot into private storage. A dispatch problem
+        // never undoes the import; the registration keeps its links.
+        foreach ($withLinks as $registration) {
+            try {
+                FetchRegistrationDriveFiles::dispatch($registration);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        if ($withLinks !== []) {
+            $plan['info'][] = count($withLinks).' registration(s) have a Google Drive photo or screenshot link. The files are being copied in the background (this needs a queue worker and files shared as "Anyone with the link"); any that cannot be copied keep their link, and can be retried from the registration page.';
         }
 
         return $this->success(false, $createdRegistrations, $createdPlayers, $plan);

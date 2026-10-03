@@ -183,6 +183,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('player-registrations/{player_registration}/aadhaar', [PlayerRegistrationController::class, 'aadhaar'])->name('player-registrations.aadhaar');
         Route::get('player-registrations/{player_registration}/payment-proof', [PlayerRegistrationController::class, 'paymentProof'])->name('player-registrations.payment-proof');
         Route::get('player-registrations/{player_registration}/photo', [PlayerRegistrationController::class, 'photo'])->name('player-registrations.photo');
+        Route::post('player-registrations/{player_registration}/fetch-files', [PlayerRegistrationController::class, 'fetchFiles'])->name('player-registrations.fetch-files');
+        Route::post('player-registrations/{player_registration}/profile-photo', [PlayerRegistrationController::class, 'useAsProfilePhoto'])->name('player-registrations.profile-photo');
         Route::resource('player-registrations', PlayerRegistrationController::class);
         Route::resource('teams', TeamController::class);
         Route::resource('team-players', TeamPlayerController::class);

@@ -43,6 +43,27 @@ final class DriveLink
     }
 
     /**
+     * The Drive file id inside a link: ?id=ID (what a Google Form gives),
+     * /file/d/ID/view, or /d/ID. Null when there is none, or it is not
+     * made only of the characters an id has.
+     */
+    public static function fileId(?string $url): ?string
+    {
+        if (! self::isValid($url)) {
+            return null;
+        }
+
+        parse_str((string) parse_url((string) $url, PHP_URL_QUERY), $query);
+        $id = is_string($query['id'] ?? null) ? $query['id'] : null;
+
+        if ($id === null && preg_match('#/d/([^/?]+)#', (string) parse_url((string) $url, PHP_URL_PATH), $parts)) {
+            $id = $parts[1];
+        }
+
+        return $id !== null && preg_match('/^[A-Za-z0-9_-]{6,128}$/', $id) ? $id : null;
+    }
+
+    /**
      * The first valid link in a spreadsheet cell. A cell can hold several
      * links (a form that allows more than one file separates them with a
      * comma); only the first is kept.

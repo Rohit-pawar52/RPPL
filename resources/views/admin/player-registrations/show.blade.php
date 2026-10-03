@@ -247,11 +247,31 @@
             </div>
         </dl>
 
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+            @if(($registration->photo_url && ! $registration->photo_path) || ($registration->payment_proof_url && ! $registration->payment_proof_path))
+                <form method="POST" action="{{ route('admin.player-registrations.fetch-files', $registration) }}">
+                    @csrf
+                    <x-admin.button type="submit" variant="secondary">Copy files from Google Drive</x-admin.button>
+                </form>
+            @endif
+            @if($registration->photo_path)
+                <form
+                    method="POST"
+                    action="{{ route('admin.player-registrations.profile-photo', $registration) }}"
+                    @if($registration->player->photo_path) onsubmit="return confirm('This replaces the current profile photo of this player. Continue?')" @endif
+                >
+                    @csrf
+                    <x-admin.button type="submit" variant="secondary">Use as profile photo</x-admin.button>
+                </form>
+            @endif
+        </div>
+
         @if($registration->photo_url || $registration->payment_proof_url)
             <p class="mt-3 text-[11px] text-slate-400">
-                A Google Drive link comes from an imported Google Form sheet &mdash; the file itself stays on Drive, so
-                open it while signed in to the Google account that owns the form. The player's own photo can be uploaded
-                from Players &rarr; Edit.
+                A Google Drive link comes from an imported Google Form sheet. "Copy files from Google Drive" saves the
+                files here (they must be shared as "Anyone with the link"); otherwise open the link while signed in to the
+                Google account that owns the form. "Use as profile photo" resizes the submitted photo and shows it on the
+                public site.
             </p>
         @endif
     </div>
