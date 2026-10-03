@@ -9,6 +9,8 @@
         $chasingTeam = collect($liveData['innings'])->firstWhere('innings_number', 2)['batting_team'] ?? null;
     @endphp
 
+    <x-ad-slot tier="main" />
+
     @include('public.matches._header', ['match' => $match, 'active' => 'live', 'liveStatus' => true])
 
     <div
@@ -36,6 +38,10 @@
                 @endif
             </div>
 
+            {{-- Below the score, outside every element the polling script
+                 rewrites (#live-innings, #live-chase, #live-deliveries). --}}
+            <x-ad-slot tier="normal" />
+
             <section class="pub-card overflow-hidden">
                 <header class="pub-card-head">
                     <h2 class="pub-card-title">{{ __('matches.live.commentary') }}</h2>
@@ -60,6 +66,8 @@
             @include('public.matches._details', ['match' => $match])
         </aside>
     </div>
+
+    <x-ad-slot tier="mini" />
 
     @vite(['resources/js/public-live-match.js'])
 @endsection

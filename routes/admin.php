@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdvertisementController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\Auth\LoginController;
@@ -326,6 +327,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // one-click toggle from the index table.
         Route::patch('videos/{video}/toggle-status', [VideoController::class, 'toggleStatus'])->name('videos.toggle-status');
         Route::resource('videos', VideoController::class)->except(['show']);
+
+        // Sponsor ads (images / short videos) shown on public pages — no
+        // show(), same as videos. Where an ad appears follows its tier.
+        Route::patch('advertisements/{advertisement}/toggle-status', [AdvertisementController::class, 'toggleStatus'])->name('advertisements.toggle-status');
+        Route::resource('advertisements', AdvertisementController::class)->except(['show']);
 
         // News posts (text + optional images) for the public /news pages.
         Route::patch('news/{news}/toggle-status', [NewsController::class, 'toggleStatus'])->name('news.toggle-status');
