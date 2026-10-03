@@ -7,7 +7,7 @@ Nothing here is built yet unless it says **Done**.
 - An **edition = one whole season** (e.g. "RPPL Season 3"), from registration to the final.
 - Only **one edition is active at a time**. Edition status stays **manual** (no automatic switching).
 - Registration is open for **one edition at a time** (already enforced).
-- A **completed** season stays viewable and an admin **can still edit it when needed** (to correct a mistake). Today completed blocks new registrations / teams / squad entries for the admin too.
+- A **completed** season stays viewable; nothing new can be added to it (teams, squad players, matches, registrations) and that rule stays. Existing rows can still be corrected. Editing a match is a separate matter.
 - **Teams** are master records reused across seasons: some teams stay, some change each season. A season's team list is separate from the master team record.
 - A team's **squad is per season** (a returning team starts the new season with an empty squad); a player's **registration** is per season and joins the squad, while the player record (matched by mobile number) carries history across seasons.
 - **Removing a team from a season**: allowed only while it is safe, i.e. the team was just added / the tournament has not started (no matches for that team). Removing it also removes its squad (registrations stay). A team that already has matches cannot be removed. In practice deletes are rare; they are for undoing a recent mistake.
@@ -25,7 +25,7 @@ Nothing here is built yet unless it says **Done**.
 - Wanted navigation style: **drill-down like category → sub-category**. Open a season, click Teams to see that season's teams and add / edit / delete them there; the same for Registrations, Squads, Matches, etc.
 
 ## To do
-- [ ] Let an admin **edit a completed season** (corrections), instead of blocking every add / change. Decide exactly what stays blocked for the public (new registrations stay closed).
+- [x] **Decided, nothing to build**: a completed season stays as it is (nothing new can be added to it; existing rows can still be corrected). Editing a match is a separate matter.
 - [x] **Done (step 1)** Enforce **one "active" edition**: today two editions can both be set to active with no check.
 - [x] **Done (step 2A)** **Edition as the hub**: one page per season with sections (Teams, Squads, Matches, Registrations, Finance), each opening its list *inside that season* with add / edit / delete there (season pre-selected, no season dropdowns).
 - [x] **Done (step 2A)** Teams in a season: "Add teams" opens a **multi-select** list of existing teams not yet in this season (tick many, add in one go), **and** lets the admin **create a brand-new team right there** (name, short name, logo) which joins this season; remove a team from the season; open a team to see its squad.
