@@ -14,11 +14,17 @@
         <div class="min-w-0">
             <h1 class="pub-h1 break-words">{{ $venue->name }}</h1>
             <p class="pub-meta mt-0.5">
-                {{ collect([$venue->city, $venue->country])->filter()->implode(', ') ?: __('directory.venues.location_unavailable') }}
+                {{ $venue->locationLabel() ?: __('directory.venues.location_unavailable') }}
                 &middot; {{ trans_choice('directory.venues.match_count', $venue->matches_count) }}
             </p>
         </div>
     </div>
+
+    @if($venue->hasCoordinates())
+        <x-public.card class="mt-4" :title="__('directory.venues.location')">
+            @include('public.venues._map', ['venue' => $venue])
+        </x-public.card>
+    @endif
 
     <x-public.card class="mt-4" :title="__('directory.venues.upcoming_live')">
         @forelse($upcomingMatches as $match)

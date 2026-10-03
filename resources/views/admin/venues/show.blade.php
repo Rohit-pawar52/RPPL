@@ -22,8 +22,15 @@
             <x-status-badge :status="$venue->is_active ? 'active' : 'inactive'" />
         </div>
         <p class="mt-1 text-xs text-slate-500">
-            {{ collect([$venue->city, $venue->country])->filter()->implode(', ') ?: 'No location set' }}
+            {{ $venue->locationLabel() ?: 'No location set' }}
         </p>
+        @if($venue->hasCoordinates())
+            <p class="mt-1 text-xs text-slate-500">
+                {{ $venue->latitude }}, {{ $venue->longitude }}
+                &middot;
+                <a href="{{ $venue->directionsUrl() }}" target="_blank" rel="noopener noreferrer" class="font-medium text-green-700 hover:underline">Open in Google Maps</a>
+            </p>
+        @endif
     </div>
 
     <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">

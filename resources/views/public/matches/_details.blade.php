@@ -18,6 +18,14 @@
         <div>
             <dt class="pub-eyebrow">{{ __('matches.info.venue') }}</dt>
             <dd class="mt-0.5 font-medium text-slate-800">{{ $match->venue->name ?? __('matches.info.tbd') }}</dd>
+            @if($match->venue && $match->venue->locationLabel() !== '')
+                <dd class="mt-0.5 text-xs text-slate-500">{{ $match->venue->locationLabel() }}</dd>
+            @endif
+            @if($match->venue)
+                <div class="mt-2">
+                    @include('public.venues._map', ['venue' => $match->venue])
+                </div>
+            @endif
         </div>
         <div>
             <dt class="pub-eyebrow">{{ __('matches.info.date') }}</dt>

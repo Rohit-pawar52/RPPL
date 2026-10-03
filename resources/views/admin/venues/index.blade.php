@@ -15,7 +15,7 @@
                 type="text"
                 name="search"
                 value="{{ $filters['search'] ?? '' }}"
-                placeholder="Search name or city&hellip;"
+                placeholder="Search name, village or district&hellip;"
                 class="w-full max-w-[220px] rounded-md border border-slate-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100"
             />
 
@@ -55,7 +55,7 @@
                             </a>
                         </td>
                         <td class="hidden px-4 py-2 text-slate-600 md:table-cell">
-                            {{ collect([$venue->city, $venue->country])->filter()->implode(', ') ?: '—' }}
+                            {{ $venue->locationLabel() ?: '—' }}
                         </td>
                         <td class="px-4 py-2">
                             <x-status-badge :status="$venue->is_active ? 'active' : 'inactive'" />
