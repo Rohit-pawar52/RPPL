@@ -106,6 +106,32 @@ class PlayerRegistrationSubmittedAnswersTest extends TestCase
             ->assertSee(route('admin.player-registrations.photo', $registration), false);
     }
 
+    public function test_the_show_page_previews_the_images_inline(): void
+    {
+        $registration = $this->registrationWithPhoto();
+        $proof = UploadedFile::fake()->create('p.png', 10, 'image/png')->store('player-registrations/payment-proofs', 'local');
+        $pdf = UploadedFile::fake()->create('a.pdf', 10, 'application/pdf')->store('player-registrations/aadhaar', 'local');
+        $registration->update(['payment_proof_path' => $proof, 'aadhaar_document_path' => $pdf]);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.show', $registration))
+            ->assertOk()
+            ->assertSee('<img src="'.route('admin.player-registrations.photo', $registration).'"', false)
+            ->assertSee('<img src="'.route('admin.player-registrations.payment-proof', $registration).'"', false)
+            // A PDF cannot be an <img>; it keeps its button only.
+            ->assertDontSee('<img src="'.route('admin.player-registrations.aadhaar', $registration).'"', false);
+    }
+
+    public function test_a_registration_with_only_drive_links_shows_no_broken_preview(): void
+    {
+        $registration = PlayerRegistration::factory()->create(['photo_url' => 'https://drive.google.com/open?id=ABC123456', 'photo_path' => null]);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.player-registrations.show', $registration))
+            ->assertOk()
+            ->assertDontSee('<img', false);
+    }
+
     public function test_deleting_a_registration_removes_its_submitted_photo_too(): void
     {
         $registration = $this->registrationWithPhoto();

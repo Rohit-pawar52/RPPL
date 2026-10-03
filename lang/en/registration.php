@@ -75,6 +75,7 @@ return [
         'payment_proof' => 'Payment Screenshot',
         'payment_proof_hint' => 'Screenshot of your UPI/bank payment — JPEG or PNG, up to :size MB.',
         'registration_number' => 'Registration Number',
+        'registration_number_optional' => 'Registration Number (optional)',
     ],
 
     // Display labels for Player::PRIMARY_ROLES — the submitted option
@@ -124,13 +125,14 @@ return [
         'pending' => 'Pending',
         'registration_fee' => 'Registration Fee',
         'verification_notice' => 'Your payment and details will be manually verified by :league administration. This may take a few days.',
-        'return_notice' => 'You can come back anytime and check your status using your Registration Number:',
+        'return_notice' => 'You can come back anytime and check your status with just your phone number (the Registration Number is optional):',
         'back_home' => 'Back to :league home',
     ],
 
     'status' => [
         'heading' => 'Check Registration Status',
-        'intro' => 'Enter your Registration Number and the phone number you registered with.',
+        'intro' => 'Enter the phone number you registered with. If you have your Registration Number, add it to see your full name.',
+        'number_optional_hint' => 'Lost it? Leave this blank and use only your phone number.',
         'submit' => 'Check Status',
         'registration_number' => 'Registration Number',
         'player_name' => 'Player Name',
@@ -138,7 +140,7 @@ return [
         'registration_fee' => 'Registration Fee',
         'payment_status' => 'Payment Status',
         'registered_at' => 'Registered At',
-        'not_found' => 'No matching registration was found. Please check your Registration Number and Phone Number.',
+        'not_found' => 'No matching registration was found. Please check your phone number, or leave the Registration Number blank.',
         'back_to_registration' => 'Back to Player Registration',
         'payment' => [
             'pending' => 'Pending Verification',
