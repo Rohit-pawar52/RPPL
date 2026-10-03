@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\RuleController;
 use App\Http\Controllers\Admin\RuleTypeController;
 use App\Http\Controllers\Admin\ScorecardController;
 use App\Http\Controllers\Admin\ScoringController;
+use App\Http\Controllers\Admin\SeasonSquadController;
 use App\Http\Controllers\Admin\SeasonTeamController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TeamController;
@@ -76,6 +77,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('editions/{edition}/teams', [SeasonTeamController::class, 'store'])->name('editions.teams.store');
         Route::post('editions/{edition}/teams/new', [SeasonTeamController::class, 'storeNew'])->name('editions.teams.store-new');
         Route::delete('editions/{edition}/teams/{edition_team}', [SeasonTeamController::class, 'destroy'])->name('editions.teams.destroy');
+        // The squads of one season: an overview, then one page per team.
+        Route::get('editions/{edition}/squads', [SeasonSquadController::class, 'index'])->name('editions.squads.index');
+        Route::get('editions/{edition}/squads/{edition_team}', [SeasonSquadController::class, 'show'])->name('editions.squads.show');
+        Route::post('editions/{edition}/squads/{edition_team}/players', [SeasonSquadController::class, 'store'])->name('editions.squads.store');
+        Route::post('editions/{edition}/squads/{edition_team}/offline-player', [SeasonSquadController::class, 'storeOffline'])->name('editions.squads.store-offline');
+        Route::put('editions/{edition}/squads/{edition_team}', [SeasonSquadController::class, 'update'])->name('editions.squads.update');
+        Route::delete('editions/{edition}/squads/{edition_team}/players/{team_player}', [SeasonSquadController::class, 'destroy'])->name('editions.squads.destroy');
         // EditionTeam has no editable attributes beyond its own identity
         // (edition_id, team_id) — create/view/delete only, no edit/update.
         Route::resource('edition-teams', EditionTeamController::class)->only([

@@ -44,7 +44,7 @@
             icon="users"
             :value="$cards['squads']['players']"
             :sub="$cards['squads']['without_team'].' without a team'"
-            :href="route('admin.team-players.index')"
+            :href="route('admin.editions.squads.index', $edition)"
         />
         <x-admin.hub-card
             label="Matches"
