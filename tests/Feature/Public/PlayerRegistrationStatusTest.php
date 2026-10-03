@@ -71,6 +71,63 @@ class PlayerRegistrationStatusTest extends TestCase
         $response->assertOk()->assertSee($registration->registration_number);
     }
 
+    // ----- Phone-only lookup -----
+
+    public function test_the_phone_alone_finds_the_registration_with_a_masked_name_and_the_number_to_keep(): void
+    {
+        $registration = $this->registrationFor(['name' => 'Ramesh Joshi'], ['payment_status' => 'paid']);
+
+        $this->post(route('public.player-registration.status.lookup'), ['phone' => '9876543210'])
+            ->assertOk()
+            ->assertSee($registration->registration_number)
+            ->assertSee('R**** J****')
+            ->assertDontSee('Ramesh')
+            ->assertDontSee('Joshi')
+            ->assertSee('Paid');
+    }
+
+    public function test_the_phone_lists_every_edition_the_player_registered_for_newest_first(): void
+    {
+        $player = Player::factory()->create(['phone' => '9876543210', 'name' => 'Ramesh Joshi']);
+        $old = PlayerRegistration::factory()->create(['player_id' => $player->id, 'registered_at' => '2025-03-01'])->assignRegistrationNumber();
+        $new = PlayerRegistration::factory()->create(['player_id' => $player->id, 'registered_at' => '2026-03-01'])->assignRegistrationNumber();
+
+        $this->post(route('public.player-registration.status.lookup'), ['phone' => '9876543210'])
+            ->assertOk()
+            ->assertSeeInOrder([$new->registration_number, $old->registration_number]);
+    }
+
+    public function test_adding_the_registration_number_shows_the_full_name_and_only_that_registration(): void
+    {
+        $player = Player::factory()->create(['phone' => '9876543210', 'name' => 'Ramesh Joshi']);
+        $one = PlayerRegistration::factory()->create(['player_id' => $player->id])->assignRegistrationNumber();
+        $two = PlayerRegistration::factory()->create(['player_id' => $player->id])->assignRegistrationNumber();
+
+        $this->lookup($one->registration_number, '9876543210')
+            ->assertOk()
+            ->assertSee('Ramesh Joshi')
+            ->assertSee($one->registration_number)
+            ->assertDontSee($two->registration_number);
+    }
+
+    public function test_an_unknown_phone_or_a_blank_registration_number_with_a_wrong_phone_finds_nothing(): void
+    {
+        $this->registrationFor(['phone' => '9876543210']);
+
+        $this->post(route('public.player-registration.status.lookup'), ['phone' => '9111111111'])
+            ->assertOk()->assertSee('No matching registration was found');
+
+        $this->post(route('public.player-registration.status.lookup'), ['registration_number' => '', 'phone' => '9111111111'])
+            ->assertOk()->assertSee('No matching registration was found');
+    }
+
+    public function test_a_malformed_registration_number_is_still_rejected_but_a_phone_is_always_required(): void
+    {
+        $this->post(route('public.player-registration.status.lookup'), ['registration_number' => 'ABC', 'phone' => '9876543210'])
+            ->assertSessionHasErrors('registration_number');
+        $this->post(route('public.player-registration.status.lookup'), [])->assertSessionHasErrors('phone');
+    }
+
     // ----- Failure / enumeration -----
 
     public function test_wrong_registration_number_returns_generic_failure(): void

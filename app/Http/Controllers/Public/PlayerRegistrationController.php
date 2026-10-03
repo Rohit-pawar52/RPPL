@@ -86,10 +86,12 @@ class PlayerRegistrationController extends Controller
             $request->file('payment_proof'),
         );
 
-        // Session-flashed, one-time success payload — deliberately NOT a
-        // lookup-by-registration_number route/query string (that's
-        // Phase 3.39E's separate, phone-guarded status lookup).
-        session()->flash('registration_success', [
+        // Kept in the session (not flashed), so refreshing the page or
+        // coming back to it does not lose the registration number. Still
+        // deliberately NOT a lookup-by-registration_number route/query
+        // string (that's Phase 3.39E's separate, phone-guarded status
+        // lookup).
+        session()->put('registration_success', [
             'registration_number' => $registration->registration_number,
             'edition_name' => $edition->name,
             'player_name' => $registration->player->name,
@@ -132,13 +134,18 @@ class PlayerRegistrationController extends Controller
      */
     public function statusLookup(StatusLookupPlayerRegistrationRequest $request): Response
     {
-        $result = $this->statusLookup->lookup(
-            $request->validated('registration_number'),
-            $request->validated('phone'),
-        );
+        $number = $request->validated('registration_number');
+
+        $results = $this->statusLookup->lookup($number, $request->validated('phone'));
 
         return response()
-            ->view('public.player-registration.status', ['result' => $result, 'searched' => true])
+            ->view('public.player-registration.status', [
+                'results' => $results,
+                // The full name only goes to someone who also knows the
+                // registration number; the phone alone shows it masked.
+                'showFullName' => $number !== null,
+                'searched' => true,
+            ])
             ->header('Cache-Control', 'no-store, private');
     }
 }

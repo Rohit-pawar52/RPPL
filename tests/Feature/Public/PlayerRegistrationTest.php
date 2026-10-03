@@ -180,6 +180,9 @@ class PlayerRegistrationTest extends TestCase
         // Success page shows the number, never the private paths.
         $success = $this->get(route('public.player-registration.success'));
         $success->assertOk()->assertSee($registration->registration_number);
+
+        // Refreshing the page does not lose the number.
+        $this->get(route('public.player-registration.success'))->assertOk()->assertSee($registration->registration_number);
         $success->assertDontSee($registration->photo_path);
         $success->assertDontSee($registration->payment_proof_path);
     }

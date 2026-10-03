@@ -34,7 +34,7 @@ class StatusLookupPlayerRegistrationRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'registration_number' => Str::upper(trim((string) $this->input('registration_number'))),
+            'registration_number' => Str::upper(trim((string) $this->input('registration_number'))) ?: null,
             'phone' => Player::normalizePhone($this->input('phone')),
         ]);
     }
@@ -45,7 +45,9 @@ class StatusLookupPlayerRegistrationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'registration_number' => ['required', 'string', 'max:30', 'regex:/^RPPL-\d{4}-\d{6}$/'],
+            // Optional: the phone alone finds a registration. When given it
+            // narrows the result to that registration and shows the full name.
+            'registration_number' => ['nullable', 'string', 'max:30', 'regex:/^RPPL-\d{4}-\d{6}$/'],
             'phone' => ['required', 'string', 'regex:/^[6-9]\d{9}$/'],
         ];
     }
