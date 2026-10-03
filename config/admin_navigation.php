@@ -62,6 +62,7 @@ return [
                 ['label' => 'News', 'route' => 'admin.news.index', 'icon' => 'newspaper', 'active' => ['admin.news.*']],
                 ['label' => 'Videos', 'route' => 'admin.videos.index', 'icon' => 'play', 'active' => ['admin.videos.*']],
                 ['label' => 'Photos', 'route' => 'admin.photos.index', 'icon' => 'camera', 'active' => ['admin.photos.*']],
+                ['label' => 'Advertisements', 'route' => 'admin.advertisements.index', 'icon' => 'megaphone', 'active' => ['admin.advertisements.*']],
                 ['label' => 'Announcements', 'route' => 'admin.announcements.index', 'icon' => 'megaphone', 'active' => ['admin.announcements.*']],
                 // One entry covers Rules and Rule Types (reached from the Rules page).
                 ['label' => 'Rules & Regulations', 'route' => 'admin.rules.index', 'icon' => 'book', 'active' => ['admin.rules.*', 'admin.rule-types.*']],

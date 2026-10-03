@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Services\Advertisement\AdvertisementDisplayService;
 use App\View\Composers\AnnouncementTickerComposer;
 use App\View\Composers\BrandingComposer;
 use App\View\Composers\ContentPageFooterComposer;
@@ -22,7 +23,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // One per request: the sponsor ads are read once and the rotating
+        // banner stays the same everywhere it appears on that page.
+        $this->app->singleton(AdvertisementDisplayService::class);
     }
 
     /**
