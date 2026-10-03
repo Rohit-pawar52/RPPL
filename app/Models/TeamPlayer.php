@@ -30,7 +30,15 @@ class TeamPlayer extends Model
         'player_registration_id',
         'jersey_number',
         'role',
+        'sold_amount',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'sold_amount' => 'decimal:2',
+        ];
+    }
 
     public function editionTeam(): BelongsTo
     {

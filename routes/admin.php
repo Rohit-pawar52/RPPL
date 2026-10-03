@@ -27,6 +27,10 @@ use App\Http\Controllers\Admin\RuleController;
 use App\Http\Controllers\Admin\RuleTypeController;
 use App\Http\Controllers\Admin\ScorecardController;
 use App\Http\Controllers\Admin\ScoringController;
+use App\Http\Controllers\Admin\SeasonMatchController;
+use App\Http\Controllers\Admin\SeasonRegistrationController;
+use App\Http\Controllers\Admin\SeasonSquadController;
+use App\Http\Controllers\Admin\SeasonTeamController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\TeamPlayerController;
@@ -69,6 +73,26 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // this project's minimal Controller base class — see Phase 3.2).
         Route::resource('editions', EditionController::class);
         Route::get('editions/{edition}/report/pdf', [EditionController::class, 'reportPdf'])->name('editions.report.pdf');
+        // The teams of one season, managed from inside that season (the
+        // Edition hub's Teams card).
+        Route::get('editions/{edition}/teams', [SeasonTeamController::class, 'index'])->name('editions.teams.index');
+        Route::post('editions/{edition}/teams', [SeasonTeamController::class, 'store'])->name('editions.teams.store');
+        Route::post('editions/{edition}/teams/new', [SeasonTeamController::class, 'storeNew'])->name('editions.teams.store-new');
+        Route::delete('editions/{edition}/teams/{edition_team}', [SeasonTeamController::class, 'destroy'])->name('editions.teams.destroy');
+        // The squads of one season: an overview, then one page per team.
+        Route::get('editions/{edition}/squads', [SeasonSquadController::class, 'index'])->name('editions.squads.index');
+        Route::get('editions/{edition}/squads/{edition_team}', [SeasonSquadController::class, 'show'])->name('editions.squads.show');
+        Route::post('editions/{edition}/squads/{edition_team}/players', [SeasonSquadController::class, 'store'])->name('editions.squads.store');
+        Route::post('editions/{edition}/squads/{edition_team}/offline-player', [SeasonSquadController::class, 'storeOffline'])->name('editions.squads.store-offline');
+        Route::put('editions/{edition}/squads/{edition_team}', [SeasonSquadController::class, 'update'])->name('editions.squads.update');
+        Route::delete('editions/{edition}/squads/{edition_team}/players/{team_player}', [SeasonSquadController::class, 'destroy'])->name('editions.squads.destroy');
+        // The registrations of one season, with a bulk "Add to team".
+        Route::get('editions/{edition}/registrations', [SeasonRegistrationController::class, 'index'])->name('editions.registrations.index');
+        Route::post('editions/{edition}/registrations/add-to-team', [SeasonRegistrationController::class, 'addToTeam'])->name('editions.registrations.add-to-team');
+        // The matches of one season: this season's fixtures, and scheduling a new one.
+        Route::get('editions/{edition}/matches', [SeasonMatchController::class, 'index'])->name('editions.matches.index');
+        Route::get('editions/{edition}/matches/create', [SeasonMatchController::class, 'create'])->name('editions.matches.create');
+        Route::post('editions/{edition}/matches', [SeasonMatchController::class, 'store'])->name('editions.matches.store');
         // EditionTeam has no editable attributes beyond its own identity
         // (edition_id, team_id) — create/view/delete only, no edit/update.
         Route::resource('edition-teams', EditionTeamController::class)->only([

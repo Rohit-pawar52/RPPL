@@ -6,9 +6,9 @@
 
 @section('actions')
     @if(! empty($filters['edition_id']))
-        <x-admin.button href="{{ route('admin.player-registrations.review-pending', ['edition_id' => $filters['edition_id']]) }}" variant="secondary">Review pending</x-admin.button>
+        <x-admin.button :href="route('admin.player-registrations.review-pending', ['edition_id' => $filters['edition_id']])" variant="secondary">Review pending</x-admin.button>
     @endif
-    <x-admin.button href="{{ route('admin.player-registrations.export', $filters) }}" variant="secondary" icon="document-chart">Export</x-admin.button>
+    <x-admin.button :href="route('admin.player-registrations.export', $filters)" variant="secondary" icon="document-chart">Export</x-admin.button>
     <x-admin.button href="{{ route('admin.player-registrations.import') }}" variant="secondary" icon="document-chart">Import Excel / CSV</x-admin.button>
     <x-admin.button href="{{ route('admin.player-registrations.create') }}" variant="primary">+ New registration</x-admin.button>
 @endsection

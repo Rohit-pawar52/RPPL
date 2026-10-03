@@ -5,7 +5,7 @@
 @section('subtitle', 'Master player directory, separate from any edition.')
 
 @section('actions')
-    <x-admin.button href="{{ route('admin.players.export', $filters) }}" variant="secondary" icon="document-chart">Export</x-admin.button>
+    <x-admin.button :href="route('admin.players.export', $filters)" variant="secondary" icon="document-chart">Export</x-admin.button>
     <x-admin.button href="{{ route('admin.players.create') }}" variant="primary">+ New player</x-admin.button>
 @endsection
 
