@@ -185,6 +185,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('player-registrations/{player_registration}/photo', [PlayerRegistrationController::class, 'photo'])->name('player-registrations.photo');
         Route::post('player-registrations/{player_registration}/fetch-files', [PlayerRegistrationController::class, 'fetchFiles'])->name('player-registrations.fetch-files');
         Route::post('player-registrations/{player_registration}/profile-photo', [PlayerRegistrationController::class, 'useAsProfilePhoto'])->name('player-registrations.profile-photo');
+        // Fast one-by-one payment verification (admin only, see the policy).
+        Route::get('player-registrations/review-pending', [PlayerRegistrationController::class, 'reviewPending'])->name('player-registrations.review-pending');
+        Route::post('player-registrations/{player_registration}/mark-paid', [PlayerRegistrationController::class, 'markPaid'])->name('player-registrations.mark-paid');
+        Route::post('player-registrations/{player_registration}/mark-failed', [PlayerRegistrationController::class, 'markFailed'])->name('player-registrations.mark-failed');
+        Route::get('player-registrations/{player_registration}/next-pending', [PlayerRegistrationController::class, 'nextPending'])->name('player-registrations.next-pending');
         Route::resource('player-registrations', PlayerRegistrationController::class);
         Route::resource('teams', TeamController::class);
         Route::resource('team-players', TeamPlayerController::class);

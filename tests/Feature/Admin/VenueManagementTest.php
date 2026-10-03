@@ -76,13 +76,13 @@ class VenueManagementTest extends TestCase
     {
         $response = $this->actingAs($this->admin())->post(route('admin.venues.store'), [
             'name' => 'Eden Gardens',
-            'city' => 'Kolkata',
-            'country' => 'India',
+            'village' => 'Kolkata',
+            'district' => 'Howrah',
         ]);
 
         $response->assertRedirect(route('admin.venues.index'));
         $response->assertSessionHas('success');
-        $this->assertDatabaseHas('venues', ['name' => 'Eden Gardens', 'city' => 'Kolkata']);
+        $this->assertDatabaseHas('venues', ['name' => 'Eden Gardens', 'village' => 'Kolkata', 'district' => 'Howrah']);
     }
 
     public function test_new_venue_defaults_active(): void

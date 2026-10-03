@@ -250,6 +250,33 @@ class PlayerRegistrationStatusTest extends TestCase
         }
     }
 
+    // ----- Failure reason shown to the player -----
+
+    public function test_failed_registration_shows_the_admins_reason_escaped_and_other_statuses_never_do(): void
+    {
+        $failed = $this->registrationFor(['phone' => '9111111111'], [
+            'payment_status' => 'failed',
+            'payment_failure_reason' => 'UTR not found <script>alert(1)</script>',
+        ]);
+        // A stale reason on a non-failed row must not reach the player.
+        $paid = $this->registrationFor(['phone' => '9222222222'], [
+            'payment_status' => 'paid',
+            'payment_failure_reason' => 'Stale reason',
+        ]);
+
+        $this->lookup($failed->registration_number, '9111111111')
+            ->assertOk()
+            ->assertSee('Reason:')
+            ->assertSee('UTR not found &lt;script&gt;alert(1)&lt;/script&gt;', false)
+            ->assertDontSee('<script>alert(1)</script>', false)
+            ->assertSee('Please contact RPPL administration', false);
+
+        $this->lookup($paid->registration_number, '9222222222')
+            ->assertOk()
+            ->assertDontSee('Stale reason')
+            ->assertDontSee('Reason:');
+    }
+
     // ----- Read-only / rate limiting -----
 
     public function test_lookup_performs_no_database_mutation(): void

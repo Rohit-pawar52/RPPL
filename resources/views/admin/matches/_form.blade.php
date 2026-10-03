@@ -4,6 +4,8 @@
 @php
     $match = $match ?? null;
     $canChangeIdentity = $canChangeIdentity ?? true;
+    // Starting values for a NEW match (see GameMatchController::newMatchDefaults()).
+    $defaults = $defaults ?? [];
 @endphp
 
 @if($canChangeIdentity)
@@ -12,7 +14,7 @@
         label="Edition"
         placeholder="Select an edition"
         :options="$editions->pluck('name', 'id')"
-        :value="$match->edition_id ?? ''"
+        :value="$match->edition_id ?? ($defaults['edition_id'] ?? '')"
         required
     />
 
@@ -66,7 +68,7 @@
         label="Venue"
         placeholder="No venue / TBD"
         :options="$venues->pluck('name', 'id')"
-        :value="$match->venue_id ?? ''"
+        :value="$match->venue_id ?? ($defaults['venue_id'] ?? '')"
     />
     <x-form.select
         name="match_stage"
@@ -83,16 +85,32 @@
         label="Match number"
         type="number"
         min="1"
-        :value="$match->match_number ?? ''"
+        :value="$match->match_number ?? ($defaults['match_number'] ?? '')"
     />
-    <x-form.input
-        name="overs_per_innings"
-        label="Overs per innings"
-        type="number"
-        min="1"
-        max="50"
-        :value="$match->overs_per_innings ?? 20"
-    />
+    <div>
+        <x-form.input
+            name="overs_per_innings"
+            label="Overs per innings"
+            type="number"
+            min="1"
+            max="50"
+            :value="$match->overs_per_innings ?? ($defaults['overs_per_innings'] ?? 20)"
+        />
+        {{-- Overs differ from match to match (6, 8 or 10 most often): one tap fills the box. --}}
+        <div class="-mt-2 mb-3.5 flex flex-wrap items-center gap-1.5" data-overs-picks>
+            <span class="text-[11px] text-slate-400">Quick pick:</span>
+            @foreach([6, 8, 10, 12, 15, 20] as $overs)
+                <button type="button" data-overs="{{ $overs }}" class="rounded border border-slate-300 bg-white px-2 py-0.5 text-[12px] font-medium text-slate-600 hover:border-green-500 hover:text-green-700">{{ $overs }}</button>
+            @endforeach
+        </div>
+        <script>
+            document.querySelectorAll('[data-overs-picks] [data-overs]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    document.getElementById('overs_per_innings').value = button.dataset.overs;
+                });
+            });
+        </script>
+    </div>
     <x-form.input
         name="scheduled_at"
         label="Scheduled at"

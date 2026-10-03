@@ -23,8 +23,14 @@ class StoreVenueRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'city' => ['nullable', 'string', 'max:255'],
-            'country' => ['nullable', 'string', 'max:255'],
+            // city/country are intentionally not accepted any more (kept in
+            // the database for old rows) so an update never touches them.
+            'village' => ['nullable', 'string', 'max:100'],
+            'tehsil' => ['nullable', 'string', 'max:100'],
+            'district' => ['nullable', 'string', 'max:100'],
+            // The map pin: both coordinates or neither.
+            'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
         ];
     }
 }

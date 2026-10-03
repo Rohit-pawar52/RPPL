@@ -20,7 +20,9 @@ use Illuminate\Database\Eloquent\Collection;
  *
  * Selects only the columns the public result actually needs — never
  * aadhaar_document_path/payment_proof_path/payment_reference, which stay
- * admin-only.
+ * admin-only. payment_failure_reason is the one admin-written text the
+ * player does see (and only for a failed payment), so it is always output
+ * escaped.
  */
 class PlayerRegistrationStatusLookupService
 {
@@ -41,7 +43,7 @@ class PlayerRegistrationStatusLookupService
     public function lookup(?string $registrationNumber, string $normalizedPhone): Collection
     {
         return PlayerRegistration::query()
-            ->select(['id', 'registration_number', 'edition_id', 'player_id', 'payment_status', 'registration_fee', 'registered_at'])
+            ->select(['id', 'registration_number', 'edition_id', 'player_id', 'payment_status', 'payment_failure_reason', 'registration_fee', 'registered_at'])
             ->when($registrationNumber, fn ($query, $number) => $query->where('registration_number', $number))
             ->whereHas('player', fn ($query) => $query->where('phone', $normalizedPhone))
             ->with(['player:id,name', 'edition:id,name,year'])
