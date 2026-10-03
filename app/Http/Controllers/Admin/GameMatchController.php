@@ -184,7 +184,7 @@ class GameMatchController extends Controller
             'edition_id' => $edition?->id,
             'match_number' => $edition ? (int) GameMatch::where('edition_id', $edition->id)->max('match_number') + 1 : null,
             'overs_per_innings' => $latest?->overs_per_innings ?? 20,
-            'venue_id' => $latest?->venue_id,
+            'venue_id' => Venue::defaultId() ?? $latest?->venue_id,
         ];
     }
 
