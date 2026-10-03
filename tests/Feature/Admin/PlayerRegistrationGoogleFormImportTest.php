@@ -523,8 +523,7 @@ class PlayerRegistrationGoogleFormImportTest extends TestCase
             ->get(route('admin.player-registrations.edit', $registration))
             ->assertOk()
             ->assertSee('Details from the registration form')
-            ->assertSee('name="village"', false)
-            ->assertSee('name="payment_proof_url"', false);
+            ->assertSee('name="village"', false);
 
         $this->actingAs($admin)->put(route('admin.player-registrations.update', $registration), [
             'payment_status' => 'paid',
@@ -558,6 +557,24 @@ class PlayerRegistrationGoogleFormImportTest extends TestCase
         $registration->refresh();
         $this->assertNull($registration->village);
         $this->assertNull($registration->photo_url);
+    }
+
+    public function test_the_drive_link_fields_are_only_on_the_edit_page_of_an_imported_registration(): void
+    {
+        $admin = $this->admin();
+        $publicForm = PlayerRegistration::factory()->create(['photo_url' => null, 'payment_proof_url' => null]);
+        $imported = PlayerRegistration::factory()->create(['photo_url' => 'https://drive.google.com/open?id=ABC123456']);
+
+        $this->actingAs($admin)->get(route('admin.player-registrations.edit', $publicForm))
+            ->assertOk()
+            ->assertSee('name="village"', false)
+            ->assertDontSee('name="photo_url"', false)
+            ->assertDontSee('name="payment_proof_url"', false);
+
+        $this->actingAs($admin)->get(route('admin.player-registrations.edit', $imported))
+            ->assertOk()
+            ->assertSee('name="photo_url"', false)
+            ->assertSee('name="payment_proof_url"', false);
     }
 
     public function test_the_edit_page_rejects_an_unrealistic_age_and_links_that_are_not_google_drive_links(): void

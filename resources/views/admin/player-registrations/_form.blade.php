@@ -86,7 +86,7 @@
     <div class="mt-5 border-t border-slate-100 pt-4">
         <p class="text-xs font-medium text-slate-700">Details from the registration form (optional)</p>
         <p class="mb-3 mt-0.5 text-[11px] text-slate-400">
-            Filled in automatically when a Google Form sheet is imported. Role and batting hand are on the player
+            Filled in automatically on the public form and when a sheet is imported. Role and batting hand are on the player
             (Players &rarr; Edit).
         </p>
         <div class="grid gap-x-4 sm:grid-cols-3">
@@ -108,6 +108,10 @@
                 :value="$registration->submitted_utr"
             />
         </div>
+        {{-- The Google Drive links only exist on registrations that came from an
+             imported sheet; for everything else (the public form uploads files
+             directly) they would just be two empty, confusing boxes. --}}
+        @if($registration->photo_url || $registration->payment_proof_url || old('photo_url') || old('payment_proof_url'))
         <div class="grid gap-x-4 sm:grid-cols-2">
             <x-form.input
                 name="photo_url"
@@ -126,5 +130,6 @@
                 :value="$registration->payment_proof_url"
             />
         </div>
+        @endif
     </div>
 @endif
