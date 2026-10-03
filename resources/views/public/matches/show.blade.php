@@ -3,6 +3,8 @@
 @section('title', $match->teamA->team->name.' '.__('matches.common.vs').' '.$match->teamB->team->name.' · '.$branding->shortName)
 
 @section('content')
+    <x-ad-slot tier="main" />
+
     @include('public.matches._header', ['match' => $match, 'active' => 'info'])
 
     @php
@@ -48,4 +50,7 @@
             </aside>
         @endif
     </div>
+
+    <x-ad-slot tier="normal" />
+    <x-ad-slot tier="mini" />
 @endsection

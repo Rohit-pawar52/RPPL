@@ -55,6 +55,8 @@ class MediaFileCleanupService
     public const CATEGORIES = [
         'videos' => ['label' => 'Videos', 'directory' => 'videos', 'table' => 'videos', 'column' => 'video_path'],
         'video-thumbnails' => ['label' => 'Video thumbnails', 'directory' => 'videos/thumbnails', 'table' => 'videos', 'column' => 'thumbnail_path'],
+        'ad-media' => ['label' => 'Advertisements', 'directory' => 'ads', 'table' => 'advertisements', 'column' => 'media_path'],
+        'ad-posters' => ['label' => 'Advertisement previews', 'directory' => 'ads/posters', 'table' => 'advertisements', 'column' => 'poster_path'],
         'photos' => ['label' => 'Photos', 'directory' => 'photos', 'table' => 'photos', 'column' => 'photo_path'],
         'news-images' => ['label' => 'News images', 'directory' => 'news', 'table' => 'news_images', 'column' => 'image_path'],
         'rule-images' => ['label' => 'Rules images', 'directory' => 'rules', 'table' => 'rules', 'column' => 'image_path'],

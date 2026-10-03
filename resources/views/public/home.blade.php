@@ -14,6 +14,8 @@
     so an edition with no matches/teams/stats yet still renders cleanly.
 --}}
 @section('content')
+    <x-ad-slot tier="main" />
+
     {{-- Edition context strip: application name + tagline (settings-
          driven, asserted by the branding tests) and the current edition
          with its status. One slim row — no hero banner. --}}
@@ -69,6 +71,8 @@
         {{-- Featured Videos — below the match blocks so live/match info
              stays first; renders nothing when there are none. --}}
         @include('public._featured-videos', ['featuredVideos' => $featuredVideos])
+
+        <x-ad-slot tier="normal" />
 
         <div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start">
             {{-- 3. Points Table preview --}}
@@ -208,4 +212,6 @@
             </x-public.card>
         </div>
     @endif
+
+    <x-ad-slot tier="mini" />
 @endsection

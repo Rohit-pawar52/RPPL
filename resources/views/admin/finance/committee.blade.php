@@ -123,7 +123,6 @@
                                                 <x-icon name="trash" class="h-4 w-4" />
                                             </button>
                                         </form>
-                                    @endif
                                 </div>
                             </td>
                         </tr>
