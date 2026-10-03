@@ -6,9 +6,33 @@
     $canChangeIdentity = $canChangeIdentity ?? true;
     // Starting values for a NEW match (see GameMatchController::newMatchDefaults()).
     $defaults = $defaults ?? [];
+    // Set when the form is opened from inside a season (SeasonMatchController):
+    // the season is fixed and $editionTeams holds only that season's teams.
+    $fixedEdition = $fixedEdition ?? null;
 @endphp
 
-@if($canChangeIdentity)
+@if($fixedEdition)
+    <p class="mb-3.5 text-[13px] text-slate-600">Season: <span class="font-medium text-slate-800">{{ $fixedEdition->name }}</span></p>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+        <x-form.select
+            name="edition_team_a_id"
+            label="Team A"
+            placeholder="Select Team A"
+            :options="$editionTeams->mapWithKeys(fn ($editionTeam) => [$editionTeam->id => $editionTeam->team->name])"
+            :value="''"
+            required
+        />
+        <x-form.select
+            name="edition_team_b_id"
+            label="Team B"
+            placeholder="Select Team B"
+            :options="$editionTeams->mapWithKeys(fn ($editionTeam) => [$editionTeam->id => $editionTeam->team->name])"
+            :value="''"
+            required
+        />
+    </div>
+@elseif($canChangeIdentity)
     <x-form.select
         name="edition_id"
         label="Edition"

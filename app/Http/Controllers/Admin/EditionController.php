@@ -8,7 +8,9 @@ use App\Http\Requests\Admin\Edition\UpdateEditionRequest;
 use App\Models\Edition;
 use App\Models\EditionContribution;
 use App\Models\EditionTransaction;
+use App\Models\GameMatch;
 use App\Models\PlayerRegistration;
+use App\Models\TeamPlayer;
 use App\Services\Edition\EditionService;
 use App\Services\Settings\DisplayTimezoneFormatter;
 use App\Services\Statistics\PlayerStatisticsService;
@@ -99,8 +101,27 @@ class EditionController extends Controller
             ->selectRaw('COALESCE(SUM(amount), 0) as total')
             ->first();
 
+        $registrations = PlayerRegistration::where('edition_id', $edition->id);
+        $squadPlayers = TeamPlayer::whereHas('editionTeam', fn ($query) => $query->where('edition_id', $edition->id))->count();
+        $matchStatuses = GameMatch::where('edition_id', $edition->id)->select('match_status')->selectRaw('COUNT(*) as total')->groupBy('match_status')->pluck('total', 'match_status');
+
         return view('admin.editions.show', [
             'edition' => $edition,
+            'cards' => [
+                'registrations' => [
+                    'total' => $edition->player_registrations_count,
+                    'pending' => (clone $registrations)->where('payment_status', 'pending')->count(),
+                ],
+                'squads' => [
+                    'players' => $squadPlayers,
+                    'without_team' => (clone $registrations)->whereDoesntHave('teamPlayer')->count(),
+                ],
+                'matches' => [
+                    'played' => (int) ($matchStatuses['completed'] ?? 0),
+                    // Still to be played: not finished, not called off.
+                    'remaining' => (int) collect(['scheduled', 'toss', 'live'])->sum(fn ($status) => $matchStatuses[$status] ?? 0),
+                ],
+            ],
             'standings' => $this->standings->getEditionStandings($edition),
             'leaderboard' => $this->statistics->getEditionLeaderboard($edition),
             'records' => $this->statistics->getEditionRecords($edition),

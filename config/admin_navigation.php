@@ -33,10 +33,13 @@ return [
             'icon' => 'calendar',
             'ability' => 'manage-tournament',
             'items' => [
-                ['label' => 'Editions', 'route' => 'admin.editions.index', 'icon' => 'calendar', 'active' => ['admin.editions.*']],
+                // A season is opened from here (the Edition hub); its teams,
+                // squads, matches and registrations are reached from the hub's
+                // cards, so they have no sidebar entries of their own. The
+                // older Edition Teams / Squads pages still work and highlight
+                // Editions. Teams and Venues are the reusable master records.
+                ['label' => 'Editions', 'route' => 'admin.editions.index', 'icon' => 'calendar', 'active' => ['admin.editions.*', 'admin.edition-teams.*', 'admin.team-players.*']],
                 ['label' => 'Teams', 'route' => 'admin.teams.index', 'icon' => 'shield', 'active' => ['admin.teams.*']],
-                ['label' => 'Edition Teams', 'route' => 'admin.edition-teams.index', 'icon' => 'shield', 'active' => ['admin.edition-teams.*']],
-                ['label' => 'Squads', 'route' => 'admin.team-players.index', 'icon' => 'users', 'active' => ['admin.team-players.*']],
                 ['label' => 'Venues', 'route' => 'admin.venues.index', 'icon' => 'map-pin', 'active' => ['admin.venues.*']],
             ],
         ],
