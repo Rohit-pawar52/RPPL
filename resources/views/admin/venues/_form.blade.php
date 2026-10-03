@@ -40,6 +40,13 @@
     </div>
 </div>
 
+<x-form.checkbox
+    name="is_default"
+    label="Default venue"
+    :checked="$venue?->is_default ?? false"
+    help="New matches start with this venue selected (you can still pick another for a match). Only one venue is the default."
+/>
+
 @if($venue)
     {{-- Only shown on edit: a newly created venue defaults to active
          without the admin having to choose it explicitly. --}}

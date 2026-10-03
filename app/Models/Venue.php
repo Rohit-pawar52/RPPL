@@ -20,6 +20,7 @@ class Venue extends Model
         'district',
         'latitude',
         'longitude',
+        'is_default',
         'is_active',
     ];
 
@@ -29,6 +30,7 @@ class Venue extends Model
             'is_active' => 'boolean',
             // decimal columns come back as strings by default; the map code
             // and the directions link want real numbers.
+            'is_default' => 'boolean',
             'latitude' => 'float',
             'longitude' => 'float',
         ];
@@ -47,6 +49,15 @@ class Venue extends Model
         }
 
         return $parts->implode(', ');
+    }
+
+    /**
+     * The id of the venue new matches start with: the default venue, if
+     * one is set and still active.
+     */
+    public static function defaultId(): ?int
+    {
+        return static::active()->where('is_default', true)->value('id');
     }
 
     public function hasCoordinates(): bool

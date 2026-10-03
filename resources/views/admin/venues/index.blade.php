@@ -59,6 +59,9 @@
                         </td>
                         <td class="px-4 py-2">
                             <x-status-badge :status="$venue->is_active ? 'active' : 'inactive'" />
+                            @if($venue->is_default)
+                                <span class="ml-1 rounded-full bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-700 ring-1 ring-inset ring-green-200">Default</span>
+                            @endif
                         </td>
                         <td class="hidden px-4 py-2 text-slate-600 md:table-cell">
                             {{ $venue->matches_count }}
