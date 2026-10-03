@@ -68,6 +68,7 @@ class UpdateEditionRequest extends FormRequest
     {
         $validator->after(function (Validator $validator) {
             $this->validateRegistrationPeriod($validator);
+            $this->validateSingleActiveEdition($validator, $this->route('edition'));
 
             if (! $this->boolean('registration_open')) {
                 return;

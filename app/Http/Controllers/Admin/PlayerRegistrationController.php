@@ -355,6 +355,79 @@ class PlayerRegistrationController extends Controller
         return back()->with('success', 'The photo is now the profile photo of this player.');
     }
 
+    /**
+     * Quick verification, one registration after another: mark it paid (or
+     * failed with a reason) and land straight on the next pending
+     * registration of the same edition. Allowed from any current status so
+     * an admin can correct an earlier decision.
+     */
+    public function markPaid(PlayerRegistration $playerRegistration): RedirectResponse
+    {
+        $this->authorize('update', $playerRegistration);
+
+        $this->registrations->markPaid($playerRegistration);
+
+        return $this->redirectToNextPending($playerRegistration, "{$playerRegistration->registration_number} marked paid.");
+    }
+
+    public function markFailed(Request $request, PlayerRegistration $playerRegistration): RedirectResponse
+    {
+        $this->authorize('update', $playerRegistration);
+
+        $validated = $request->validate(['reason' => ['required', 'string', 'max:255']]);
+
+        $this->registrations->markFailed($playerRegistration, trim($validated['reason']));
+
+        return $this->redirectToNextPending($playerRegistration, "{$playerRegistration->registration_number} marked failed.");
+    }
+
+    public function nextPending(PlayerRegistration $playerRegistration): RedirectResponse
+    {
+        $this->authorize('update', $playerRegistration);
+
+        $next = $this->registrations->nextPending($playerRegistration);
+
+        return $next
+            ? redirect()->route('admin.player-registrations.show', $next)
+            : $this->noMorePending($playerRegistration->edition_id, 'There are no other pending registrations in this edition.');
+    }
+
+    /**
+     * Opens the first pending registration of the edition the list is
+     * filtered to (the "Review pending" button on the list).
+     */
+    public function reviewPending(Request $request): RedirectResponse
+    {
+        $this->authorize('viewAny', PlayerRegistration::class);
+
+        $editionId = (int) $request->query('edition_id');
+        $first = $editionId ? $this->registrations->firstPending($editionId) : null;
+
+        return $first
+            ? redirect()->route('admin.player-registrations.show', $first)
+            : $this->noMorePending($editionId ?: null, 'There are no pending registrations to review.');
+    }
+
+    private function redirectToNextPending(PlayerRegistration $done, string $message): RedirectResponse
+    {
+        $next = $this->registrations->nextPending($done);
+
+        if (! $next) {
+            return $this->noMorePending($done->edition_id, "{$message} No more pending registrations in this edition.");
+        }
+
+        return redirect()
+            ->route('admin.player-registrations.show', $next)
+            ->with('success', "{$message} Next pending registration:");
+    }
+
+    private function noMorePending(?int $editionId, string $message): RedirectResponse
+    {
+        return redirect()
+            ->route('admin.player-registrations.index', array_filter(['edition_id' => $editionId, 'payment_status' => 'pending']))
+            ->with('info', $message);
+    }
+
     public function update(UpdatePlayerRegistrationRequest $request, PlayerRegistration $playerRegistration): RedirectResponse
     {
         $this->authorize('update', $playerRegistration);

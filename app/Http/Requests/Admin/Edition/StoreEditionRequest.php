@@ -59,6 +59,7 @@ class StoreEditionRequest extends FormRequest
     {
         $validator->after(function (Validator $validator) {
             $this->validateRegistrationPeriod($validator);
+            $this->validateSingleActiveEdition($validator);
 
             if (! $this->boolean('registration_open')) {
                 return;

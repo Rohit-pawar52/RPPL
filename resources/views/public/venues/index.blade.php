@@ -26,7 +26,7 @@
                 <div class="min-w-0">
                     <p class="truncate text-sm font-semibold text-slate-900">{{ $venue->name }}</p>
                     <p class="pub-meta truncate">
-                        {{ collect([$venue->city, $venue->country])->filter()->implode(', ') ?: __('directory.venues.location_unavailable') }}
+                        {{ $venue->locationLabel() ?: __('directory.venues.location_unavailable') }}
                     </p>
                 </div>
             </a>

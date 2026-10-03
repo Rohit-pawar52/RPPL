@@ -76,6 +76,11 @@
                             <dd class="mt-0.5 text-sm font-semibold text-slate-900">{{ display_datetime($result->registered_at, 'd M Y') ?? '—' }}</dd>
                         </div>
                     </dl>
+                    @if($result->payment_status === 'failed' && filled($result->payment_failure_reason))
+                        <p class="mt-3 border-t border-line pt-3 text-xs font-semibold leading-relaxed text-red-700">
+                            {{ __('registration.status.payment.failure_reason') }} {{ $result->payment_failure_reason }}
+                        </p>
+                    @endif
                     @if($paymentMessage)
                         <p class="mt-3 border-t border-line pt-3 text-xs leading-relaxed text-slate-600">{{ $paymentMessage }}</p>
                     @endif

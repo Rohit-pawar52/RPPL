@@ -19,6 +19,7 @@ use App\Support\CsvSafe;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -148,12 +149,43 @@ class GameMatchController extends Controller
     {
         $this->authorize('create', GameMatch::class);
 
+        $editions = Edition::openForParticipation()->orderByDesc('year')->get();
+
         return view('admin.matches.create', [
-            'editions' => Edition::openForParticipation()->orderByDesc('year')->get(),
+            'editions' => $editions,
             'editionTeams' => $this->eligibleEditionTeams(),
             'venues' => Venue::active()->orderBy('name')->get(),
             'stages' => GameMatch::STAGES,
+            'defaults' => $this->newMatchDefaults($editions),
         ]);
+    }
+
+    /**
+     * Pre-filled values for a new match so an admin entering a whole
+     * fixture list only changes what differs: the season being played
+     * (the current edition, if it is open for participation), the next
+     * free match number in it, and the overs and venue of its latest
+     * match. All of it is just a starting point; every field stays
+     * editable.
+     *
+     * @param  Collection<int, Edition>  $editions
+     * @return array{edition_id: ?int, match_number: ?int, overs_per_innings: int, venue_id: ?int}
+     */
+    private function newMatchDefaults($editions): array
+    {
+        $edition = Edition::current();
+        $edition = $edition && $editions->contains('id', $edition->id) ? $edition : null;
+
+        $latest = $edition
+            ? GameMatch::where('edition_id', $edition->id)->latest('id')->first()
+            : null;
+
+        return [
+            'edition_id' => $edition?->id,
+            'match_number' => $edition ? (int) GameMatch::where('edition_id', $edition->id)->max('match_number') + 1 : null,
+            'overs_per_innings' => $latest?->overs_per_innings ?? 20,
+            'venue_id' => $latest?->venue_id,
+        ];
     }
 
     public function store(StoreGameMatchRequest $request): RedirectResponse

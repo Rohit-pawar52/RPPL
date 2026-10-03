@@ -21,6 +21,9 @@ class VenueController extends Controller
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('village', 'like', '%'.$search.'%')
+                        ->orWhere('tehsil', 'like', '%'.$search.'%')
+                        ->orWhere('district', 'like', '%'.$search.'%')
                         ->orWhere('city', 'like', '%'.$search.'%');
                 });
             })

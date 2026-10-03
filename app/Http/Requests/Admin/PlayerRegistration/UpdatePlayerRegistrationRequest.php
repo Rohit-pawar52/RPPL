@@ -31,6 +31,14 @@ class UpdatePlayerRegistrationRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        if ($this->has('payment_failure_reason')) {
+            $this->merge([
+                'payment_failure_reason' => $this->filled('payment_failure_reason')
+                    ? trim($this->string('payment_failure_reason'))
+                    : null,
+            ]);
+        }
+
         if ($this->has('payment_reference')) {
             $this->merge([
                 'payment_reference' => $this->filled('payment_reference')
@@ -67,6 +75,9 @@ class UpdatePlayerRegistrationRequest extends FormRequest
 
         return [
             'payment_status' => ['required', 'string', Rule::in(PlayerRegistration::PAYMENT_STATUSES)],
+            // Shown to the player on the public status page; the service
+            // clears it again unless the status is 'failed'.
+            'payment_failure_reason' => ['nullable', 'string', 'max:255'],
             'registration_fee' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'registered_at' => ['nullable', 'date'],
             'payment_reference' => ['nullable', 'string', 'max:100'],
