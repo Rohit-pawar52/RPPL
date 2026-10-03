@@ -40,7 +40,7 @@ Nothing here is built yet unless it says **Done**.
 - [x] **Done (step 1)** Venue: add a **village (gram)** field (replacing the city / country emphasis) and a **map location** field so the exact ground is shown on a map (public match page + admin). Decided: a **map picker in the venue form** (OpenStreetMap + Leaflet, no API key): search a place, **satellite toggle** for village grounds, click to drop a pin, latitude/longitude saved. Public match page shows a small map with the pin and an "Open in Google Maps" button.
 - [x] **Done (step 1)** Venue fields: **name, village (gram), tehsil, district, map location** (city / country dropped); active/inactive kept as is.
 - [x] **Done (step 1)** **Match Info page (public)**: show the venue location with a map and a "Get directions" button (opens Google Maps to the pin) so people can find the ground.
-- [ ] A season has one **main venue**: set it on the edition and pre-fill it for every match of that season.
+- [x] **Done (step 3)** Default venue: one venue marked default (venue form tick) and pre-selected in every new match form, changeable per match (replaces the idea of setting a venue on the edition).
 - [x] **Done (step 2C, simplified: Matches stays top-level for scorers; Editions / Teams / Venues in one group)** Sidebar after the hub exists: **Tournament** = Editions (hub), Matches; **Setup** = Teams, Venues; **Player Management** stays (Players, Registrations); "Season Teams" and "Squad Players" leave the sidebar (they open inside a season).
 
 ## Future ideas (not now)

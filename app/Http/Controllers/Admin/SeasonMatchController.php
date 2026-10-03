@@ -73,7 +73,7 @@ class SeasonMatchController extends Controller
             'defaults' => [
                 'match_number' => (int) GameMatch::where('edition_id', $edition->id)->max('match_number') + 1,
                 'overs_per_innings' => $latest?->overs_per_innings ?? 20,
-                'venue_id' => $latest?->venue_id,
+                'venue_id' => Venue::defaultId() ?? $latest?->venue_id,
             ],
         ]);
     }

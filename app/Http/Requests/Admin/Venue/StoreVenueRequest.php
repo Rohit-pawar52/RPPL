@@ -17,6 +17,15 @@ class StoreVenueRequest extends FormRequest
     }
 
     /**
+     * A plain checkbox sends nothing when unchecked, so is_default is made an
+     * explicit true/false (otherwise unticking it would change nothing).
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge(['is_default' => $this->boolean('is_default')]);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function rules(): array
@@ -31,6 +40,7 @@ class StoreVenueRequest extends FormRequest
             // The map pin: both coordinates or neither.
             'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
+            'is_default' => ['required', 'boolean'],
         ];
     }
 }
