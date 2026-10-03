@@ -27,6 +27,8 @@ use App\Http\Controllers\Admin\RuleController;
 use App\Http\Controllers\Admin\RuleTypeController;
 use App\Http\Controllers\Admin\ScorecardController;
 use App\Http\Controllers\Admin\ScoringController;
+use App\Http\Controllers\Admin\SeasonMatchController;
+use App\Http\Controllers\Admin\SeasonRegistrationController;
 use App\Http\Controllers\Admin\SeasonSquadController;
 use App\Http\Controllers\Admin\SeasonTeamController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -84,6 +86,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('editions/{edition}/squads/{edition_team}/offline-player', [SeasonSquadController::class, 'storeOffline'])->name('editions.squads.store-offline');
         Route::put('editions/{edition}/squads/{edition_team}', [SeasonSquadController::class, 'update'])->name('editions.squads.update');
         Route::delete('editions/{edition}/squads/{edition_team}/players/{team_player}', [SeasonSquadController::class, 'destroy'])->name('editions.squads.destroy');
+        // The registrations of one season, with a bulk "Add to team".
+        Route::get('editions/{edition}/registrations', [SeasonRegistrationController::class, 'index'])->name('editions.registrations.index');
+        Route::post('editions/{edition}/registrations/add-to-team', [SeasonRegistrationController::class, 'addToTeam'])->name('editions.registrations.add-to-team');
+        // The matches of one season: this season's fixtures, and scheduling a new one.
+        Route::get('editions/{edition}/matches', [SeasonMatchController::class, 'index'])->name('editions.matches.index');
+        Route::get('editions/{edition}/matches/create', [SeasonMatchController::class, 'create'])->name('editions.matches.create');
+        Route::post('editions/{edition}/matches', [SeasonMatchController::class, 'store'])->name('editions.matches.store');
         // EditionTeam has no editable attributes beyond its own identity
         // (edition_id, team_id) — create/view/delete only, no edit/update.
         Route::resource('edition-teams', EditionTeamController::class)->only([

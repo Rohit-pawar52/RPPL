@@ -71,13 +71,27 @@ class AdminNavigationTest extends TestCase
 
         foreach ([
             'admin.dashboard', 'admin.matches.index', 'admin.reports.index',
-            'admin.editions.index', 'admin.teams.index', 'admin.edition-teams.index', 'admin.team-players.index', 'admin.venues.index',
+            'admin.editions.index', 'admin.teams.index', 'admin.venues.index',
             'admin.players.index', 'admin.player-registrations.index',
             'admin.news.index', 'admin.videos.index', 'admin.photos.index', 'admin.announcements.index', 'admin.rules.index', 'admin.content-pages.index',
             'admin.finance.overview', 'admin.edition-transactions.index', 'admin.edition-contributions.index', 'admin.contributors.index',
             'admin.notifications.index', 'admin.users.index', 'admin.settings.index', 'admin.data-cleanup.index',
         ] as $route) {
             $this->assertStringContainsString('href="'.route($route).'"', $html, $route);
+        }
+
+        // Season teams and squads are opened from the Edition hub, not the sidebar.
+        foreach (['admin.edition-teams.index', 'admin.team-players.index'] as $route) {
+            $this->assertStringNotContainsString('href="'.route($route).'"', $html, $route);
+        }
+    }
+
+    public function test_the_older_edition_team_and_squad_pages_still_highlight_editions(): void
+    {
+        foreach (['admin.edition-teams.index', 'admin.team-players.index'] as $route) {
+            $html = $this->actingAs($this->admin())->get(route($route))->assertOk()->getContent();
+
+            $this->assertMatchesRegularExpression('#aria-current="page"[^>]*>\s*(?:<[^>]+>\s*)*Editions#', $html, $route);
         }
     }
 

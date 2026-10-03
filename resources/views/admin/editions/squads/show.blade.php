@@ -90,15 +90,6 @@
             </x-admin.card>
         </form>
 
-        {{-- The remove forms live outside the save form: forms cannot nest. --}}
-        @foreach($squad->where('match_players_count', 0) as $teamPlayer)
-            <form id="remove-player-{{ $teamPlayer->id }}" method="POST" action="{{ route('admin.editions.squads.destroy', [$edition, $editionTeam, $teamPlayer]) }}"
-                data-confirm-delete data-confirm-title="Remove {{ $teamPlayer->playerRegistration->player->name }} from this squad?" data-confirm-text="Their registration stays; they can be added to a team again.">
-                @csrf
-                @method('DELETE')
-            </form>
-        @endforeach
-
         {{-- Add players --}}
         <div class="space-y-4">
             @unless($canAdd)
@@ -168,6 +159,15 @@
             @endunless
         </div>
     </div>
+
+    {{-- The remove forms sit outside the save form (forms cannot nest) and outside the grid. --}}
+    @foreach($squad->where('match_players_count', 0) as $teamPlayer)
+        <form id="remove-player-{{ $teamPlayer->id }}" method="POST" action="{{ route('admin.editions.squads.destroy', [$edition, $editionTeam, $teamPlayer]) }}"
+            data-confirm-delete data-confirm-title="Remove {{ $teamPlayer->playerRegistration->player->name }} from this squad?" data-confirm-text="Their registration stays; they can be added to a team again.">
+            @csrf
+            @method('DELETE')
+        </form>
+    @endforeach
 
     <script>
         (function () {

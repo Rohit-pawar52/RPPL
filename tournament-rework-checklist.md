@@ -32,16 +32,16 @@ Nothing here is built yet unless it says **Done**.
 - [x] **Done (step 2B)** "Add players" can also **create a new player on the spot** (name, mobile) for offline registrations: one step creates the player, their registration for this season and the squad entry.
 - [x] **Done (step 2B)** Store the **sold amount** (auction price) on each squad entry, shown in the squad list; nothing else about the auction for now.
 - [x] **Done (step 2B)** Squad of a team: list on the team's page; **"Add players" is a multi-select so 10-15 players go in at once**. The list shows only that season's players who are **not yet in any team**: once added they disappear from it, and a player removed from a team shows up again. Search + select-all; jersey / role / sold amount stay optional. When a player is ticked, a small **amount box appears beside them** (can be left empty) so the auction result goes in with the add; the amount (and jersey / role) can **also be edited later** from the squad list.
-- [ ] Matches inside a season: Team A / Team B list only that season's teams.
+- [x] **Done (step 2C)** Matches inside a season: Team A / Team B list only that season's teams.
 - [x] **Done (step 1)** Match form: overs as quick picks (6 / 8 / 10 plus a custom number), pre-filled with the last match's overs; the match number pre-filled with the next free number in the season (still editable).
 - [x] **Done (step 1)** Registration page: one-click **Mark paid / Mark failed** buttons (no edit form needed) and a **Next pending** button that opens the next pending registration; marking **failed** asks for a **reason** (saved on the registration, so the admin remembers why).
 - [x] **Done (step 1)** Player status page: when payment is **failed**, show the admin's **reason** plus "please contact the admin"; no re-upload (the admin settles it offline).
-- [ ] Registrations inside a season, with a bulk "Add to team" for selected registrations.
+- [x] **Done (step 2C)** Registrations inside a season, with a bulk "Add to team" for selected registrations.
 - [x] **Done (step 1)** Venue: add a **village (gram)** field (replacing the city / country emphasis) and a **map location** field so the exact ground is shown on a map (public match page + admin). Decided: a **map picker in the venue form** (OpenStreetMap + Leaflet, no API key): search a place, **satellite toggle** for village grounds, click to drop a pin, latitude/longitude saved. Public match page shows a small map with the pin and an "Open in Google Maps" button.
 - [x] **Done (step 1)** Venue fields: **name, village (gram), tehsil, district, map location** (city / country dropped); active/inactive kept as is.
 - [x] **Done (step 1)** **Match Info page (public)**: show the venue location with a map and a "Get directions" button (opens Google Maps to the pin) so people can find the ground.
 - [ ] A season has one **main venue**: set it on the edition and pre-fill it for every match of that season.
-- [ ] Sidebar after the hub exists: **Tournament** = Editions (hub), Matches; **Setup** = Teams, Venues; **Player Management** stays (Players, Registrations); "Season Teams" and "Squad Players" leave the sidebar (they open inside a season).
+- [x] **Done (step 2C, simplified: Matches stays top-level for scorers; Editions / Teams / Venues in one group)** Sidebar after the hub exists: **Tournament** = Editions (hub), Matches; **Setup** = Teams, Venues; **Player Management** stays (Players, Registrations); "Season Teams" and "Squad Players" leave the sidebar (they open inside a season).
 
 ## Future ideas (not now)
 - A full live **auction setup** (live bidding screen, base price, team budgets, player queue, public display).

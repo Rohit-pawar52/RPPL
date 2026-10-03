@@ -31,7 +31,7 @@
             icon="clipboard"
             :value="$cards['registrations']['total']"
             :sub="$cards['registrations']['pending'].' pending'"
-            :href="route('admin.player-registrations.index', ['edition_id' => $edition->id])"
+            :href="route('admin.editions.registrations.index', $edition)"
         />
         <x-admin.hub-card
             label="Teams"
@@ -51,7 +51,7 @@
             icon="trophy"
             :value="$edition->matches_count"
             :sub="$cards['matches']['played'].' played · '.$cards['matches']['remaining'].' to play'"
-            :href="route('admin.matches.index', ['edition_id' => $edition->id])"
+            :href="route('admin.editions.matches.index', $edition)"
         />
         <x-admin.hub-card
             label="Finance"

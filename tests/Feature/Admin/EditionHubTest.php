@@ -70,9 +70,10 @@ class EditionHubTest extends TestCase
 
         // The cards are the way in.
         foreach ([
-            route('admin.player-registrations.index', ['edition_id' => $edition->id]),
+            route('admin.editions.registrations.index', $edition),
             route('admin.editions.teams.index', $edition),
-            route('admin.matches.index', ['edition_id' => $edition->id]),
+            route('admin.editions.squads.index', $edition),
+            route('admin.editions.matches.index', $edition),
             route('admin.edition-transactions.index', ['edition_id' => $edition->id]),
             route('admin.edition-contributions.index', ['edition_id' => $edition->id]),
         ] as $url) {
