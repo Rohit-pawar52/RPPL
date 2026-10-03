@@ -13,10 +13,10 @@
             @csrf
             @include('public.player-registration._field', [
                 'name' => 'registration_number',
-                'label' => __('registration.fields.registration_number'),
+                'label' => __('registration.fields.registration_number_optional'),
                 'placeholder' => 'RPPL-2026-000125',
                 'autocomplete' => 'off',
-                'required' => true,
+                'hint' => __('registration.status.number_optional_hint'),
             ])
             @include('public.player-registration._field', [
                 'name' => 'phone',
@@ -31,7 +31,7 @@
         </form>
 
         @isset($searched)
-            @if($result)
+            @forelse($results as $result)
                 @php
                     $labels = [
                         'pending' => [__('registration.status.payment.pending'), __('registration.status.payment.pending_message')],
@@ -55,7 +55,7 @@
                         </div>
                         <div>
                             <dt class="pub-eyebrow">{{ __('registration.status.player_name') }}</dt>
-                            <dd class="mt-0.5 break-words text-sm font-semibold text-slate-900">{{ $result->player->name }}</dd>
+                            <dd class="mt-0.5 break-words text-sm font-semibold text-slate-900">{{ $showFullName ? $result->player->name : \App\Services\Registration\PlayerRegistrationStatusLookupService::maskName($result->player->name) }}</dd>
                         </div>
                         <div>
                             <dt class="pub-eyebrow">{{ __('registration.status.edition') }}</dt>
@@ -80,11 +80,11 @@
                         <p class="mt-3 border-t border-line pt-3 text-xs leading-relaxed text-slate-600">{{ $paymentMessage }}</p>
                     @endif
                 </div>
-            @else
+            @empty
                 <div class="mt-4 rounded-lg bg-red-50 px-3 py-2.5 text-xs text-red-700 ring-1 ring-inset ring-red-200" role="alert">
                     {{ __('registration.status.not_found') }}
                 </div>
-            @endif
+            @endforelse
         @endisset
 
         <a href="{{ route('public.player-registration.create') }}" class="pub-link mt-5 inline-flex min-h-10 items-center text-xs">
