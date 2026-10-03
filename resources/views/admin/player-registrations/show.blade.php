@@ -247,6 +247,37 @@
             </div>
         </dl>
 
+        {{-- Inline previews, so the files can be checked without opening each
+             one in a new page. Click an image for the full size. A file that
+             only has a Google Drive link cannot be previewed (Drive needs a
+             login), and a PDF Aadhaar is opened with its button above. --}}
+        @php
+            $imageExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+            $previews = array_filter([
+                'Submitted photo' => $registration->photo_path
+                    ? route('admin.player-registrations.photo', $registration) : null,
+                'Profile photo (public)' => $registration->player->photo_path
+                    ? \Illuminate\Support\Facades\Storage::url($registration->player->photo_path) : null,
+                'Payment screenshot' => $registration->payment_proof_path
+                    ? route('admin.player-registrations.payment-proof', $registration) : null,
+                'Aadhaar document' => $registration->aadhaar_document_path
+                    && in_array(strtolower(pathinfo($registration->aadhaar_document_path, PATHINFO_EXTENSION)), $imageExtensions, true)
+                    ? route('admin.player-registrations.aadhaar', $registration) : null,
+            ]);
+        @endphp
+        @if($previews)
+            <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                @foreach($previews as $label => $url)
+                    <figure class="rounded-md border border-slate-100 p-2">
+                        <figcaption class="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">{{ $label }}</figcaption>
+                        <a href="{{ $url }}" target="_blank" rel="noopener">
+                            <img src="{{ $url }}" alt="{{ $label }}" loading="lazy" class="max-h-80 w-full rounded bg-slate-50 object-contain" />
+                        </a>
+                    </figure>
+                @endforeach
+            </div>
+        @endif
+
         <div class="mt-3 flex flex-wrap items-center gap-2">
             @if(($registration->photo_url && ! $registration->photo_path) || ($registration->payment_proof_url && ! $registration->payment_proof_path))
                 <form method="POST" action="{{ route('admin.player-registrations.fetch-files', $registration) }}">
