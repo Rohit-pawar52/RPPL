@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\RuleController;
 use App\Http\Controllers\Admin\RuleTypeController;
 use App\Http\Controllers\Admin\ScorecardController;
 use App\Http\Controllers\Admin\ScoringController;
+use App\Http\Controllers\Admin\SeasonTeamController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\TeamPlayerController;
@@ -69,6 +70,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // this project's minimal Controller base class — see Phase 3.2).
         Route::resource('editions', EditionController::class);
         Route::get('editions/{edition}/report/pdf', [EditionController::class, 'reportPdf'])->name('editions.report.pdf');
+        // The teams of one season, managed from inside that season (the
+        // Edition hub's Teams card).
+        Route::get('editions/{edition}/teams', [SeasonTeamController::class, 'index'])->name('editions.teams.index');
+        Route::post('editions/{edition}/teams', [SeasonTeamController::class, 'store'])->name('editions.teams.store');
+        Route::post('editions/{edition}/teams/new', [SeasonTeamController::class, 'storeNew'])->name('editions.teams.store-new');
+        Route::delete('editions/{edition}/teams/{edition_team}', [SeasonTeamController::class, 'destroy'])->name('editions.teams.destroy');
         // EditionTeam has no editable attributes beyond its own identity
         // (edition_id, team_id) — create/view/delete only, no edit/update.
         Route::resource('edition-teams', EditionTeamController::class)->only([

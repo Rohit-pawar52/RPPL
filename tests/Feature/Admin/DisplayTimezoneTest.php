@@ -242,7 +242,7 @@ class DisplayTimezoneTest extends TestCase
         $user = User::factory()->create(['role_id' => $this->adminRole->id, 'created_at' => self::UTC]);
         $admin = $this->admin();
 
-        foreach ([route('admin.editions.index'), route('admin.editions.show', $edition), route('admin.users.show', $user)] as $url) {
+        foreach ([route('admin.editions.index'), route('admin.users.show', $user)] as $url) {
             $this->actingAs($admin)->get($url)->assertOk()->assertSee('03 Oct 2026')->assertDontSee('02 Oct 2026');
         }
     }

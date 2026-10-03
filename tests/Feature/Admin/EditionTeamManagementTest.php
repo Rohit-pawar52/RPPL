@@ -209,7 +209,7 @@ class EditionTeamManagementTest extends TestCase
         $this->assertDatabaseMissing('edition_teams', ['id' => $editionTeam->id]);
     }
 
-    public function test_edition_team_with_squad_usage_cannot_be_removed(): void
+    public function test_edition_team_with_a_squad_can_be_removed_and_the_squad_goes_with_it(): void
     {
         $editionTeam = EditionTeam::factory()->create();
         $registration = PlayerRegistration::factory()->create(['edition_id' => $editionTeam->edition_id]);
@@ -221,8 +221,11 @@ class EditionTeamManagementTest extends TestCase
         $response = $this->actingAs($this->admin())->delete(route('admin.edition-teams.destroy', $editionTeam));
 
         $response->assertRedirect(route('admin.edition-teams.index'));
-        $response->assertSessionHas('error');
-        $this->assertDatabaseHas('edition_teams', ['id' => $editionTeam->id]);
+        $response->assertSessionHas('success');
+        $this->assertDatabaseMissing('edition_teams', ['id' => $editionTeam->id]);
+        $this->assertDatabaseMissing('team_players', ['player_registration_id' => $registration->id]);
+        // The player's registration is untouched.
+        $this->assertDatabaseHas('player_registrations', ['id' => $registration->id]);
     }
 
     public function test_edition_team_referenced_by_a_match_cannot_be_removed(): void
@@ -269,6 +272,12 @@ class EditionTeamManagementTest extends TestCase
     public function test_blocked_deletion_leaves_historical_data_intact(): void
     {
         $editionTeam = EditionTeam::factory()->create();
+        $other = EditionTeam::factory()->create(['edition_id' => $editionTeam->edition_id]);
+        GameMatch::factory()->create([
+            'edition_id' => $editionTeam->edition_id,
+            'edition_team_a_id' => $editionTeam->id,
+            'edition_team_b_id' => $other->id,
+        ]);
         $registration = PlayerRegistration::factory()->create(['edition_id' => $editionTeam->edition_id]);
         $teamPlayer = TeamPlayer::factory()->create([
             'edition_team_id' => $editionTeam->id,

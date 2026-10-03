@@ -2,13 +2,19 @@
 
 namespace App\Services\EditionTeam;
 
+use App\Models\Edition;
 use App\Models\EditionTeam;
+use App\Models\Team;
+use App\Services\Team\TeamService;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class EditionTeamService
 {
+    public function __construct(private readonly TeamService $teams) {}
+
     /**
      * StoreEditionTeamRequest already checks eligibility (active team,
      * non-completed edition, no existing edition+team pair) before this
@@ -35,25 +41,60 @@ class EditionTeamService
     }
 
     /**
-     * Deletes a team's participation in an edition only when no
-     * tournament data has been built on top of it yet: no squad
-     * (TeamPlayer), no match (as either side), no innings (as either
-     * batting or bowling team). Returns false instead of letting an FK
+     * Adds several existing teams to an edition at once. Teams that are
+     * inactive, unknown or already in the edition are skipped (the form
+     * only offers valid ones; this keeps a stale form from failing the
+     * whole batch). Returns how many were added.
+     *
+     * @param  list<int>  $teamIds
+     */
+    public function addTeams(Edition $edition, array $teamIds): int
+    {
+        return DB::transaction(function () use ($edition, $teamIds) {
+            $existing = $edition->editionTeams()->pluck('team_id')->all();
+
+            $teams = Team::active()->whereIn('id', $teamIds)->whereNotIn('id', $existing)->get();
+
+            foreach ($teams as $team) {
+                $this->createEditionTeam(['edition_id' => $edition->id, 'team_id' => $team->id]);
+            }
+
+            return $teams->count();
+        });
+    }
+
+    /**
+     * Creates a brand-new team (name, short name, logo) and puts it in
+     * the edition in one step.
+     *
+     * @param  array{name: string, short_name?: ?string}  $data
+     */
+    public function createTeamAndAdd(Edition $edition, array $data, ?UploadedFile $logo = null): EditionTeam
+    {
+        $team = $this->teams->createTeam($data, $logo);
+
+        return $this->createEditionTeam(['edition_id' => $edition->id, 'team_id' => $team->id]);
+    }
+
+    /**
+     * Removes a team from an edition, with its squad (the players'
+     * registrations stay; only their place in this team goes). Allowed
+     * only while no match exists for the team (as either side, or as the
+     * batting/bowling team of an innings) — once matches exist the
+     * history must stay. Returns false instead of letting an FK
      * constraint fail, so the controller can show a friendly message.
      *
      * Wrapped in a transaction with a row lock, mirroring
-     * PlayerService::deletePlayer(): TeamPlayerController::store() is a
-     * live admin write path, and team_players.edition_team_id
-     * cascade-deletes on EditionTeam deletion, so a concurrent squad
-     * addition between an unlocked check and the delete would be
-     * silently destroyed.
+     * PlayerService::deletePlayer(): the squad cascade-deletes with the
+     * EditionTeam, so the match check and the delete must not be
+     * separated by a concurrent write.
      */
     public function deleteEditionTeam(EditionTeam $editionTeam): bool
     {
         return DB::transaction(function () use ($editionTeam) {
             $locked = EditionTeam::whereKey($editionTeam->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($this->hasTournamentUsage($locked)) {
+            if ($this->hasMatchUsage($locked)) {
                 return false;
             }
 
@@ -71,10 +112,9 @@ class EditionTeamService
      * from the Phase 1 review — but no admin-writable path exists yet
      * that could violate it.)
      */
-    public function hasTournamentUsage(EditionTeam $editionTeam): bool
+    public function hasMatchUsage(EditionTeam $editionTeam): bool
     {
-        return $editionTeam->teamPlayers()->exists()
-            || $editionTeam->matchesAsTeamA()->exists()
+        return $editionTeam->matchesAsTeamA()->exists()
             || $editionTeam->matchesAsTeamB()->exists()
             || $editionTeam->inningsAsBattingTeam()->exists()
             || $editionTeam->inningsAsBowlingTeam()->exists();
