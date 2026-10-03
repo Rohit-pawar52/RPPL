@@ -247,11 +247,62 @@
             </div>
         </dl>
 
+        {{-- Inline previews, so the files can be checked without opening each
+             one in a new page. Click an image for the full size. A file that
+             only has a Google Drive link cannot be previewed (Drive needs a
+             login), and a PDF Aadhaar is opened with its button above. --}}
+        @php
+            $imageExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+            $previews = array_filter([
+                'Submitted photo' => $registration->photo_path
+                    ? route('admin.player-registrations.photo', $registration) : null,
+                'Profile photo (public)' => $registration->player->photo_path
+                    ? \Illuminate\Support\Facades\Storage::url($registration->player->photo_path) : null,
+                'Payment screenshot' => $registration->payment_proof_path
+                    ? route('admin.player-registrations.payment-proof', $registration) : null,
+                'Aadhaar document' => $registration->aadhaar_document_path
+                    && in_array(strtolower(pathinfo($registration->aadhaar_document_path, PATHINFO_EXTENSION)), $imageExtensions, true)
+                    ? route('admin.player-registrations.aadhaar', $registration) : null,
+            ]);
+        @endphp
+        @if($previews)
+            <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                @foreach($previews as $label => $url)
+                    <figure class="rounded-md border border-slate-100 p-2">
+                        <figcaption class="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">{{ $label }}</figcaption>
+                        <a href="{{ $url }}" target="_blank" rel="noopener">
+                            <img src="{{ $url }}" alt="{{ $label }}" loading="lazy" class="max-h-80 w-full rounded bg-slate-50 object-contain" />
+                        </a>
+                    </figure>
+                @endforeach
+            </div>
+        @endif
+
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+            @if(($registration->photo_url && ! $registration->photo_path) || ($registration->payment_proof_url && ! $registration->payment_proof_path))
+                <form method="POST" action="{{ route('admin.player-registrations.fetch-files', $registration) }}">
+                    @csrf
+                    <x-admin.button type="submit" variant="secondary">Copy files from Google Drive</x-admin.button>
+                </form>
+            @endif
+            @if($registration->photo_path)
+                <form
+                    method="POST"
+                    action="{{ route('admin.player-registrations.profile-photo', $registration) }}"
+                    @if($registration->player->photo_path) onsubmit="return confirm('This replaces the current profile photo of this player. Continue?')" @endif
+                >
+                    @csrf
+                    <x-admin.button type="submit" variant="secondary">Use as profile photo</x-admin.button>
+                </form>
+            @endif
+        </div>
+
         @if($registration->photo_url || $registration->payment_proof_url)
             <p class="mt-3 text-[11px] text-slate-400">
-                A Google Drive link comes from an imported Google Form sheet &mdash; the file itself stays on Drive, so
-                open it while signed in to the Google account that owns the form. The player's own photo can be uploaded
-                from Players &rarr; Edit.
+                A Google Drive link comes from an imported Google Form sheet. "Copy files from Google Drive" saves the
+                files here (they must be shared as "Anyone with the link"); otherwise open the link while signed in to the
+                Google account that owns the form. "Use as profile photo" resizes the submitted photo and shows it on the
+                public site.
             </p>
         @endif
     </div>

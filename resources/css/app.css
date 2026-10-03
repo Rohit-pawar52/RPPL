@@ -557,3 +557,12 @@ details[open] > .rppl-pop {
         transition: none;
     }
 }
+
+/* The admin sidebar still scrolls (wheel, touch, keyboard) when its menu is
+   taller than the screen, but without a visible scrollbar taking up room. */
+.admin-nav-scroll {
+    scrollbar-width: none;
+}
+.admin-nav-scroll::-webkit-scrollbar {
+    display: none;
+}

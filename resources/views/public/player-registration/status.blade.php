@@ -55,7 +55,7 @@
                         </div>
                         <div>
                             <dt class="pub-eyebrow">{{ __('registration.status.player_name') }}</dt>
-                            <dd class="mt-0.5 break-words text-sm font-semibold text-slate-900">{{ $showFullName ? $result->player->name : \App\Services\Registration\PlayerRegistrationStatusLookupService::maskName($result->player->name) }}</dd>
+                            <dd class="mt-0.5 break-words text-sm font-semibold text-slate-900">{{ $result->player->name }}</dd>
                         </div>
                         <div>
                             <dt class="pub-eyebrow">{{ __('registration.status.edition') }}</dt>

@@ -29,9 +29,10 @@ class PlayerRegistrationStatusLookupService
      * editions, newest first — or, when a registration number is also
      * given, only that one (it must belong to that phone). The phone alone
      * is enough because a player who lost the registration number must
-     * still be able to see where they stand; the number is an optional
-     * second credential that unlocks the full name (see $showFullName in
-     * the result).
+     * still be able to see where they stand; the number just narrows the
+     * result. The name is shown in full either way: it is the only
+     * personal detail returned, and the players' names are published
+     * publicly anyway.
      *
      * @param  ?string  $registrationNumber  already trimmed/uppercased (see StatusLookupPlayerRegistrationRequest)
      * @param  string  $normalizedPhone  already run through Player::normalizePhone()
@@ -47,18 +48,5 @@ class PlayerRegistrationStatusLookupService
             ->orderByDesc('registered_at')
             ->orderByDesc('id')
             ->get();
-    }
-
-    /**
-     * "Ramesh Joshi" -> "R**** J****": enough for the right person to
-     * recognise themselves, not enough to read a stranger's name off a
-     * phone number someone merely knows. A fixed number of stars, so the
-     * name's length is not revealed either.
-     */
-    public static function maskName(string $name): string
-    {
-        $words = preg_split('/\s+/u', trim($name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-
-        return implode(' ', array_map(fn (string $word) => mb_substr($word, 0, 1).'****', $words));
     }
 }

@@ -73,16 +73,14 @@ class PlayerRegistrationStatusTest extends TestCase
 
     // ----- Phone-only lookup -----
 
-    public function test_the_phone_alone_finds_the_registration_with_a_masked_name_and_the_number_to_keep(): void
+    public function test_the_phone_alone_finds_the_registration_with_the_name_and_the_number_to_keep(): void
     {
         $registration = $this->registrationFor(['name' => 'Ramesh Joshi'], ['payment_status' => 'paid']);
 
         $this->post(route('public.player-registration.status.lookup'), ['phone' => '9876543210'])
             ->assertOk()
             ->assertSee($registration->registration_number)
-            ->assertSee('R**** J****')
-            ->assertDontSee('Ramesh')
-            ->assertDontSee('Joshi')
+            ->assertSee('Ramesh Joshi')
             ->assertSee('Paid');
     }
 
@@ -97,7 +95,7 @@ class PlayerRegistrationStatusTest extends TestCase
             ->assertSeeInOrder([$new->registration_number, $old->registration_number]);
     }
 
-    public function test_adding_the_registration_number_shows_the_full_name_and_only_that_registration(): void
+    public function test_adding_the_registration_number_narrows_the_result_to_that_registration(): void
     {
         $player = Player::factory()->create(['phone' => '9876543210', 'name' => 'Ramesh Joshi']);
         $one = PlayerRegistration::factory()->create(['player_id' => $player->id])->assignRegistrationNumber();

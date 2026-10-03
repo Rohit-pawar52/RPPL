@@ -141,9 +141,6 @@ class PlayerRegistrationController extends Controller
         return response()
             ->view('public.player-registration.status', [
                 'results' => $results,
-                // The full name only goes to someone who also knows the
-                // registration number; the phone alone shows it masked.
-                'showFullName' => $number !== null,
                 'searched' => true,
             ])
             ->header('Cache-Control', 'no-store, private');

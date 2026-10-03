@@ -25,7 +25,7 @@
         <span class="adm-label truncate text-sm">{{ $branding->shortName }} Admin</span>
     </a>
 
-    <nav class="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2.5 py-3" aria-label="Admin navigation">
+    <nav class="admin-nav-scroll min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2.5 py-3" aria-label="Admin navigation">
         @foreach($navigation['top'] as $item)
             <a
                 href="{{ $item['url'] }}"
