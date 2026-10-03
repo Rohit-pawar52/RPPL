@@ -72,6 +72,14 @@
          3.39D — replacement/deletion is deliberately out of scope). --}}
     <div class="mt-4 grid gap-4 sm:grid-cols-3">
         <x-form.input
+            name="payment_failure_reason"
+            label="Failure reason"
+            maxlength="255"
+            :value="$registration->payment_failure_reason"
+            placeholder="Shown to the player when the payment is failed"
+            help="Only kept while the payment status is Failed; cleared on save otherwise."
+        />
+        <x-form.input
             name="payment_reference"
             label="Payment reference / UTR (optional)"
             :value="old('payment_reference', $registration->payment_reference)"

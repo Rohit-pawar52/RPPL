@@ -16,6 +16,55 @@
         </a>
     </div>
 
+    {{-- Quick verification: decide, then land on the next pending registration
+         of this edition. Works from any status so an earlier decision can be
+         corrected. --}}
+    <div class="mb-4 rounded-lg border border-slate-200 bg-white p-3">
+        <div class="flex flex-wrap items-center gap-2">
+            <form method="POST" action="{{ route('admin.player-registrations.mark-paid', $registration) }}">
+                @csrf
+                <x-admin.button type="submit" variant="primary" size="sm">Mark paid</x-admin.button>
+            </form>
+            <button
+                type="button"
+                class="inline-flex items-center rounded-md border border-red-200 bg-white px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                onclick="document.getElementById('mark-failed-panel').classList.toggle('hidden'); document.getElementById('failure-reason-input').focus()"
+            >
+                Mark failed
+            </button>
+            <x-admin.button href="{{ route('admin.player-registrations.next-pending', $registration) }}" variant="secondary" size="sm">
+                Next pending &rarr;
+            </x-admin.button>
+        </div>
+
+        <form
+            id="mark-failed-panel"
+            method="POST"
+            action="{{ route('admin.player-registrations.mark-failed', $registration) }}"
+            class="{{ $errors->has('reason') ? '' : 'hidden' }} mt-3 flex flex-wrap items-start gap-2"
+        >
+            @csrf
+            <div class="min-w-60 flex-1">
+                <input
+                    id="failure-reason-input"
+                    type="text"
+                    name="reason"
+                    value="{{ old('reason') }}"
+                    maxlength="255"
+                    required
+                    placeholder="Reason shown to the player, e.g. UTR not found in the bank statement"
+                    aria-label="Reason the payment failed"
+                    class="h-9 w-full rounded-md border px-3 text-[13px] focus:outline-none focus:ring-2 {{ $errors->has('reason') ? 'border-red-400 focus:ring-red-100' : 'border-slate-300 focus:border-green-500 focus:ring-green-100' }}"
+                />
+                @error('reason')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+                <p class="mt-1 text-[11px] text-slate-400">The player sees this reason when they check their registration status.</p>
+            </div>
+            <x-admin.button type="submit" variant="danger" size="sm" class="h-9">Save as failed</x-admin.button>
+        </form>
+    </div>
+
     <div class="rounded-lg border border-slate-200 bg-white p-4">
         <div class="flex items-center justify-between gap-3">
             <div>
@@ -95,6 +144,12 @@
                     {{ $registration->registration_fee !== null ? money($registration->registration_fee) : '—' }}
                 </dd>
             </div>
+            @if($registration->payment_status === 'failed' && $registration->payment_failure_reason)
+                <div class="col-span-2 sm:col-span-3">
+                    <dt class="text-slate-400">Failure reason (shown to the player)</dt>
+                    <dd class="mt-0.5 font-medium text-red-700">{{ $registration->payment_failure_reason }}</dd>
+                </div>
+            @endif
             <div>
                 <dt class="text-slate-400">Payment reference</dt>
                 <dd class="mt-0.5 font-medium text-slate-800">{{ $registration->payment_reference ?? 'Not provided' }}</dd>

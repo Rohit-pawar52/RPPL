@@ -61,6 +61,7 @@ class PlayerRegistration extends Model
         'edition_id',
         'player_id',
         'payment_status',
+        'payment_failure_reason',
         'registration_fee',
         'registered_at',
         'aadhaar_document_path',

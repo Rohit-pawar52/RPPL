@@ -3,6 +3,7 @@
 namespace App\Services\PlayerRegistration;
 
 use App\Models\PlayerRegistration;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -58,9 +59,79 @@ class PlayerRegistrationService
      */
     public function updateRegistration(PlayerRegistration $registration, array $data): PlayerRegistration
     {
+        // A failure reason only means something while the payment is
+        // failed — never let a stale one linger (and reach the player).
+        if (($data['payment_status'] ?? $registration->payment_status) !== 'failed') {
+            $data['payment_failure_reason'] = null;
+        }
+
         $registration->update($data);
 
         return $registration;
+    }
+
+    /**
+     * One-click verification: touches only the payment status and its
+     * failure reason, never the registration number, files or reference.
+     */
+    public function markPaid(PlayerRegistration $registration): PlayerRegistration
+    {
+        $registration->update(['payment_status' => 'paid', 'payment_failure_reason' => null]);
+
+        return $registration;
+    }
+
+    public function markFailed(PlayerRegistration $registration, string $reason): PlayerRegistration
+    {
+        $registration->update(['payment_status' => 'failed', 'payment_failure_reason' => $reason]);
+
+        return $registration;
+    }
+
+    /**
+     * The pending registrations of an edition in review order: oldest
+     * first, registrations without a date last, then by id.
+     *
+     * @return Collection<int, PlayerRegistration>
+     */
+    private function pendingInReviewOrder(int $editionId): Collection
+    {
+        return PlayerRegistration::query()
+            ->where('edition_id', $editionId)
+            ->where('payment_status', 'pending')
+            ->orderByRaw('registered_at is null')
+            ->orderBy('registered_at')
+            ->orderBy('id')
+            ->get(['id', 'edition_id', 'registered_at']);
+    }
+
+    public function firstPending(int $editionId): ?PlayerRegistration
+    {
+        return $this->pendingInReviewOrder($editionId)->first();
+    }
+
+    /**
+     * The next pending registration of the same edition after $current in
+     * review order, wrapping to the first pending one when $current is last.
+     * $current itself is never returned, so it can be called both before and
+     * after $current was verified (it is no longer pending then).
+     */
+    public function nextPending(PlayerRegistration $current): ?PlayerRegistration
+    {
+        $others = $this->pendingInReviewOrder($current->edition_id)
+            ->reject(fn (PlayerRegistration $registration) => $registration->id === $current->id)
+            ->values();
+
+        // Position of $current in the same ordering as pendingInReviewOrder().
+        $key = fn (PlayerRegistration $registration) => [
+            $registration->registered_at === null ? 1 : 0,
+            $registration->registered_at?->getTimestamp() ?? 0,
+            $registration->id,
+        ];
+        $currentKey = $key($current);
+
+        return $others->first(fn (PlayerRegistration $registration) => $key($registration) > $currentKey)
+            ?? $others->first();
     }
 
     /**

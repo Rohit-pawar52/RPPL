@@ -148,6 +148,7 @@ return [
             'paid' => 'Paid',
             'paid_message' => 'Your payment has been verified.',
             'failed' => 'Payment Verification Failed',
+            'failure_reason' => 'Reason:',
             'failed_message' => 'Your payment could not be verified. Please contact :league administration.',
             'refunded' => 'Refunded',
             'refunded_message' => 'Your payment is marked as refunded.',
