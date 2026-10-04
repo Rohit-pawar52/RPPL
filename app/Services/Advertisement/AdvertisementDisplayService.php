@@ -20,9 +20,12 @@ class AdvertisementDisplayService
      */
     private ?Collection $live = null;
 
-    private bool $bannerPicked = false;
-
-    private ?Advertisement $banner = null;
+    /**
+     * Ids of the Normal ads already handed to a slot on this page.
+     *
+     * @var list<int>
+     */
+    private array $shownNormalIds = [];
 
     public function __construct(private readonly SettingsService $settings) {}
 
@@ -35,20 +38,29 @@ class AdvertisementDisplayService
     }
 
     /**
-     * One Normal sponsor, chosen by weight; a different one can come up on
-     * the next page load. Fixed for the rest of this request.
+     * The Normal sponsor for the next Normal slot on the page, chosen by
+     * weight among the ones not shown yet — so two Normal slots on one page
+     * never repeat an ad, and a later slot is simply empty once every live
+     * Normal ad is already on the page. A different ad can come up on the
+     * next page load.
      */
-    public function banner(): ?Advertisement
+    public function nextNormal(): ?Advertisement
     {
-        if (! $this->bannerPicked) {
-            $candidates = $this->liveIn(Advertisement::TIER_NORMAL);
-            $total = $candidates->sum('weight');
+        $candidates = $this->liveIn(Advertisement::TIER_NORMAL)
+            ->reject(fn (Advertisement $ad) => in_array($ad->id, $this->shownNormalIds, true));
+        $total = $candidates->sum(fn (Advertisement $ad) => max(1, $ad->weight));
 
-            $this->banner = $total > 0 ? self::pickWeighted($candidates, random_int(0, $total - 1)) : null;
-            $this->bannerPicked = true;
+        if ($total < 1) {
+            return null;
         }
 
-        return $this->banner;
+        $pick = self::pickWeighted($candidates, random_int(0, $total - 1));
+
+        if ($pick) {
+            $this->shownNormalIds[] = $pick->id;
+        }
+
+        return $pick;
     }
 
     /**

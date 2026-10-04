@@ -1,12 +1,17 @@
 {{--
     Sponsor placement (see App\View\Components\AdSlot). Display only: the
     media has no link, ignores clicks and drags, and sits in a box of fixed
-    height so the page never jumps when it loads. The caller adds spacing
-    (class="mt-4") when the slot is not inside a spaced stack. A failed image or
-    video removes its own box instead of leaving a broken picture.
+    height so the page never jumps when it loads and a tall poster can never
+    push content down. A failed image or video removes its own box instead
+    of leaving a broken picture. The caller adds spacing/width classes
+    (e.g. class="mt-4").
+
+    banner (default) — a slim full-width strip, about 72 px tall on phones
+                       and 88 px on larger screens;
+    card             — a tile as wide as a match card, for a scrolling row.
 --}}
 @if($tier === 'mini')
-    <section data-ad="mini" class="pub-card mt-6 p-4" aria-label="{{ __('ads.our_sponsors') }}">
+    <section data-ad="mini" {{ $attributes->class(['pub-card p-4']) }} aria-label="{{ __('ads.our_sponsors') }}">
         <p class="pub-eyebrow">{{ __('ads.our_sponsors') }}</p>
         <ul class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-3">
             @foreach($ads as $ad)
@@ -26,41 +31,35 @@
     </section>
 @else
     @php($ad = $ads->first())
-    <aside data-ad="{{ $tier }}" {{ $attributes }} aria-label="{{ __('ads.sponsored') }}">
-        {{-- One compact height for every banner (about two list rows), set
-             inline so a tall poster can never push the page content down. --}}
-        <div class="pub-card relative overflow-hidden bg-slate-50" style="height: 5.5rem;">
-            @if($ad->isVideo())
-                <video
-                    muted
-                    loop
-                    playsinline
-                    preload="none"
-                    disablepictureinpicture
-                    disableremoteplayback
-                    aria-hidden="true"
-                    tabindex="-1"
-                    data-ad-src="{{ $ad->mediaUrl() }}"
-                    @if($ad->posterUrl()) poster="{{ $ad->posterUrl() }}" @endif
-                    class="pointer-events-none h-full w-full select-none object-contain"
-                    style="width: 100%; height: 100%; object-fit: contain;"
-                    onerror="this.closest('[data-ad]').remove()"
-                ></video>
-            @else
-                <img
-                    src="{{ $ad->mediaUrl() }}"
-                    alt="{{ $ad->title }}"
-                    @if($tier !== 'main') loading="lazy" @endif
-                    decoding="async"
-                    draggable="false"
-                    class="pointer-events-none h-full w-full select-none object-contain"
-                    style="width: 100%; height: 100%; object-fit: contain;"
-                    onerror="this.closest('[data-ad]').remove()"
-                >
-            @endif
-            <span class="pointer-events-none absolute right-2 top-2 rounded bg-slate-900/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">{{ __('ads.sponsored') }}</span>
-        </div>
-    </aside>
+
+    @once
+        <style>
+            .rppl-ad-banner { height: 4.5rem; }
+            .rppl-ad-card-media { height: 6.5rem; }
+            @media (min-width: 640px) { .rppl-ad-banner { height: 5.5rem; } }
+        </style>
+    @endonce
+
+    @if($variant === 'card')
+        <aside data-ad="{{ $tier }}" {{ $attributes->class(['flex']) }} aria-label="{{ __('ads.sponsored') }}">
+            <div class="pub-card flex w-full flex-col overflow-hidden">
+                <div class="rppl-ad-card-media relative bg-slate-50">
+                    <x-ad-slot-media :ad="$ad" eager />
+                </div>
+                <div class="flex flex-1 flex-col justify-center border-t border-line px-3 py-2">
+                    <p class="truncate text-[13px] font-semibold text-slate-800">{{ $ad->title }}</p>
+                    <p class="pub-meta uppercase tracking-wide">{{ __('ads.sponsored') }}</p>
+                </div>
+            </div>
+        </aside>
+    @else
+        <aside data-ad="{{ $tier }}" {{ $attributes }} aria-label="{{ __('ads.sponsored') }}">
+            <div class="rppl-ad-banner pub-card relative overflow-hidden bg-slate-50">
+                <x-ad-slot-media :ad="$ad" :eager="$tier === 'main'" />
+                <span class="pointer-events-none absolute right-2 top-2 rounded bg-slate-900/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">{{ __('ads.sponsored') }}</span>
+            </div>
+        </aside>
+    @endif
 
     @if($ad->isVideo())
         {{-- Videos only start loading once they scroll into view. --}}

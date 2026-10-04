@@ -126,7 +126,7 @@ class SponsorAdsTest extends TestCase
         $this->assertSame('', trim($this->slot('main')));
     }
 
-    public function test_a_normal_ad_is_chosen_by_weight_and_stays_the_same_within_a_request(): void
+    public function test_a_normal_ad_is_chosen_by_weight_and_no_ad_repeats_on_a_page(): void
     {
         $light = Advertisement::factory()->create(['weight' => 1]);
         $heavy = Advertisement::factory()->create(['weight' => 3]);
@@ -138,8 +138,14 @@ class SponsorAdsTest extends TestCase
         $this->assertSame($heavy->id, AdvertisementDisplayService::pickWeighted($ads, 3)->id);
         $this->assertNull(AdvertisementDisplayService::pickWeighted(collect(), 0));
 
-        // The banner is picked once per request, so it is the same wherever it appears.
+        // Each Normal slot on a page gets a different ad; once every live
+        // Normal ad is on the page, further slots stay empty.
         $service = app(AdvertisementDisplayService::class);
-        $this->assertSame($service->banner()?->id, $service->banner()?->id);
+        $first = $service->nextNormal();
+        $second = $service->nextNormal();
+        $this->assertNotNull($first);
+        $this->assertNotNull($second);
+        $this->assertNotSame($first->id, $second->id);
+        $this->assertNull($service->nextNormal());
     }
 }

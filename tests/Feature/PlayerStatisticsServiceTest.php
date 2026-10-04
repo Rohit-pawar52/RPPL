@@ -532,6 +532,78 @@ class PlayerStatisticsServiceTest extends TestCase
         $this->assertSame(1, $leaderboard['topWicketTakers'][0]['stats']['wickets']);
     }
 
+    // ----- Season summary boards -----
+
+    public function test_edition_highlights_rank_runs_wickets_milestones_sixes_and_best_innings(): void
+    {
+        [$teamA, $teamB] = $this->editionTeams(Edition::factory()->create());
+        $squadA = $this->squadPlayer($teamA);
+        $squadB = $this->squadPlayer($teamA);
+        $squadBowler = $this->squadPlayer($teamB);
+
+        // Match 1: A makes 56 then a six = 62, not out.
+        [$match1, $innings1] = $this->matchBetween($teamA, $teamB);
+        $a1 = $this->selectForMatch($match1, $squadA);
+        $b1 = $this->selectForMatch($match1, $squadB);
+        $bowler1 = $this->selectForMatch($match1, $squadBowler);
+        $base1 = ['striker_match_player_id' => $a1->id, 'non_striker_match_player_id' => $b1->id, 'bowler_match_player_id' => $bowler1->id];
+        $this->ball($match1, $innings1, [...$base1, 'runs_off_bat' => 56]);
+        $this->ball($match1, $innings1, [...$base1, 'runs_off_bat' => 6]);
+
+        // Match 2: B makes 32 not out; A (at the other end) is out for 0.
+        [$match2, $innings2] = $this->matchBetween($teamA, $teamB);
+        $a2 = $this->selectForMatch($match2, $squadA);
+        $b2 = $this->selectForMatch($match2, $squadB);
+        $bowler2 = $this->selectForMatch($match2, $squadBowler);
+        $base2 = ['striker_match_player_id' => $b2->id, 'non_striker_match_player_id' => $a2->id, 'bowler_match_player_id' => $bowler2->id];
+        $this->ball($match2, $innings2, [...$base2, 'runs_off_bat' => 32]);
+        $this->ball($match2, $innings2, [
+            ...$base2, 'runs_off_bat' => 0, 'is_wicket' => 1, 'wicket_type' => 'caught',
+            'dismissed_match_player_id' => $a2->id, 'fielder_match_player_id' => $bowler2->id,
+        ]);
+
+        $edition = $teamA->edition;
+        $playerA = $squadA->playerRegistration->player->id;
+        $playerB = $squadB->playerRegistration->player->id;
+        $boards = $this->statistics->getEditionHighlights($edition, null);
+
+        $this->assertSame(PlayerStatisticsService::HIGHLIGHT_BOARDS, array_keys($boards));
+
+        // Most runs: A 62, then B 32.
+        $this->assertSame([$playerA, $playerB], array_map(fn ($r) => $r['player']->id, $boards['runs']));
+        $this->assertSame([62, 32], array_column($boards['runs'], 'value'));
+
+        // Highest score: each innings on its own; A's 62 and B's 32 are both not out.
+        $this->assertSame([62, 32], array_column($boards['highest-score'], 'value'));
+        $this->assertSame([true, true], array_column($boards['highest-score'], 'not_out'));
+
+        // 30+ : both once (A first, more runs overall). 50+ : only A.
+        $this->assertSame([$playerA, $playerB], array_map(fn ($r) => $r['player']->id, $boards['thirties']));
+        $this->assertSame([1, 1], array_column($boards['thirties'], 'value'));
+        $this->assertSame([$playerA], array_map(fn ($r) => $r['player']->id, $boards['fifties']));
+
+        // Sixes: the 56 is not a six, only the single 6 is.
+        $this->assertSame([1], array_column($boards['sixes'], 'value'));
+        $this->assertSame($playerA, $boards['sixes'][0]['player']->id);
+
+        // Wickets: the bowler's one catch.
+        $this->assertSame([1], array_column($boards['wickets'], 'value'));
+        $this->assertSame($squadBowler->playerRegistration->player->id, $boards['wickets'][0]['player']->id);
+
+        // The limit trims every board.
+        $top1 = $this->statistics->getEditionHighlights($edition, 1);
+        $this->assertCount(1, $top1['runs']);
+        $this->assertCount(1, $top1['highest-score']);
+    }
+
+    public function test_edition_highlights_are_empty_before_any_scoring(): void
+    {
+        $boards = $this->statistics->getEditionHighlights(Edition::factory()->create());
+
+        $this->assertSame(PlayerStatisticsService::HIGHLIGHT_BOARDS, array_keys($boards));
+        $this->assertSame([], array_filter($boards));
+    }
+
     // ----- Edition records -----
 
     public function test_edition_records_highest_score_best_bowling_and_most_sixes(): void
