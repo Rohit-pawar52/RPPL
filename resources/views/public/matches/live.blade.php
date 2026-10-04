@@ -58,16 +58,8 @@
 
         <aside class="space-y-4">
             @include('public.matches._details', ['match' => $match])
-
-            {{-- Sponsors sit beside the commentary on wide screens (below it
-                 on phones), outside every element the polling script
-                 rewrites (#live-innings, #live-chase, #live-deliveries). --}}
-            <x-ad-slot tier="main" />
-            <x-ad-slot tier="normal" />
         </aside>
     </div>
-
-    <x-ad-slot tier="mini" />
 
     @vite(['resources/js/public-live-match.js'])
 @endsection

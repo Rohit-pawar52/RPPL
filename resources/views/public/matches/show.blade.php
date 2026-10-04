@@ -48,8 +48,4 @@
             </aside>
         @endif
     </div>
-
-    <x-ad-slot tier="main" class="mt-4" />
-    <x-ad-slot tier="normal" class="mt-4" />
-    <x-ad-slot tier="mini" />
 @endsection

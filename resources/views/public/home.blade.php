@@ -145,10 +145,6 @@
                         <x-public.empty>{{ __('matches.list.no_completed') }}</x-public.empty>
                     @endforelse
                 </x-public.card>
-
-                {{-- Sponsor: beside the points table on wide screens, after
-                     the results on phones — never above the match blocks. --}}
-                <x-ad-slot tier="main" />
             </div>
         </div>
 
@@ -212,7 +208,4 @@
             </x-public.card>
         </div>
     @endif
-
-    <x-ad-slot tier="normal" class="mt-4" />
-    <x-ad-slot tier="mini" />
 @endsection

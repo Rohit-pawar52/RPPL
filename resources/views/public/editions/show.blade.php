@@ -69,8 +69,6 @@
         </div>
     </x-public.card>
 
-    <x-ad-slot tier="main" class="mt-4" />
-
     {{-- Leaderboard --}}
     <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <x-public.card flush :title="__('directory.leaderboard.top_run_scorers')">
@@ -250,7 +248,4 @@
             <x-public.empty class="!py-4">{{ __('directory.editions.matches_empty') }}</x-public.empty>
         @endforelse
     </x-public.card>
-
-    <x-ad-slot tier="normal" class="mt-4" />
-    <x-ad-slot tier="mini" />
 @endsection
