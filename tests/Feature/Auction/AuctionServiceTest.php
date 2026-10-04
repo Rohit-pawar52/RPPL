@@ -318,6 +318,23 @@ class AuctionServiceTest extends TestCase
         $this->assertSame(500, $this->bid($auction, $lot, $this->alpha)->amount);
     }
 
+    public function test_a_player_cannot_be_called_or_a_sale_reopened_while_paused(): void
+    {
+        $auction = $this->liveAuction(2);
+        $lot = $this->onTheBlock($auction);
+        $this->bid($auction, $lot, $this->alpha);
+        $this->service->sell($auction, $lot, $lot->fresh()->version);
+
+        $this->service->pause($auction);
+
+        $this->fails(fn () => $this->service->callRandom($auction), 'auction', 'paused');
+        $this->fails(fn () => $this->service->reopenSold($auction, $lot->fresh()), 'auction', 'paused');
+
+        // Next round and complete are still allowed while paused.
+        $this->assertSame(0, $this->service->startNextRound($auction));
+        $this->assertSame(Auction::STATUS_COMPLETED, $this->service->complete($auction) ? $auction->fresh()->status : '');
+    }
+
     public function test_undo_takes_back_the_latest_bid_and_the_one_before_stands_again(): void
     {
         $auction = $this->liveAuction();

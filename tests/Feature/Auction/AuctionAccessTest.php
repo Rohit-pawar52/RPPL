@@ -151,7 +151,7 @@ class AuctionAccessTest extends TestCase
         }
 
         Auction::factory()->live()->create(['edition_id' => $this->edition->id]);
-        $this->actingAs($this->userWithRole('auctioneer'))->get(route('admin.dashboard'))->assertSee('Open the auction')->assertSee('live');
+        $this->actingAs($this->userWithRole('auctioneer'))->get(route('admin.dashboard'))->assertSee('Open the console')->assertSee('live');
     }
 
     public function test_the_edition_hub_links_to_the_auction_for_an_admin(): void

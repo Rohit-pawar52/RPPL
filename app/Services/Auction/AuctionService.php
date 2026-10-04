@@ -7,9 +7,11 @@ use App\Models\AuctionBid;
 use App\Models\AuctionLot;
 use App\Models\Edition;
 use App\Models\EditionTeam;
+use App\Models\Player;
 use App\Models\PlayerRegistration;
 use App\Models\TeamPlayer;
 use App\Models\User;
+use App\Services\PlayerRegistration\PlayerRegistrationService;
 use App\Services\TeamPlayer\TeamPlayerService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +41,10 @@ use Illuminate\Validation\ValidationException;
  */
 class AuctionService
 {
-    public function __construct(private readonly TeamPlayerService $teamPlayers) {}
+    public function __construct(
+        private readonly TeamPlayerService $teamPlayers,
+        private readonly PlayerRegistrationService $registrations,
+    ) {}
 
     // ----- Setup ------------------------------------------------------------
 
@@ -142,6 +147,58 @@ class AuctionService
             $removed = $stale->isEmpty() ? 0 : $auction->lots()->whereIn('player_registration_id', $stale->all())->delete();
 
             return ['added' => $toAdd->count(), 'removed' => $removed];
+        });
+    }
+
+    /**
+     * Someone who turns up on the day without having registered online: the
+     * player (found by mobile number, never edited) and a paid registration
+     * for this season are created, and they join the waiting players — to be
+     * called like anyone else. The same door as "registered offline" on the
+     * Squads page, minus putting them straight in a team.
+     */
+    public function addWalkInPlayer(Auction $auction, string $name, string $phone): AuctionLot
+    {
+        return DB::transaction(function () use ($auction, $name, $phone) {
+            $auction = $this->lockAuction($auction);
+
+            if ($auction->isCompleted()) {
+                $this->fail('auction', 'This auction is completed, so no more players can be added.');
+            }
+
+            $edition = Edition::findOrFail($auction->edition_id);
+            $normalised = Player::normalizePhone($phone);
+
+            if ($normalised === null || strlen(preg_replace('/\D/', '', $normalised)) < 7) {
+                $this->fail('phone', 'Enter the player\'s mobile number.');
+            }
+
+            $player = Player::where('phone', $normalised)->first();
+
+            if ($player && ! $player->is_active) {
+                $this->fail('phone', 'This player is inactive and cannot be added.');
+            }
+
+            if ($player && PlayerRegistration::where('edition_id', $edition->id)->where('player_id', $player->id)->exists()) {
+                $this->fail('phone', $player->name.' is already registered for this season. If they have paid, use "Update the pool" on the set-up page.');
+            }
+
+            $player ??= Player::create(['name' => $name, 'phone' => $normalised]);
+
+            $registration = $this->registrations->createRegistration([
+                'edition_id' => $edition->id,
+                'player_id' => $player->id,
+                'payment_status' => 'paid',
+                'registration_fee' => $edition->registration_fee,
+                'registered_at' => now(),
+            ]);
+
+            return AuctionLot::create([
+                'auction_id' => $auction->id,
+                'player_registration_id' => $registration->id,
+                'status' => AuctionLot::PENDING,
+                'round' => $auction->round,
+            ]);
         });
     }
 
@@ -302,7 +359,7 @@ class AuctionService
     {
         return DB::transaction(function () use ($auction, $lot) {
             $auction = $this->lockAuction($auction);
-            $this->assertRunning($auction, 'Start or resume the auction before calling a player.');
+            $this->assertLive($auction, 'call a player');
             $lot = $this->lockLot($auction, $lot);
 
             if ($lot->isLive() && $auction->current_lot_id === $lot->id) {
@@ -533,7 +590,7 @@ class AuctionService
     {
         return DB::transaction(function () use ($auction, $lot) {
             $auction = $this->lockAuction($auction);
-            $this->assertRunning($auction, 'Start or resume the auction before reopening a sale.');
+            $this->assertLive($auction, 'reopen a sale');
             $lot = $this->lockLot($auction, $lot);
 
             if (! $lot->isSold() || ! $lot->teamPlayer) {
@@ -708,8 +765,23 @@ class AuctionService
     }
 
     /**
-     * The auction takes bids and sales only while it is live; "next round"
-     * and "complete" also work while paused.
+     * Calling, bidding, selling and reopening need a live auction; only
+     * "next round" and "complete" also work while it is paused.
+     */
+    private function assertLive(Auction $auction, string $what): void
+    {
+        if ($auction->isPaused()) {
+            $this->fail('auction', 'The auction is paused. Resume it to '.$what.'.');
+        }
+
+        if (! $auction->isLive()) {
+            $this->fail('auction', 'The auction is not live, so you cannot '.$what.'.');
+        }
+    }
+
+    /**
+     * Next round and complete: any time after the start, while it is live or
+     * paused.
      */
     private function assertRunning(Auction $auction, string $message = 'The auction has not been started or is already completed.'): void
     {

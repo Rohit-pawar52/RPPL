@@ -148,6 +148,9 @@
                     @endif
 
                     <div class="mt-3 flex flex-wrap gap-2">
+                        @if($auction->isLive() || $auction->isPaused())
+                            <x-admin.button :href="route('admin.auctions.console', $edition)" variant="primary" icon="gavel">Open the console</x-admin.button>
+                        @endif
                         @if($auction->isDraft())
                             <form method="POST" action="{{ route('admin.auctions.start', $edition) }}">
                                 @csrf

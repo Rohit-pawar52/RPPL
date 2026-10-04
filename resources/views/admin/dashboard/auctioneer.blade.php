@@ -25,9 +25,14 @@
             </div>
 
             <div class="mt-4">
-                <x-admin.button :href="route('admin.auctions.show', $edition)" variant="primary" icon="gavel">
-                    {{ $auction ? 'Open the auction' : 'Set up the auction' }}
-                </x-admin.button>
+                @if($auction && ($auction->isLive() || $auction->isPaused()))
+                    <x-admin.button :href="route('admin.auctions.console', $edition)" variant="primary" icon="gavel">Open the console</x-admin.button>
+                    <x-admin.button :href="route('admin.auctions.show', $edition)" variant="secondary">Rules and set-up</x-admin.button>
+                @else
+                    <x-admin.button :href="route('admin.auctions.show', $edition)" variant="primary" icon="gavel">
+                        {{ $auction ? 'Open the auction' : 'Set up the auction' }}
+                    </x-admin.button>
+                @endif
             </div>
         @endif
     </x-admin.card>

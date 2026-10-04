@@ -11,6 +11,7 @@ export default defineConfig({
                 'resources/js/public-live-match.js',
                 'resources/js/push-notifications.js',
                 'resources/js/admin-scoring.js',
+                'resources/js/admin-auction.js',
                 'resources/js/venue-map.js',
             ],
             refresh: true,
