@@ -7,21 +7,20 @@
     $autocomplete, $inputmode, $min, $max, $maxlength, $hint (small help
     text under the field), $options (renders a <select>),
     $selectPlaceholder.
-    Tall (48 px) fields and a clear focus ring so they are easy to hit and
-    read on a phone; an invalid field is outlined in red and announced to
-    assistive technology.
+    Compact (40 px) fields with a clear focus ring; an invalid field is
+    outlined in red and announced to assistive technology.
 --}}
 @php
     $type = $type ?? 'text';
     $value = $value ?? null;
     $hasError = $errors->has($name);
-    $fieldClass = 'h-12 w-full rounded-xl border bg-white px-3.5 text-[15px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:outline-none focus:ring-4 '
+    $fieldClass = 'h-10 w-full rounded-lg border bg-white px-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:outline-none focus:ring-4 '
         .($hasError ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-slate-300 hover:border-slate-400 focus:border-green-600 focus:ring-green-600/15');
     $describedBy = trim((! empty($hint) ? $name.'-hint ' : '').($hasError ? $name.'-error' : ''));
 @endphp
 
-<div class="mb-5">
-    <label for="{{ $name }}" class="mb-1.5 block text-[13px] font-semibold text-slate-800">{{ $label }}@if($required ?? false)<span class="text-red-500" aria-hidden="true"> *</span>@endif</label>
+<div class="mb-3.5">
+    <label for="{{ $name }}" class="mb-1 block text-xs font-semibold text-slate-700">{{ $label }}@if($required ?? false)<span class="text-red-500" aria-hidden="true"> *</span>@endif</label>
 
     @if(isset($options))
         <select
@@ -60,11 +59,11 @@
     @endif
 
     @if(! empty($hint))
-        <p id="{{ $name }}-hint" class="mt-1.5 text-xs text-slate-500">{{ $hint }}</p>
+        <p id="{{ $name }}-hint" class="mt-1 text-[11px] text-slate-500">{{ $hint }}</p>
     @endif
 
     @error($name)
-        <p id="{{ $name }}-error" class="mt-1.5 flex items-start gap-1.5 text-xs font-medium text-red-600">
+        <p id="{{ $name }}-error" class="mt-1 flex items-start gap-1 text-xs font-medium text-red-600">
             <svg class="mt-px h-3.5 w-3.5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 6a1 1 0 112 0v4a1 1 0 11-2 0V6zm1 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 14z" clip-rule="evenodd" /></svg>
             <span>{{ $message }}</span>
         </p>

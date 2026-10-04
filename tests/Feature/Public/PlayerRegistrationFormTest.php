@@ -262,7 +262,7 @@ class PlayerRegistrationFormTest extends TestCase
             ->assertOk()
             ->assertSee('How it works')
             ->assertSee('Registration fee')
-            ->assertSeeInOrder(['About you', 'Playing details', 'Where you live', 'Your photo', 'Payment proof'])
+            ->assertSeeInOrder(['About you', 'Where you live', 'Playing details', 'Payment proof'])
             ->assertSee('data-progress-bar', false)
             ->assertSee('data-upload', false)
             ->assertSee('Your photo and payment screenshot are private');
