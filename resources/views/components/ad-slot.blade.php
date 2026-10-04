@@ -1,7 +1,8 @@
 {{--
     Sponsor placement (see App\View\Components\AdSlot). Display only: the
     media has no link, ignores clicks and drags, and sits in a box of fixed
-    proportions so the page never jumps when it loads. A failed image or
+    height so the page never jumps when it loads. The caller adds spacing
+    (class="mt-4") when the slot is not inside a spaced stack. A failed image or
     video removes its own box instead of leaving a broken picture.
 --}}
 @if($tier === 'mini')
@@ -16,6 +17,7 @@
                         loading="lazy"
                         draggable="false"
                         class="pointer-events-none max-h-12 max-w-[8rem] select-none object-contain"
+                        style="max-height: 3rem; max-width: 8rem;"
                         onerror="this.closest('li').remove()"
                     >
                 </li>
@@ -24,12 +26,10 @@
     </section>
 @else
     @php($ad = $ads->first())
-    <aside data-ad="{{ $tier }}" class="my-4" aria-label="{{ __('ads.sponsored') }}">
-        <div @class([
-            'pub-card relative overflow-hidden bg-slate-50',
-            'aspect-[3/1] sm:aspect-[5/1]' => $tier === 'main',
-            'aspect-[3/1] sm:aspect-[6/1]' => $tier !== 'main',
-        ])>
+    <aside data-ad="{{ $tier }}" {{ $attributes }} aria-label="{{ __('ads.sponsored') }}">
+        {{-- One compact height for every banner (about two list rows), set
+             inline so a tall poster can never push the page content down. --}}
+        <div class="pub-card relative overflow-hidden bg-slate-50" style="height: 5.5rem;">
             @if($ad->isVideo())
                 <video
                     muted
@@ -43,6 +43,7 @@
                     data-ad-src="{{ $ad->mediaUrl() }}"
                     @if($ad->posterUrl()) poster="{{ $ad->posterUrl() }}" @endif
                     class="pointer-events-none h-full w-full select-none object-contain"
+                    style="width: 100%; height: 100%; object-fit: contain;"
                     onerror="this.closest('[data-ad]').remove()"
                 ></video>
             @else
@@ -53,6 +54,7 @@
                     decoding="async"
                     draggable="false"
                     class="pointer-events-none h-full w-full select-none object-contain"
+                    style="width: 100%; height: 100%; object-fit: contain;"
                     onerror="this.closest('[data-ad]').remove()"
                 >
             @endif

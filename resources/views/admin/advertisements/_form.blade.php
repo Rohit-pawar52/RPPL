@@ -32,7 +32,7 @@
     accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
     :current="$advertisement?->media_path ? basename($advertisement->media_path) : null"
     :prompt="$advertisement?->media_path ? 'Replace file' : 'Choose file'"
-    :help="'Image: JPG, PNG or WebP up to '.$maxImageMb.' MB. Video: MP4 or WebM up to '.$maxVideoMb.' MB, plays muted on a loop. Wide banners work best (Main about 1500×300, Normal about 1200×200); Mini logos are shown small.'.($advertisement ? ' Leave empty to keep the current file.' : '')"
+    :help="'Image: JPG, PNG or WebP up to '.$maxImageMb.' MB. Video: MP4 or WebM up to '.$maxVideoMb.' MB, plays muted on a loop. Banners are shown in a slim strip (about 90 px tall), so a wide image works best — about 1200×150. A tall poster is shown small, not cropped; Mini logos are shown even smaller.'.($advertisement ? ' Leave empty to keep the current file.' : '')"
 />
 
 <x-form.file

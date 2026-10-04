@@ -96,6 +96,7 @@ class SponsorAdsTest extends TestCase
 
     public function test_ads_are_display_only_with_no_link_around_them(): void
     {
+        Edition::factory()->create(['status' => 'active']);
         Advertisement::factory()->main()->create(['media_path' => 'ads/main.jpg']);
 
         $html = $this->get(route('public.home'))->assertOk()->getContent();
