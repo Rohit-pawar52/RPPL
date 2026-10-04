@@ -70,7 +70,7 @@ class SponsorAdsTest extends TestCase
     {
         config(['ads.banner_visible_seconds' => 8, 'ads.banner_hidden_seconds' => 30]);
         Advertisement::factory()->main()->create(['media_path' => 'ads/main.jpg']);
-        Advertisement::factory()->create(['media_path' => 'ads/card.jpg']);
+        Advertisement::factory()->card()->create(['media_path' => 'ads/card.jpg']);
         Advertisement::factory()->mini()->create(['title' => 'Local Dairy']);
 
         // The banner carries its show / hide times (in milliseconds).
@@ -80,7 +80,9 @@ class SponsorAdsTest extends TestCase
             ->assertSee('data-ad-hidden="30000"', false);
 
         // A tile in a row and the logo strip do not fold.
-        $this->blade('<x-ad-slot tier="normal" variant="card" />')->assertDontSee('data-ad-visible', false);
+        $this->blade('<x-ad-slot tier="normal" variant="card" />')
+            ->assertSee('ads/card.jpg', false)
+            ->assertDontSee('data-ad-visible', false);
         $this->blade('<x-ad-slot tier="mini" />')->assertDontSee('data-ad-visible', false);
     }
 
@@ -92,6 +94,21 @@ class SponsorAdsTest extends TestCase
         $this->blade('<x-ad-slot tier="main" />')
             ->assertSee('data-ad="main"', false)
             ->assertDontSee('data-ad-visible', false);
+    }
+
+    public function test_a_normal_ad_only_shows_in_the_spot_it_was_made_for(): void
+    {
+        Advertisement::factory()->create(['title' => 'Strip Ad', 'media_path' => 'ads/strip.jpg']);
+        Advertisement::factory()->card()->create(['title' => 'Tile Ad', 'media_path' => 'ads/tile.jpg']);
+
+        $this->blade('<x-ad-slot tier="normal" />')
+            ->assertSee('ads/strip.jpg', false)
+            ->assertDontSee('ads/tile.jpg', false);
+
+        $this->blade('<x-ad-slot tier="normal" variant="card" />')
+            ->assertSee('ads/tile.jpg', false)
+            ->assertSee('Tile Ad')
+            ->assertDontSee('ads/strip.jpg', false);
     }
 
     public function test_a_banner_image_is_backed_by_a_blurred_copy_so_it_always_looks_full_width(): void

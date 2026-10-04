@@ -50,6 +50,8 @@ abstract class SaveAdvertisementRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'tier' => ['required', Rule::in(array_keys(Advertisement::TIERS))],
+            // Only a Normal sponsor chooses its spot; for the others it is ignored.
+            'format' => ['nullable', Rule::in(array_keys(Advertisement::FORMATS))],
             'media_type' => [
                 'required',
                 Rule::in(Advertisement::MEDIA_TYPES),

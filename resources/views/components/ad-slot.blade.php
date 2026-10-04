@@ -51,8 +51,14 @@
     @if($variant === 'card')
         <aside data-ad="{{ $tier }}" {{ $attributes->class(['flex']) }} aria-label="{{ __('ads.sponsored') }}">
             <div class="pub-card flex w-full flex-col overflow-hidden">
-                <div class="rppl-ad-card-media relative bg-slate-50">
-                    <x-ad-slot-media :ad="$ad" eager />
+                @php $cardBackdrop = $ad->isVideo() ? $ad->posterUrl() : $ad->mediaUrl(); @endphp
+                <div class="rppl-ad-card-media relative overflow-hidden bg-slate-50">
+                    @if($cardBackdrop)
+                        <div aria-hidden="true" data-ad-backdrop style="position: absolute; inset: 0; background: url('{{ $cardBackdrop }}') center / cover no-repeat; filter: blur(14px); transform: scale(1.2); opacity: .75;"></div>
+                    @endif
+                    <div style="position: relative; width: 100%; height: 100%;">
+                        <x-ad-slot-media :ad="$ad" eager />
+                    </div>
                 </div>
                 <div class="flex flex-1 flex-col justify-center border-t border-line px-3 py-2">
                     <p class="truncate text-[13px] font-semibold text-slate-800">{{ $ad->title }}</p>

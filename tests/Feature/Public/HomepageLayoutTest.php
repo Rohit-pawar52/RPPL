@@ -82,7 +82,7 @@ class HomepageLayoutTest extends TestCase
         foreach ([31, 32, 33, 34] as $i => $number) {
             $this->match($number, 'completed', now()->subDays(10 - $i), ['match_result' => 'Result of '.$number]);
         }
-        Advertisement::factory()->create(['title' => 'Sharma Tractors']);
+        Advertisement::factory()->card()->create(['title' => 'Sharma Tractors']);
 
         $this->get(route('public.home'))
             ->assertOk()
@@ -115,11 +115,11 @@ class HomepageLayoutTest extends TestCase
             ->assertDontSee('data-ad=', false);
     }
 
-    public function test_two_normal_slots_never_repeat_a_sponsor_and_the_main_banner_comes_first(): void
+    public function test_the_card_and_the_banner_each_get_their_own_normal_sponsor_and_the_main_banner_comes_first(): void
     {
         $this->match(22, 'scheduled', now()->addDay());
         Advertisement::factory()->main()->create(['title' => 'Main Title Sponsor']);
-        Advertisement::factory()->create(['title' => 'Normal One']);
+        Advertisement::factory()->card()->create(['title' => 'Normal One']);
         Advertisement::factory()->create(['title' => 'Normal Two']);
 
         $html = $this->get(route('public.home'))->assertOk()->getContent();
@@ -133,14 +133,16 @@ class HomepageLayoutTest extends TestCase
         $this->assertLessThan(strpos($html, 'Season summary'), strrpos($html, 'data-ad="normal"'));
     }
 
-    public function test_a_single_normal_sponsor_is_shown_once_not_twice(): void
+    public function test_a_banner_made_sponsor_is_not_shown_in_the_match_row_card(): void
     {
         $this->match(22, 'scheduled', now()->addDay());
         Advertisement::factory()->create(['title' => 'Only Sponsor']);
 
         $html = $this->get(route('public.home'))->assertOk()->getContent();
 
+        // Only the banner above the season summary; the row has no card for it.
         $this->assertSame(1, substr_count($html, 'data-ad="normal"'));
+        $this->assertLessThan(strpos($html, 'Season summary'), strpos($html, 'data-ad="normal"'));
     }
 
     public function test_videos_news_and_photos_show_three_each_with_links_to_their_pages(): void

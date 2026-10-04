@@ -18,6 +18,7 @@ class AdvertisementFactory extends Factory
         return [
             'title' => fake()->company(),
             'tier' => Advertisement::TIER_NORMAL,
+            'format' => null,
             'media_type' => Advertisement::MEDIA_IMAGE,
             'media_path' => 'ads/'.fake()->uuid().'.jpg',
             'poster_path' => null,
@@ -31,6 +32,11 @@ class AdvertisementFactory extends Factory
     public function main(): static
     {
         return $this->state(['tier' => Advertisement::TIER_MAIN]);
+    }
+
+    public function card(): static
+    {
+        return $this->state(['format' => Advertisement::FORMAT_CARD]);
     }
 
     public function mini(): static

@@ -38,15 +38,17 @@ class AdvertisementDisplayService
     }
 
     /**
-     * The Normal sponsor for the next Normal slot on the page, chosen by
-     * weight among the ones not shown yet — so two Normal slots on one page
-     * never repeat an ad, and a later slot is simply empty once every live
-     * Normal ad is already on the page. A different ad can come up on the
-     * next page load.
+     * The Normal sponsor for the next Normal slot of the given format
+     * ('banner' strip or 'card' tile) on the page, chosen by weight among
+     * the ads made for that format that are not shown yet — so two slots of
+     * one format never repeat an ad, and a later slot is simply empty once
+     * every live ad of that format is already on the page. A different ad
+     * can come up on the next page load.
      */
-    public function nextNormal(): ?Advertisement
+    public function nextNormal(string $format = Advertisement::FORMAT_BANNER): ?Advertisement
     {
         $candidates = $this->liveIn(Advertisement::TIER_NORMAL)
+            ->filter(fn (Advertisement $ad) => $ad->effectiveFormat() === $format)
             ->reject(fn (Advertisement $ad) => in_array($ad->id, $this->shownNormalIds, true));
         $total = $candidates->sum(fn (Advertisement $ad) => max(1, $ad->weight));
 

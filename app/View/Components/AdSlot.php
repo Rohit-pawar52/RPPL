@@ -30,7 +30,7 @@ class AdSlot extends Component
     {
         $this->ads = match ($tier) {
             Advertisement::TIER_MAIN => collect([$display->main()])->filter(),
-            Advertisement::TIER_NORMAL => collect([$display->nextNormal()])->filter(),
+            Advertisement::TIER_NORMAL => collect([$display->nextNormal($variant === 'card' ? Advertisement::FORMAT_CARD : Advertisement::FORMAT_BANNER)])->filter(),
             Advertisement::TIER_MINI => $display->minis(),
             default => collect(),
         };
