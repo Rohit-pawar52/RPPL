@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Edition extends Model
 {
@@ -53,6 +54,11 @@ class Edition extends Model
     public function registrationReminderNotification(): BelongsTo
     {
         return $this->belongsTo(Notification::class, 'registration_reminder_notification_id');
+    }
+
+    public function auction(): HasOne
+    {
+        return $this->hasOne(Auction::class);
     }
 
     public function playerRegistrations(): HasMany

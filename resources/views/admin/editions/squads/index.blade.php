@@ -11,7 +11,7 @@
                 <tr>
                     <th class="px-4 py-2 font-medium">Team</th>
                     <th class="px-4 py-2 text-right font-medium">Players</th>
-                    <th class="px-4 py-2 text-right font-medium">Bought for</th>
+                    <th class="px-4 py-2 text-right font-medium">Bought for (points)</th>
                     <th class="px-4 py-2 text-right font-medium"><span class="sr-only">Open</span></th>
                 </tr>
             </thead>
@@ -22,7 +22,7 @@
                             <a href="{{ route('admin.editions.squads.show', [$edition, $editionTeam]) }}" class="hover:underline">{{ $editionTeam->team->name }}</a>
                         </td>
                         <td class="px-4 py-1.5 text-right text-slate-600">{{ $editionTeam->team_players_count }}</td>
-                        <td class="px-4 py-1.5 text-right text-slate-600">{{ $editionTeam->sold_total !== null ? money($editionTeam->sold_total) : '—' }}</td>
+                        <td class="px-4 py-1.5 text-right text-slate-600">{{ $editionTeam->sold_total !== null ? points($editionTeam->sold_total, true) : '—' }}</td>
                         <td class="px-4 py-1.5 text-right">
                             <a href="{{ route('admin.editions.squads.show', [$edition, $editionTeam]) }}" class="text-[11px] font-medium text-green-700 hover:underline">Open squad &rarr;</a>
                         </td>

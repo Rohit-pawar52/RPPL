@@ -15,7 +15,7 @@
 
     @php
         $roleLabels = collect($roles)->mapWithKeys(fn ($role) => [$role => ucwords(str_replace('_', ' ', $role))]);
-        $cardTitle = $editionTeam->team->name.' · '.$squad->count().' '.\Illuminate\Support\Str::plural('player', $squad->count()).($soldTotal > 0 ? ' · bought for '.money($soldTotal) : '');
+        $cardTitle = $editionTeam->team->name.' · '.$squad->count().' '.\Illuminate\Support\Str::plural('player', $squad->count()).($soldTotal > 0 ? ' · bought for '.points($soldTotal, true) : '');
     @endphp
 
     <div class="grid items-start gap-4 lg:grid-cols-[1fr_22rem]">
@@ -30,7 +30,7 @@
                             <th class="px-4 py-2 font-medium">Player</th>
                             <th class="px-2 py-2 font-medium">Jersey</th>
                             <th class="px-2 py-2 font-medium">Role</th>
-                            <th class="px-2 py-2 font-medium">Bought for</th>
+                            <th class="px-2 py-2 font-medium">Bought for (pts)</th>
                             <th class="px-4 py-2"><span class="sr-only">Remove</span></th>
                         </tr>
                     </thead>

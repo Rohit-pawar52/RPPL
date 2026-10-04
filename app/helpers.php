@@ -42,3 +42,23 @@ if (! function_exists('money')) {
         return $symbol.number_format((float) ($amount ?? 0), $decimals);
     }
 }
+
+if (! function_exists('points')) {
+    /**
+     * Formats auction points the Indian way — 600000 becomes "6,00,000" —
+     * as a whole number, never with a currency symbol (points are not
+     * rupees). Pass $unit to append " pts". Formatting only.
+     */
+    function points(float|int|string|null $amount, bool $unit = false): string
+    {
+        $value = (int) round((float) ($amount ?? 0));
+        $digits = (string) abs($value);
+
+        if (strlen($digits) > 3) {
+            $head = preg_replace('/\B(?=(\d{2})+(?!\d))/', ',', substr($digits, 0, -3));
+            $digits = $head.','.substr($digits, -3);
+        }
+
+        return ($value < 0 ? '-' : '').$digits.($unit ? ' pts' : '');
+    }
+}

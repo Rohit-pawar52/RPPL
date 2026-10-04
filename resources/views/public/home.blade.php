@@ -15,6 +15,8 @@
 @section('content')
     <x-ad-slot tier="main" />
 
+    @include('public.home._auction-card')
+
     @if(! $edition)
         <div class="pub-card mt-4 px-4 py-8 text-center">
             <x-icon name="trophy" class="mx-auto h-5 w-5 text-slate-300" />

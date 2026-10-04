@@ -8,6 +8,7 @@ use App\Models\GameMatch;
 use App\Models\News;
 use App\Models\Photo;
 use App\Models\Video;
+use App\Services\Auction\AuctionStateService;
 use App\Services\LiveMatch\LiveMatchService;
 use App\Services\Statistics\PlayerStatisticsService;
 use App\Services\Statistics\StandingsService;
@@ -48,6 +49,7 @@ class HomeController extends Controller
         private readonly StandingsService $standings,
         private readonly PlayerStatisticsService $statistics,
         private readonly LiveMatchService $liveMatch,
+        private readonly AuctionStateService $auctions,
     ) {}
 
     public function __invoke(): View
@@ -95,6 +97,7 @@ class HomeController extends Controller
 
         return view('public.home', [
             'edition' => $edition,
+            'auctionCard' => $this->auctions->homeCard(),
             'upcomingMatches' => $upcomingMatches,
             'recentMatches' => $recentMatches,
             'liveMatchId' => $upcomingMatches->firstWhere('match_status', 'live')?->id,
