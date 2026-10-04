@@ -38,13 +38,20 @@ class AdvertisementDisplayService
     }
 
     /**
-     * The sponsor for the pop-up on the player auction page. For now it is
-     * the Main sponsor; this is the one place to change when the auction gets
-     * a sponsor spot of its own.
+     * The one Auction sponsor (if two ever overlap, the newest wins).
+     */
+    public function auction(): ?Advertisement
+    {
+        return $this->liveIn(Advertisement::TIER_AUCTION)->sortByDesc('id')->first();
+    }
+
+    /**
+     * The sponsor for the pop-up on the player auction page: the Auction
+     * sponsor, or the Main sponsor while there is no Auction sponsor live.
      */
     public function auctionPopup(): ?Advertisement
     {
-        return $this->main();
+        return $this->auction() ?? $this->main();
     }
 
     /**

@@ -99,11 +99,48 @@ class AuctionAdPopupTest extends TestCase
             ->assertSee('aria-label="बंद करें"', false);
     }
 
-    public function test_the_popup_sponsor_is_the_main_sponsor_for_now(): void
+    public function test_the_auction_sponsor_is_shown_instead_of_the_main_sponsor(): void
     {
-        $main = Advertisement::factory()->main()->create();
-        Advertisement::factory()->create();
+        Advertisement::factory()->main()->create(['title' => 'Main Partner']);
+        $auction = Advertisement::factory()->auction()->create(['title' => 'Auction Partner']);
 
-        $this->assertSame($main->id, app(AdvertisementDisplayService::class)->auctionPopup()?->id);
+        $html = $this->popup();
+
+        $this->assertStringContainsString('Auction Partner', $html);
+        $this->assertStringContainsString(Storage::disk('public')->url($auction->media_path), $html);
+        $this->assertStringNotContainsString('Main Partner', $html);
+    }
+
+    public function test_the_main_sponsor_fills_in_while_there_is_no_auction_sponsor_live(): void
+    {
+        $main = Advertisement::factory()->main()->create(['title' => 'Main Partner']);
+        $display = app(AdvertisementDisplayService::class);
+
+        // None at all, then one that is switched off or has ended.
+        $this->assertSame($main->id, $display->auctionPopup()?->id);
+        Advertisement::factory()->auction()->inactive()->create(['title' => 'Switched Off Partner']);
+        Advertisement::factory()->auction()->create(['title' => 'Ended Partner', 'ends_on' => now()->subDays(3)->toDateString()]);
+
+        $html = $this->popup();
+        $this->assertStringContainsString('Main Partner', $html);
+        $this->assertStringNotContainsString('Switched Off Partner', $html);
+        $this->assertStringNotContainsString('Ended Partner', $html);
+    }
+
+    public function test_an_auction_sponsor_alone_is_enough_for_the_popup(): void
+    {
+        Advertisement::factory()->auction()->create(['title' => 'Auction Partner']);
+
+        $this->assertStringContainsString('Auction Partner', $this->popup());
+    }
+
+    public function test_the_auction_sponsor_pops_up_only_on_the_auction_page(): void
+    {
+        Advertisement::factory()->auction()->create(['title' => 'Auction Partner', 'media_path' => 'ads/auction-only.jpg']);
+
+        $this->blade('<x-ad-slot tier="main" />')->assertDontSee('auction-only.jpg', false);
+        $this->blade('<x-ad-slot tier="normal" />')->assertDontSee('auction-only.jpg', false);
+        $this->blade('<x-ad-slot tier="mini" />')->assertDontSee('auction-only.jpg', false);
+        $this->blade('<x-ad-slot tier="auction" />')->assertDontSee('auction-only.jpg', false);
     }
 }

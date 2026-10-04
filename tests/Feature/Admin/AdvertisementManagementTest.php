@@ -84,6 +84,7 @@ class AdvertisementManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Picture size for each spot')
             ->assertSeeInOrder(['Main sponsor — top banner', '1600 × 200 px', '8 : 1'])
+            ->assertSeeInOrder(['Auction sponsor — pop-up', '1600 × 360 px', '4.4 : 1'])
             ->assertSeeInOrder(['Normal sponsor — banner', '1600 × 200 px', '8 : 1'])
             ->assertSeeInOrder(['Normal sponsor — card', '1040 × 400 px', '2.6 : 1'])
             ->assertSeeInOrder(['Mini sponsor — logo', '400 × 150 px', '8 : 3'])
@@ -269,6 +270,70 @@ class AdvertisementManagementTest extends TestCase
         $this->actingAs($admin)->patch(route('admin.advertisements.toggle-status', $waiting))
             ->assertSessionHas('error');
         $this->assertSame('inactive', $waiting->fresh()->status);
+    }
+
+    public function test_an_auction_sponsor_is_an_image_or_a_video_and_has_no_spot_choice(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('admin.advertisements.store'), $this->payload(['title' => 'Auction Partner', 'tier' => 'auction', 'format' => 'card']))
+            ->assertSessionHasNoErrors();
+        $ad = Advertisement::firstWhere('title', 'Auction Partner');
+        $this->assertSame('auction', $ad->tier);
+        $this->assertNull($ad->format);
+        $this->assertSame('Auction sponsor — pop-up', $ad->spotLabel());
+        Storage::disk('public')->assertExists($ad->media_path);
+
+        // A clip is fine too (it plays muted while the pop-up is open).
+        $this->actingAs($admin)->post(route('admin.advertisements.store'), $this->payload([
+            'title' => 'Auction Clip',
+            'tier' => 'auction',
+            'status' => 'inactive',
+            'media_type' => 'video',
+            'media' => UploadedFile::fake()->create('clip.mp4', 500, 'video/mp4'),
+        ]))->assertSessionHasNoErrors();
+        $this->assertTrue(Advertisement::firstWhere('title', 'Auction Clip')->isVideo());
+
+        // The level is offered on the form and explained.
+        $this->actingAs($admin)->get(route('admin.advertisements.create'))
+            ->assertOk()
+            ->assertSee('Auction sponsor')
+            ->assertSee('the pop-up on the player auction page');
+    }
+
+    public function test_there_is_only_one_auction_sponsor_at_a_time_and_it_does_not_compete_with_the_main_one(): void
+    {
+        $admin = $this->admin();
+        Advertisement::factory()->auction()->create(['title' => 'Auction Partner']);
+        Advertisement::factory()->main()->create(['title' => 'Title Sponsor']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.advertisements.store'), $this->payload(['tier' => 'auction']))
+            ->assertSessionHasErrors(['tier' => 'There is only one Auction sponsor slot, and "Auction Partner" already holds it (Always). Deactivate it first or choose dates that do not overlap.']);
+
+        // Saved as inactive it is fine, but switching it on is refused.
+        $this->actingAs($admin)
+            ->post(route('admin.advertisements.store'), $this->payload(['tier' => 'auction', 'status' => 'inactive', 'title' => 'Next Partner']))
+            ->assertSessionHasNoErrors();
+        $next = Advertisement::firstWhere('title', 'Next Partner');
+
+        $this->actingAs($admin)->patch(route('admin.advertisements.toggle-status', $next))->assertSessionHas('error');
+        $this->assertSame('inactive', $next->fresh()->status);
+
+        // The Main slot is a different slot: it was free alongside the Auction one.
+        $this->assertSame(1, Advertisement::where('tier', 'main')->count());
+    }
+
+    public function test_the_list_shows_main_then_auction_then_normal_then_mini(): void
+    {
+        Advertisement::factory()->mini()->create(['title' => 'Mini One']);
+        Advertisement::factory()->create(['title' => 'Normal One']);
+        Advertisement::factory()->auction()->create(['title' => 'Auction One']);
+        Advertisement::factory()->main()->create(['title' => 'Main One']);
+
+        $this->actingAs($this->admin())->get(route('admin.advertisements.index'))
+            ->assertOk()
+            ->assertSeeInOrder(['Main One', 'Auction One', 'Normal One', 'Mini One']);
     }
 
     public function test_two_main_sponsors_are_fine_when_their_dates_do_not_overlap(): void
