@@ -229,6 +229,117 @@ class PlayerStatisticsService
     }
 
     /**
+     * Slugs of the season-summary boards (also the public stats page URLs).
+     */
+    public const HIGHLIGHT_BOARDS = ['runs', 'wickets', 'highest-score', 'thirties', 'fifties', 'hundreds', 'sixes'];
+
+    /**
+     * Innings-score bands behind the 30s / 50s / 100s boards:
+     * [lowest score that counts, first score that no longer does].
+     */
+    private const MILESTONE_BANDS = [
+        'thirties' => [30, 50],
+        'fifties' => [50, 100],
+        'hundreds' => [100, PHP_INT_MAX],
+    ];
+
+    /**
+     * The season-summary boards in one pass: most runs, most wickets,
+     * highest individual score, most 30s, most 50s, most 100s and most
+     * sixes. Built from the same per-player innings breakdown as
+     * the leaderboard and records, so they never disagree with them. Each
+     * board is cut to $limit rows (null = all) and only holds players who
+     * actually have something on it (no zero rows).
+     *
+     * The milestones are separate bands, the way scorers count them: a 30 is
+     * an innings of 30-49, a 50 is 50-99 and a 100 is 100 or more, so one
+     * innings counts towards exactly one of them.
+     *
+     * @return array<string, list<array<string, mixed>>> keyed by HIGHLIGHT_BOARDS
+     */
+    public function getEditionHighlights(Edition $edition, ?int $limit = 5): array
+    {
+        $aggregates = $this->editionPlayerAggregates($edition);
+
+        $runs = $wickets = $highest = $sixes = [];
+        $milestones = ['thirties' => [], 'fifties' => [], 'hundreds' => []];
+
+        foreach ($aggregates['battingByPlayer'] as $playerId => $inningsBreakdown) {
+            $player = $aggregates['playersById'][$playerId];
+            $career = $this->computeBattingCareer($inningsBreakdown);
+
+            if ($career['runs'] > 0) {
+                $runs[] = [
+                    'player' => $player,
+                    'value' => $career['runs'],
+                    'innings' => $career['innings_batted'],
+                    'balls' => $career['balls_faced'],
+                    'strike_rate' => $career['strike_rate'],
+                    'fours' => $career['fours'],
+                    'sixes' => $career['sixes'],
+                ];
+            }
+
+            if ($career['sixes'] > 0) {
+                $sixes[] = ['player' => $player, 'value' => $career['sixes'], 'runs' => $career['runs'], 'innings' => $career['innings_batted']];
+            }
+
+            foreach (self::MILESTONE_BANDS as $key => [$from, $below]) {
+                $count = count(array_filter($inningsBreakdown, fn ($stat) => $stat['runs'] >= $from && $stat['runs'] < $below));
+
+                if ($count > 0) {
+                    $milestones[$key][] = ['player' => $player, 'value' => $count, 'runs' => $career['runs'], 'innings' => $career['innings_batted']];
+                }
+            }
+
+            foreach ($inningsBreakdown as $stat) {
+                if ($stat['runs'] > 0) {
+                    $highest[] = ['player' => $player, 'value' => $stat['runs'], 'balls' => $stat['balls'], 'not_out' => ! $stat['dismissed']];
+                }
+            }
+        }
+
+        foreach ($aggregates['bowlingByPlayer'] as $playerId => $inningsBreakdown) {
+            $career = $this->computeBowlingCareer($inningsBreakdown);
+
+            if ($career['wickets'] > 0) {
+                $wickets[] = [
+                    'player' => $aggregates['playersById'][$playerId],
+                    'value' => $career['wickets'],
+                    'innings' => $career['innings_bowled'],
+                    'overs' => $career['overs'],
+                    'runs_conceded' => $career['runs_conceded'],
+                    'economy' => $career['economy'],
+                    'best_bowling' => $career['best_bowling'],
+                ];
+            }
+        }
+
+        // Ties are broken the way a scorer would: fewer balls / runs
+        // conceded first, then by total runs.
+        usort($runs, fn ($a, $b) => $b['value'] <=> $a['value'] ?: $a['balls'] <=> $b['balls']);
+        usort($wickets, fn ($a, $b) => $b['value'] <=> $a['value'] ?: $a['runs_conceded'] <=> $b['runs_conceded']);
+        usort($highest, fn ($a, $b) => $b['value'] <=> $a['value'] ?: $b['not_out'] <=> $a['not_out'] ?: $a['balls'] <=> $b['balls']);
+        $byValueThenRuns = fn ($a, $b) => $b['value'] <=> $a['value'] ?: $b['runs'] <=> $a['runs'];
+        usort($milestones['thirties'], $byValueThenRuns);
+        usort($milestones['fifties'], $byValueThenRuns);
+        usort($milestones['hundreds'], $byValueThenRuns);
+        usort($sixes, $byValueThenRuns);
+
+        $cut = fn (array $rows) => $limit === null ? $rows : array_slice($rows, 0, $limit);
+
+        return [
+            'runs' => $cut($runs),
+            'wickets' => $cut($wickets),
+            'highest-score' => $cut($highest),
+            'thirties' => $cut($milestones['thirties']),
+            'fifties' => $cut($milestones['fifties']),
+            'hundreds' => $cut($milestones['hundreds']),
+            'sixes' => $cut($sixes),
+        ];
+    }
+
+    /**
      * The set of MatchPlayer ids this Player identity has ever had,
      * across every PlayerRegistration/TeamPlayer they've ever held —
      * never accidentally scoped to just one registration. Optionally

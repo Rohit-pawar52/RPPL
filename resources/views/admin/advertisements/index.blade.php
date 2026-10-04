@@ -9,13 +9,20 @@
 @endsection
 
 @section('content')
+    <details class="mb-3">
+        <summary class="cursor-pointer text-xs font-medium text-green-700">Picture size for each spot</summary>
+        <div class="mt-2 max-w-2xl">
+            @include('admin.advertisements._size-guide')
+        </div>
+    </details>
+
     <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
         <table class="w-full min-w-[640px] text-left text-[13px]">
             <thead class="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-400">
                 <tr>
                     <th class="px-4 py-2 font-medium">Preview</th>
                     <th class="px-4 py-2 font-medium">Title</th>
-                    <th class="px-4 py-2 font-medium">Level</th>
+                    <th class="px-4 py-2 font-medium">Spot</th>
                     <th class="px-4 py-2 font-medium">Status</th>
                     <th class="hidden px-4 py-2 font-medium sm:table-cell">Dates</th>
                     <th class="hidden px-4 py-2 text-right font-medium md:table-cell">How often</th>
@@ -42,7 +49,7 @@
                                 <span class="ml-1 text-[11px] font-normal text-slate-400">video</span>
                             @endif
                         </td>
-                        <td class="px-4 py-2 text-slate-600">{{ $advertisement->tierLabel() }}</td>
+                        <td class="px-4 py-2 text-slate-600">{{ $advertisement->spotLabel() }}</td>
                         <td class="px-4 py-2">
                             <x-status-toggle :action="route('admin.advertisements.toggle-status', $advertisement)" :status="$advertisement->status" noun="advertisement" />
                         </td>

@@ -3,8 +3,10 @@
 @endphp
 
 {{-- UPI details for the public player registration form. A separate form and
-     action from Razorpay below, so saving one never touches the other. --}}
-<form method="POST" action="{{ route('admin.settings.upi.update') }}" enctype="multipart/form-data" novalidate class="mb-8 border-b border-neutral-200 pb-6">
+     action from Razorpay, so saving one never touches the other. Side by side
+     on wide screens, one under the other on a phone. --}}
+<div class="grid gap-x-10 gap-y-6 lg:grid-cols-2 lg:items-start">
+<form method="POST" action="{{ route('admin.settings.upi.update') }}" enctype="multipart/form-data" novalidate class="border-b border-neutral-200 pb-6 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-10">
     @csrf
     @method('PUT')
 
@@ -62,19 +64,21 @@
 
     <p class="mb-3.5 text-[13px] font-semibold text-neutral-800">Razorpay</p>
 
-    <x-form.select
-        name="razorpay_enabled"
-        label="Razorpay"
-        :options="['0' => 'Disabled', '1' => 'Enabled']"
-        :value="$settings->boolean('payment.razorpay_enabled') ? '1' : '0'"
-    />
+    <div class="grid gap-x-4 sm:grid-cols-2">
+        <x-form.select
+            name="razorpay_enabled"
+            label="Razorpay"
+            :options="['0' => 'Disabled', '1' => 'Enabled']"
+            :value="$settings->boolean('payment.razorpay_enabled') ? '1' : '0'"
+        />
 
-    <x-form.select
-        name="razorpay_mode"
-        label="Mode"
-        :options="['test' => 'Test', 'live' => 'Live']"
-        :value="$settings->get('payment.razorpay_mode')"
-    />
+        <x-form.select
+            name="razorpay_mode"
+            label="Mode"
+            :options="['test' => 'Test', 'live' => 'Live']"
+            :value="$settings->get('payment.razorpay_mode')"
+        />
+    </div>
 
     <x-form.input name="razorpay_key_id" label="Key ID" :value="$settings->get('payment.razorpay_key_id')" maxlength="255" />
 
@@ -101,3 +105,4 @@
         Save changes
     </button>
 </form>
+</div>

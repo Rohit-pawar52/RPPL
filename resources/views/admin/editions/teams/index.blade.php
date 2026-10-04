@@ -116,7 +116,7 @@
                         </div>
                         <div class="mb-3">
                             <label for="new-team-logo" class="mb-1 block text-xs font-medium text-slate-700">Logo (optional)</label>
-                            <input id="new-team-logo" type="file" name="logo" accept="image/png,image/jpeg,image/webp" class="block w-full text-xs text-slate-600" />
+                            <input id="new-team-logo" type="file" name="logo" accept="image/png,image/jpeg,image/webp" class="block w-full text-xs text-slate-600 file:mr-3 file:cursor-pointer file:rounded-md file:border file:border-slate-300 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-slate-700 hover:file:bg-slate-50" />
                             @if($errors->newTeam->has('logo'))<p class="mt-1 text-xs text-red-600">{{ $errors->newTeam->first('logo') }}</p>@endif
                         </div>
                         <x-admin.button type="submit" variant="secondary" class="w-full">Create and add to season</x-admin.button>

@@ -33,7 +33,7 @@
         @endforeach
     </div>
 
-    <div class="max-w-2xl rounded-lg border border-neutral-200 bg-white p-4">
+    <div class="{{ $activeTab === 'payments' ? 'max-w-5xl' : 'max-w-2xl' }} rounded-lg border border-neutral-200 bg-white p-4">
         @include('admin.settings.tabs.' . $activeTab)
     </div>
 @endsection

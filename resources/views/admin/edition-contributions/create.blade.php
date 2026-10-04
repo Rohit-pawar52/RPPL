@@ -9,25 +9,27 @@
         </a>
     </div>
 
-    <div class="max-w-lg rounded-lg border border-neutral-200 bg-white p-4">
+    <div class="max-w-2xl rounded-lg border border-neutral-200 bg-white p-4">
         <form method="POST" action="{{ route('admin.edition-contributions.store') }}" novalidate>
             @csrf
 
-            <x-form.select
-                name="edition_id"
-                label="Edition"
-                placeholder="Select edition"
-                :options="$editions->pluck('name', 'id')"
-                :value="old('edition_id', request('edition_id'))"
-            />
+            <div class="grid gap-x-4 sm:grid-cols-2">
+                <x-form.select
+                    name="edition_id"
+                    label="Edition"
+                    placeholder="Select edition"
+                    :options="$editions->pluck('name', 'id')"
+                    :value="old('edition_id', request('edition_id'))"
+                />
 
-            <x-form.select
-                name="contributor_id"
-                label="Contributor"
-                placeholder="Select a contributor"
-                :options="$contributors->pluck('name', 'id')"
-                :value="old('contributor_id', request('contributor_id'))"
-            />
+                <x-form.select
+                    name="contributor_id"
+                    label="Contributor"
+                    placeholder="Select a contributor"
+                    :options="$contributors->pluck('name', 'id')"
+                    :value="old('contributor_id', request('contributor_id'))"
+                />
+            </div>
 
             <div id="committee-dues-preview" class="mb-3.5 hidden rounded-md border border-blue-100 bg-blue-50 p-3 text-[12px] text-blue-900">
                 <span class="inline-flex items-center rounded-full bg-blue-600 px-2 py-0.5 text-[11px] font-medium text-white">Committee Member</span>

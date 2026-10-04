@@ -9,4 +9,13 @@ return [
      */
     'max_image_mb' => (int) env('ADS_MAX_IMAGE_MB', 3),
     'max_video_mb' => (int) env('ADS_MAX_VIDEO_MB', 8),
+
+    /*
+     * Banner sponsors do not stay on screen all the time: a banner shows
+     * when the page opens, folds away after `banner_visible_seconds`, and
+     * comes back after `banner_hidden_seconds` (then repeats). Set
+     * banner_hidden_seconds to 0 to keep banners visible permanently.
+     */
+    'banner_visible_seconds' => (int) env('ADS_BANNER_VISIBLE_SECONDS', 8),
+    'banner_hidden_seconds' => (int) env('ADS_BANNER_HIDDEN_SECONDS', 30),
 ];

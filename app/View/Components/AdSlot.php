@@ -9,8 +9,8 @@ use Illuminate\View\Component;
 use Illuminate\View\View;
 
 /**
- * <x-ad-slot tier="main|normal|mini" /> — a sponsor placement on a public
- * page. Renders nothing when no ad is live for that tier, so an empty slot
+ * <x-ad-slot tier="main|normal|mini" [variant="card"] /> — a sponsor
+ * placement on a public page. Renders nothing when no ad is live for that tier, so an empty slot
  * leaves no gap. Ads are display-only: no link, no overlay, never inside
  * the live-score area that is refreshed by polling.
  */
@@ -21,11 +21,16 @@ class AdSlot extends Component
      */
     public Collection $ads;
 
-    public function __construct(public string $tier, AdvertisementDisplayService $display)
+    /**
+     * @param  string  $variant  'banner' (a slim full-width strip) or 'card'
+     *                           (a match-card sized tile for a scrolling row);
+     *                           only meaningful for the Main and Normal tiers.
+     */
+    public function __construct(public string $tier, AdvertisementDisplayService $display, public string $variant = 'banner')
     {
         $this->ads = match ($tier) {
             Advertisement::TIER_MAIN => collect([$display->main()])->filter(),
-            Advertisement::TIER_NORMAL => collect([$display->banner()])->filter(),
+            Advertisement::TIER_NORMAL => collect([$display->nextNormal($variant === 'card' ? Advertisement::FORMAT_CARD : Advertisement::FORMAT_BANNER)])->filter(),
             Advertisement::TIER_MINI => $display->minis(),
             default => collect(),
         };

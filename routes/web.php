@@ -19,6 +19,7 @@ use App\Http\Middleware\RecordPageView;
 use App\Http\Middleware\SetPublicLocale;
 use App\Models\ContentPage;
 use App\Models\PageView;
+use App\Services\Statistics\PlayerStatisticsService;
 use Illuminate\Support\Facades\Route;
 
 // Public tournament website — read-only, no auth/policy middleware.
@@ -44,6 +45,10 @@ Route::middleware([EnsurePublicSiteIsNotUnderMaintenance::class, SetPublicLocale
         Route::get('/{edition}', [EditionController::class, 'show'])
             ->middleware(RecordPageView::class.':'.PageView::EDITION_VIEW)
             ->name('show');
+        // Full "top 20" list behind a homepage season-summary card.
+        Route::get('/{edition}/stats/{board}', [EditionController::class, 'stats'])
+            ->whereIn('board', PlayerStatisticsService::HIGHLIGHT_BOARDS)
+            ->name('stats');
     });
 
     Route::prefix('matches')->name('public.matches.')->group(function () {
