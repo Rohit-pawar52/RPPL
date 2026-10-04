@@ -12,6 +12,7 @@
         'highest-score' => __('home.units.runs'),
         'thirties' => __('home.units.innings_30'),
         'fifties' => __('home.units.innings_50'),
+        'hundreds' => __('home.units.innings_100'),
         'sixes' => __('home.units.sixes'),
     ];
     $filled = collect($highlights)->filter(fn ($rows) => count($rows) > 0);

@@ -577,10 +577,11 @@ class PlayerStatisticsServiceTest extends TestCase
         $this->assertSame([62, 32], array_column($boards['highest-score'], 'value'));
         $this->assertSame([true, true], array_column($boards['highest-score'], 'not_out'));
 
-        // 30+ : both once (A first, more runs overall). 50+ : only A.
-        $this->assertSame([$playerA, $playerB], array_map(fn ($r) => $r['player']->id, $boards['thirties']));
-        $this->assertSame([1, 1], array_column($boards['thirties'], 'value'));
+        // The milestones are separate bands: A's 62 is a 50 only (not also a 30),
+        // B's 32 is a 30, and nobody has a 100.
+        $this->assertSame([$playerB], array_map(fn ($r) => $r['player']->id, $boards['thirties']));
         $this->assertSame([$playerA], array_map(fn ($r) => $r['player']->id, $boards['fifties']));
+        $this->assertSame([], $boards['hundreds']);
 
         // Sixes: the 56 is not a six, only the single 6 is.
         $this->assertSame([1], array_column($boards['sixes'], 'value'));
@@ -594,6 +595,32 @@ class PlayerStatisticsServiceTest extends TestCase
         $top1 = $this->statistics->getEditionHighlights($edition, 1);
         $this->assertCount(1, $top1['runs']);
         $this->assertCount(1, $top1['highest-score']);
+    }
+
+    public function test_milestone_bands_split_at_exactly_30_50_and_100(): void
+    {
+        [$teamA, $teamB] = $this->editionTeams(Edition::factory()->create());
+        $batter = $this->squadPlayer($teamA);
+        $partner = $this->squadPlayer($teamA);
+        $bowler = $this->squadPlayer($teamB);
+
+        // One innings per score, each in its own match.
+        foreach ([29, 30, 49, 50, 99, 100] as $score) {
+            [$match, $innings] = $this->matchBetween($teamA, $teamB);
+            $this->ball($match, $innings, [
+                'striker_match_player_id' => $this->selectForMatch($match, $batter)->id,
+                'non_striker_match_player_id' => $this->selectForMatch($match, $partner)->id,
+                'bowler_match_player_id' => $this->selectForMatch($match, $bowler)->id,
+                'runs_off_bat' => $score,
+            ]);
+        }
+
+        $boards = $this->statistics->getEditionHighlights($teamA->edition, null);
+
+        // 30 and 49 are 30s; 50 and 99 are 50s; 100 is a 100; 29 is none.
+        $this->assertSame([2], array_column($boards['thirties'], 'value'));
+        $this->assertSame([2], array_column($boards['fifties'], 'value'));
+        $this->assertSame([1], array_column($boards['hundreds'], 'value'));
     }
 
     public function test_edition_highlights_are_empty_before_any_scoring(): void

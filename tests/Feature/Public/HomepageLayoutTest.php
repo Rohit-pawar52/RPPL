@@ -188,7 +188,7 @@ class HomepageLayoutTest extends TestCase
             ->assertSee(route('public.editions.stats', [$this->edition, 'wickets']), false)
             ->assertSee(route('public.editions.stats', [$this->edition, 'highest-score']), false)
             // Boards nobody is on yet are left out.
-            ->assertDontSee('Most 50+ scores')
+            ->assertDontSee('Most 50s')
             ->assertDontSee('Most sixes')
             ->assertDontSee('Player stats appear here');
     }

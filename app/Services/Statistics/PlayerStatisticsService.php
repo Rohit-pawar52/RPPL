@@ -231,18 +231,29 @@ class PlayerStatisticsService
     /**
      * Slugs of the season-summary boards (also the public stats page URLs).
      */
-    public const HIGHLIGHT_BOARDS = ['runs', 'wickets', 'highest-score', 'thirties', 'fifties', 'sixes'];
+    public const HIGHLIGHT_BOARDS = ['runs', 'wickets', 'highest-score', 'thirties', 'fifties', 'hundreds', 'sixes'];
+
+    /**
+     * Innings-score bands behind the 30s / 50s / 100s boards:
+     * [lowest score that counts, first score that no longer does].
+     */
+    private const MILESTONE_BANDS = [
+        'thirties' => [30, 50],
+        'fifties' => [50, 100],
+        'hundreds' => [100, PHP_INT_MAX],
+    ];
 
     /**
      * The season-summary boards in one pass: most runs, most wickets,
-     * highest individual score, most innings of 30+, most innings of 50+
-     * and most sixes. Built from the same per-player innings breakdown as
+     * highest individual score, most 30s, most 50s, most 100s and most
+     * sixes. Built from the same per-player innings breakdown as
      * the leaderboard and records, so they never disagree with them. Each
      * board is cut to $limit rows (null = all) and only holds players who
      * actually have something on it (no zero rows).
      *
-     * 30+ / 50+ count innings of at least that many runs, so a 62 counts
-     * towards both.
+     * The milestones are separate bands, the way scorers count them: a 30 is
+     * an innings of 30-49, a 50 is 50-99 and a 100 is 100 or more, so one
+     * innings counts towards exactly one of them.
      *
      * @return array<string, list<array<string, mixed>>> keyed by HIGHLIGHT_BOARDS
      */
@@ -251,7 +262,7 @@ class PlayerStatisticsService
         $aggregates = $this->editionPlayerAggregates($edition);
 
         $runs = $wickets = $highest = $sixes = [];
-        $milestones = ['thirties' => [], 'fifties' => []];
+        $milestones = ['thirties' => [], 'fifties' => [], 'hundreds' => []];
 
         foreach ($aggregates['battingByPlayer'] as $playerId => $inningsBreakdown) {
             $player = $aggregates['playersById'][$playerId];
@@ -273,8 +284,8 @@ class PlayerStatisticsService
                 $sixes[] = ['player' => $player, 'value' => $career['sixes'], 'runs' => $career['runs'], 'innings' => $career['innings_batted']];
             }
 
-            foreach (['thirties' => 30, 'fifties' => 50] as $key => $milestone) {
-                $count = count(array_filter($inningsBreakdown, fn ($stat) => $stat['runs'] >= $milestone));
+            foreach (self::MILESTONE_BANDS as $key => [$from, $below]) {
+                $count = count(array_filter($inningsBreakdown, fn ($stat) => $stat['runs'] >= $from && $stat['runs'] < $below));
 
                 if ($count > 0) {
                     $milestones[$key][] = ['player' => $player, 'value' => $count, 'runs' => $career['runs'], 'innings' => $career['innings_batted']];
@@ -312,6 +323,7 @@ class PlayerStatisticsService
         $byValueThenRuns = fn ($a, $b) => $b['value'] <=> $a['value'] ?: $b['runs'] <=> $a['runs'];
         usort($milestones['thirties'], $byValueThenRuns);
         usort($milestones['fifties'], $byValueThenRuns);
+        usort($milestones['hundreds'], $byValueThenRuns);
         usort($sixes, $byValueThenRuns);
 
         $cut = fn (array $rows) => $limit === null ? $rows : array_slice($rows, 0, $limit);
@@ -322,6 +334,7 @@ class PlayerStatisticsService
             'highest-score' => $cut($highest),
             'thirties' => $cut($milestones['thirties']),
             'fifties' => $cut($milestones['fifties']),
+            'hundreds' => $cut($milestones['hundreds']),
             'sixes' => $cut($sixes),
         ];
     }

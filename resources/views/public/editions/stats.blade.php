@@ -33,7 +33,7 @@
             [__('home.stats.innings'), fn ($r) => $r['innings'], 'wide'],
             [__('home.stats.runs'), fn ($r) => $r['runs'], ''],
         ],
-        default => [ // thirties / fifties
+        default => [ // thirties / fifties / hundreds
             [__('home.stats.count'), fn ($r) => $r['value'], 'bold'],
             [__('home.stats.innings'), fn ($r) => $r['innings'], 'wide'],
             [__('home.stats.runs'), fn ($r) => $r['runs'], ''],
@@ -43,6 +43,7 @@
     $note = match ($board) {
         'thirties' => __('home.stats.note_thirties'),
         'fifties' => __('home.stats.note_fifties'),
+        'hundreds' => __('home.stats.note_hundreds'),
         'highest-score' => __('home.stats.note_highest'),
         default => null,
     };
