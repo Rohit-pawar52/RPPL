@@ -32,6 +32,12 @@
             @endif
             <a href="{{ route('public.teams.index') }}" class="{{ $navLink(request()->routeIs('public.teams.*')) }}">{{ __('public.nav.teams') }}</a>
             <a href="{{ route('public.players.index') }}" class="{{ $navLink(request()->routeIs('public.players.*')) }}">{{ __('public.nav.players') }}</a>
+            @if(in_array($auctionForNav, ['live', 'paused'], true))
+                <a href="{{ route('public.auction.show') }}" class="{{ $navLink(request()->routeIs('public.auction.*')) }}">
+                    {{ __('auction.nav') }}
+                    @if($auctionForNav === 'live')<span class="live-dot ml-1.5 text-red-400" aria-hidden="true"></span>@endif
+                </a>
+            @endif
 
             <details class="group relative">
                 <summary class="flex h-full cursor-pointer items-center gap-1 border-b-2 border-transparent px-3 text-[13px] font-medium text-white/70 transition hover:text-white group-open:text-white">
@@ -40,6 +46,9 @@
                 </summary>
                 <div class="rppl-pop absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-lg border border-line bg-white py-1 shadow-xl">
                     <a href="{{ route('public.venues.index') }}" class="{{ $dropdownLink }}">{{ __('public.nav.venues') }}</a>
+                    @if($auctionForNav === 'completed')
+                        <a href="{{ route('public.auction.show') }}" class="{{ $dropdownLink }}">{{ __('auction.nav') }}</a>
+                    @endif
                     <a href="{{ route('public.editions.index') }}" class="{{ $dropdownLink }}">{{ __('public.nav.editions') }}</a>
                     <a href="{{ route('public.player-registration.create') }}" class="{{ $dropdownLink }}">{{ __('public.nav.player_registration') }}</a>
                     <a href="{{ route('public.rules.index') }}" class="{{ $dropdownLink }}">{{ __('public.nav.rules') }}</a>
@@ -116,6 +125,11 @@
                     @endif
                     <a href="{{ route('public.teams.index') }}" class="{{ $drawerLink(request()->routeIs('public.teams.*')) }}">{{ __('public.nav.teams') }}</a>
                     <a href="{{ route('public.players.index') }}" class="{{ $drawerLink(request()->routeIs('public.players.*')) }}">{{ __('public.nav.players') }}</a>
+                    @if($auctionForNav)
+                        <a href="{{ route('public.auction.show') }}" class="{{ $drawerLink(request()->routeIs('public.auction.*')) }}">
+                            {{ __('auction.nav') }}@if($auctionForNav === 'live') <span class="live-dot ml-1 text-red-500" aria-hidden="true"></span>@endif
+                        </a>
+                    @endif
                     <a href="{{ route('public.venues.index') }}" class="{{ $drawerLink(request()->routeIs('public.venues.*')) }}">{{ __('public.nav.venues') }}</a>
                     <a href="{{ route('public.editions.index') }}" class="{{ $drawerLink(false) }}">{{ __('public.nav.editions') }}</a>
                     <a href="{{ route('public.player-registration.create') }}" class="{{ $drawerLink(request()->routeIs('public.player-registration.*')) }}">{{ __('public.nav.player_registration') }}</a>

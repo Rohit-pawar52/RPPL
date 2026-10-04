@@ -138,7 +138,7 @@ One centralized, admin-only destructive-cleanup module — normal operational wo
 
 ### Player auction (admin and auctioneer)
 
-Teams buy players with **points** (never rupees) in a hall auction that the admin or the auctioneer runs from the admin panel. Set-up and the bidding console are in; the public live page follows.
+Teams buy players with **points** (never rupees) in a hall auction that the admin or the auctioneer runs from the admin panel. Set-up, the bidding console and the public live page are in.
 
 - **Set up** (sidebar → Auction, also a card on the Edition hub): one auction per season. Settings, all editable at any time (a change applies from the next bid and never reaches a player already sold): the purse for each team (default 6,00,000 points, with a purse of its own for any team), the minimum bid (500), the amount a bid goes up by (500, always — also above 10,000), the minimum and maximum squad (12 and 15) and whether the website shows every bid live or only the result.
 - **Player pool:** only **paid** registrations of active players who are not in a team yet. "Update the pool" brings it in line when payments change; players already sold or on the block are never touched.
@@ -150,6 +150,11 @@ Teams buy players with **points** (never rupees) in a hall auction that the admi
   - *Calling players:* "Call a random waiting player", or search by name / village and call anyone waiting or on hold at any time; hold players are listed first. "Start round N" brings the hold players back (allowed any time). Recent sales can be reopened. Someone who turns up on the day can be added (name + mobile): they are registered for the season as paid and wait with the others.
   - *Safe with two people:* every tap carries the player's version, so a tap on an out-of-date screen is refused and the screen redraws; a double tap places one bid; the screen refreshes every few seconds so a second console stays in step. Pause / Resume are on the toolbar; "Show bids live on the website" switches the public view between every bid and only the result (for the public page that follows).
   - What the console shows about a player never includes their mobile number, e-mail, date of birth or documents.
+- **The public page** (`/auction`, in English and हिन्दी; a header link appears while an auction is on, and a card tops the homepage while it is live or paused and for a week after it ends): the player on the block (name, photo or initials, role, batting / bowling hand, village, past RPPL record or "First time in RPPL"), the current bid with the leading team and the last few bids, a **SOLD** announcement for about 25 seconds after each sale, every team's purse left / squad count (expandable to its squad with prices), recent sales and the players on hold. It refreshes by itself every few seconds (`AUCTION_PUBLIC_POLL_SECONDS`, default 3) from a small JSON endpoint whose data is built once and kept for `AUCTION_PUBLIC_CACHE_SECONDS` (default 2), so a hall full of phones costs the database almost nothing; a paused auction says so.
+  - If the console's **"Show bids live"** switch is off, the standing bid, the leading team and the bid list are *not in the data at all* (not just hidden on screen) until the player is sold; the base price and "Bidding in progress" show instead.
+  - `/auction?display=big` is the **projector layout**: dark, no header or footer, very large type for the player, the bid and the teams.
+  - When the auction is completed the same address becomes the **results**: players sold, points spent, the most expensive, the top buys, every team's squad with prices and what each team spent / has left, and the unsold players (plain HTML, no script).
+  - The page never carries a player's mobile number, e-mail, date of birth, documents, tehsil, district or age, any internal id, or the "override" mark on a bid; a draft auction is never public.
 - Points are shown as whole numbers with lakh grouping and no currency symbol ("6,00,000 pts"); the Squads pages now say points too.
 
 ### Announcements (public ticker)
