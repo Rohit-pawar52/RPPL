@@ -66,7 +66,7 @@ return [
     'upload' => [
         'choose_photo' => 'Tap to choose your photo',
         'choose_proof' => 'Tap to choose the screenshot',
-        'change' => 'Change',
+        'change_hint' => 'Tap the picture to change it',
     ],
 
     'closed' => [

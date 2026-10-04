@@ -279,7 +279,7 @@
                     @endif
                     @if($registration->player->photo_path)
                         <a
-                            href="{{ \Illuminate\Support\Facades\Storage::url($registration->player->photo_path) }}"
+                            href="{{ media_url($registration->player->photo_path, 'user') }}"
                             target="_blank" rel="noopener"
                             class="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 font-medium text-green-700 hover:bg-green-50"
                         >
@@ -312,7 +312,7 @@
                 'Submitted photo' => $registration->photo_path
                     ? route('admin.player-registrations.photo', $registration) : null,
                 'Profile photo (public)' => $registration->player->photo_path
-                    ? \Illuminate\Support\Facades\Storage::url($registration->player->photo_path) : null,
+                    ? media_url($registration->player->photo_path, 'user') : null,
                 'Payment screenshot' => $registration->payment_proof_path
                     ? route('admin.player-registrations.payment-proof', $registration) : null,
                 'Aadhaar document' => $registration->aadhaar_document_path
@@ -326,7 +326,7 @@
                     <figure class="rounded-md border border-slate-100 p-2">
                         <figcaption class="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">{{ $label }}</figcaption>
                         <a href="{{ $url }}" target="_blank" rel="noopener">
-                            <img src="{{ $url }}" alt="{{ $label }}" loading="lazy" class="max-h-80 w-full rounded bg-slate-50 object-contain" />
+                            <x-media-image :url="$url" :kind="str_contains(strtolower($label), 'photo') ? 'user' : 'image'" :alt="$label" loading="lazy" class="max-h-80 w-full rounded bg-slate-50 object-contain" />
                         </a>
                     </figure>
                 @endforeach

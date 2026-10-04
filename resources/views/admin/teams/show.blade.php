@@ -19,15 +19,7 @@
     <div class="rounded-lg border border-slate-200 bg-white p-4">
         <div class="flex items-center gap-4">
             <div class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-slate-300">
-                @if($team->logo_path)
-                    <img
-                        src="{{ Illuminate\Support\Facades\Storage::url($team->logo_path) }}"
-                        alt="{{ $team->name }}"
-                        class="h-full w-full object-cover"
-                    />
-                @else
-                    <x-icon name="shield" class="h-6 w-6" />
-                @endif
+                <x-media-image :path="$team->logo_path" kind="image" alt="" class="h-full w-full object-cover" />
             </div>
 
             <div>

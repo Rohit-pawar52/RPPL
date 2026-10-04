@@ -7,7 +7,7 @@ use App\Services\Settings\SettingsService;
 use App\Support\Branding;
 use App\Support\ForegroundContrast;
 use App\Support\HexColor;
-use Illuminate\Support\Facades\Storage;
+use App\Support\Media;
 use Illuminate\View\View;
 
 /**
@@ -52,7 +52,9 @@ class BrandingComposer
 
     private function resolveUrl(?string $path): ?string
     {
-        return $path ? Storage::disk('public')->url($path) : null;
+        // A logo whose file is gone counts as no logo: the header then shows
+        // the app's own letter tile rather than a broken picture.
+        return Media::existingUrl($path);
     }
 
     /**

@@ -2,7 +2,21 @@
 
 use App\Services\Settings\DisplayTimezoneFormatter;
 use App\Services\Settings\SettingsService;
+use App\Support\Media;
 use Illuminate\Support\Carbon;
+
+if (! function_exists('media_url')) {
+    /**
+     * The URL of a stored picture, or the default picture when there is no
+     * path or the file is missing - so a page never shows a broken image.
+     * $kind is 'image' (default.png) or 'user' (default-user.jpeg, for a
+     * person). See App\Support\Media.
+     */
+    function media_url(?string $path, string $kind = 'image'): string
+    {
+        return Media::url($path, $kind);
+    }
+}
 
 if (! function_exists('display_datetime')) {
     /**

@@ -8,6 +8,7 @@
         <link rel="icon" href="{{ $branding->faviconUrl }}">
     @endif
     @include('layouts.partials.theme-vars')
+    @include('layouts.partials.image-fallback')
     @vite(['resources/css/app.css'])
 </head>
 <body class="h-full bg-surface text-[13px] text-slate-800 antialiased">

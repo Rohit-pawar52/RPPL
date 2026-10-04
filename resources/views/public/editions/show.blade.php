@@ -179,10 +179,7 @@
             @forelse($teams as $editionTeam)
                 <span class="inline-flex items-center gap-2 rounded-full border border-line bg-white py-1 pl-1 pr-3 text-xs font-medium text-slate-700">
                     <span class="pub-media flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold text-slate-500">
-                        {{ mb_strtoupper(mb_substr($editionTeam->team->name, 0, 1)) }}
-                        @if($editionTeam->team->logo_path)
-                            <img src="{{ Illuminate\Support\Facades\Storage::url($editionTeam->team->logo_path) }}" alt="{{ $editionTeam->team->name }}" class="absolute inset-0 h-full w-full bg-white object-cover" onerror="this.style.visibility='hidden'" />
-                        @endif
+                        <x-media-image :path="$editionTeam->team->logo_path" kind="image" alt="" class="absolute inset-0 h-full w-full bg-white object-cover" />
                     </span>
                     {{ $editionTeam->team->name }}
                 </span>
@@ -217,10 +214,7 @@
                     <div class="flex flex-col items-center gap-1.5 rounded-xl border border-line p-3 text-center">
                         <div class="relative">
                             <div class="pub-media flex h-14 w-14 items-center justify-center rounded-full border border-line text-sm font-semibold text-slate-500">
-                                {{ $initials ?: '?' }}
-                                @if($row['photo_path'])
-                                    <img src="{{ Illuminate\Support\Facades\Storage::url($row['photo_path']) }}" alt="{{ $row['name'] }}" class="absolute inset-0 h-full w-full bg-white object-cover" onerror="this.style.visibility='hidden'" />
-                                @endif
+                                <x-media-image :path="$row['photo_path']" kind="user" alt="" class="absolute inset-0 h-full w-full bg-white object-cover" />
                             </div>
                             <span class="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-white bg-slate-800 text-[10px] font-semibold text-white">
                                 {{ $row['position'] }}

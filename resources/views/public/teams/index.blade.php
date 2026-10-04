@@ -21,15 +21,7 @@
         @forelse($teams as $team)
             <a href="{{ route('public.teams.show', $team) }}" class="pub-card pub-card-link flex items-center gap-3 p-3.5">
                 <div class="pub-media flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-line bg-slate-100 text-sm font-bold text-slate-500">
-                    {{ mb_strtoupper(mb_substr($team->name, 0, 1)) }}
-                    @if($team->logo_path)
-                        <img
-                            src="{{ Illuminate\Support\Facades\Storage::url($team->logo_path) }}"
-                            alt="{{ $team->name }}"
-                            class="absolute inset-0 h-full w-full bg-white object-cover"
-                            onerror="this.style.visibility='hidden'"
-                        />
-                    @endif
+                    <x-media-image :path="$team->logo_path" kind="image" alt="" class="absolute inset-0 h-full w-full bg-white object-cover" />
                 </div>
                 <div class="min-w-0">
                     <p class="truncate text-sm font-semibold text-slate-900">{{ $team->name }}</p>

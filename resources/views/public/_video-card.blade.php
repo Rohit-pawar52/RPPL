@@ -16,7 +16,7 @@
             controls
             preload="metadata"
             playsinline
-            @if($video->thumbnail_path) poster="{{ Illuminate\Support\Facades\Storage::url($video->thumbnail_path) }}" @endif
+            poster="{{ media_url($video->thumbnail_path) }}"
         >
             <source src="{{ Illuminate\Support\Facades\Storage::url($video->video_path) }}" />
             {{ __('directory.videos.unsupported') }}

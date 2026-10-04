@@ -64,13 +64,7 @@
                             <p class="mt-1.5 max-w-[75ch] whitespace-pre-line break-words text-[14px] leading-relaxed text-slate-700">{{ $rule->content }}</p>
                             @if($rule->image_path)
                                 <div class="pub-media mt-3 max-w-md rounded-lg border border-line">
-                                    <img
-                                        src="{{ Illuminate\Support\Facades\Storage::url($rule->image_path) }}"
-                                        alt="{{ $rule->title }}"
-                                        loading="lazy"
-                                        class="h-auto w-full"
-                                        onerror="this.style.visibility='hidden'"
-                                    />
+                                    <x-media-image :path="$rule->image_path" kind="image" :alt="$rule->title" loading="lazy" class="h-auto w-full" />
                                 </div>
                             @endif
                         </div>

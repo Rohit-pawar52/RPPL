@@ -8,6 +8,7 @@
         <link rel="icon" href="{{ $branding->faviconUrl }}">
     @endif
     @include('layouts.partials.theme-vars')
+    @include('layouts.partials.image-fallback')
 
     @php
         $flash = [

@@ -71,17 +71,6 @@ if (dataEl && root) {
         return (negative ? '-' : '') + digits;
     }
 
-    function initials(name) {
-        const letters = String(name || '')
-            .split(/\s+/)
-            .filter(Boolean)
-            .slice(0, 2)
-            .map((part) => Array.from(part)[0].toUpperCase())
-            .join('');
-
-        return letters || '?';
-    }
-
     function loadChips() {
         try {
             const saved = JSON.parse(window.localStorage.getItem(CHIP_KEY) || 'null');
@@ -283,9 +272,8 @@ if (dataEl && root) {
             ? `<p class="mt-2 text-xs text-slate-600"><span class="font-medium text-slate-700">Before:</span> ${lot.stats.matches} ${lot.stats.matches === 1 ? 'match' : 'matches'} · ${lot.stats.runs} runs${lot.stats.highest !== null ? ` (best ${lot.stats.highest})` : ''} · ${lot.stats.wickets} ${lot.stats.wickets === 1 ? 'wicket' : 'wickets'}${lot.stats.best_bowling ? ` (best ${esc(lot.stats.best_bowling)})` : ''}</p>`
             : '<p class="mt-2 text-xs text-slate-400">First time in RPPL</p>';
 
-        // The initials sit underneath; the photo covers them, and a photo that
-        // fails to load removes itself so the initials show.
-        const photo = `<div class="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg bg-slate-100 text-2xl font-semibold text-slate-400">${esc(initials(lot.name))}${lot.photo ? `<img src="${esc(lot.photo)}" alt="" class="absolute inset-0 h-full w-full object-cover" onerror="this.remove()" />` : ''}</div>`;
+        // The player's photo, or the default picture when there is none (or it fails to load).
+        const photo = `<div class="relative h-24 w-24 overflow-hidden rounded-lg bg-slate-100"><img src="${esc(lot.photo || '')}" alt="" data-fallback="user" class="h-full w-full object-cover" /></div>`;
 
         const hasBid = lot.current_bid !== null;
         const live = auction.status === 'live';

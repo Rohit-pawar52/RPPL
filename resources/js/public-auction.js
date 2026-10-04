@@ -71,17 +71,6 @@ if (dataEl && root) {
         );
     }
 
-    function initials(name) {
-        const letters = String(name || '')
-            .split(/\s+/)
-            .filter(Boolean)
-            .slice(0, 2)
-            .map((part) => Array.from(part)[0].toUpperCase())
-            .join('');
-
-        return letters || '?';
-    }
-
     /** Light page vs. dark projector: one class set each. */
     const k = big
         ? {
@@ -229,7 +218,8 @@ if (dataEl && root) {
     }
 
     function photoBox(lot, sizeClass) {
-        return `<div class="relative flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-xl ${big ? 'bg-white/10 text-white/40' : 'bg-slate-100 text-slate-400'} font-semibold">${esc(initials(lot.name))}${lot.photo ? `<img src="${esc(lot.photo)}" alt="" class="absolute inset-0 h-full w-full object-cover" onerror="this.remove()" />` : ''}</div>`;
+        // The player's photo, or the default picture when there is none (or it fails to load).
+        return `<div class="relative ${sizeClass} shrink-0 overflow-hidden rounded-xl ${big ? 'bg-white/10' : 'bg-slate-100'}"><img src="${esc(lot.photo || '')}" alt="" data-fallback="user" class="h-full w-full object-cover" /></div>`;
     }
 
     /** The standing bid, in the normal page. */

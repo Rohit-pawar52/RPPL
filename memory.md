@@ -26,6 +26,10 @@ Every new feature must come with tests, added in the same piece of work — don'
 
 We're working solo — don't push/pull/open a PR after every small edit. Batch small changes locally (commit as usual for a clean history) and only push/PR: after a genuinely bigger task is complete, at the end of the day, or whenever the user explicitly says to push. Small/minor tweaks should just accumulate as local commits until one of those points.
 
+### 2026-10-05 — Pictures: always a default when missing, and every upload is a preview box
+
+Everywhere a picture is shown — on the public website AND in the admin panel — a missing one (no path, file gone from storage, broken link) must show a default picture, never a broken-image icon or its alt text: `public/images/default-user.jpeg` for a person (players, contributors), `public/images/default.png` for anything else. Use `<x-media-image :path="..." kind="user|image" alt="" />` (or `media_url($path, $kind)`) instead of a raw `<img src="{{ Storage::url(...) }}">`; a script in every layout also swaps pictures that fail in the browser. Everywhere a picture is uploaded — admin and public — use `<x-form.image-upload>` (a clickable box showing the saved picture or the default, previewing the chosen file), never a bare "Choose file" input. Only non-picture uploads (spreadsheet imports) keep `<x-form.file>`. Sponsor ads are the exception to the default picture (a broken sponsor removes its own slot).
+
 ## Project setup log
 
 ### 2026-09-17 — GitHub repository and workflow set up

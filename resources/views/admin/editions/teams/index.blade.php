@@ -24,11 +24,7 @@
                             <td class="px-4 py-1.5">
                                 <a href="{{ route('admin.editions.squads.show', [$edition, $editionTeam]) }}" class="flex items-center gap-2 font-medium text-slate-800 hover:underline">
                                     <span class="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-slate-300">
-                                        @if($editionTeam->team->logo_path)
-                                            <img src="{{ Illuminate\Support\Facades\Storage::url($editionTeam->team->logo_path) }}" alt="" class="h-full w-full object-cover" />
-                                        @else
-                                            <x-icon name="shield" class="h-3.5 w-3.5" />
-                                        @endif
+                                        <x-media-image :path="$editionTeam->team->logo_path" kind="image" alt="" class="h-full w-full object-cover" />
                                     </span>
                                     {{ $editionTeam->team->name }}
                                     @if($editionTeam->team->short_name)
@@ -114,11 +110,8 @@
                             <input id="new-team-short" name="short_name" value="{{ old('short_name') }}" maxlength="20" class="h-9 w-full rounded-md border border-slate-300 px-2.5 text-[13px] focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100" />
                             @if($errors->newTeam->has('short_name'))<p class="mt-1 text-xs text-red-600">{{ $errors->newTeam->first('short_name') }}</p>@endif
                         </div>
-                        <div class="mb-3">
-                            <label for="new-team-logo" class="mb-1 block text-xs font-medium text-slate-700">Logo (optional)</label>
-                            <input id="new-team-logo" type="file" name="logo" accept="image/png,image/jpeg,image/webp" class="block w-full text-xs text-slate-600 file:mr-3 file:cursor-pointer file:rounded-md file:border file:border-slate-300 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-slate-700 hover:file:bg-slate-50" />
-                            @if($errors->newTeam->has('logo'))<p class="mt-1 text-xs text-red-600">{{ $errors->newTeam->first('logo') }}</p>@endif
-                        </div>
+                        <x-form.image-upload name="logo" label="Logo (optional)" kind="image" shape="circle" empty-text="Click the picture to add a logo" help="JPG, PNG or WebP." />
+                        @if($errors->newTeam->has('logo'))<p class="-mt-2 mb-3 text-xs text-red-600">{{ $errors->newTeam->first('logo') }}</p>@endif
                         <x-admin.button type="submit" variant="secondary" class="w-full">Create and add to season</x-admin.button>
                     </form>
                 </x-admin.card>

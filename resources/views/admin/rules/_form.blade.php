@@ -19,60 +19,17 @@
 
 <x-form.textarea name="content" label="Content" :value="$rule->content ?? ''" rows="6" maxlength="5000" required help="Plain text, line breaks are preserved. No HTML." />
 
-<div class="mb-3.5">
-    <p class="mb-1 text-xs font-medium text-slate-700">Image <span class="font-normal text-slate-400">(optional)</span></p>
-
-    <div class="flex items-center gap-3">
-        <div class="flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50 text-slate-300">
-            @if($rule?->image_path)
-                <img
-                    src="{{ Illuminate\Support\Facades\Storage::url($rule->image_path) }}"
-                    alt="{{ $rule->title }}"
-                    class="h-full w-full object-cover"
-                />
-            @else
-                <x-icon name="book" class="h-6 w-6" />
-            @endif
-        </div>
-
-        <div class="min-w-0">
-            <label class="cursor-pointer text-[12px] font-medium text-green-700">
-                {{ $rule?->image_path ? 'Replace image' : 'Upload image' }}
-                <input
-                    type="file"
-                    name="image"
-                    accept="image/png,image/jpeg,image/webp"
-                    class="hidden"
-                    onchange="document.getElementById('image-filename').textContent = this.files[0]?.name ?? ''"
-                />
-            </label>
-            <p id="image-filename" class="mt-1 max-w-[12rem] truncate text-[11px] text-slate-500"></p>
-            <p class="mt-1 text-[11px] text-slate-400">
-                JPG, PNG or WebP, up to 2 MB.
-                @if($rule?->image_path)
-                    Leave empty to keep the current image.
-                @endif
-            </p>
-
-            @if($rule?->image_path)
-                <label class="mt-1.5 flex items-center gap-1.5 text-[12px] text-slate-600">
-                    <input
-                        type="checkbox"
-                        name="remove_image"
-                        value="1"
-                        class="rounded border-slate-300"
-                        @checked(old('remove_image'))
-                    />
-                    Remove image
-                </label>
-            @endif
-        </div>
-    </div>
-
-    @error('image')
-        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-    @enderror
-</div>
+<x-form.image-upload
+    name="image"
+    label="Image (optional)"
+    :current="$rule?->image_path"
+    kind="image"
+    shape="wide"
+    empty-text="Click the picture to choose an image"
+    :help="'JPG, PNG or WebP, up to 2 MB.'.($rule?->image_path ? ' Leave it alone to keep the current image.' : '')"
+    remove-name="remove_image"
+    remove-label="Remove image"
+/>
 
 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
     <x-form.input
