@@ -134,6 +134,21 @@ class PublicAuctionDetailsTest extends TestCase
         $this->assertSame(16, $state['counts']['sold']);
     }
 
+    public function test_a_price_corrected_on_the_squad_page_is_what_the_website_shows(): void
+    {
+        $this->paid('Corrected Price');
+        $auction = $this->liveAuction();
+        $lot = $this->sellAfter($auction, 'Corrected Price', [[$this->alpha, 4000]]);
+
+        // The squad page is the single source of truth for what a player cost.
+        $lot->teamPlayer->update(['sold_amount' => 3500]);
+
+        $state = $this->state();
+        $this->assertSame(3500, $state['sales'][0]['amount']);
+        $this->assertSame(3500, $state['stats']['points_spent']);
+        $this->assertSame(3500, $state['stats']['highest']['amount']);
+    }
+
     public function test_an_empty_auction_has_zero_numbers_and_empty_lists(): void
     {
         $this->paid('Only One');

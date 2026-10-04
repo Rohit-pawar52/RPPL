@@ -12,6 +12,7 @@ use App\Models\Role;
 use App\Models\TeamPlayer;
 use App\Models\User;
 use App\Services\Auction\AuctionService;
+use App\Services\TeamPlayer\TeamPlayerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -202,6 +203,37 @@ class AuctionPoolSyncTest extends TestCase
         $this->service->reopenSold($auction, $lot->fresh(), $lot->fresh()->version);
         $this->assertSame(1, $auction->lots()->count());
         $this->assertSame(0, TeamPlayer::count());
+    }
+
+    public function test_taking_a_sold_player_out_of_the_squad_page_puts_them_back_among_the_waiting_players(): void
+    {
+        $auction = $this->service->start($this->auction(2));
+        $lot = $this->service->callRandom($auction);
+        $this->service->placeBid($auction, $lot, $this->alpha, $lot->fresh()->version, 3000);
+        $teamPlayer = $this->service->sell($auction, $lot, $lot->fresh()->version);
+
+        // What the squad page does.
+        app(TeamPlayerService::class)->deleteTeamPlayer($teamPlayer);
+
+        $lot = $lot->fresh();
+        $this->assertSame(AuctionLot::PENDING, $lot->status);
+        $this->assertNull($lot->current_bid);
+        $this->assertNull($lot->team_player_id);
+        $this->assertSame(0, $lot->bids()->standing()->count());
+        $this->assertSame(0, $auction->lots()->where('status', 'sold')->count());
+    }
+
+    public function test_a_completed_auction_keeps_its_sales_even_if_the_squad_page_is_used(): void
+    {
+        $auction = $this->service->start($this->auction(1));
+        $lot = $this->service->callRandom($auction);
+        $this->service->placeBid($auction, $lot, $this->alpha, $lot->fresh()->version);
+        $teamPlayer = $this->service->sell($auction, $lot, $lot->fresh()->version);
+        $this->service->complete($auction);
+
+        app(TeamPlayerService::class)->deleteTeamPlayer($teamPlayer);
+
+        $this->assertSame(AuctionLot::SOLD, $lot->fresh()->status);
     }
 
     // ----- What is left alone -----------------------------------------------------------------

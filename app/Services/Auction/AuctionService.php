@@ -156,8 +156,10 @@ class AuctionService
      * it changes (it is paid, refunded, put in or taken out of a squad...):
      * a paid, active player who is in no squad and not yet in the auction
      * joins the waiting players; a waiting (pending / hold) player who is no
-     * longer eligible leaves. Players who are live, sold or unsold are never
-     * touched, and a completed auction is left alone. Called by the model
+     * longer eligible leaves. A player who is sold but no longer in any squad
+     * (taken out on the squad page) has the sale undone and waits again. Players
+     * who are live or unsold are never touched, and a completed auction is left
+     * alone. Called by the model
      * hooks in AppServiceProvider, so nobody has to remember to "update the
      * pool" — that button stays as the manual safety net.
      */
@@ -184,6 +186,8 @@ class AuctionService
             ]);
         } elseif (! $eligible && $lot && in_array($lot->status, [AuctionLot::PENDING, AuctionLot::HOLD], true)) {
             $lot->delete();
+        } elseif ($eligible && $lot && $lot->isSold()) {
+            $this->resetSoldLot($auction, $lot);
         }
     }
 
@@ -668,10 +672,11 @@ class AuctionService
 
             $this->clearBlock($auction);
 
-            if (! $this->teamPlayers->deleteTeamPlayer($lot->teamPlayer)) {
-                $this->fail('auction', 'This player has already played a match, so the sale cannot be undone.');
-            }
+            $teamPlayer = $lot->teamPlayer;
 
+            // The player is on the block again before the squad row goes, so
+            // the pool sync that watches the squads sees someone being called,
+            // not a sale to undo. A refusal below rolls all of this back.
             $lot->update([
                 'status' => AuctionLot::LIVE,
                 'team_player_id' => null,
@@ -679,10 +684,67 @@ class AuctionService
                 'called_at' => now(),
                 'version' => $lot->version + 1,
             ]);
+
+            if (! $this->teamPlayers->deleteTeamPlayer($teamPlayer)) {
+                $this->fail('auction', 'This player has already played a match, so the sale cannot be undone.');
+            }
+
             $auction->update(['current_lot_id' => $lot->id]);
 
             return $lot->refresh();
         });
+    }
+
+    /**
+     * Takes a sold player back from their team without touching the player on
+     * the block: the points return to the team's purse, the bids on the sale
+     * are dropped and the player waits with the others, to be called again
+     * later. Works for any sale, new or old, while the auction is live or
+     * paused. Not possible once the player has played a match.
+     */
+    public function returnToWaiting(Auction $auction, AuctionLot $lot): AuctionLot
+    {
+        return DB::transaction(function () use ($auction, $lot) {
+            $auction = $this->lockAuction($auction);
+            $this->assertRunning($auction);
+            $lot = $this->lockLot($auction, $lot);
+
+            if (! $lot->isSold()) {
+                $this->fail('auction', 'Only a sold player can be taken back.');
+            }
+
+            $teamPlayer = $lot->teamPlayer;
+
+            // Waiting again before the squad row goes, for the same reason as
+            // in reopenSold(). A sale whose squad row is already gone (taken
+            // out on the squad page) simply has nothing to delete.
+            $this->resetSoldLot($auction, $lot);
+
+            if ($teamPlayer && ! $this->teamPlayers->deleteTeamPlayer($teamPlayer)) {
+                $this->fail('auction', 'This player has already played a match, so the sale cannot be undone.');
+            }
+
+            return $lot->refresh();
+        });
+    }
+
+    /**
+     * A sold lot goes back to waiting: its bids are cancelled and nothing of
+     * the sale is kept.
+     */
+    private function resetSoldLot(Auction $auction, AuctionLot $lot): void
+    {
+        $this->cancelStandingBids($lot);
+
+        $lot->update([
+            'status' => AuctionLot::PENDING,
+            'current_bid' => null,
+            'leading_edition_team_id' => null,
+            'team_player_id' => null,
+            'sold_at' => null,
+            'round' => $auction->round,
+            'version' => $lot->version + 1,
+        ]);
     }
 
     // ----- Internals --------------------------------------------------------

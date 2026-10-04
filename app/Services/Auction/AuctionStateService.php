@@ -34,8 +34,6 @@ class AuctionStateService
 {
     private const RECENT_BIDS = 8;
 
-    private const RECENT_SALES = 10;
-
     /**
      * How long after a sale the website keeps announcing it with SOLD.
      */
@@ -76,7 +74,7 @@ class AuctionStateService
             'lot' => $lot ? $this->lot($auction, $lot) : null,
             'teams' => $teams,
             'waiting' => $this->waiting($auction),
-            'sales' => $this->sales($auction),
+            'sold' => $this->sold($auction),
         ];
     }
 
@@ -284,11 +282,23 @@ class AuctionStateService
                 'name' => $lot->playerRegistration->player->name,
                 'role' => $this->roleLabel($lot->playerRegistration->player),
                 'team' => $lot->teamPlayer?->editionTeam->team->name,
-                'amount' => $lot->current_bid,
+                'amount' => $this->soldAmount($lot),
                 'bids' => $showBids ? (int) $lot->standing_bids_count : null,
                 'seconds_ago' => $lot->sold_at ? (int) $lot->sold_at->diffInSeconds(now(), true) : null,
             ])
             ->all();
+    }
+
+    /**
+     * What a sold player went for. The squad is the single source of truth (a
+     * price corrected on the squad page counts); the winning bid is only the
+     * fallback.
+     */
+    private function soldAmount(AuctionLot $lot): int
+    {
+        $squadPrice = $lot->teamPlayer?->sold_amount;
+
+        return $squadPrice !== null ? (int) round((float) $squadPrice) : (int) $lot->current_bid;
     }
 
     /**
@@ -374,14 +384,14 @@ class AuctionStateService
 
         return [
             'sold_count' => $sold->count(),
-            'points_spent' => (int) $sold->sum('current_bid'),
+            'points_spent' => (int) $sold->sum(fn (AuctionLot $lot) => $this->soldAmount($lot)),
             'top_buys' => $sold
-                ->sortByDesc('current_bid')
+                ->sortByDesc(fn (AuctionLot $lot) => $this->soldAmount($lot))
                 ->take(5)
                 ->map(fn (AuctionLot $lot) => [
                     'name' => $lot->playerRegistration->player->name,
                     'team' => $lot->teamPlayer?->editionTeam->team->name,
-                    'amount' => $lot->current_bid,
+                    'amount' => $this->soldAmount($lot),
                 ])
                 ->values()
                 ->all(),
@@ -565,25 +575,39 @@ class AuctionStateService
     }
 
     /**
+     * Every sale so far, newest first, for the console's "Sold players" panel
+     * where any of them can be reopened or taken back. `locked` is true once
+     * the player has played a match (the sale can no longer be undone) and
+     * `orphan` when the squad row is already gone.
+     *
      * @return list<array<string, mixed>>
      */
-    private function sales(Auction $auction): array
+    private function sold(Auction $auction): array
     {
         /** @var Collection<int, AuctionLot> $lots */
         $lots = $auction->lots()
             ->where('status', AuctionLot::SOLD)
-            ->with('playerRegistration.player', 'teamPlayer.editionTeam.team')
+            ->with([
+                'playerRegistration.player',
+                'teamPlayer.editionTeam.team',
+                'teamPlayer' => fn ($query) => $query->withExists('matchPlayers'),
+            ])
+            ->withCount(['bids as standing_bids_count' => fn ($query) => $query->standing()])
             ->orderByDesc('sold_at')
             ->orderByDesc('id')
-            ->limit(self::RECENT_SALES)
             ->get();
 
-        return $lots->map(fn (AuctionLot $lot) => [
+        return $lots->values()->map(fn (AuctionLot $lot, int $index) => [
             'lot_id' => $lot->id,
+            'number' => $lots->count() - $index,
             'name' => $lot->playerRegistration->player->name,
+            'village' => $lot->playerRegistration->village,
             'team' => $lot->teamPlayer?->editionTeam->team->name,
-            'amount' => $lot->current_bid,
+            'amount' => $this->soldAmount($lot),
+            'bids' => (int) $lot->standing_bids_count,
             'at' => $lot->sold_at ? display_datetime($lot->sold_at, 'h:i A') : null,
+            'locked' => (bool) $lot->teamPlayer?->match_players_exists,
+            'orphan' => $lot->teamPlayer === null,
         ])->all();
     }
 }
