@@ -60,7 +60,7 @@ class SeasonSquadTest extends TestCase
     {
         $other = EditionTeam::factory()->create(['edition_id' => $this->edition->id]);
         TeamPlayer::factory()->create(['edition_team_id' => $this->team->id, 'player_registration_id' => $this->registration()->id, 'jersey_number' => 1, 'sold_amount' => 1500]);
-        TeamPlayer::factory()->create(['edition_team_id' => $this->team->id, 'player_registration_id' => $this->registration()->id, 'jersey_number' => 2, 'sold_amount' => 2500.50]);
+        TeamPlayer::factory()->create(['edition_team_id' => $this->team->id, 'player_registration_id' => $this->registration()->id, 'jersey_number' => 2, 'sold_amount' => 2500]);
         $this->registration(); // not in any team
         $this->registration();
 
@@ -68,7 +68,9 @@ class SeasonSquadTest extends TestCase
 
         $this->assertStringContainsString($this->team->team->name, $html);
         $this->assertStringContainsString($other->team->name, $html);
-        $this->assertStringContainsString('4,000.50', $html);
+        // Points, not rupees: a whole number, lakh grouping, no currency symbol.
+        $this->assertStringContainsString('4,000 pts', $html);
+        $this->assertStringNotContainsString('₹4,000', $html);
         $this->assertMatchesRegularExpression('#<span class="font-medium text-slate-700">2</span>\s+players of this season not in any team#', $html);
         $this->assertStringContainsString(route('admin.editions.squads.show', [$this->edition, $this->team]), $html);
     }

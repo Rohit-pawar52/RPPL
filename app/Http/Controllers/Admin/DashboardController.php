@@ -34,6 +34,16 @@ class DashboardController extends Controller
     {
         $edition = $this->currentEdition();
 
+        // An auctioneer gets nothing outside the auction — no match,
+        // registration or finance figures — so their dashboard is the
+        // auction alone.
+        if (Gate::denies('manage-tournament') && Gate::denies('score-matches')) {
+            return view('admin.dashboard.auctioneer', [
+                'edition' => $edition,
+                'auction' => $edition?->auction,
+            ]);
+        }
+
         // Payment and finance figures are admin-only: scorers reach this
         // dashboard too (access-admin-panel), but those numbers are neither
         // queried nor rendered for them.

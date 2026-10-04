@@ -25,7 +25,7 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+    <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <x-admin.hub-card
             label="Registrations"
             icon="clipboard"
@@ -52,6 +52,14 @@
             :value="$edition->matches_count"
             :sub="$cards['matches']['played'].' played · '.$cards['matches']['remaining'].' to play'"
             :href="route('admin.editions.matches.index', $edition)"
+        />
+        @php $auction = $edition->auction; @endphp
+        <x-admin.hub-card
+            label="Auction"
+            icon="gavel"
+            :value="$auction ? ucfirst($auction->status) : 'Not set up'"
+            :sub="$auction ? $auction->lots()->count().' players in the pool' : 'Players bid for by points'"
+            :href="route('admin.auctions.show', $edition)"
         />
         <x-admin.hub-card
             label="Finance"

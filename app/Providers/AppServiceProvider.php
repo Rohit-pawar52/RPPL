@@ -92,10 +92,23 @@ class AppServiceProvider extends ServiceProvider
      */
     private function configureAuthorization(): void
     {
-        // Anyone who can authenticate at /admin/login (admin or scorer)
-        // may enter the admin shell itself.
+        // Anyone who can authenticate at /admin/login (admin, scorer or
+        // auctioneer) may enter the admin shell itself. What each of them
+        // can then open is decided by the policies and the two role gates
+        // below.
         Gate::define('access-admin-panel', function (User $user) {
+            return in_array($user->role?->slug, ['admin', 'scorer', 'auctioneer'], true);
+        });
+
+        // Running matches: scoring, toss, playing XI. Admin and scorer.
+        Gate::define('score-matches', function (User $user) {
             return in_array($user->role?->slug, ['admin', 'scorer'], true);
+        });
+
+        // Running the player auction. Admin and auctioneer — an auctioneer
+        // gets nothing outside the auction.
+        Gate::define('run-auction', function (User $user) {
+            return in_array($user->role?->slug, ['admin', 'auctioneer'], true);
         });
 
         // Tournament management (editions, teams, players, registrations,
