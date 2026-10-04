@@ -35,7 +35,9 @@ if (dataEl && root) {
         teams: document.getElementById('ac-teams'),
         results: document.getElementById('ac-results'),
         bids: document.getElementById('ac-bids'),
-        sales: document.getElementById('ac-sales'),
+        sold: document.getElementById('ac-sold'),
+        soldSearch: document.getElementById('ac-sold-search'),
+        soldCount: document.getElementById('ac-sold-count'),
         chips: document.getElementById('ac-chips'),
         amount: document.getElementById('ac-amount'),
         search: document.getElementById('ac-search'),
@@ -184,7 +186,7 @@ if (dataEl && root) {
         renderTeams();
         renderResults();
         renderBids();
-        renderSales();
+        renderSold();
         renderChips();
         root.classList.toggle('opacity-70', busy);
     }
@@ -396,18 +398,52 @@ if (dataEl && root) {
                 : '<p class="mt-1 text-xs text-slate-400">No bids yet.</p>'}`;
     }
 
-    function renderSales() {
-        const sales = state.sales;
+    /**
+     * Every sale, newest first, searchable by player, team or village. Any
+     * of them can be reopened (back on the block with the last bid) or taken
+     * back (out of the team, waiting again) — a player who has already played
+     * a match can do neither.
+     */
+    function renderSold() {
+        const live = state.auction.status === 'live';
+        const running = live || state.auction.status === 'paused';
+        const query = el.soldSearch.value.trim().toLowerCase();
+        const all = state.sold;
+        const list = query
+            ? all.filter((sale) => [sale.name, sale.team, sale.village].some((text) => (text || '').toLowerCase().includes(query)))
+            : all;
 
-        el.sales.innerHTML = `
-            <h3 class="text-xs font-semibold text-slate-700">Recent sales</h3>
-            ${sales.length
-                ? `<ul class="mt-1.5 divide-y divide-slate-100 text-[12px]">${sales.map((sale, index) => `
-                    <li class="flex items-center justify-between gap-2 py-1.5">
-                        <span class="min-w-0"><span class="block truncate font-medium text-slate-800">${esc(sale.name)}</span><span class="block truncate text-[11px] text-slate-500">${esc(sale.team || '')} · ${pts(sale.amount)}</span></span>
-                        ${index < 5 && state.auction.status === 'live' ? `<button type="button" data-action="reopen" data-lot="${sale.lot_id}" class="shrink-0 text-[11px] text-slate-400 hover:text-red-600">Reopen</button>` : ''}
-                    </li>`).join('')}</ul>`
-                : '<p class="mt-1 text-xs text-slate-400">Nobody is sold yet.</p>'}`;
+        const scroll = el.sold.querySelector('[data-sold-list]')?.scrollTop ?? 0;
+
+        const rows = list.map((sale) => {
+            let actions;
+
+            if (sale.locked) {
+                actions = '<span class="text-[11px] text-slate-400" title="This player has played a match, so the sale cannot be undone.">played a match</span>';
+            } else {
+                actions = `${sale.orphan ? '' : `<button type="button" data-action="reopen" data-lot="${sale.lot_id}" ${live ? '' : 'disabled'} title="Back on the block with the last bid" class="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40">Reopen</button>`}
+                    <button type="button" data-action="take-back" data-lot="${sale.lot_id}" ${running ? '' : 'disabled'} title="Out of the team, waiting again" class="rounded-md border border-red-200 bg-white px-2 py-1 text-[11px] font-medium text-red-700 hover:bg-red-50 disabled:opacity-40">Take back</button>`;
+            }
+
+            return `
+                <li class="flex items-start justify-between gap-2 py-2">
+                    <span class="min-w-0">
+                        <span class="block truncate text-[13px] font-medium text-slate-800"><span class="mr-1 text-[11px] font-normal tabular-nums text-slate-400">#${sale.number}</span>${esc(sale.name)}</span>
+                        <span class="block text-[11px] leading-snug text-slate-500">${esc(sale.team || 'no team')} · ${pts(sale.amount)}${sale.bids ? ` · ${sale.bids} ${sale.bids === 1 ? 'bid' : 'bids'}` : ''}${sale.at ? ` · ${esc(sale.at)}` : ''}</span>
+                    </span>
+                    <span class="flex shrink-0 gap-1">${actions}</span>
+                </li>`;
+        }).join('');
+
+        el.soldCount.textContent = `(${all.length})`;
+        el.sold.innerHTML = rows
+            ? `<ul data-sold-list class="max-h-80 divide-y divide-slate-100 overflow-y-auto">${rows}</ul>`
+            : `<p class="text-xs text-slate-400">${query ? 'No sale matches.' : 'Nobody is sold yet.'}</p>`;
+
+        const fresh = el.sold.querySelector('[data-sold-list]');
+        if (fresh) {
+            fresh.scrollTop = scroll;
+        }
     }
 
     function renderChips() {
@@ -587,11 +623,26 @@ if (dataEl && root) {
                     await lotAction('release');
                 }
                 break;
-            case 'reopen':
-                if (window.confirm('Reopen this sale? The player leaves the team and goes back on the block.')) {
+            case 'reopen': {
+                const sale = state.sold.find((row) => row.lot_id === Number(target.dataset.lot));
+                const text = sale
+                    ? `Reopen the sale of ${sale.name}? The player leaves ${sale.team || 'the team'} and goes back on the block with the last bid standing — sell again to keep the sale, or change it first.`
+                    : 'Reopen this sale? The player leaves the team and goes back on the block.';
+                if (window.confirm(text)) {
                     await send('reopen', { lot_id: Number(target.dataset.lot) });
                 }
                 break;
+            }
+            case 'take-back': {
+                const sale = state.sold.find((row) => row.lot_id === Number(target.dataset.lot));
+                const text = sale
+                    ? `Take ${sale.name} back from ${sale.team || 'the team'}? ${pts(sale.amount)} points return to the team's purse, the bids are dropped and the player waits with the others.`
+                    : 'Take this player back? The points return to the team and the player waits again.';
+                if (window.confirm(text)) {
+                    await send('take-back', { lot_id: Number(target.dataset.lot) });
+                }
+                break;
+            }
             case 'next-round':
                 if (window.confirm(`Start round ${state.auction.round + 1}? The ${state.counts.hold} players on hold come back to the waiting players.`)) {
                     await send('next-round');
@@ -651,6 +702,7 @@ if (dataEl && root) {
 
     el.amount.addEventListener('input', renderTeams);
     el.search.addEventListener('input', renderResults);
+    el.soldSearch.addEventListener('input', renderSold);
 
     el.walkIn.addEventListener('submit', async (event) => {
         event.preventDefault();

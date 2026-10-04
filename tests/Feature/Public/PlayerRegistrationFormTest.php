@@ -253,4 +253,48 @@ class PlayerRegistrationFormTest extends TestCase
         $this->submit(['photo' => UploadedFile::fake()->create('exact.jpg', $limit, 'image/jpeg')])
             ->assertRedirect(route('public.player-registration.success'));
     }
+
+    // ----- How the form guides the visitor -----
+
+    public function test_the_form_is_laid_out_in_numbered_steps_with_a_progress_count(): void
+    {
+        $this->get(route('public.player-registration.create'))
+            ->assertOk()
+            ->assertSee('How it works')
+            ->assertSee('Registration fee')
+            ->assertSeeInOrder(['About you', 'Where you live', 'Playing details', 'Payment proof'])
+            ->assertSee('data-progress-bar', false)
+            ->assertSee('data-upload', false)
+            ->assertSee('Your photo and payment screenshot are private');
+    }
+
+    public function test_a_refused_submission_opens_at_a_summary_that_links_to_each_problem_and_keeps_the_answers(): void
+    {
+        $response = $this->from(route('public.player-registration.create'))
+            ->followingRedirects()
+            ->submit(['phone' => '12345', 'name' => 'Ramesh Joshi']);
+
+        $response->assertOk()
+            ->assertSee('id="registration-errors"', false)
+            ->assertSee('Please check the highlighted fields')
+            ->assertSee('Enter a valid 10-digit Indian mobile number.')
+            ->assertSee('href="#phone"', false)
+            ->assertSee('please choose your photo and the payment screenshot again')
+            ->assertSee('aria-invalid="true"', false)
+            ->assertSee('value="Ramesh Joshi"', false);
+
+        // A fresh visit has no summary.
+        $this->get(route('public.player-registration.create'))->assertDontSee('id="registration-errors"', false);
+    }
+
+    public function test_the_success_page_offers_the_number_to_copy_and_says_what_happens_next(): void
+    {
+        $this->submit()->assertRedirect(route('public.player-registration.success'));
+
+        $this->get(route('public.player-registration.success'))
+            ->assertOk()
+            ->assertSee('data-copy="#registration-number"', false)
+            ->assertSee('What happens next')
+            ->assertSee('Once it is confirmed, your status changes to Paid');
+    }
 }

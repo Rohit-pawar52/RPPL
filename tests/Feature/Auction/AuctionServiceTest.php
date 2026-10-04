@@ -13,6 +13,7 @@ use App\Models\PlayerRegistration;
 use App\Models\TeamPlayer;
 use App\Services\Auction\AuctionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -497,6 +498,111 @@ class AuctionServiceTest extends TestCase
         $this->fails(fn () => $this->service->reopenSold($auction, $lot->fresh()), 'auction', 'played a match');
         $this->assertSame(AuctionLot::SOLD, $lot->fresh()->status);
         $this->assertSame(1, TeamPlayer::count());
+    }
+
+    /**
+     * Sells $count players to $team and returns their lots, oldest sale first.
+     *
+     * @return list<AuctionLot>
+     */
+    private function sellSome(Auction $auction, int $count, EditionTeam $team, int $amount = 1000): array
+    {
+        $lots = [];
+
+        for ($i = 0; $i < $count; $i++) {
+            $lot = $this->onTheBlock($auction);
+            $this->bid($auction, $lot, $team, $amount);
+            $this->service->sell($auction, $lot, $lot->fresh()->version);
+            $lots[] = $lot->fresh();
+        }
+
+        return $lots;
+    }
+
+    public function test_an_old_sale_can_be_taken_back_without_touching_the_player_on_the_block(): void
+    {
+        $auction = $this->liveAuction(5);
+        [$first, $second] = $this->sellSome($auction, 3, $this->alpha);
+        $onTheBlock = $this->onTheBlock($auction);
+        $this->bid($auction, $onTheBlock, $this->beta, 2000);
+        $this->assertSame(3000, $this->service->teamStanding($auction, $this->alpha)['spent']);
+
+        $back = $this->service->returnToWaiting($auction, $first->fresh());
+
+        // Waiting again, with nothing of the sale left; the team has its points and place back.
+        $this->assertSame(AuctionLot::PENDING, $back->status);
+        $this->assertNull($back->current_bid);
+        $this->assertNull($back->leading_edition_team_id);
+        $this->assertNull($back->team_player_id);
+        $this->assertNull($back->sold_at);
+        $this->assertSame(0, $back->bids()->standing()->count());
+        $standing = $this->service->teamStanding($auction, $this->alpha);
+        $this->assertSame([2000, 2], [$standing['spent'], $standing['count']]);
+        $this->assertNull(TeamPlayer::where('player_registration_id', $first->player_registration_id)->first());
+
+        // The other sales and the player on the block are exactly as they were.
+        $this->assertSame(AuctionLot::SOLD, $second->fresh()->status);
+        $this->assertSame($onTheBlock->id, $auction->fresh()->current_lot_id);
+        $this->assertSame(2000, $onTheBlock->fresh()->current_bid);
+
+        // The player is among the waiting ones again, like anyone who has not been called.
+        $this->assertContains($back->id, $auction->lots()->where('status', 'pending')->pluck('id')->all());
+    }
+
+    public function test_a_sale_can_be_taken_back_while_paused_but_not_after_the_auction_is_completed(): void
+    {
+        $auction = $this->liveAuction(3);
+        [$first, $second] = $this->sellSome($auction, 2, $this->alpha);
+
+        $this->service->pause($auction);
+        $this->assertSame(AuctionLot::PENDING, $this->service->returnToWaiting($auction, $first->fresh())->status);
+
+        $this->service->complete($auction);
+        $this->fails(fn () => $this->service->returnToWaiting($auction, $second->fresh()), 'auction');
+        $this->assertSame(AuctionLot::SOLD, $second->fresh()->status);
+    }
+
+    public function test_only_a_sold_player_who_has_not_played_a_match_can_be_taken_back(): void
+    {
+        $auction = $this->liveAuction(3);
+        $waiting = $auction->lots()->where('status', 'pending')->first();
+        $this->fails(fn () => $this->service->returnToWaiting($auction, $waiting), 'auction', 'Only a sold player');
+
+        [$lot] = $this->sellSome($auction, 1, $this->alpha);
+        MatchPlayer::factory()->create(['team_player_id' => $lot->fresh()->team_player_id]);
+
+        $this->fails(fn () => $this->service->returnToWaiting($auction, $lot->fresh()), 'auction', 'played a match');
+
+        // Refused as a whole: the sale, the bids and the squad are untouched.
+        $this->assertSame(AuctionLot::SOLD, $lot->fresh()->status);
+        $this->assertSame(1000, $lot->fresh()->current_bid);
+        $this->assertSame(1, $lot->bids()->standing()->count());
+        $this->assertSame(1, TeamPlayer::count());
+    }
+
+    public function test_a_sale_whose_squad_row_is_already_gone_can_still_be_taken_back(): void
+    {
+        $auction = $this->liveAuction(2);
+        [$lot] = $this->sellSome($auction, 1, $this->alpha);
+
+        // Left over from before squad-page removals were followed: sold, but in no squad.
+        DB::table('team_players')->where('id', $lot->team_player_id)->delete();
+        $this->assertNull($lot->fresh()->team_player_id);
+
+        $this->assertSame(AuctionLot::PENDING, $this->service->returnToWaiting($auction, $lot->fresh())->status);
+    }
+
+    public function test_reopening_an_older_sale_keeps_its_bids_and_a_refusal_changes_nothing(): void
+    {
+        $auction = $this->liveAuction(4);
+        [$first] = $this->sellSome($auction, 2, $this->alpha, 3000);
+
+        $reopened = $this->service->reopenSold($auction, $first->fresh());
+        $this->assertSame([3000, 1], [$reopened->current_bid, $reopened->bids()->standing()->count()]);
+
+        // Selling again puts the same team and price back.
+        $sold = $this->service->sell($auction, $reopened, $reopened->fresh()->version);
+        $this->assertSame([$this->alpha->id, 3000.0], [$sold->edition_team_id, (float) $sold->sold_amount]);
     }
 
     public function test_completing_marks_everyone_left_unsold_and_lists_teams_short_of_the_minimum(): void

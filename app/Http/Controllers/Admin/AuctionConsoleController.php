@@ -149,6 +149,21 @@ class AuctionConsoleController extends Controller
         });
     }
 
+    public function takeBack(Request $request, Edition $edition): JsonResponse
+    {
+        $auction = $this->auctionOf($edition);
+        $data = $request->validate(['lot_id' => ['required', 'integer']]);
+
+        return $this->respond($auction, function () use ($auction, $data) {
+            $lot = $this->lotOf($auction, $data['lot_id']);
+            $name = $lot->playerRegistration->player->name;
+
+            $this->auctions->returnToWaiting($auction, $lot);
+
+            return "{$name} is back among the waiting players.";
+        });
+    }
+
     public function nextRound(Edition $edition): JsonResponse
     {
         $auction = $this->auctionOf($edition);
