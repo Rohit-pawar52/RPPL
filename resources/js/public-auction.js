@@ -1,11 +1,22 @@
+import Echo from 'laravel-echo';
+import Pusher from 'pusher-js';
+
 /**
  * The public live auction page. It draws everything from one `state` object
  * the server builds (AuctionStateService::public()) and swaps in a fresh one
- * every few seconds from the data endpoint — it never works anything out
- * itself, and the state holds nothing private (and, when the auction hides
- * live bids, no bid at all). All words come from the server in the visitor's
- * language. With data-big="1" it is the dark projector layout.
+ * from the data endpoint — it never works anything out itself, and the state
+ * holds nothing private (and, when the auction hides live bids, no bid at
+ * all). All words come from the server in the visitor's language. With
+ * data-big="1" it is the dark projector layout.
+ *
+ * Freshness: when Reverb is running, a "something changed" signal on the
+ * public-auction channel makes the page fetch the new picture at once (the
+ * signal carries no data). Polling is always there as the safety net — every
+ * few seconds if the signal is not available, and only now and then while it
+ * is connected.
  */
+const REALTIME_POLL_MS = 20000;
+
 const dataEl = document.getElementById('public-auction-data');
 const root = document.getElementById('public-auction');
 
@@ -264,6 +275,54 @@ if (dataEl && root) {
 
     // ----- Keeping it fresh --------------------------------------------------
 
+    let echo = null;
+    let lastFetch = 0;
+    let signalTimer = null;
+
+    function realtimeConnected() {
+        try {
+            return echo !== null && echo.connector.pusher.connection.state === 'connected';
+        } catch (error) {
+            return false;
+        }
+    }
+
+    /**
+     * Listens for the "auction changed" signal. Without Reverb configured (or
+     * running) nothing happens and polling carries on alone.
+     */
+    function startRealtime() {
+        const key = import.meta.env.VITE_REVERB_APP_KEY;
+        const host = import.meta.env.VITE_REVERB_HOST;
+        const port = import.meta.env.VITE_REVERB_PORT;
+        const scheme = import.meta.env.VITE_REVERB_SCHEME;
+
+        if (!key || !host) {
+            return;
+        }
+
+        try {
+            echo = new Echo({
+                broadcaster: 'reverb',
+                key,
+                Pusher,
+                wsHost: host,
+                wsPort: port ?? 80,
+                wssPort: port ?? 443,
+                forceTLS: (scheme ?? 'https') === 'https',
+                enabledTransports: ['ws', 'wss'],
+            });
+
+            echo.channel('public-auction').listen('.auction.updated', () => {
+                // A burst of signals (one action can save several rows) is one fetch.
+                window.clearTimeout(signalTimer);
+                signalTimer = window.setTimeout(() => refresh(true), 120);
+            });
+        } catch (error) {
+            echo = null;
+        }
+    }
+
     function apply(newState) {
         const next = JSON.stringify(newState);
 
@@ -276,10 +335,17 @@ if (dataEl && root) {
         render();
     }
 
-    async function refresh() {
+    async function refresh(force = false) {
         if (document.visibilityState === 'hidden') {
             return;
         }
+
+        // While the live signal is connected, the timer only double-checks now and then.
+        if (!force && realtimeConnected() && Date.now() - lastFetch < REALTIME_POLL_MS) {
+            return;
+        }
+
+        lastFetch = Date.now();
 
         try {
             const response = await window.fetch(dataUrl, { headers: { Accept: 'application/json' }, cache: 'no-store' });
@@ -322,6 +388,7 @@ if (dataEl && root) {
     }, true);
 
     render();
-    window.setInterval(refresh, pollSeconds * 1000);
-    document.addEventListener('visibilitychange', refresh);
+    startRealtime();
+    window.setInterval(() => refresh(), pollSeconds * 1000);
+    document.addEventListener('visibilitychange', () => refresh(true));
 }

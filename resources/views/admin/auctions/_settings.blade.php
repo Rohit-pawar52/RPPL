@@ -44,3 +44,23 @@
     :checked="$values['show_live_bids']"
     help="Off shows only the result when a player is sold."
 />
+
+<input type="hidden" name="notify_start" value="0" />
+<x-form.checkbox
+    name="notify_start"
+    label="Send a push notification when the auction starts and when it ends"
+    :checked="$values['notify_start']"
+    help="Goes to everyone who turned notifications on, the same way match results do."
+/>
+
+<div class="sm:max-w-xs">
+    <x-form.input
+        name="notify_sale_min"
+        label="Also notify when a player is sold for at least (points)"
+        type="number"
+        min="1"
+        step="1"
+        :value="$values['notify_sale_min']"
+        help="Leave empty to send nothing per sale — so nobody gets a message for every player."
+    />
+</div>

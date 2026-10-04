@@ -2,6 +2,7 @@
 
 namespace App\View\Composers;
 
+use App\Models\Auction;
 use App\Models\Edition;
 use App\Services\Auction\AuctionStateService;
 use Illuminate\Support\Facades\Cache;
@@ -39,6 +40,6 @@ class PublicNavComposer
 
         // A string is cached, so "no auction" is remembered as '' (null would
         // be read as a miss).
-        return Cache::remember('public-auction-status', $seconds, fn () => $find() ?? '') ?: null;
+        return Cache::remember(Auction::PUBLIC_STATUS_CACHE_KEY, $seconds, fn () => $find() ?? '') ?: null;
     }
 }

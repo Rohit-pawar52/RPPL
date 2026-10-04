@@ -7,6 +7,7 @@ use App\Models\Auction;
 use App\Models\AuctionLot;
 use App\Models\Edition;
 use App\Models\EditionTeam;
+use App\Services\Auction\AuctionNotificationService;
 use App\Services\Auction\AuctionService;
 use App\Services\Auction\AuctionStateService;
 use Illuminate\Http\JsonResponse;
@@ -28,6 +29,7 @@ class AuctionConsoleController extends Controller
     public function __construct(
         private readonly AuctionService $auctions,
         private readonly AuctionStateService $states,
+        private readonly AuctionNotificationService $notifications,
     ) {}
 
     public function show(Edition $edition): View|RedirectResponse
@@ -119,7 +121,12 @@ class AuctionConsoleController extends Controller
 
     public function sell(Request $request, Edition $edition): JsonResponse
     {
-        return $this->onLot($request, $edition, fn (Auction $auction, AuctionLot $lot, int $version) => $this->auctions->sell($auction, $lot, $version));
+        return $this->onLot($request, $edition, function (Auction $auction, AuctionLot $lot, int $version) use ($request) {
+            $this->auctions->sell($auction, $lot, $version);
+
+            // A sale of at least the auction's minimum is pushed (if it has one).
+            $this->notifications->sold($auction->fresh(), $lot->fresh(), $request->user());
+        });
     }
 
     public function hold(Request $request, Edition $edition): JsonResponse

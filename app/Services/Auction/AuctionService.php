@@ -812,7 +812,7 @@ class AuctionService
     private function onlySettings(array $settings): array
     {
         return array_intersect_key($settings, array_flip([
-            'team_purse', 'min_bid', 'bid_step', 'min_squad', 'max_squad', 'show_live_bids',
+            'team_purse', 'min_bid', 'bid_step', 'min_squad', 'max_squad', 'show_live_bids', 'notify_start', 'notify_sale_min',
         ]));
     }
 

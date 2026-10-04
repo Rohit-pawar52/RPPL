@@ -27,6 +27,8 @@ abstract class SaveAuctionRequest extends FormRequest
             'min_squad' => ['required', 'integer', 'min:1', 'max:50'],
             'max_squad' => ['required', 'integer', 'min:1', 'max:50', 'gte:min_squad'],
             'show_live_bids' => ['nullable', 'boolean'],
+            'notify_start' => ['nullable', 'boolean'],
+            'notify_sale_min' => ['nullable', 'integer', 'min:1', 'max:99999999'],
         ];
     }
 
@@ -48,6 +50,8 @@ abstract class SaveAuctionRequest extends FormRequest
         return [
             ...$this->safe()->only(['team_purse', 'min_bid', 'bid_step', 'min_squad', 'max_squad']),
             'show_live_bids' => $this->boolean('show_live_bids'),
+            'notify_start' => $this->boolean('notify_start'),
+            'notify_sale_min' => $this->filled('notify_sale_min') ? (int) $this->input('notify_sale_min') : null,
         ];
     }
 }

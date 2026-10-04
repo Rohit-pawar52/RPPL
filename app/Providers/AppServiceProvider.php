@@ -2,8 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Auction;
+use App\Models\AuctionBid;
+use App\Models\AuctionLot;
 use App\Models\User;
 use App\Services\Advertisement\AdvertisementDisplayService;
+use App\Services\Auction\AuctionChangeAnnouncer;
 use App\View\Composers\AnnouncementTickerComposer;
 use App\View\Composers\BrandingComposer;
 use App\View\Composers\ContentPageFooterComposer;
@@ -26,6 +30,10 @@ class AppServiceProvider extends ServiceProvider
         // One per request: the sponsor ads are read once and the rotating
         // banner stays the same everywhere it appears on that page.
         $this->app->singleton(AdvertisementDisplayService::class);
+
+        // One announcer per request, so a burst of saves inside one auction
+        // action is announced once.
+        $this->app->singleton(AuctionChangeAnnouncer::class);
     }
 
     /**
@@ -40,6 +48,22 @@ class AppServiceProvider extends ServiceProvider
         $this->configureAnnouncementTicker();
         $this->configureContentPageFooter();
         $this->configurePublicNav();
+        $this->configureAuctionAnnouncements();
+    }
+
+    /**
+     * Any change to an auction, a player in it or a bid on one tells the
+     * public page (cache dropped, Reverb signal) once the change is
+     * committed — see AuctionChangeAnnouncer.
+     */
+    private function configureAuctionAnnouncements(): void
+    {
+        $announce = fn ($model) => $this->app->make(AuctionChangeAnnouncer::class)->changed($model);
+
+        foreach ([Auction::class, AuctionLot::class, AuctionBid::class] as $model) {
+            $model::saved($announce);
+            $model::deleted($announce);
+        }
     }
 
     /**

@@ -7,8 +7,10 @@ use App\Http\Requests\Admin\Auction\StoreAuctionRequest;
 use App\Http\Requests\Admin\Auction\UpdateAuctionRequest;
 use App\Models\Auction;
 use App\Models\Edition;
+use App\Services\Auction\AuctionNotificationService;
 use App\Services\Auction\AuctionService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -21,7 +23,10 @@ use Illuminate\View\View;
  */
 class AuctionController extends Controller
 {
-    public function __construct(private readonly AuctionService $auctions) {}
+    public function __construct(
+        private readonly AuctionService $auctions,
+        private readonly AuctionNotificationService $notifications,
+    ) {}
 
     public function index(): View
     {
@@ -101,12 +106,20 @@ class AuctionController extends Controller
             ->with('success', "Pool updated: {$result['added']} added, {$result['removed']} removed.");
     }
 
-    public function start(Edition $edition): RedirectResponse
+    public function start(Request $request, Edition $edition): RedirectResponse
     {
         $auction = $this->auctionOf($edition);
         $this->authorize('update', $auction);
 
-        return $this->attempt($edition, fn () => $this->auctions->start($auction), 'The auction is live.');
+        try {
+            $this->auctions->start($auction);
+        } catch (ValidationException $e) {
+            return $this->failed($edition, $e);
+        }
+
+        $this->notifications->started($auction->fresh(), $request->user());
+
+        return redirect()->route('admin.auctions.show', $edition)->with('success', 'The auction is live.');
     }
 
     public function pause(Edition $edition): RedirectResponse
@@ -125,7 +138,7 @@ class AuctionController extends Controller
         return $this->attempt($edition, fn () => $this->auctions->resume($auction), 'The auction is live again.');
     }
 
-    public function complete(Edition $edition): RedirectResponse
+    public function complete(Request $request, Edition $edition): RedirectResponse
     {
         $auction = $this->auctionOf($edition);
         $this->authorize('update', $auction);
@@ -135,6 +148,8 @@ class AuctionController extends Controller
         } catch (ValidationException $e) {
             return $this->failed($edition, $e);
         }
+
+        $this->notifications->completed($auction->fresh(), $request->user());
 
         $message = "The auction is completed. {$result['unsold']} players were left unsold.";
 

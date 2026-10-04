@@ -12,6 +12,7 @@ use App\Services\Auction\AuctionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -342,7 +343,7 @@ class PublicAuctionTest extends TestCase
 
     // ----- Load ------------------------------------------------------------------------
 
-    public function test_the_public_data_is_kept_for_a_moment_so_a_crowd_does_not_hit_the_database(): void
+    public function test_the_public_data_is_kept_for_a_moment_and_dropped_the_instant_the_auction_changes(): void
     {
         config(['auction.public_cache_seconds' => 30]);
         Cache::flush();
@@ -353,12 +354,16 @@ class PublicAuctionTest extends TestCase
 
         $this->assertSame(2, $this->state()['counts']['waiting']);
 
-        $this->service->callRandom($auction);
-        // Still the picture from a moment ago ...
-        $this->assertNull($this->state()['lot']);
+        // A change that does not go through the models is not announced, so
+        // the kept picture is still served - this is the load protection.
+        $lotId = $auction->lots()->value('id');
+        DB::table('auction_lots')->where('id', $lotId)->update(['status' => 'hold']);
+        $this->assertSame(2, $this->state()['counts']['waiting']);
 
-        // ... until it expires.
-        Cache::flush();
-        $this->assertNotNull($this->state()['lot']);
+        // Any real change drops it at once, so the next visitor sees it now.
+        $this->service->callRandom($auction);
+        $fresh = $this->state();
+        $this->assertNotNull($fresh['lot']);
+        $this->assertSame(1, $fresh['counts']['hold']);
     }
 }

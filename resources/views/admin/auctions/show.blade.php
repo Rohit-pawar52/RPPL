@@ -26,6 +26,8 @@
                             'min_squad' => 12,
                             'max_squad' => 15,
                             'show_live_bids' => true,
+                            'notify_start' => true,
+                            'notify_sale_min' => null,
                         ]])
 
                         <x-admin.button>Create auction</x-admin.button>
@@ -69,6 +71,8 @@
                             'min_squad' => $auction->min_squad,
                             'max_squad' => $auction->max_squad,
                             'show_live_bids' => $auction->show_live_bids,
+                            'notify_start' => $auction->notify_start,
+                            'notify_sale_min' => $auction->notify_sale_min,
                         ]])
 
                         <p class="mb-1.5 mt-1 text-xs font-medium text-slate-700">Teams</p>

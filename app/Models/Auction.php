@@ -30,6 +30,18 @@ class Auction extends Model
 
     public const STATUS_COMPLETED = 'completed';
 
+    /**
+     * The short-lived copy of what the public page shows, and of the
+     * auction's status for the header. Dropped whenever the auction changes
+     * (AuctionChangeAnnouncer).
+     */
+    public const PUBLIC_STATUS_CACHE_KEY = 'public-auction-status';
+
+    public static function publicStateCacheKey(int $auctionId): string
+    {
+        return 'auction-public-'.$auctionId;
+    }
+
     public const STATUSES = [
         self::STATUS_DRAFT,
         self::STATUS_LIVE,
@@ -46,6 +58,8 @@ class Auction extends Model
         'min_squad',
         'max_squad',
         'show_live_bids',
+        'notify_start',
+        'notify_sale_min',
         'round',
         'current_lot_id',
         'started_at',
@@ -62,6 +76,8 @@ class Auction extends Model
             'min_squad' => 'integer',
             'max_squad' => 'integer',
             'show_live_bids' => 'boolean',
+            'notify_start' => 'boolean',
+            'notify_sale_min' => 'integer',
             'round' => 'integer',
             'current_lot_id' => 'integer',
             'started_at' => 'datetime',

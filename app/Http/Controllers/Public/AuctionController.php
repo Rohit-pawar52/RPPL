@@ -67,6 +67,6 @@ class AuctionController extends Controller
             return $this->states->public($auction);
         }
 
-        return Cache::remember('auction-public-'.$auction->id, $seconds, fn () => $this->states->public($auction));
+        return Cache::remember(Auction::publicStateCacheKey($auction->id), $seconds, fn () => $this->states->public($auction));
     }
 }
