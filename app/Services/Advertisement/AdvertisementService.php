@@ -22,6 +22,7 @@ class AdvertisementService
 
     public function createAdvertisement(array $data, UploadedFile $media, ?UploadedFile $poster = null): Advertisement
     {
+        $data = $this->withFormat($data);
         $mediaPath = $this->storeFile($media, self::MEDIA_DIRECTORY);
         // Only a video has a poster frame; an image is its own preview.
         $posterPath = $poster && $data['media_type'] === Advertisement::MEDIA_VIDEO
@@ -44,6 +45,8 @@ class AdvertisementService
 
     public function updateAdvertisement(Advertisement $advertisement, array $data, ?UploadedFile $newMedia = null, ?UploadedFile $newPoster = null): Advertisement
     {
+        $data = $this->withFormat($data, $advertisement);
+
         $oldMediaPath = $advertisement->media_path;
         $oldPosterPath = $advertisement->poster_path;
 
@@ -80,6 +83,25 @@ class AdvertisementService
         }
 
         return $advertisement;
+    }
+
+    /**
+     * Only a Normal sponsor has a choice of spot (banner or card); every
+     * other level is stored without one, and a Normal ad with none is a
+     * banner.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function withFormat(array $data, ?Advertisement $current = null): array
+    {
+        $tier = $data['tier'] ?? $current?->tier;
+
+        $data['format'] = $tier === Advertisement::TIER_NORMAL
+            ? ($data['format'] ?? $current?->format ?? Advertisement::FORMAT_BANNER)
+            : null;
+
+        return $data;
     }
 
     /**

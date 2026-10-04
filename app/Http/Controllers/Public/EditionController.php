@@ -38,6 +38,28 @@ class EditionController extends Controller
         ]);
     }
 
+    /**
+     * How many players the full stats pages list (the homepage summary
+     * shows only the top few of each).
+     */
+    public const STATS_PAGE_LIMIT = 20;
+
+    /**
+     * One full season-stats board (most runs, most wickets, ...) for an
+     * edition. The route only accepts the whitelisted board slugs.
+     */
+    public function stats(Edition $edition, string $board): View
+    {
+        abort_unless(in_array($board, PlayerStatisticsService::HIGHLIGHT_BOARDS, true), 404);
+
+        return view('public.editions.stats', [
+            'edition' => $edition,
+            'board' => $board,
+            'rows' => $this->statistics->getEditionHighlights($edition, self::STATS_PAGE_LIMIT)[$board],
+            'limit' => self::STATS_PAGE_LIMIT,
+        ]);
+    }
+
     public function show(Edition $edition): View
     {
         $edition->loadCount(['editionTeams', 'matches']);

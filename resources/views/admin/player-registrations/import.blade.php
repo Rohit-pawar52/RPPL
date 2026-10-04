@@ -41,7 +41,10 @@
         </div>
     @endif
 
-    <div class="max-w-3xl rounded-lg border border-slate-200 bg-white p-4">
+    {{-- The form on the left; how importing works beside it on wide screens
+         (below the form on a phone), so the form itself stays short. --}}
+    <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)]">
+    <div class="rounded-lg border border-slate-200 bg-white p-4">
         <form method="POST" action="{{ route('admin.player-registrations.import.store') }}" enctype="multipart/form-data" novalidate>
             @csrf
 
@@ -53,7 +56,7 @@
                 :value="old('edition_id')"
             />
 
-            <x-form.input name="csv_file" label="Excel or CSV file" type="file" accept=".xlsx,.csv,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required />
+            <x-form.file name="csv_file" label="Excel or CSV file" prompt="Choose Excel or CSV file" accept=".xlsx,.csv,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required />
             <p class="-mt-2 mb-3 text-[11px] text-slate-500">
                 An Excel file (.xlsx, first sheet) or a CSV.
                 <a href="{{ route('admin.player-registrations.import.sample') }}" class="font-medium text-green-700 hover:underline">Download a sample Excel sheet</a>
@@ -65,7 +68,15 @@
                 label="Check only — show what would be imported, but don't import anything"
             />
 
-            <div class="mt-2 rounded-md border border-slate-100 bg-slate-50 p-3 text-xs text-slate-600">
+            <div class="mt-3 flex items-center gap-2">
+                <x-admin.button>Import</x-admin.button>
+                <x-admin.button href="{{ route('admin.player-registrations.index') }}" variant="secondary">Cancel</x-admin.button>
+            </div>
+        </form>
+    </div>
+
+    <aside class="space-y-3 lg:max-w-2xl">
+            <div class="rounded-md border border-slate-100 bg-slate-50 p-3 text-xs text-slate-600">
                 <p class="mb-1 font-medium text-slate-700">Importing the Google Form sheet</p>
                 <p class="mb-2">
                     Download the response sheet from Google Sheets
@@ -106,7 +117,7 @@
                 </p>
             </div>
 
-            <div class="mt-3 rounded-md border border-slate-100 bg-slate-50 p-3 text-xs text-slate-600">
+            <div class="rounded-md border border-slate-100 bg-slate-50 p-3 text-xs text-slate-600">
                 <p class="mb-1 font-medium text-slate-700">Simple format (also accepted)</p>
                 <code class="block overflow-x-auto rounded bg-slate-200 px-2 py-1">
                     name,phone,email,registration_fee,payment_status,registered_at
@@ -121,11 +132,6 @@
                     updated.
                 </p>
             </div>
-
-            <div class="mt-3 flex items-center gap-2">
-                <x-admin.button>Import</x-admin.button>
-                <x-admin.button href="{{ route('admin.player-registrations.index') }}" variant="secondary">Cancel</x-admin.button>
-            </div>
-        </form>
+    </aside>
     </div>
 @endsection

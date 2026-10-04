@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Models\GameMatch;
+use App\Models\News;
+use App\Models\Photo;
 use App\Models\Video;
 use App\Services\LiveMatch\LiveMatchService;
 use App\Services\Statistics\PlayerStatisticsService;
@@ -18,14 +20,30 @@ use Illuminate\View\View;
  * StandingsService/PlayerStatisticsService/LiveMatchService the admin
  * panel and the public Live Match Center already use.
  *
- * Match Centre priority (frozen for this pass): a single live match
- * outranks everything — its canonical score comes from LiveMatchService,
- * never a second calculation. With no live match, the soonest
- * scheduled/toss match becomes the headline instead. The most recent
- * completed match is shown alongside either case when one exists.
+ * Top to bottom: sponsor banner, one scrolling row of match cards (the
+ * live/next one or two, a sponsor card, the latest results), Videos / News
+ * / Photos cards, a sponsor banner and the current season's summary
+ * (points table and the top few of each stats board).
  */
 class HomeController extends Controller
 {
+    /**
+     * Matches shown on each side of the sponsor card in the match row.
+     */
+    private const UPCOMING_IN_ROW = 2;
+
+    private const RECENT_IN_ROW = 3;
+
+    /**
+     * Items shown in each of the Videos / News / Photos cards.
+     */
+    private const MEDIA_ITEMS = 3;
+
+    /**
+     * Rows on each season-summary board (the stats pages list more).
+     */
+    private const SUMMARY_ROWS = 5;
+
     public function __construct(
         private readonly StandingsService $standings,
         private readonly PlayerStatisticsService $statistics,
@@ -39,14 +57,8 @@ class HomeController extends Controller
         $upcomingMatches = collect();
         $recentMatches = collect();
         $standings = collect();
-        $topRunScorers = collect();
-        $topWicketTakers = collect();
-        $teams = collect();
-        $featuredVideos = collect();
-        $liveMatch = null;
+        $highlights = [];
         $liveMatchData = null;
-        $nextMatch = null;
-        $recentMatch = null;
 
         if ($edition) {
             $matchEagerLoads = [
@@ -54,75 +66,45 @@ class HomeController extends Controller
                 'firstInnings.battingTeam.team', 'secondInnings.battingTeam.team',
             ];
 
-            $liveMatch = GameMatch::query()
-                ->where('edition_id', $edition->id)
-                ->where('match_status', 'live')
-                ->with($matchEagerLoads)
-                ->orderBy('scheduled_at')
-                ->first();
-
-            if ($liveMatch) {
-                $liveMatchData = $this->liveMatch->getLiveMatchData($liveMatch);
-            } else {
-                $nextMatch = GameMatch::query()
-                    ->where('edition_id', $edition->id)
-                    ->whereIn('match_status', ['scheduled', 'toss'])
-                    ->with($matchEagerLoads)
-                    ->orderBy('scheduled_at')
-                    ->first();
-            }
-
-            $recentMatch = GameMatch::query()
-                ->where('edition_id', $edition->id)
-                ->where('match_status', 'completed')
-                ->with($matchEagerLoads)
-                ->orderByDesc('scheduled_at')
-                ->first();
-
+            // Live first, then the soonest scheduled ones.
             $upcomingMatches = GameMatch::query()
                 ->where('edition_id', $edition->id)
                 ->whereIn('match_status', ['scheduled', 'toss', 'live'])
                 ->with($matchEagerLoads)
+                ->orderByRaw("case when match_status = 'live' then 0 else 1 end")
                 ->orderBy('scheduled_at')
-                ->limit(5)
+                ->limit(self::UPCOMING_IN_ROW)
                 ->get();
 
             $recentMatches = GameMatch::query()
                 ->where('edition_id', $edition->id)
                 ->where('match_status', 'completed')
-                ->with(['teamA.team', 'teamB.team'])
+                ->with($matchEagerLoads)
                 ->orderByDesc('scheduled_at')
-                ->limit(5)
+                ->limit(self::RECENT_IN_ROW)
                 ->get();
 
-            $standings = collect($this->standings->getEditionStandings($edition)['standings'])->take(5);
+            // The one live match gets its chase line from the same payload
+            // the Live page uses.
+            $liveMatch = $upcomingMatches->firstWhere('match_status', 'live');
+            $liveMatchData = $liveMatch ? $this->liveMatch->getLiveMatchData($liveMatch) : null;
 
-            $leaderboard = $this->statistics->getEditionLeaderboard($edition, 3);
-            $topRunScorers = collect($leaderboard['topRunScorers']);
-            $topWicketTakers = collect($leaderboard['topWicketTakers']);
-
-            $teams = $edition->editionTeams()->with('team')->get();
-
-            // Videos aren't edition-scoped, but the section only renders
-            // inside the edition branch of the homepage (between Featured
-            // Match and Points Table), so there's no point querying them
-            // for the no-edition empty state.
-            $featuredVideos = Video::query()->active()->ordered()->limit(3)->get();
+            $standings = collect($this->standings->getEditionStandings($edition)['standings']);
+            $highlights = $this->statistics->getEditionHighlights($edition, self::SUMMARY_ROWS);
         }
 
         return view('public.home', [
             'edition' => $edition,
-            'liveMatch' => $liveMatch,
-            'liveMatchData' => $liveMatchData,
-            'nextMatch' => $nextMatch,
-            'recentMatch' => $recentMatch,
             'upcomingMatches' => $upcomingMatches,
             'recentMatches' => $recentMatches,
+            'liveMatchId' => $upcomingMatches->firstWhere('match_status', 'live')?->id,
+            'liveMatchData' => $liveMatchData,
             'standings' => $standings,
-            'topRunScorers' => $topRunScorers,
-            'topWicketTakers' => $topWicketTakers,
-            'teams' => $teams,
-            'featuredVideos' => $featuredVideos,
+            'highlights' => $highlights,
+            // Not edition-scoped: the tournament's own clips, news and photos.
+            'latestVideos' => Video::query()->active()->ordered()->limit(self::MEDIA_ITEMS)->get(),
+            'latestNews' => News::query()->visible()->with('coverImage')->ordered()->limit(self::MEDIA_ITEMS)->get(),
+            'latestPhotos' => Photo::query()->active()->ordered()->limit(self::MEDIA_ITEMS)->get(),
         ]);
     }
 }

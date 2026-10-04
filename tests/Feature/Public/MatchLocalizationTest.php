@@ -68,17 +68,17 @@ class MatchLocalizationTest extends TestCase
 
         $english = $this->get(route('public.home'));
         $english->assertOk();
-        $english->assertSee('Most Runs');
-        $english->assertSee('Recent Results');
-        $english->assertSee('Top Performers');
+        $english->assertSee('Season summary');
+        $english->assertSee('Points table');
+        $english->assertSee('All matches');
 
         $hindi = $this->hindi()->get(route('public.home'));
         $hindi->assertOk();
-        $hindi->assertSee('सबसे ज़्यादा रन');
-        $hindi->assertSee('हाल के नतीजे');
-        $hindi->assertSee('टॉप खिलाड़ी');
-        $hindi->assertDontSee('Most Runs');
-        $hindi->assertDontSee('Recent Results');
+        $hindi->assertSee('सीज़न सारांश');
+        $hindi->assertSee('अंक तालिका');
+        $hindi->assertSee('सभी मैच');
+        $hindi->assertDontSee('Season summary');
+        $hindi->assertDontSee('All matches');
     }
 
     public function test_matches_list_labels_translate(): void

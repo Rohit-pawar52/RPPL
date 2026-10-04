@@ -70,13 +70,13 @@
          identity fields (edition/player) above are already read-only
          here, and document paths are never editable at all (see Phase
          3.39D — replacement/deletion is deliberately out of scope). --}}
-    <div class="mt-4 grid gap-4 sm:grid-cols-3">
+    <div class="mt-4 grid gap-4 sm:grid-cols-2">
         <x-form.input
             name="payment_failure_reason"
             label="Failure reason"
             maxlength="255"
             :value="$registration->payment_failure_reason"
-            placeholder="Shown to the player when the payment is failed"
+            placeholder="Reason shown to the player"
             help="Only kept while the payment status is Failed; cleared on save otherwise."
         />
         <x-form.input

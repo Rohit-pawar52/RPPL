@@ -9,7 +9,7 @@
         </a>
     </div>
 
-    <div class="max-w-lg rounded-lg border border-slate-200 bg-white p-4">
+    <div class="max-w-2xl rounded-lg border border-slate-200 bg-white p-4">
         <form method="POST" action="{{ route('admin.editions.update', $edition) }}" novalidate>
             @csrf
             @method('PUT')

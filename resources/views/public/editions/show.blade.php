@@ -3,8 +3,6 @@
 @section('title', $edition->name.' · '.$branding->shortName)
 
 @section('content')
-    <x-ad-slot tier="main" />
-
     <a href="{{ route('public.editions.index') }}" class="mb-2 inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-900">
         <span aria-hidden="true">&larr;</span> {{ __('directory.editions.all_editions') }}
     </a>
@@ -70,8 +68,6 @@
             </table>
         </div>
     </x-public.card>
-
-    <x-ad-slot tier="normal" />
 
     {{-- Leaderboard --}}
     <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -252,6 +248,4 @@
             <x-public.empty class="!py-4">{{ __('directory.editions.matches_empty') }}</x-public.empty>
         @endforelse
     </x-public.card>
-
-    <x-ad-slot tier="mini" />
 @endsection

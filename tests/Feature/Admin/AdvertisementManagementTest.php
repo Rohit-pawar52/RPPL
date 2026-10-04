@@ -76,6 +76,47 @@ class AdvertisementManagementTest extends TestCase
         $this->actingAs($this->admin())->get(route('admin.advertisements.index'))->assertOk();
     }
 
+    public function test_the_form_tells_the_admin_the_picture_size_for_every_spot(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('admin.advertisements.create'))
+            ->assertOk()
+            ->assertSee('Picture size for each spot')
+            ->assertSeeInOrder(['Main sponsor — top banner', '1600 × 200 px', '8 : 1'])
+            ->assertSeeInOrder(['Normal sponsor — banner', '1600 × 200 px', '8 : 1'])
+            ->assertSeeInOrder(['Normal sponsor — card', '1040 × 400 px', '2.6 : 1'])
+            ->assertSeeInOrder(['Mini sponsor — logo', '400 × 150 px', '8 : 3'])
+            ->assertSee('Normal sponsor spot');
+
+        // The list repeats the guide and says which spot each ad is for.
+        Advertisement::factory()->card()->create(['title' => 'Tile']);
+        $this->actingAs($admin)->get(route('admin.advertisements.index'))
+            ->assertOk()
+            ->assertSee('Picture size for each spot')
+            ->assertSee('Normal sponsor — card');
+    }
+
+    public function test_only_a_normal_sponsor_keeps_a_spot_choice_and_it_defaults_to_the_banner(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('admin.advertisements.store'), $this->payload(['title' => 'A card', 'format' => 'card']))->assertSessionHasNoErrors();
+        $this->actingAs($admin)->post(route('admin.advertisements.store'), $this->payload(['title' => 'No choice']))->assertSessionHasNoErrors();
+        $this->actingAs($admin)->post(route('admin.advertisements.store'), $this->payload(['title' => 'Main', 'tier' => 'main', 'format' => 'card']))->assertSessionHasNoErrors();
+
+        $this->assertSame('card', Advertisement::firstWhere('title', 'A card')->format);
+        $this->assertSame('banner', Advertisement::firstWhere('title', 'No choice')->format);
+        $this->assertNull(Advertisement::firstWhere('title', 'Main')->format);
+
+        $this->actingAs($admin)->post(route('admin.advertisements.store'), $this->payload(['format' => 'poster']))->assertSessionHasErrors('format');
+
+        // Moving a Normal ad to another level clears its spot.
+        $card = Advertisement::firstWhere('title', 'A card');
+        $this->actingAs($admin)->put(route('admin.advertisements.update', $card), $this->payload(['title' => 'A card', 'tier' => 'mini', 'media' => null, 'format' => 'card']))->assertSessionHasNoErrors();
+        $this->assertNull($card->fresh()->format);
+    }
+
     public function test_an_image_ad_is_stored_with_its_file(): void
     {
         $this->actingAs($this->admin())

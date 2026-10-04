@@ -74,7 +74,8 @@ class BrandingConsumptionTest extends TestCase
         $response = $this->get(route('public.home'));
 
         $response->assertOk();
-        $response->assertSee('Local cricket tournament scores, fixtures, and standings.');
+        // No tagline is configured, so nothing is invented in its place.
+        $response->assertDontSee('Local cricket tournament scores');
     }
 
     public function test_footer_fallback_uses_the_dynamic_application_name_and_current_year(): void

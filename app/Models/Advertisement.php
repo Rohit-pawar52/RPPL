@@ -37,6 +37,57 @@ class Advertisement extends Model
         self::TIER_MINI => 'Mini sponsor',
     ];
 
+    public const FORMAT_BANNER = 'banner';
+
+    public const FORMAT_CARD = 'card';
+
+    /**
+     * Normal sponsors only: the spot they show in.
+     */
+    public const FORMATS = [
+        self::FORMAT_BANNER => 'Banner (above the season summary)',
+        self::FORMAT_CARD => 'Card (in the match row)',
+    ];
+
+    /**
+     * Every spot an ad can show in, with the picture size that fits it
+     * (the admin form shows this). The strip is about 88 px tall on a
+     * desktop (72 px on a phone) and up to 1100 px wide, so 8:1 suits it;
+     * a match-row card's picture area is 272 x 104 px, so 2.6:1.
+     *
+     * @var array<string, array{label: string, where: string, size: string, ratio: string, note: string}>
+     */
+    public const SPOTS = [
+        'main' => [
+            'label' => 'Main sponsor — top banner',
+            'where' => 'A slim strip at the very top of the homepage, full width. Shown first, folds away after a few seconds and comes back.',
+            'size' => '1600 × 200 px',
+            'ratio' => '8 : 1',
+            'note' => 'Keep the text and logo in the middle; on a phone the strip is narrower and the picture shrinks to fit. A narrower picture still works — the sides are filled with a blurred copy of it.',
+        ],
+        'normal-banner' => [
+            'label' => 'Normal sponsor — banner',
+            'where' => 'The same kind of strip, above the season summary on the homepage. Normal banners take turns on every page load.',
+            'size' => '1600 × 200 px',
+            'ratio' => '8 : 1',
+            'note' => 'Same size as the Main banner.',
+        ],
+        'normal-card' => [
+            'label' => 'Normal sponsor — card',
+            'where' => 'A card as wide as a match card, between the upcoming matches and the results in the scrolling match row. The ad title is shown under the picture.',
+            'size' => '1040 × 400 px',
+            'ratio' => '2.6 : 1',
+            'note' => 'Only the picture area is this shape; the title and "Sponsored" label sit below it.',
+        ],
+        'mini' => [
+            'label' => 'Mini sponsor — logo',
+            'where' => 'A small logo in the "Our sponsors" strip at the bottom of the homepage (images only). It is shown at most 128 px wide and 48 px tall.',
+            'size' => '400 × 150 px',
+            'ratio' => '8 : 3',
+            'note' => 'Use a PNG with a transparent background so the logo sits cleanly on the white strip.',
+        ],
+    ];
+
     public const MEDIA_IMAGE = 'image';
 
     public const MEDIA_VIDEO = 'video';
@@ -50,6 +101,7 @@ class Advertisement extends Model
     protected $fillable = [
         'title',
         'tier',
+        'format',
         'media_type',
         'media_path',
         'poster_path',
@@ -98,6 +150,32 @@ class Advertisement extends Model
     public function posterUrl(): ?string
     {
         return $this->poster_path ? Storage::disk('public')->url($this->poster_path) : null;
+    }
+
+    /**
+     * Which key of SPOTS this ad's picture is for.
+     */
+    public function spotKey(): string
+    {
+        return match ($this->tier) {
+            self::TIER_MAIN => 'main',
+            self::TIER_MINI => 'mini',
+            default => $this->format === self::FORMAT_CARD ? 'normal-card' : 'normal-banner',
+        };
+    }
+
+    public function spotLabel(): string
+    {
+        return self::SPOTS[$this->spotKey()]['label'];
+    }
+
+    /**
+     * Normal sponsors: 'banner' unless the admin chose 'card' (an empty
+     * value is a banner — see the migration).
+     */
+    public function effectiveFormat(): string
+    {
+        return $this->format === self::FORMAT_CARD ? self::FORMAT_CARD : self::FORMAT_BANNER;
     }
 
     public function tierLabel(): string

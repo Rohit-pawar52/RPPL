@@ -23,9 +23,11 @@
         @enderror
     </div>
 
-    <x-form.input name="currency" label="Currency Code" :value="$settings->get('system.currency')" required maxlength="10" />
-    <x-form.input name="currency_symbol" label="Currency Symbol" :value="$settings->get('system.currency_symbol')" required maxlength="10" />
-    <x-form.input name="display_timezone" label="Display Timezone" :value="$settings->get('system.display_timezone')" required placeholder="Asia/Kolkata" />
+    <div class="grid gap-x-4 sm:grid-cols-3">
+        <x-form.input name="currency" label="Currency Code" :value="$settings->get('system.currency')" required maxlength="10" />
+        <x-form.input name="currency_symbol" label="Currency Symbol" :value="$settings->get('system.currency_symbol')" required maxlength="10" />
+        <x-form.input name="display_timezone" label="Display Timezone" :value="$settings->get('system.display_timezone')" required placeholder="Asia/Kolkata" />
+    </div>
 
     <x-form.input
         name="committee_minimum_contribution"

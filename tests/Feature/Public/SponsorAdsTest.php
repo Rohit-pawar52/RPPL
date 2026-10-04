@@ -3,10 +3,6 @@
 namespace Tests\Feature\Public;
 
 use App\Models\Advertisement;
-use App\Models\Edition;
-use App\Models\EditionTeam;
-use App\Models\GameMatch;
-use App\Models\Innings;
 use App\Services\Advertisement\AdvertisementDisplayService;
 use App\Services\Settings\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,9 +11,10 @@ use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
- * What visitors see: the three sponsor slots (Main / Normal / Mini) on the
- * home, edition, match-info and live pages, only for ads that are active
- * and inside their dates, with nothing left behind when there are none.
+ * What the sponsor slot (<x-ad-slot tier="main|normal|mini" />) renders: only
+ * ads that are active and inside their dates, display-only, and nothing at
+ * all when there are none. The slot is tested on its own; which public pages
+ * carry it is decided in those pages' views.
  */
 class SponsorAdsTest extends TestCase
 {
@@ -30,89 +27,108 @@ class SponsorAdsTest extends TestCase
         parent::tearDown();
     }
 
-    /**
-     * The live page only opens once an innings exists.
-     */
-    private function liveMatch(?Edition $edition = null): GameMatch
+    private function slot(string $tier): string
     {
-        $edition ??= Edition::factory()->create(['status' => 'active']);
-        $teamA = EditionTeam::factory()->create(['edition_id' => $edition->id]);
-        $teamB = EditionTeam::factory()->create(['edition_id' => $edition->id]);
-
-        $match = GameMatch::factory()->create([
-            'edition_id' => $edition->id,
-            'edition_team_a_id' => $teamA->id,
-            'edition_team_b_id' => $teamB->id,
-            'match_status' => 'live',
-            'started_at' => now(),
-        ]);
-        $match->update(['toss_winner_team_id' => $teamA->id, 'toss_decision' => 'bat']);
-
-        Innings::create([
-            'match_id' => $match->id,
-            'innings_number' => 1,
-            'batting_team_id' => $teamA->id,
-            'bowling_team_id' => $teamB->id,
-            'status' => 'live',
-        ]);
-
-        return $match;
+        return (string) $this->blade('<x-ad-slot tier="'.$tier.'" />');
     }
 
-    /**
-     * @return array<string, string>
-     */
-    private function pages(): array
-    {
-        $edition = Edition::factory()->create(['status' => 'active']);
-        $match = $this->liveMatch($edition);
-
-        return [
-            'home' => route('public.home'),
-            'edition' => route('public.editions.show', $edition),
-            'match info' => route('public.matches.show', $match),
-            'live' => route('public.matches.live', $match),
-        ];
-    }
-
-    public function test_every_page_shows_each_slot_of_a_live_sponsor(): void
+    public function test_each_tier_renders_its_own_slot(): void
     {
         Advertisement::factory()->main()->create(['title' => 'Title Sponsor', 'media_path' => 'ads/main.jpg']);
         Advertisement::factory()->create(['title' => 'Banner Sponsor', 'media_path' => 'ads/banner.jpg']);
         Advertisement::factory()->mini()->create(['title' => 'Local Dairy', 'media_path' => 'ads/dairy.png']);
 
-        foreach ($this->pages() as $name => $url) {
-            $this->get($url)
-                ->assertOk()
-                ->assertSee('data-ad="main"', false)
-                ->assertSee('ads/main.jpg', false)
-                ->assertSee('data-ad="normal"', false)
-                ->assertSee('ads/banner.jpg', false)
-                ->assertSee('data-ad="mini"', false)
-                ->assertSee('Local Dairy')
-                ->assertSee('Our sponsors');
-        }
+        $this->blade('<x-ad-slot tier="main" />')
+            ->assertSee('data-ad="main"', false)
+            ->assertSee('ads/main.jpg', false)
+            ->assertSee('Sponsored')
+            ->assertDontSee('ads/banner.jpg', false);
+
+        $this->blade('<x-ad-slot tier="normal" />')
+            ->assertSee('data-ad="normal"', false)
+            ->assertSee('ads/banner.jpg', false);
+
+        $this->blade('<x-ad-slot tier="mini" />')
+            ->assertSee('data-ad="mini"', false)
+            ->assertSee('Local Dairy')
+            ->assertSee('Our sponsors');
     }
 
     public function test_ads_are_display_only_with_no_link_around_them(): void
     {
         Advertisement::factory()->main()->create(['media_path' => 'ads/main.jpg']);
 
-        $html = $this->get(route('public.home'))->assertOk()->getContent();
+        $html = $this->slot('main');
 
-        preg_match('#<aside data-ad="main".*?</aside>#s', $html, $block);
-        $this->assertNotEmpty($block);
-        $this->assertStringNotContainsString('<a ', $block[0]);
-        $this->assertStringContainsString('pointer-events-none', $block[0]);
+        $this->assertStringNotContainsString('<a ', $html);
+        $this->assertStringContainsString('pointer-events-none', $html);
+        // A fixed compact height, so a tall image can never stretch the page.
+        $this->assertStringContainsString('height: 5.5rem', $html);
+    }
+
+    public function test_a_banner_folds_away_and_returns_on_a_timer_but_a_card_and_logos_stay(): void
+    {
+        config(['ads.banner_visible_seconds' => 8, 'ads.banner_hidden_seconds' => 30]);
+        Advertisement::factory()->main()->create(['media_path' => 'ads/main.jpg']);
+        Advertisement::factory()->card()->create(['media_path' => 'ads/card.jpg']);
+        Advertisement::factory()->mini()->create(['title' => 'Local Dairy']);
+
+        // The banner carries its show / hide times (in milliseconds).
+        $this->blade('<x-ad-slot tier="main" />')
+            ->assertSee('data-ad-cycle', false)
+            ->assertSee('data-ad-visible="8000"', false)
+            ->assertSee('data-ad-hidden="30000"', false);
+
+        // A tile in a row and the logo strip do not fold.
+        $this->blade('<x-ad-slot tier="normal" variant="card" />')
+            ->assertSee('ads/card.jpg', false)
+            ->assertDontSee('data-ad-visible', false);
+        $this->blade('<x-ad-slot tier="mini" />')->assertDontSee('data-ad-visible', false);
+    }
+
+    public function test_banners_can_be_kept_permanently_visible_from_the_config(): void
+    {
+        config(['ads.banner_hidden_seconds' => 0]);
+        Advertisement::factory()->main()->create();
+
+        $this->blade('<x-ad-slot tier="main" />')
+            ->assertSee('data-ad="main"', false)
+            ->assertDontSee('data-ad-visible', false);
+    }
+
+    public function test_a_normal_ad_only_shows_in_the_spot_it_was_made_for(): void
+    {
+        Advertisement::factory()->create(['title' => 'Strip Ad', 'media_path' => 'ads/strip.jpg']);
+        Advertisement::factory()->card()->create(['title' => 'Tile Ad', 'media_path' => 'ads/tile.jpg']);
+
+        $this->blade('<x-ad-slot tier="normal" />')
+            ->assertSee('ads/strip.jpg', false)
+            ->assertDontSee('ads/tile.jpg', false);
+
+        $this->blade('<x-ad-slot tier="normal" variant="card" />')
+            ->assertSee('ads/tile.jpg', false)
+            ->assertSee('Tile Ad')
+            ->assertDontSee('ads/strip.jpg', false);
+    }
+
+    public function test_a_banner_image_is_backed_by_a_blurred_copy_so_it_always_looks_full_width(): void
+    {
+        Advertisement::factory()->main()->create(['media_path' => 'ads/main.jpg']);
+
+        $html = $this->slot('main');
+
+        $this->assertStringContainsString('data-ad-backdrop', $html);
+        $this->assertStringContainsString('ads/main.jpg', $html);
+        $this->assertStringContainsString('blur(', $html);
+        // The picture itself is never cropped.
+        $this->assertStringContainsString('object-fit: contain', $html);
     }
 
     public function test_a_video_ad_is_muted_loops_and_loads_only_when_scrolled_into_view(): void
     {
-        Edition::factory()->create(['status' => 'active']);
         Advertisement::factory()->video()->create(['media_path' => 'ads/clip.mp4', 'poster_path' => 'ads/posters/p.jpg']);
 
-        $this->get(route('public.home'))
-            ->assertOk()
+        $this->blade('<x-ad-slot tier="normal" />')
             ->assertSee('data-ad-src="', false)
             ->assertSee('ads/clip.mp4', false)
             ->assertSee('ads/posters/p.jpg', false)
@@ -128,18 +144,16 @@ class SponsorAdsTest extends TestCase
     {
         Carbon::setTestNow('2026-10-10 06:00:00');
 
-        Advertisement::factory()->inactive()->create(['title' => 'Switched off']);
-        Advertisement::factory()->create(['title' => 'Not started', 'starts_on' => '2026-10-11']);
-        Advertisement::factory()->create(['title' => 'Already over', 'ends_on' => '2026-10-09']);
+        Advertisement::factory()->inactive()->mini()->create(['title' => 'Switched off']);
+        Advertisement::factory()->mini()->create(['title' => 'Not started', 'starts_on' => '2026-10-11']);
+        Advertisement::factory()->mini()->create(['title' => 'Already over', 'ends_on' => '2026-10-09']);
         Advertisement::factory()->mini()->create(['title' => 'Running today', 'starts_on' => '2026-10-10', 'ends_on' => '2026-10-10']);
 
-        $this->get(route('public.home'))
-            ->assertOk()
+        $this->blade('<x-ad-slot tier="mini" />')
             ->assertSee('Running today')
             ->assertDontSee('Switched off')
             ->assertDontSee('Not started')
-            ->assertDontSee('Already over')
-            ->assertDontSee('data-ad="normal"', false);
+            ->assertDontSee('Already over');
     }
 
     public function test_the_ad_dates_follow_the_display_timezone(): void
@@ -151,56 +165,26 @@ class SponsorAdsTest extends TestCase
         Advertisement::factory()->mini()->create(['title' => 'Ended yesterday there', 'ends_on' => '2026-10-10']);
         Advertisement::factory()->mini()->create(['title' => 'Still running there', 'ends_on' => '2026-10-11']);
 
-        $this->get(route('public.home'))
-            ->assertOk()
+        $this->blade('<x-ad-slot tier="mini" />')
             ->assertSee('Still running there')
             ->assertDontSee('Ended yesterday there');
     }
 
-    public function test_pages_without_any_ads_render_without_empty_boxes(): void
+    public function test_a_slot_with_no_ads_renders_nothing_at_all(): void
     {
-        foreach ($this->pages() as $url) {
-            $this->get($url)
-                ->assertOk()
-                ->assertDontSee('data-ad=', false)
-                ->assertDontSee('Our sponsors')
-                ->assertDontSee('Sponsored');
+        foreach (['main', 'normal', 'mini'] as $tier) {
+            $this->assertSame('', trim($this->slot($tier)), $tier);
         }
     }
 
-    public function test_the_live_banner_sits_outside_the_parts_the_polling_script_rewrites(): void
-    {
-        Advertisement::factory()->create(['media_path' => 'ads/banner.jpg']);
-        $match = $this->liveMatch();
-
-        $html = $this->get(route('public.matches.live', $match))->assertOk()->getContent();
-
-        $dom = new \DOMDocument;
-        @$dom->loadHTML($html);
-        $xpath = new \DOMXPath($dom);
-
-        $this->assertSame(1, $xpath->query('//*[@data-ad="normal"]')->length);
-
-        // The ad is not inside anything the polling script rewrites.
-        foreach (['live-innings', 'live-chase', 'live-deliveries'] as $id) {
-            $this->assertSame(1, $xpath->query('//*[@id="'.$id.'"]')->length, $id);
-            $this->assertSame(0, $xpath->query('//*[@id="'.$id.'"]//*[@data-ad]')->length, $id);
-        }
-
-        // And the polling endpoint knows nothing about ads.
-        $this->getJson(route('public.matches.live-data', $match))
-            ->assertOk()
-            ->assertJsonMissingPath('ads');
-    }
-
-    public function test_a_failing_ads_table_never_breaks_a_page(): void
+    public function test_a_failing_ads_table_renders_nothing_instead_of_an_error(): void
     {
         Schema::drop('advertisements');
 
-        $this->get(route('public.home'))->assertOk()->assertDontSee('data-ad=', false);
+        $this->assertSame('', trim($this->slot('main')));
     }
 
-    public function test_the_main_sponsor_is_always_the_one_shown_and_a_normal_ad_is_chosen_by_weight(): void
+    public function test_a_normal_ad_is_chosen_by_weight_and_no_ad_repeats_on_a_page(): void
     {
         $light = Advertisement::factory()->create(['weight' => 1]);
         $heavy = Advertisement::factory()->create(['weight' => 3]);
@@ -212,8 +196,14 @@ class SponsorAdsTest extends TestCase
         $this->assertSame($heavy->id, AdvertisementDisplayService::pickWeighted($ads, 3)->id);
         $this->assertNull(AdvertisementDisplayService::pickWeighted(collect(), 0));
 
-        // The banner is picked once per request, so it is the same wherever it appears.
+        // Each Normal slot on a page gets a different ad; once every live
+        // Normal ad is on the page, further slots stay empty.
         $service = app(AdvertisementDisplayService::class);
-        $this->assertSame($service->banner()?->id, $service->banner()?->id);
+        $first = $service->nextNormal();
+        $second = $service->nextNormal();
+        $this->assertNotNull($first);
+        $this->assertNotNull($second);
+        $this->assertNotSame($first->id, $second->id);
+        $this->assertNull($service->nextNormal());
     }
 }

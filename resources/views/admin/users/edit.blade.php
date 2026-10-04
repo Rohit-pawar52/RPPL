@@ -13,13 +13,15 @@
         </a>
     </div>
 
-    <div class="max-w-lg rounded-lg border border-slate-200 bg-white p-4">
+    <div class="max-w-2xl rounded-lg border border-slate-200 bg-white p-4">
         <form method="POST" action="{{ route('admin.users.update', $targetUser) }}" novalidate>
             @csrf
             @method('PUT')
 
-            <x-form.input name="name" label="Name" :value="old('name', $targetUser->name)" required autofocus />
-            <x-form.input name="email" label="Email" type="email" :value="old('email', $targetUser->email)" required />
+            <div class="grid gap-x-4 sm:grid-cols-2">
+                <x-form.input name="name" label="Name" :value="old('name', $targetUser->name)" required autofocus />
+                <x-form.input name="email" label="Email" type="email" :value="old('email', $targetUser->email)" required />
+            </div>
 
             @if($isSelf)
                 {{-- Server-side rules always block a self-demotion/self-deactivation

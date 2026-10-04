@@ -20,9 +20,12 @@ class AdvertisementDisplayService
      */
     private ?Collection $live = null;
 
-    private bool $bannerPicked = false;
-
-    private ?Advertisement $banner = null;
+    /**
+     * Ids of the Normal ads already handed to a slot on this page.
+     *
+     * @var list<int>
+     */
+    private array $shownNormalIds = [];
 
     public function __construct(private readonly SettingsService $settings) {}
 
@@ -35,20 +38,31 @@ class AdvertisementDisplayService
     }
 
     /**
-     * One Normal sponsor, chosen by weight; a different one can come up on
-     * the next page load. Fixed for the rest of this request.
+     * The Normal sponsor for the next Normal slot of the given format
+     * ('banner' strip or 'card' tile) on the page, chosen by weight among
+     * the ads made for that format that are not shown yet — so two slots of
+     * one format never repeat an ad, and a later slot is simply empty once
+     * every live ad of that format is already on the page. A different ad
+     * can come up on the next page load.
      */
-    public function banner(): ?Advertisement
+    public function nextNormal(string $format = Advertisement::FORMAT_BANNER): ?Advertisement
     {
-        if (! $this->bannerPicked) {
-            $candidates = $this->liveIn(Advertisement::TIER_NORMAL);
-            $total = $candidates->sum('weight');
+        $candidates = $this->liveIn(Advertisement::TIER_NORMAL)
+            ->filter(fn (Advertisement $ad) => $ad->effectiveFormat() === $format)
+            ->reject(fn (Advertisement $ad) => in_array($ad->id, $this->shownNormalIds, true));
+        $total = $candidates->sum(fn (Advertisement $ad) => max(1, $ad->weight));
 
-            $this->banner = $total > 0 ? self::pickWeighted($candidates, random_int(0, $total - 1)) : null;
-            $this->bannerPicked = true;
+        if ($total < 1) {
+            return null;
         }
 
-        return $this->banner;
+        $pick = self::pickWeighted($candidates, random_int(0, $total - 1));
+
+        if ($pick) {
+            $this->shownNormalIds[] = $pick->id;
+        }
+
+        return $pick;
     }
 
     /**

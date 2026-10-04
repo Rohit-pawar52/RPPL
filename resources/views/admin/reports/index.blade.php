@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 class="text-base font-semibold text-neutral-900">Reports</h1>
+        <p class="text-xs text-neutral-500">Download or print reports for one edition.</p>
 
         <form method="GET" action="{{ route('admin.reports.index') }}" class="flex items-center gap-2">
             <select
@@ -27,6 +27,8 @@
             <p class="text-xs text-neutral-500">Create a tournament edition to generate reports here.</p>
         </div>
     @else
+        {{-- A and B are short, so they sit side by side on wide screens. --}}
+        <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
         {{-- A. Tournament Reports --}}
         <div class="rounded-lg border border-neutral-200 bg-white p-4">
             <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Tournament Reports</h3>
@@ -46,7 +48,7 @@
         </div>
 
         {{-- B. Registration Reports --}}
-        <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
+        <div class="rounded-lg border border-neutral-200 bg-white p-4">
             <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Registration Reports</h3>
             <div class="flex items-center justify-between gap-3 rounded-md border border-neutral-100 px-3 py-2.5 text-[13px]">
                 <div class="min-w-0">
@@ -61,6 +63,8 @@
                     Export CSV
                 </a>
             </div>
+        </div>
+
         </div>
 
         {{-- C. Finance & Contributions --}}
