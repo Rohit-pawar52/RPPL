@@ -38,6 +38,23 @@ class AdvertisementDisplayService
     }
 
     /**
+     * The one Auction sponsor (if two ever overlap, the newest wins).
+     */
+    public function auction(): ?Advertisement
+    {
+        return $this->liveIn(Advertisement::TIER_AUCTION)->sortByDesc('id')->first();
+    }
+
+    /**
+     * The sponsor for the pop-up on the player auction page: the Auction
+     * sponsor, or the Main sponsor while there is no Auction sponsor live.
+     */
+    public function auctionPopup(): ?Advertisement
+    {
+        return $this->auction() ?? $this->main();
+    }
+
+    /**
      * The Normal sponsor for the next Normal slot of the given format
      * ('banner' strip or 'card' tile) on the page, chosen by weight among
      * the ads made for that format that are not shown yet — so two slots of

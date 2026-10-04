@@ -89,6 +89,7 @@ Route::middleware([EnsurePublicSiteIsNotUnderMaintenance::class, SetPublicLocale
     Route::prefix('auction')->name('public.auction.')->group(function () {
         Route::get('/', [AuctionController::class, 'show'])->name('show');
         Route::get('/data', [AuctionController::class, 'data'])->name('data');
+        Route::get('/sales/{lot}', [AuctionController::class, 'sale'])->whereNumber('lot')->name('sale');
     });
 
     Route::prefix('videos')->name('public.videos.')->group(function () {

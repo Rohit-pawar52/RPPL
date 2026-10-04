@@ -20,7 +20,7 @@
         class="fixed right-3 top-3 z-10 rounded-md px-2 py-1 text-xs text-white/30 transition hover:bg-white/10 hover:text-white"
     >&times; {{ __('auction.back_to_page') }}</a>
 
-    <main class="mx-auto flex min-h-full w-full max-w-[1900px] flex-col px-6 py-5">
+    <main class="mx-auto flex min-h-full w-full max-w-[2200px] flex-col px-[clamp(1rem,1.6vw,2.5rem)] py-[clamp(0.75rem,1.2vw,1.75rem)] xl:h-screen xl:overflow-hidden">
         @yield('content')
     </main>
 </body>

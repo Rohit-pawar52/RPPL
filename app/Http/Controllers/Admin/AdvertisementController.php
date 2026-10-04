@@ -26,9 +26,9 @@ class AdvertisementController extends Controller
     {
         $this->authorize('viewAny', Advertisement::class);
 
-        // Main first, then Normal, then Mini; newest first inside a tier.
+        // Main first, then Auction, Normal and Mini; newest first inside a tier.
         $advertisements = Advertisement::query()
-            ->orderByRaw("case tier when 'main' then 1 when 'normal' then 2 else 3 end")
+            ->orderByRaw("case tier when 'main' then 1 when 'auction' then 2 when 'normal' then 3 else 4 end")
             ->orderByDesc('id')
             ->paginate(20);
 
@@ -82,7 +82,8 @@ class AdvertisementController extends Controller
 
     /**
      * Flips the current value server-side, so no client-supplied status is
-     * ever trusted. Turning a Main sponsor on can be refused (one Main slot).
+     * ever trusted. Turning a Main or Auction sponsor on can be refused (one
+     * slot each).
      */
     public function toggleStatus(Advertisement $advertisement): RedirectResponse
     {

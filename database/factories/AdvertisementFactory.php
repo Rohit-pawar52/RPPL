@@ -34,6 +34,11 @@ class AdvertisementFactory extends Factory
         return $this->state(['tier' => Advertisement::TIER_MAIN]);
     }
 
+    public function auction(): static
+    {
+        return $this->state(['tier' => Advertisement::TIER_AUCTION]);
+    }
+
     public function card(): static
     {
         return $this->state(['format' => Advertisement::FORMAT_CARD]);

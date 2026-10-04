@@ -36,8 +36,6 @@ class AuctionStateService
 
     private const RECENT_SALES = 10;
 
-    private const PUBLIC_SALES = 12;
-
     /**
      * How long after a sale the website keeps announcing it with SOLD.
      */
@@ -149,7 +147,7 @@ class AuctionStateService
             : null;
         $lot = $lot?->isLive() ? $lot : null;
 
-        $sales = $this->publicSales($auction);
+        $sales = $this->publicSales($auction, $showBids);
         $counts = $this->auctions->counts($auction);
 
         return [
@@ -163,22 +161,19 @@ class AuctionStateService
                 'min_squad' => $auction->min_squad,
             ],
             'counts' => [
+                'total' => $counts['total'],
                 'waiting' => $counts['pending'],
                 'hold' => $counts['hold'],
                 'sold' => $counts['sold'],
                 'unsold' => $counts['unsold'],
             ],
+            'stats' => $this->publicStats($sales),
             'lot' => $lot ? $this->publicLot($auction, $lot, $showBids) : null,
             'last_sale' => ($sales[0] ?? null) && $sales[0]['seconds_ago'] <= self::SOLD_BANNER_SECONDS ? $sales[0] : null,
             'sales' => $sales,
-            'hold' => $auction->lots()
-                ->where('status', AuctionLot::HOLD)
-                ->with('playerRegistration.player')
-                ->get()
-                ->map(fn (AuctionLot $held) => $held->playerRegistration->player->name)
-                ->sort()
-                ->values()
-                ->all(),
+            'upcoming' => $this->publicWaiting($auction, AuctionLot::PENDING, true),
+            'hold' => $this->publicWaiting($auction, AuctionLot::HOLD, false),
+            'unsold' => $this->publicWaiting($auction, AuctionLot::UNSOLD, false),
             'teams' => $this->publicTeams($auction),
             'results' => $auction->isCompleted() ? $this->results($auction) : null,
         ];
@@ -270,25 +265,99 @@ class AuctionStateService
     }
 
     /**
+     * Every player sold so far, newest first, with what they went for and -
+     * only when the auction shows live bids - how many bids it took.
+     *
      * @return list<array<string, mixed>>
      */
-    private function publicSales(Auction $auction): array
+    private function publicSales(Auction $auction, bool $showBids): array
     {
         return $auction->lots()
             ->where('status', AuctionLot::SOLD)
             ->with('playerRegistration.player', 'teamPlayer.editionTeam.team')
+            ->withCount(['bids as standing_bids_count' => fn ($query) => $query->standing()])
             ->orderByDesc('sold_at')
             ->orderByDesc('id')
-            ->limit(self::PUBLIC_SALES)
             ->get()
             ->map(fn (AuctionLot $lot) => [
                 'key' => $lot->id,
                 'name' => $lot->playerRegistration->player->name,
+                'role' => $this->roleLabel($lot->playerRegistration->player),
                 'team' => $lot->teamPlayer?->editionTeam->team->name,
                 'amount' => $lot->current_bid,
+                'bids' => $showBids ? (int) $lot->standing_bids_count : null,
                 'seconds_ago' => $lot->sold_at ? (int) $lot->sold_at->diffInSeconds(now(), true) : null,
             ])
             ->all();
+    }
+
+    /**
+     * The headline numbers of the sales so far.
+     *
+     * @param  list<array<string, mixed>>  $sales
+     * @return array{points_spent: int, average: int, highest: array{name: string, team: ?string, amount: int}|null}
+     */
+    private function publicStats(array $sales): array
+    {
+        $sales = collect($sales);
+        $top = $sales->sortByDesc('amount')->first();
+
+        return [
+            'points_spent' => (int) $sales->sum('amount'),
+            'average' => $sales->isEmpty() ? 0 : (int) round($sales->sum('amount') / $sales->count()),
+            'highest' => $top ? ['name' => $top['name'], 'team' => $top['team'], 'amount' => (int) $top['amount']] : null,
+        ];
+    }
+
+    /**
+     * Players in one state (still to come, on hold, unsold), by name. Only
+     * the "still to come" list carries their playing role.
+     *
+     * @return list<string>|list<array{name: string, role: ?string}>
+     */
+    private function publicWaiting(Auction $auction, string $status, bool $withRole): array
+    {
+        $players = $auction->lots()
+            ->where('status', $status)
+            ->with('playerRegistration.player')
+            ->get()
+            ->map(fn (AuctionLot $lot) => $lot->playerRegistration->player)
+            ->sortBy(fn (Player $player) => mb_strtolower($player->name))
+            ->values();
+
+        return $withRole
+            ? $players->map(fn (Player $player) => ['name' => $player->name, 'role' => $this->roleLabel($player)])->all()
+            : $players->map(fn (Player $player) => $player->name)->all();
+    }
+
+    /**
+     * How the bidding on one sold player went (the standing bids, lowest
+     * first), or null when it must not be shown: live bids are off, or the
+     * player is not sold in this auction.
+     *
+     * @return list<array{team: string, amount: int}>|null
+     */
+    public function publicSaleBids(Auction $auction, AuctionLot $lot): ?array
+    {
+        if (! $auction->show_live_bids || $lot->auction_id !== $auction->id || $lot->status !== AuctionLot::SOLD) {
+            return null;
+        }
+
+        return $lot->bids()
+            ->standing()
+            ->with('editionTeam.team')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (AuctionBid $bid) => [
+                'team' => $bid->editionTeam->team->name,
+                'amount' => $bid->amount,
+            ])
+            ->all();
+    }
+
+    private function roleLabel(Player $player): ?string
+    {
+        return $player->primary_role ? (Player::PRIMARY_ROLE_LABELS[$player->primary_role] ?? null) : null;
     }
 
     /**
