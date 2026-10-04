@@ -2,8 +2,22 @@
 
 @section('title', 'Matches')
 
+@section('subtitle', 'Every match across all editions — schedule, scoring and results.')
+
+@section('actions')
+    <x-selected-report-action
+        id="matches-selected-export"
+        :action="route('admin.matches.export-selected')"
+        label="Export Selected ({count})"
+    />
+    <x-admin.button :href="route('admin.matches.export', $filters)" variant="secondary" icon="document-chart">Export</x-admin.button>
+    @can('create', \App\Models\GameMatch::class)
+        <x-admin.button href="{{ route('admin.matches.create') }}" variant="primary">+ Schedule match</x-admin.button>
+    @endcan
+@endsection
+
 @section('content')
-    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <div class="mb-4">
         <x-table-filters :action="route('admin.matches.index')" :filters="$filters" :date-range="true" :per-page="$perPage">
             <input
                 type="text"
@@ -31,29 +45,6 @@
                 @endforeach
             </select>
         </x-table-filters>
-
-        <div class="flex items-center gap-2">
-            <x-selected-report-action
-                id="matches-selected-export"
-                :action="route('admin.matches.export-selected')"
-                label="Export Selected ({count})"
-            />
-            <a
-                href="{{ route('admin.matches.export', $filters) }}"
-                class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50"
-            >
-                <x-icon name="document-chart" class="h-4 w-4" />
-                Export
-            </a>
-            @can('create', \App\Models\GameMatch::class)
-                <a
-                    href="{{ route('admin.matches.create') }}"
-                    class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
-                >
-                    + Schedule match
-                </a>
-            @endcan
-        </div>
     </div>
 
     <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white" data-row-selection="#matches-selected-export-button">
@@ -86,14 +77,14 @@
                             />
                         </td>
                         <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">{{ $match->match_number ?? '—' }}</td>
-                        <td class="hidden px-4 py-2 text-neutral-600 lg:table-cell">{{ $match->edition->name }}</td>
+                        <td class="hidden whitespace-nowrap px-4 py-2 text-neutral-600 lg:table-cell">{{ $match->edition->name }}</td>
                         <td class="px-4 py-2 font-medium text-neutral-800">
                             <a href="{{ route('admin.matches.show', $match) }}" class="hover:underline">
                                 {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
                             </a>
                         </td>
                         <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">{{ $match->venue->name ?? 'TBD' }}</td>
-                        <td class="hidden px-4 py-2 text-neutral-500 lg:table-cell">
+                        <td class="hidden whitespace-nowrap px-4 py-2 text-neutral-500 lg:table-cell">
                             {{ display_datetime($match->scheduled_at, 'd M Y, h:i A') }}
                         </td>
                         <td class="px-4 py-2">

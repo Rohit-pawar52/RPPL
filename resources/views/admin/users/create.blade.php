@@ -9,23 +9,29 @@
         </a>
     </div>
 
-    <div class="max-w-lg rounded-lg border border-slate-200 bg-white p-4">
+    <div class="max-w-2xl rounded-lg border border-slate-200 bg-white p-4">
         <form method="POST" action="{{ route('admin.users.store') }}" novalidate>
             @csrf
 
-            <x-form.input name="name" label="Name" :value="old('name')" required autofocus />
-            <x-form.input name="email" label="Email" type="email" :value="old('email')" required />
+            <div class="grid gap-x-4 sm:grid-cols-2">
+                <x-form.input name="name" label="Name" :value="old('name')" required autofocus />
+                <x-form.input name="email" label="Email" type="email" :value="old('email')" required />
+            </div>
 
-            <x-form.select
-                name="role_id"
-                label="Role"
-                placeholder="Select role"
-                :options="$roles->pluck('name', 'id')"
-                :value="old('role_id')"
-            />
+            <div class="sm:max-w-xs">
+                <x-form.select
+                    name="role_id"
+                    label="Role"
+                    placeholder="Select role"
+                    :options="$roles->pluck('name', 'id')"
+                    :value="old('role_id')"
+                />
+            </div>
 
-            <x-form.input name="password" label="Password" type="password" required />
-            <x-form.input name="password_confirmation" label="Confirm Password" type="password" required />
+            <div class="grid gap-x-4 sm:grid-cols-2">
+                <x-form.input name="password" label="Password" type="password" required />
+                <x-form.input name="password_confirmation" label="Confirm Password" type="password" required />
+            </div>
 
             <div class="mt-2 flex items-center gap-2">
                 <x-admin.button>Save user</x-admin.button>

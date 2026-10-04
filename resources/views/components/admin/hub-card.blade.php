@@ -11,10 +11,10 @@
     </span>
     <span class="mt-1 text-xl font-semibold leading-tight text-slate-900">{{ $value }}</span>
     <span class="mt-0.5 min-h-[1rem] truncate text-[11px] text-slate-400">{{ $sub }}</span>
-    <span class="mt-1.5 flex items-center justify-between gap-2 text-[11px] font-medium">
-        <a href="{{ $href }}" class="text-green-700 after:absolute after:inset-0 after:content-[''] group-hover:underline focus-visible:outline-2 focus-visible:outline-green-600">View more &rarr;</a>
+    <span class="mt-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-[11px] font-medium">
+        <a href="{{ $href }}" class="whitespace-nowrap text-green-700 after:absolute after:inset-0 after:content-[''] group-hover:underline focus-visible:outline-2 focus-visible:outline-green-600">View more &rarr;</a>
         @if($extraHref)
-            <a href="{{ $extraHref }}" class="relative z-10 text-slate-500 hover:text-green-700 hover:underline">{{ $extraLabel }}</a>
+            <a href="{{ $extraHref }}" class="relative z-10 whitespace-nowrap text-slate-500 hover:text-green-700 hover:underline">{{ $extraLabel }}</a>
         @endif
     </span>
 </div>

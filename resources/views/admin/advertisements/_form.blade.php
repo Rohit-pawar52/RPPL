@@ -28,8 +28,6 @@
     />
 </div>
 
-@include('admin.advertisements._size-guide', ['highlight' => $advertisement?->spotKey() ?? 'normal-banner'])
-
 <x-form.select
     name="media_type"
     label="Type"

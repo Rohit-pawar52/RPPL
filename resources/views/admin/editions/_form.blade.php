@@ -3,50 +3,56 @@
     $edition = $edition ?? null;
 @endphp
 
-<x-form.input
-    name="name"
-    label="Edition name"
-    :value="$edition->name ?? ''"
-    placeholder="e.g. RPPL 2027"
-    required
-    autofocus
-/>
+<div class="grid gap-x-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <x-form.input
+        name="name"
+        label="Edition name"
+        :value="$edition->name ?? ''"
+        placeholder="e.g. RPPL 2027"
+        required
+        autofocus
+    />
 
-<x-form.input
-    name="year"
-    label="Year"
-    type="number"
-    :value="$edition->year ?? ''"
-    min="2000"
-    max="2100"
-    required
-/>
+    <x-form.input
+        name="year"
+        label="Year"
+        type="number"
+        :value="$edition->year ?? ''"
+        min="2000"
+        max="2100"
+        required
+    />
+</div>
 
-<x-form.select
-    name="status"
-    label="Status"
-    :options="collect($statuses)->mapWithKeys(fn ($status) => [$status => ucfirst($status)])"
-    :value="$edition->status ?? 'upcoming'"
-    required
-/>
+<div class="grid gap-x-4 sm:grid-cols-2">
+    <x-form.select
+        name="status"
+        label="Status"
+        :options="collect($statuses)->mapWithKeys(fn ($status) => [$status => ucfirst($status)])"
+        :value="$edition->status ?? 'upcoming'"
+        required
+    />
 
-<x-form.select
-    name="registration_open"
-    label="Public Registration"
-    :options="['1' => 'Open', '0' => 'Closed']"
-    :value="old('registration_open', $edition->registration_open ?? false) ? '1' : '0'"
-    required
-/>
+    <x-form.select
+        name="registration_open"
+        label="Public Registration"
+        :options="['1' => 'Open', '0' => 'Closed']"
+        :value="old('registration_open', $edition->registration_open ?? false) ? '1' : '0'"
+        required
+    />
+</div>
 
-<x-form.input
-    name="registration_fee"
-    label="Registration Fee"
-    type="number"
-    step="0.01"
-    min="0"
-    :value="$edition->registration_fee ?? ''"
-    help="Required to open public registration. The payment QR code shown on the registration page is uploaded under Settings → Payments."
-/>
+<div class="sm:max-w-xs">
+    <x-form.input
+        name="registration_fee"
+        label="Registration Fee"
+        type="number"
+        step="0.01"
+        min="0"
+        :value="$edition->registration_fee ?? ''"
+    />
+</div>
+<p class="-mt-2.5 mb-3.5 text-[11px] text-slate-400">Required to open public registration. The payment QR code shown on the registration page is uploaded under Settings → Payments.</p>
 
 {{--
     Optional registration window, entered in system.display_timezone.

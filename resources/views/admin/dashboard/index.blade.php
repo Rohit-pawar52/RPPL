@@ -53,7 +53,10 @@
             </a>
         @endif
 
-        <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
+        {{-- Matches and results side by side on wide screens, so the
+             dashboard is not one long column. --}}
+        <div class="mt-4 grid gap-4 lg:grid-cols-2 lg:items-start">
+        <div class="rounded-lg border border-neutral-200 bg-white p-4">
             <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Matches Needing Attention</h3>
 
             @forelse($matchesNeedingAttention as $match)
@@ -76,22 +79,22 @@
             @endforelse
         </div>
 
-        <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
+        <div class="rounded-lg border border-neutral-200 bg-white p-4">
             <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Recent Results</h3>
 
             @forelse($recentResults as $match)
-                <div class="flex items-center justify-between gap-3 border-b border-neutral-100 py-2 text-[13px] last:border-b-0">
-                    <div class="min-w-0">
-                        <a href="{{ route('admin.matches.show', $match) }}" class="font-medium text-neutral-800 hover:underline">
-                            {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
-                        </a>
-                        <p class="text-[11px] text-neutral-500">{{ display_datetime($match->scheduled_at, 'd M Y') }}</p>
-                    </div>
-                    <p class="text-[11px] text-neutral-600">{{ $match->match_result ?? '—' }}</p>
+                <div class="border-b border-neutral-100 py-2 text-[13px] last:border-b-0">
+                    <a href="{{ route('admin.matches.show', $match) }}" class="font-medium text-neutral-800 hover:underline">
+                        {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
+                    </a>
+                    <p class="text-[11px] text-neutral-500">
+                        {{ display_datetime($match->scheduled_at, 'd M Y') }} &middot; <span class="text-neutral-700">{{ $match->match_result ?? '—' }}</span>
+                    </p>
                 </div>
             @empty
                 <p class="py-4 text-center text-xs text-neutral-400">No completed matches yet.</p>
             @endforelse
+        </div>
         </div>
 
         @if($canViewFinance)
@@ -99,7 +102,8 @@
                  "Registration Summary" block with the same total/paid/
                  pending figures plus the amount actually collected and an
                  actionable link into the pending-verification queue. --}}
-            <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
+            <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3 xl:items-start">
+            <div class="rounded-lg border border-neutral-200 bg-white p-4">
                 <div class="mb-3 flex items-center justify-between gap-3">
                     <h3 class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Registration Payments</h3>
                     <a href="{{ route('admin.player-registrations.index', ['edition_id' => $edition->id]) }}" class="text-[11px] font-medium theme-link hover:underline">
@@ -108,7 +112,7 @@
                 </div>
 
                 @if($registeredPlayers > 0)
-                    <dl class="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+                    <dl class="grid grid-cols-2 gap-3 text-xs">
                         <div>
                             <dt class="text-neutral-400">Paid</dt>
                             <dd class="mt-0.5 font-medium text-neutral-800">{{ $paidRegistrations }}</dd>
@@ -152,7 +156,6 @@
                  subset of Finance income (every contribution has a matching
                  income transaction), not an addition to it — noted inline
                  so it's never mistaken for extra money. --}}
-            <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 <div class="rounded-lg border border-neutral-200 bg-white p-4">
                     <div class="mb-3 flex items-center justify-between gap-3">
                         <h3 class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Finance</h3>
@@ -199,7 +202,7 @@
                             <dd class="mt-0.5 font-medium text-neutral-800">{{ $recognizedContributorsCount }}</dd>
                         </div>
                     </dl>
-                    <p class="mt-2 text-[11px] text-neutral-400">Already included in Finance income above — shown separately for visibility only.</p>
+                    <p class="mt-2 text-[11px] text-neutral-400">Already included in Finance income — shown separately for visibility only.</p>
                 </div>
             </div>
 
