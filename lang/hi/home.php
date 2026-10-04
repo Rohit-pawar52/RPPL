@@ -15,6 +15,8 @@ return [
         'match_info' => 'मैच की जानकारी',
         'scorecard' => 'स्कोरकार्ड',
         'follow_live' => 'लाइव देखें',
+        'scroll_left' => 'पिछले मैच दिखाएँ',
+        'scroll_right' => 'और मैच दिखाएँ',
     ],
 
     'media' => [

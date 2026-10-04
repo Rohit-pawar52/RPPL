@@ -91,6 +91,19 @@ class HomepageLayoutTest extends TestCase
             ->assertDontSee('Match 31');
     }
 
+    public function test_match_row_has_no_scrollbar_but_left_and_right_buttons(): void
+    {
+        $this->match(22, 'scheduled', now()->addDay());
+
+        $this->get(route('public.home'))
+            ->assertOk()
+            ->assertSee('data-match-row-track', false)
+            ->assertSee('scrollbar-width: none', false)
+            ->assertSee('data-match-row-prev', false)
+            ->assertSee('data-match-row-next', false)
+            ->assertSee('aria-label="Show more matches"', false);
+    }
+
     public function test_match_row_works_without_a_sponsor_or_any_recent_result(): void
     {
         $this->match(22, 'scheduled', now()->addDay());

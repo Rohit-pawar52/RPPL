@@ -7,7 +7,11 @@
     (e.g. class="mt-4").
 
     banner (default) — a slim full-width strip, about 72 px tall on phones
-                       and 88 px on larger screens;
+                       and 88 px on larger screens. An image that is not
+                       as wide as the strip keeps its proportions and the
+                       sides are filled with a blurred copy of it, so the
+                       strip always looks full width. It folds away after a
+                       few seconds and comes back later (config/ads.php);
     card             — a tile as wide as a match card, for a scrolling row.
 --}}
 @if($tier === 'mini')
@@ -30,13 +34,17 @@
         </ul>
     </section>
 @else
-    @php($ad = $ads->first())
+    @php $ad = $ads->first(); @endphp
 
     @once
         <style>
             .rppl-ad-banner { height: 4.5rem; }
             .rppl-ad-card-media { height: 6.5rem; }
             @media (min-width: 640px) { .rppl-ad-banner { height: 5.5rem; } }
+            /* A banner folds away (and back) smoothly; margin goes with it. */
+            [data-ad-cycle] { max-height: 8rem; transition: max-height .5s ease, margin .5s ease, opacity .4s ease; }
+            [data-ad-cycle].is-folded { max-height: 0; margin-top: 0; margin-bottom: 0; opacity: 0; pointer-events: none; }
+            @media (prefers-reduced-motion: reduce) { [data-ad-cycle] { transition: none; } }
         </style>
     @endonce
 
@@ -53,12 +61,60 @@
             </div>
         </aside>
     @else
-        <aside data-ad="{{ $tier }}" {{ $attributes }} aria-label="{{ __('ads.sponsored') }}">
+        @php
+            $visibleSeconds = (int) config('ads.banner_visible_seconds');
+            $hiddenSeconds = (int) config('ads.banner_hidden_seconds');
+            $cycles = $visibleSeconds > 0 && $hiddenSeconds > 0;
+            $backdrop = $ad->isVideo() ? $ad->posterUrl() : $ad->mediaUrl();
+        @endphp
+        <aside
+            data-ad="{{ $tier }}"
+            @if($cycles) data-ad-cycle data-ad-visible="{{ $visibleSeconds * 1000 }}" data-ad-hidden="{{ $hiddenSeconds * 1000 }}" @endif
+            {{ $attributes }}
+            aria-label="{{ __('ads.sponsored') }}"
+        >
             <div class="rppl-ad-banner pub-card relative overflow-hidden bg-slate-50">
-                <x-ad-slot-media :ad="$ad" :eager="$tier === 'main'" />
+                @if($backdrop)
+                    <div aria-hidden="true" data-ad-backdrop style="position: absolute; inset: 0; background: url('{{ $backdrop }}') center / cover no-repeat; filter: blur(18px); transform: scale(1.2); opacity: .75;"></div>
+                @endif
+                <div style="position: relative; width: 100%; height: 100%;">
+                    <x-ad-slot-media :ad="$ad" :eager="$tier === 'main'" />
+                </div>
                 <span class="pointer-events-none absolute right-2 top-2 rounded bg-slate-900/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">{{ __('ads.sponsored') }}</span>
             </div>
         </aside>
+
+        @if($cycles)
+            @once
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        document.querySelectorAll('[data-ad-cycle]').forEach(function (banner) {
+                            var visibleFor = parseInt(banner.dataset.adVisible, 10);
+                            var hiddenFor = parseInt(banner.dataset.adHidden, 10);
+                            var video = banner.querySelector('video');
+
+                            var fold = function () {
+                                banner.classList.add('is-folded');
+                                banner.setAttribute('aria-hidden', 'true');
+                                if (video) { video.pause(); }
+                                setTimeout(unfold, hiddenFor);
+                            };
+                            var unfold = function () {
+                                // Never push the page the reader is looking at: if the banner is
+                                // above the part of the page on screen, wait and try again.
+                                if (banner.getBoundingClientRect().bottom < 0) { setTimeout(unfold, 5000); return; }
+                                banner.classList.remove('is-folded');
+                                banner.removeAttribute('aria-hidden');
+                                if (video && video.src) { var p = video.play(); if (p && p.catch) { p.catch(function () {}); } }
+                                setTimeout(fold, visibleFor);
+                            };
+
+                            setTimeout(fold, visibleFor);
+                        });
+                    });
+                </script>
+            @endonce
+        @endif
     @endif
 
     @if($ad->isVideo())

@@ -15,6 +15,8 @@ return [
         'match_info' => 'Match info',
         'scorecard' => 'Scorecard',
         'follow_live' => 'Follow live',
+        'scroll_left' => 'Show earlier matches',
+        'scroll_right' => 'Show more matches',
     ],
 
     'media' => [

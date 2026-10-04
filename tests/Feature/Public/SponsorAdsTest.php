@@ -66,6 +66,47 @@ class SponsorAdsTest extends TestCase
         $this->assertStringContainsString('height: 5.5rem', $html);
     }
 
+    public function test_a_banner_folds_away_and_returns_on_a_timer_but_a_card_and_logos_stay(): void
+    {
+        config(['ads.banner_visible_seconds' => 8, 'ads.banner_hidden_seconds' => 30]);
+        Advertisement::factory()->main()->create(['media_path' => 'ads/main.jpg']);
+        Advertisement::factory()->create(['media_path' => 'ads/card.jpg']);
+        Advertisement::factory()->mini()->create(['title' => 'Local Dairy']);
+
+        // The banner carries its show / hide times (in milliseconds).
+        $this->blade('<x-ad-slot tier="main" />')
+            ->assertSee('data-ad-cycle', false)
+            ->assertSee('data-ad-visible="8000"', false)
+            ->assertSee('data-ad-hidden="30000"', false);
+
+        // A tile in a row and the logo strip do not fold.
+        $this->blade('<x-ad-slot tier="normal" variant="card" />')->assertDontSee('data-ad-visible', false);
+        $this->blade('<x-ad-slot tier="mini" />')->assertDontSee('data-ad-visible', false);
+    }
+
+    public function test_banners_can_be_kept_permanently_visible_from_the_config(): void
+    {
+        config(['ads.banner_hidden_seconds' => 0]);
+        Advertisement::factory()->main()->create();
+
+        $this->blade('<x-ad-slot tier="main" />')
+            ->assertSee('data-ad="main"', false)
+            ->assertDontSee('data-ad-visible', false);
+    }
+
+    public function test_a_banner_image_is_backed_by_a_blurred_copy_so_it_always_looks_full_width(): void
+    {
+        Advertisement::factory()->main()->create(['media_path' => 'ads/main.jpg']);
+
+        $html = $this->slot('main');
+
+        $this->assertStringContainsString('data-ad-backdrop', $html);
+        $this->assertStringContainsString('ads/main.jpg', $html);
+        $this->assertStringContainsString('blur(', $html);
+        // The picture itself is never cropped.
+        $this->assertStringContainsString('object-fit: contain', $html);
+    }
+
     public function test_a_video_ad_is_muted_loops_and_loads_only_when_scrolled_into_view(): void
     {
         Advertisement::factory()->video()->create(['media_path' => 'ads/clip.mp4', 'poster_path' => 'ads/posters/p.jpg']);
