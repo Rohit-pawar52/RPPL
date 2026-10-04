@@ -38,6 +38,16 @@ class AdvertisementDisplayService
     }
 
     /**
+     * The sponsor for the pop-up on the player auction page. For now it is
+     * the Main sponsor; this is the one place to change when the auction gets
+     * a sponsor spot of its own.
+     */
+    public function auctionPopup(): ?Advertisement
+    {
+        return $this->main();
+    }
+
+    /**
      * The Normal sponsor for the next Normal slot of the given format
      * ('banner' strip or 'card' tile) on the page, chosen by weight among
      * the ads made for that format that are not shown yet — so two slots of

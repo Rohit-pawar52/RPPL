@@ -6,4 +6,5 @@
 return [
     'sponsored' => 'प्रायोजित',
     'our_sponsors' => 'हमारे प्रायोजक',
+    'close' => 'बंद करें',
 ];

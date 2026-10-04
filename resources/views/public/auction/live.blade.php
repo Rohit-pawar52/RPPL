@@ -30,5 +30,8 @@
         </p>
     @endunless
 
+    {{-- The sponsor pop-up sits outside the part that redraws itself. --}}
+    <x-ad-popup :big="$big" />
+
     @vite(['resources/js/public-auction.js'])
 @endsection

@@ -60,7 +60,7 @@ class Advertisement extends Model
     public const SPOTS = [
         'main' => [
             'label' => 'Main sponsor — top banner',
-            'where' => 'A slim strip at the very top of the homepage, full width. Shown first, folds away after a few seconds and comes back.',
+            'where' => 'A slim strip at the very top of the homepage, full width. Shown first, folds away after a few seconds and comes back. The same picture also pops up now and then on the player auction page (and its big screen).',
             'size' => '1600 × 200 px',
             'ratio' => '8 : 1',
             'note' => 'Keep the text and logo in the middle; on a phone the strip is narrower and the picture shrinks to fit. A narrower picture still works — the sides are filled with a blurred copy of it.',

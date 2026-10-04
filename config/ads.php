@@ -18,4 +18,15 @@ return [
      */
     'banner_visible_seconds' => (int) env('ADS_BANNER_VISIBLE_SECONDS', 8),
     'banner_hidden_seconds' => (int) env('ADS_BANNER_HIDDEN_SECONDS', 30),
+
+    /*
+     * The sponsor pop-up on the player auction page: it opens by itself
+     * `popup_first_seconds` after the page opens, stays for
+     * `popup_visible_seconds`, then comes back every `popup_interval_seconds`
+     * (counted from when it closes). Set the visible or the interval seconds
+     * to 0 to switch the pop-up off.
+     */
+    'popup_first_seconds' => (int) env('ADS_POPUP_FIRST_SECONDS', 20),
+    'popup_visible_seconds' => (int) env('ADS_POPUP_VISIBLE_SECONDS', 8),
+    'popup_interval_seconds' => (int) env('ADS_POPUP_INTERVAL_SECONDS', 120),
 ];
