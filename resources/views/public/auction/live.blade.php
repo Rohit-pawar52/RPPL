@@ -13,11 +13,12 @@
         'state' => $state,
         'texts' => $texts,
         'dataUrl' => $dataUrl,
+        'saleUrl' => $saleUrl,
         'pollSeconds' => $pollSeconds,
         'big' => $big,
     ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) !!}</script>
 
-    <div id="public-auction" data-big="{{ $big ? '1' : '0' }}" class="flex-1">
+    <div id="public-auction" data-big="{{ $big ? '1' : '0' }}" class="flex min-h-0 flex-1 flex-col">
         <noscript>
             <p class="pub-card p-4 text-[13px] text-slate-600">{{ __('auction.needs_js') }}</p>
         </noscript>
