@@ -20,8 +20,10 @@
 return [
     'top' => [
         ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'icon' => 'home', 'active' => ['admin.dashboard']],
-        // Scorers run matches too, so Matches has no ability requirement.
-        ['label' => 'Matches', 'route' => 'admin.matches.index', 'icon' => 'trophy', 'active' => ['admin.matches.*']],
+        // Admin and scorer run matches; the auctioneer does not.
+        ['label' => 'Matches', 'route' => 'admin.matches.index', 'icon' => 'trophy', 'active' => ['admin.matches.*'], 'ability' => 'score-matches'],
+        // Admin and auctioneer run the player auction.
+        ['label' => 'Auction', 'route' => 'admin.auctions.index', 'icon' => 'gavel', 'active' => ['admin.auctions.*'], 'ability' => 'run-auction'],
         ['label' => 'Reports', 'route' => 'admin.reports.index', 'icon' => 'document-chart', 'active' => ['admin.reports.*'], 'ability' => 'manage-tournament'],
         ['label' => 'Analytics', 'route' => 'admin.analytics.index', 'icon' => 'chart-bar', 'active' => ['admin.analytics.*'], 'ability' => 'manage-tournament'],
     ],

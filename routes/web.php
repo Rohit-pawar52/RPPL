@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Public\AuctionController;
 use App\Http\Controllers\Public\ContentPageController;
 use App\Http\Controllers\Public\EditionController;
 use App\Http\Controllers\Public\FcmTokenController;
@@ -81,6 +82,13 @@ Route::middleware([EnsurePublicSiteIsNotUnderMaintenance::class, SetPublicLocale
     Route::prefix('venues')->name('public.venues.')->group(function () {
         Route::get('/', [VenueController::class, 'index'])->name('index');
         Route::get('/{venue}', [VenueController::class, 'show'])->name('show');
+    });
+
+    // The player auction: the live view (or the results once it is over)
+    // and the small JSON the live view refreshes from.
+    Route::prefix('auction')->name('public.auction.')->group(function () {
+        Route::get('/', [AuctionController::class, 'show'])->name('show');
+        Route::get('/data', [AuctionController::class, 'data'])->name('data');
     });
 
     Route::prefix('videos')->name('public.videos.')->group(function () {

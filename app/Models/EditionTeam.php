@@ -14,7 +14,15 @@ class EditionTeam extends Model
     protected $fillable = [
         'edition_id',
         'team_id',
+        'auction_purse',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'auction_purse' => 'integer',
+        ];
+    }
 
     public function edition(): BelongsTo
     {

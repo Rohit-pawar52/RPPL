@@ -3,6 +3,8 @@
 use App\Http\Controllers\Admin\AdvertisementController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AnnouncementController;
+use App\Http\Controllers\Admin\AuctionConsoleController;
+use App\Http\Controllers\Admin\AuctionController;
 use App\Http\Controllers\Admin\Auth\LoginController;
 use App\Http\Controllers\Admin\ContentPageController;
 use App\Http\Controllers\Admin\ContributorController;
@@ -63,6 +65,42 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::prefix('reports')->name('reports.')->group(function () {
             Route::get('/', [ReportsController::class, 'index'])->name('index');
             Route::get('/financial-summary', [ReportsController::class, 'financialSummary'])->name('financial-summary');
+        });
+
+        // The player auction (admin and auctioneer, via AuctionPolicy): one
+        // set-up page per season, then the live console (next step). Amounts
+        // are points. No show/create/destroy resource — an auction is
+        // created from its season's page and kept as a record.
+        Route::get('auctions', [AuctionController::class, 'index'])->name('auctions.index');
+        Route::get('auctions/{edition}', [AuctionController::class, 'show'])->name('auctions.show');
+        Route::post('auctions/{edition}', [AuctionController::class, 'store'])->name('auctions.store');
+        Route::put('auctions/{edition}', [AuctionController::class, 'update'])->name('auctions.update');
+        Route::post('auctions/{edition}/pool', [AuctionController::class, 'refreshPool'])->name('auctions.refresh-pool');
+        Route::post('auctions/{edition}/start', [AuctionController::class, 'start'])->name('auctions.start');
+        Route::post('auctions/{edition}/pause', [AuctionController::class, 'pause'])->name('auctions.pause');
+        Route::post('auctions/{edition}/resume', [AuctionController::class, 'resume'])->name('auctions.resume');
+        Route::post('auctions/{edition}/complete', [AuctionController::class, 'complete'])->name('auctions.complete');
+
+        // The live console: one page that draws itself from a state array,
+        // and one small JSON endpoint per action, each returning the fresh
+        // state (or a 422 with the rule that was broken).
+        Route::get('auctions/{edition}/console', [AuctionConsoleController::class, 'show'])->name('auctions.console');
+        Route::prefix('auctions/{edition}/console')->name('auctions.console.')->group(function () {
+            Route::get('state', [AuctionConsoleController::class, 'state'])->name('state');
+            Route::post('random', [AuctionConsoleController::class, 'random'])->name('random');
+            Route::post('call', [AuctionConsoleController::class, 'call'])->name('call');
+            Route::post('bid', [AuctionConsoleController::class, 'bid'])->name('bid');
+            Route::post('undo', [AuctionConsoleController::class, 'undo'])->name('undo');
+            Route::post('sell', [AuctionConsoleController::class, 'sell'])->name('sell');
+            Route::post('hold', [AuctionConsoleController::class, 'hold'])->name('hold');
+            Route::post('release', [AuctionConsoleController::class, 'release'])->name('release');
+            Route::post('reopen', [AuctionConsoleController::class, 'reopen'])->name('reopen');
+            Route::post('next-round', [AuctionConsoleController::class, 'nextRound'])->name('next-round');
+            Route::post('live-bids', [AuctionConsoleController::class, 'liveBids'])->name('live-bids');
+            Route::post('pause', [AuctionConsoleController::class, 'pause'])->name('pause');
+            Route::post('resume', [AuctionConsoleController::class, 'resume'])->name('resume');
+            Route::post('pool', [AuctionConsoleController::class, 'pool'])->name('pool');
+            Route::post('walk-in', [AuctionConsoleController::class, 'walkIn'])->name('walk-in');
         });
 
         // Public page-view analytics (read side of the page_views capture).

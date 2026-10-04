@@ -2,8 +2,15 @@
 
 namespace App\Providers;
 
+use App\Models\Auction;
+use App\Models\AuctionBid;
+use App\Models\AuctionLot;
+use App\Models\PlayerRegistration;
+use App\Models\TeamPlayer;
 use App\Models\User;
 use App\Services\Advertisement\AdvertisementDisplayService;
+use App\Services\Auction\AuctionChangeAnnouncer;
+use App\Services\Auction\AuctionService;
 use App\View\Composers\AnnouncementTickerComposer;
 use App\View\Composers\BrandingComposer;
 use App\View\Composers\ContentPageFooterComposer;
@@ -26,6 +33,10 @@ class AppServiceProvider extends ServiceProvider
         // One per request: the sponsor ads are read once and the rotating
         // banner stays the same everywhere it appears on that page.
         $this->app->singleton(AdvertisementDisplayService::class);
+
+        // One announcer per request, so a burst of saves inside one auction
+        // action is announced once.
+        $this->app->singleton(AuctionChangeAnnouncer::class);
     }
 
     /**
@@ -40,6 +51,45 @@ class AppServiceProvider extends ServiceProvider
         $this->configureAnnouncementTicker();
         $this->configureContentPageFooter();
         $this->configurePublicNav();
+        $this->configureAuctionAnnouncements();
+    }
+
+    /**
+     * Any change to an auction, a player in it or a bid on one tells the
+     * public page (cache dropped, Reverb signal) once the change is
+     * committed — see AuctionChangeAnnouncer.
+     */
+    private function configureAuctionAnnouncements(): void
+    {
+        $announce = fn ($model) => $this->app->make(AuctionChangeAnnouncer::class)->changed($model);
+
+        foreach ([Auction::class, AuctionLot::class, AuctionBid::class] as $model) {
+            $model::saved($announce);
+            $model::deleted($announce);
+        }
+
+        // The auction's pool follows the registrations: a player who is paid,
+        // refunded, put in or taken out of a squad joins or leaves the
+        // waiting players at once (AuctionService::syncRegistration).
+        $sync = function (?PlayerRegistration $registration) {
+            if ($registration) {
+                $this->app->make(AuctionService::class)->syncRegistration($registration);
+            }
+        };
+
+        PlayerRegistration::saved(function (PlayerRegistration $registration) use ($sync) {
+            if ($registration->wasRecentlyCreated || $registration->wasChanged(['payment_status', 'player_id', 'edition_id'])) {
+                $sync($registration);
+            }
+        });
+
+        TeamPlayer::saved(function (TeamPlayer $teamPlayer) use ($sync) {
+            if ($teamPlayer->wasRecentlyCreated || $teamPlayer->wasChanged('player_registration_id')) {
+                $sync($teamPlayer->playerRegistration);
+            }
+        });
+
+        TeamPlayer::deleted(fn (TeamPlayer $teamPlayer) => $sync($teamPlayer->playerRegistration));
     }
 
     /**
@@ -92,10 +142,23 @@ class AppServiceProvider extends ServiceProvider
      */
     private function configureAuthorization(): void
     {
-        // Anyone who can authenticate at /admin/login (admin or scorer)
-        // may enter the admin shell itself.
+        // Anyone who can authenticate at /admin/login (admin, scorer or
+        // auctioneer) may enter the admin shell itself. What each of them
+        // can then open is decided by the policies and the two role gates
+        // below.
         Gate::define('access-admin-panel', function (User $user) {
+            return in_array($user->role?->slug, ['admin', 'scorer', 'auctioneer'], true);
+        });
+
+        // Running matches: scoring, toss, playing XI. Admin and scorer.
+        Gate::define('score-matches', function (User $user) {
             return in_array($user->role?->slug, ['admin', 'scorer'], true);
+        });
+
+        // Running the player auction. Admin and auctioneer — an auctioneer
+        // gets nothing outside the auction.
+        Gate::define('run-auction', function (User $user) {
+            return in_array($user->role?->slug, ['admin', 'auctioneer'], true);
         });
 
         // Tournament management (editions, teams, players, registrations,
