@@ -49,6 +49,22 @@ return [
     'big_screen' => 'बड़ी स्क्रीन',
     'back_to_page' => 'वापस',
 
+    // The numbers, the lists and the bidding detail
+    'sold_players' => 'बिके',
+    'upcoming' => 'आने वाले',
+    'highest_sale' => 'सबसे महँगी बिक्री',
+    'average_price' => 'औसत कीमत',
+    'progress' => ':total में से :done खिलाड़ी पूरे',
+    'no_upcoming' => 'अब कोई खिलाड़ी बाकी नहीं।',
+    'no_hold' => 'कोई खिलाड़ी होल्ड पर नहीं है।',
+    'no_unsold_yet' => 'अभी तक कोई खिलाड़ी अनबिका नहीं है।',
+    'bids_count' => ':count बोलियाँ',
+    'bids_one' => '1 बोली',
+    'bid_history' => 'बोली कैसे चली',
+    'loading' => 'लोड हो रहा है…',
+    'top_buy' => 'सबसे महँगा',
+    'round_short' => 'राउंड :number',
+
     // Results (after the auction)
     'results' => 'नीलामी के नतीजे',
     'players_sold' => 'बिके खिलाड़ी',

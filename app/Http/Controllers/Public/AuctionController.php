@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Auction;
+use App\Models\AuctionLot;
 use App\Services\Auction\AuctionStateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -43,6 +44,7 @@ class AuctionController extends Controller
             'big' => $big,
             'texts' => __('auction'),
             'dataUrl' => route('public.auction.data'),
+            'saleUrl' => route('public.auction.sale', ['lot' => '__LOT__']),
             'pollSeconds' => max(1, (int) config('auction.public_poll_seconds')),
         ]);
     }
@@ -54,6 +56,19 @@ class AuctionController extends Controller
         return response()
             ->json(['state' => $auction ? $this->state($auction) : null])
             ->header('Cache-Control', 'no-store');
+    }
+
+    /**
+     * How the bidding on one sold player went - fetched by the page only
+     * when a visitor opens that player's row. Not available when the
+     * auction hides live bids.
+     */
+    public function sale(AuctionLot $lot): JsonResponse
+    {
+        $auction = $this->states->publicAuction() ?? abort(404);
+        $bids = $this->states->publicSaleBids($auction, $lot) ?? abort(404);
+
+        return response()->json(['bids' => $bids])->header('Cache-Control', 'no-store');
     }
 
     /**

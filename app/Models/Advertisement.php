@@ -15,7 +15,9 @@ use Illuminate\Support\Facades\Storage;
  *  - normal — banner in the middle of the page, rotating between all
  *             live Normal ads (a higher weight is picked more often);
  *  - mini   — small logo in the "Our sponsors" strip at the bottom
- *             (image only, all shown together).
+ *             (image only, all shown together);
+ *  - auction — one sponsor for the pop-up on the player auction page (the
+ *             Main sponsor is shown there until one is added).
  *
  * media_path/poster_path are paths on the 'public' disk (see
  * AdvertisementService). starts_on / ends_on are calendar dates in the
@@ -31,11 +33,20 @@ class Advertisement extends Model
 
     public const TIER_MINI = 'mini';
 
+    public const TIER_AUCTION = 'auction';
+
     public const TIERS = [
         self::TIER_MAIN => 'Main sponsor',
+        self::TIER_AUCTION => 'Auction sponsor',
         self::TIER_NORMAL => 'Normal sponsor',
         self::TIER_MINI => 'Mini sponsor',
     ];
+
+    /**
+     * Levels with a single slot: two active ads of one of these may not be
+     * live on the same day.
+     */
+    public const SINGLE_SLOT_TIERS = [self::TIER_MAIN, self::TIER_AUCTION];
 
     public const FORMAT_BANNER = 'banner';
 
@@ -60,10 +71,17 @@ class Advertisement extends Model
     public const SPOTS = [
         'main' => [
             'label' => 'Main sponsor — top banner',
-            'where' => 'A slim strip at the very top of the homepage, full width. Shown first, folds away after a few seconds and comes back.',
+            'where' => 'A slim strip at the very top of the homepage, full width. Shown first, folds away after a few seconds and comes back. It also pops up on the player auction page until an Auction sponsor is added.',
             'size' => '1600 × 200 px',
             'ratio' => '8 : 1',
             'note' => 'Keep the text and logo in the middle; on a phone the strip is narrower and the picture shrinks to fit. A narrower picture still works — the sides are filled with a blurred copy of it.',
+        ],
+        'auction' => [
+            'label' => 'Auction sponsor — pop-up',
+            'where' => 'A pop-up on the player auction page (the live page, its big screen and the results). It opens by itself a little after the page loads, stays a few seconds and comes back every couple of minutes. A video plays muted while it is open. With no Auction sponsor live, the Main sponsor is shown there instead.',
+            'size' => '1600 × 360 px',
+            'ratio' => '4.4 : 1',
+            'note' => 'Keep the text and logo in the middle. The pop-up is about as wide as a tablet, so a wider strip such as the 8 : 1 banner also works — the empty space above and below is filled with a blurred copy of the picture.',
         ],
         'normal-banner' => [
             'label' => 'Normal sponsor — banner',
@@ -159,6 +177,7 @@ class Advertisement extends Model
     {
         return match ($this->tier) {
             self::TIER_MAIN => 'main',
+            self::TIER_AUCTION => 'auction',
             self::TIER_MINI => 'mini',
             default => $this->format === self::FORMAT_CARD ? 'normal-card' : 'normal-banner',
         };

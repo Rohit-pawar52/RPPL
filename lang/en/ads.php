@@ -6,4 +6,5 @@
 return [
     'sponsored' => 'Sponsored',
     'our_sponsors' => 'Our sponsors',
+    'close' => 'Close',
 ];

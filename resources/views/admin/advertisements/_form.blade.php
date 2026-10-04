@@ -15,6 +15,7 @@
 />
 <ul class="-mt-2.5 mb-3.5 space-y-0.5 text-[11px] text-slate-400">
     <li><span class="font-medium text-slate-500">Main</span> — the top banner, always shown first (only one Main sponsor at a time).</li>
+    <li><span class="font-medium text-slate-500">Auction</span> — the pop-up on the player auction page (only one at a time; until one is added, the Main sponsor is shown there).</li>
     <li><span class="font-medium text-slate-500">Normal</span> — takes turns with the other Normal sponsors of the same spot on every page load.</li>
     <li><span class="font-medium text-slate-500">Mini</span> — a small logo in the "Our sponsors" strip at the bottom (image only).</li>
 </ul>

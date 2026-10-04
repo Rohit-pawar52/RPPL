@@ -51,6 +51,22 @@ return [
     'big_screen' => 'Big screen',
     'back_to_page' => 'Back',
 
+    // The numbers, the lists and the bidding detail
+    'sold_players' => 'Sold',
+    'upcoming' => 'Upcoming',
+    'highest_sale' => 'Highest sale',
+    'average_price' => 'Average price',
+    'progress' => ':done of :total players done',
+    'no_upcoming' => 'No players left to come.',
+    'no_hold' => 'Nobody is on hold.',
+    'no_unsold_yet' => 'Nobody is unsold so far.',
+    'bids_count' => ':count bids',
+    'bids_one' => '1 bid',
+    'bid_history' => 'How the bidding went',
+    'loading' => 'Loading…',
+    'top_buy' => 'Top buy',
+    'round_short' => 'Round :number',
+
     // Results (after the auction)
     'results' => 'Auction results',
     'players_sold' => 'Players sold',

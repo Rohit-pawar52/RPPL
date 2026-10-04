@@ -86,4 +86,6 @@
             <p class="text-[13px] text-slate-500">{{ __('auction.no_unsold') }}</p>
         @endif
     </x-public.card>
+
+    <x-ad-popup />
 @endsection

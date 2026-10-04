@@ -101,7 +101,7 @@ abstract class SaveAdvertisementRequest extends FormRequest
                     return;
                 }
 
-                $clash = app(AdvertisementService::class)->mainSponsorClash(
+                $clash = app(AdvertisementService::class)->singleSlotClash(
                     $this->input('tier'),
                     $this->input('status'),
                     $this->input('starts_on') ?: null,

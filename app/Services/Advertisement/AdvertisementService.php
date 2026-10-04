@@ -105,8 +105,9 @@ class AdvertisementService
     }
 
     /**
-     * Flips the status server-side. Activating a Main sponsor is refused
-     * while another Main sponsor is active in overlapping dates.
+     * Flips the status server-side. Activating a Main or Auction sponsor is
+     * refused while another one of the same level is active in overlapping
+     * dates.
      *
      * @throws ValidationException
      */
@@ -115,7 +116,7 @@ class AdvertisementService
         $activating = $advertisement->status !== 'active';
 
         if ($activating) {
-            $clash = $this->mainSponsorClash(
+            $clash = $this->singleSlotClash(
                 $advertisement->tier,
                 'active',
                 $advertisement->starts_on?->format('Y-m-d'),
@@ -149,19 +150,20 @@ class AdvertisementService
     }
 
     /**
-     * There is one Main sponsor slot, so two active Main ads may not be
-     * shown on the same day. Returns the other Main ad that would clash
-     * (date windows overlap; an empty date means open-ended), or null.
+     * The Main and the Auction sponsor each have one slot, so two active ads
+     * of one of those levels may not be shown on the same day. Returns the
+     * other ad of the same level that would clash (date windows overlap; an
+     * empty date means open-ended), or null.
      */
-    public function mainSponsorClash(string $tier, string $status, ?string $startsOn, ?string $endsOn, ?int $ignoreId = null): ?Advertisement
+    public function singleSlotClash(string $tier, string $status, ?string $startsOn, ?string $endsOn, ?int $ignoreId = null): ?Advertisement
     {
-        if ($tier !== Advertisement::TIER_MAIN || $status !== 'active') {
+        if (! in_array($tier, Advertisement::SINGLE_SLOT_TIERS, true) || $status !== 'active') {
             return null;
         }
 
         return Advertisement::query()
             ->active()
-            ->where('tier', Advertisement::TIER_MAIN)
+            ->where('tier', $tier)
             ->when($ignoreId, fn ($q) => $q->whereKeyNot($ignoreId))
             ->get()
             ->first(fn (Advertisement $other) => $this->datesOverlap(
@@ -174,7 +176,7 @@ class AdvertisementService
 
     public function clashMessage(Advertisement $clash): string
     {
-        return 'There is only one Main sponsor slot, and "'.$clash->title.'" already holds it ('
+        return 'There is only one '.$clash->tierLabel().' slot, and "'.$clash->title.'" already holds it ('
             .$clash->scheduleLabel().'). Deactivate it first or choose dates that do not overlap.';
     }
 
