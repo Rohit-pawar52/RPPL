@@ -99,6 +99,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('live-bids', [AuctionConsoleController::class, 'liveBids'])->name('live-bids');
             Route::post('pause', [AuctionConsoleController::class, 'pause'])->name('pause');
             Route::post('resume', [AuctionConsoleController::class, 'resume'])->name('resume');
+            Route::post('pool', [AuctionConsoleController::class, 'pool'])->name('pool');
             Route::post('walk-in', [AuctionConsoleController::class, 'walkIn'])->name('walk-in');
         });
 

@@ -30,6 +30,7 @@
             'live-bids' => route('admin.auctions.console.live-bids', $edition),
             'pause' => route('admin.auctions.console.pause', $edition),
             'resume' => route('admin.auctions.console.resume', $edition),
+            'pool' => route('admin.auctions.console.pool', $edition),
             'walk-in' => route('admin.auctions.console.walk-in', $edition),
             'setup' => route('admin.auctions.show', $edition),
         ],
@@ -37,6 +38,8 @@
 
     <div id="auction-console" class="space-y-4">
         <div id="ac-toolbar" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5"></div>
+
+        <div id="ac-pool"></div>
 
         <div id="ac-notice" class="hidden rounded-md border px-3 py-2 text-[13px]" role="status" aria-live="polite"></div>
 

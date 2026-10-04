@@ -74,6 +74,7 @@ class AuctionStateService
                 'show_live_bids' => $auction->show_live_bids,
             ],
             'counts' => $this->auctions->counts($auction),
+            'pool_check' => $auction->isCompleted() ? ['missing' => [], 'stale' => []] : $this->auctions->poolCheck($auction),
             'lot' => $lot ? $this->lot($auction, $lot) : null,
             'teams' => $teams,
             'waiting' => $this->waiting($auction),

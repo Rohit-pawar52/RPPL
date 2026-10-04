@@ -13,6 +13,7 @@ use App\Models\TeamPlayer;
 use App\Models\User;
 use App\Services\PlayerRegistration\PlayerRegistrationService;
 use App\Services\TeamPlayer\TeamPlayerService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -151,6 +152,74 @@ class AuctionService
     }
 
     /**
+     * Keeps the pool right for ONE registration the moment something about
+     * it changes (it is paid, refunded, put in or taken out of a squad...):
+     * a paid, active player who is in no squad and not yet in the auction
+     * joins the waiting players; a waiting (pending / hold) player who is no
+     * longer eligible leaves. Players who are live, sold or unsold are never
+     * touched, and a completed auction is left alone. Called by the model
+     * hooks in AppServiceProvider, so nobody has to remember to "update the
+     * pool" — that button stays as the manual safety net.
+     */
+    public function syncRegistration(PlayerRegistration $registration): void
+    {
+        $auction = Auction::query()
+            ->where('edition_id', $registration->edition_id)
+            ->whereIn('status', [Auction::STATUS_DRAFT, Auction::STATUS_LIVE, Auction::STATUS_PAUSED])
+            ->first();
+
+        if (! $auction) {
+            return;
+        }
+
+        $eligible = $this->eligibleRegistrations($registration->edition_id)->whereKey($registration->id)->exists();
+        $lot = $auction->lots()->where('player_registration_id', $registration->id)->first();
+
+        if ($eligible && ! $lot) {
+            AuctionLot::create([
+                'auction_id' => $auction->id,
+                'player_registration_id' => $registration->id,
+                'status' => AuctionLot::PENDING,
+                'round' => $auction->round,
+            ]);
+        } elseif (! $eligible && $lot && in_array($lot->status, [AuctionLot::PENDING, AuctionLot::HOLD], true)) {
+            $lot->delete();
+        }
+    }
+
+    /**
+     * What "Update the pool" would change, without changing it: paid players
+     * who are not in the pool, and waiting players who should not be. The
+     * console shows this as a notice.
+     *
+     * @return array{missing: list<string>, stale: list<string>}
+     */
+    public function poolCheck(Auction $auction): array
+    {
+        $eligible = $this->eligibleRegistrationIds($auction->edition_id);
+        $lots = $auction->lots()->get(['player_registration_id', 'status']);
+
+        $missing = $eligible->diff($lots->pluck('player_registration_id'));
+        $stale = $lots
+            ->filter(fn (AuctionLot $lot) => in_array($lot->status, [AuctionLot::PENDING, AuctionLot::HOLD], true))
+            ->pluck('player_registration_id')
+            ->diff($eligible);
+
+        $names = fn ($ids) => $ids->isEmpty()
+            ? []
+            : PlayerRegistration::query()
+                ->whereIn('id', $ids->all())
+                ->with('player')
+                ->get()
+                ->map(fn (PlayerRegistration $registration) => $registration->player->name)
+                ->sort()
+                ->values()
+                ->all();
+
+        return ['missing' => $names($missing), 'stale' => $names($stale)];
+    }
+
+    /**
      * Someone who turns up on the day without having registered online: the
      * player (found by mobile number, never edited) and a paid registration
      * for this season are created, and they join the waiting players — to be
@@ -180,7 +249,7 @@ class AuctionService
             }
 
             if ($player && PlayerRegistration::where('edition_id', $edition->id)->where('player_id', $player->id)->exists()) {
-                $this->fail('phone', $player->name.' is already registered for this season. If they have paid, use "Update the pool" on the set-up page.');
+                $this->fail('phone', $player->name.' is already registered for this season. Once their payment is marked paid they join the pool by themselves.');
             }
 
             $player ??= Player::create(['name' => $name, 'phone' => $normalised]);
@@ -193,12 +262,12 @@ class AuctionService
                 'registered_at' => now(),
             ]);
 
-            return AuctionLot::create([
-                'auction_id' => $auction->id,
-                'player_registration_id' => $registration->id,
-                'status' => AuctionLot::PENDING,
-                'round' => $auction->round,
-            ]);
+            // Saving the paid registration already put the player in the pool
+            // (syncRegistration); this only makes sure of it.
+            return AuctionLot::firstOrCreate(
+                ['auction_id' => $auction->id, 'player_registration_id' => $registration->id],
+                ['status' => AuctionLot::PENDING, 'round' => $auction->round],
+            );
         });
     }
 
@@ -660,12 +729,19 @@ class AuctionService
      */
     private function eligibleRegistrationIds(int $editionId): Collection
     {
+        return $this->eligibleRegistrations($editionId)->pluck('id');
+    }
+
+    /**
+     * Who may be in the pool: paid, active, and in no squad yet.
+     */
+    private function eligibleRegistrations(int $editionId): Builder
+    {
         return PlayerRegistration::query()
             ->where('edition_id', $editionId)
             ->where('payment_status', 'paid')
             ->whereDoesntHave('teamPlayer')
-            ->whereHas('player', fn ($query) => $query->where('is_active', true))
-            ->pluck('id');
+            ->whereHas('player', fn ($query) => $query->where('is_active', true));
     }
 
     /**

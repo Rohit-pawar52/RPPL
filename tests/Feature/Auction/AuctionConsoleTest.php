@@ -426,7 +426,7 @@ class AuctionConsoleTest extends TestCase
     {
         $this->liveAuction(1);
         $known = Player::factory()->create(['phone' => '9000000001', 'name' => 'Already Here']);
-        PlayerRegistration::factory()->create(['edition_id' => $this->edition->id, 'player_id' => $known->id]);
+        PlayerRegistration::factory()->create(['edition_id' => $this->edition->id, 'player_id' => $known->id, 'payment_status' => 'pending']);
         Player::factory()->inactive()->create(['phone' => '9000000002']);
 
         $this->act('walk-in', ['name' => 'Already Here', 'phone' => '9000000001'])

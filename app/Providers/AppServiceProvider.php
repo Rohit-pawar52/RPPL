@@ -5,9 +5,12 @@ namespace App\Providers;
 use App\Models\Auction;
 use App\Models\AuctionBid;
 use App\Models\AuctionLot;
+use App\Models\PlayerRegistration;
+use App\Models\TeamPlayer;
 use App\Models\User;
 use App\Services\Advertisement\AdvertisementDisplayService;
 use App\Services\Auction\AuctionChangeAnnouncer;
+use App\Services\Auction\AuctionService;
 use App\View\Composers\AnnouncementTickerComposer;
 use App\View\Composers\BrandingComposer;
 use App\View\Composers\ContentPageFooterComposer;
@@ -64,6 +67,29 @@ class AppServiceProvider extends ServiceProvider
             $model::saved($announce);
             $model::deleted($announce);
         }
+
+        // The auction's pool follows the registrations: a player who is paid,
+        // refunded, put in or taken out of a squad joins or leaves the
+        // waiting players at once (AuctionService::syncRegistration).
+        $sync = function (?PlayerRegistration $registration) {
+            if ($registration) {
+                $this->app->make(AuctionService::class)->syncRegistration($registration);
+            }
+        };
+
+        PlayerRegistration::saved(function (PlayerRegistration $registration) use ($sync) {
+            if ($registration->wasRecentlyCreated || $registration->wasChanged(['payment_status', 'player_id', 'edition_id'])) {
+                $sync($registration);
+            }
+        });
+
+        TeamPlayer::saved(function (TeamPlayer $teamPlayer) use ($sync) {
+            if ($teamPlayer->wasRecentlyCreated || $teamPlayer->wasChanged('player_registration_id')) {
+                $sync($teamPlayer->playerRegistration);
+            }
+        });
+
+        TeamPlayer::deleted(fn (TeamPlayer $teamPlayer) => $sync($teamPlayer->playerRegistration));
     }
 
     /**

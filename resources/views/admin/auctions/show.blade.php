@@ -189,7 +189,7 @@
                 @if($editable)
                     <x-admin.card title="Player pool">
                         <p class="text-[13px] text-slate-600">
-                            Paid players who are not in a team. If a registration was paid or changed after the auction was set up, update the pool.
+                            Paid players who are not in a team. The pool follows payments and team changes by itself; use this only if something was changed outside the app and the console shows a notice about it.
                         </p>
                         <form method="POST" action="{{ route('admin.auctions.refresh-pool', $edition) }}" class="mt-3">
                             @csrf

@@ -151,7 +151,7 @@ class AuctionSetupPageTest extends TestCase
     {
         $this->paidPlayers(1);
         $this->actingAs($this->admin)->post($this->url('store'), $this->settings());
-        $this->paidPlayers(2);
+        PlayerRegistration::withoutEvents(fn () => $this->paidPlayers(2));
 
         $this->actingAs($this->admin)->post($this->url('refresh-pool'))
             ->assertRedirect($this->url('show'))

@@ -188,6 +188,17 @@ class AuctionConsoleController extends Controller
         });
     }
 
+    public function pool(Edition $edition): JsonResponse
+    {
+        $auction = $this->auctionOf($edition);
+
+        return $this->respond($auction, function () use ($auction) {
+            $result = $this->auctions->refreshPool($auction);
+
+            return "Pool updated: {$result['added']} added, {$result['removed']} removed.";
+        });
+    }
+
     public function walkIn(Request $request, Edition $edition): JsonResponse
     {
         $auction = $this->auctionOf($edition);

@@ -29,6 +29,7 @@ if (dataEl && root) {
 
     const el = {
         toolbar: document.getElementById('ac-toolbar'),
+        pool: document.getElementById('ac-pool'),
         notice: document.getElementById('ac-notice'),
         lot: document.getElementById('ac-lot'),
         teams: document.getElementById('ac-teams'),
@@ -177,6 +178,7 @@ if (dataEl && root) {
     // ----- Drawing -----------------------------------------------------------
 
     function render() {
+        renderPoolNotice();
         renderToolbar();
         renderLot();
         renderTeams();
@@ -195,6 +197,26 @@ if (dataEl && root) {
         };
 
         return `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ring-1 ring-inset ${styles[status] || styles.completed}">${esc(status)}</span>`;
+    }
+
+    /**
+     * Paid players missing from the pool, or waiting players who should no
+     * longer be in it — one button puts it right.
+     */
+    function renderPoolNotice() {
+        const { missing, stale } = state.pool_check;
+        const parts = [];
+
+        if (missing.length) {
+            parts.push(`${missing.length} paid ${missing.length === 1 ? 'player is' : 'players are'} not in the pool: ${missing.slice(0, 5).map(esc).join(', ')}${missing.length > 5 ? '…' : ''}`);
+        }
+        if (stale.length) {
+            parts.push(`${stale.length} waiting ${stale.length === 1 ? 'player is' : 'players are'} no longer eligible (not paid, or already in a team): ${stale.slice(0, 5).map(esc).join(', ')}${stale.length > 5 ? '…' : ''}`);
+        }
+
+        el.pool.innerHTML = parts.length
+            ? `<div class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-900"><span>${parts.join('. ')}.</span><button type="button" data-action="refresh-pool" class="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600">Update the pool</button></div>`
+            : '';
     }
 
     function renderToolbar() {
@@ -578,6 +600,9 @@ if (dataEl && root) {
             case 'pause':
             case 'resume':
                 await send(action);
+                break;
+            case 'refresh-pool':
+                await send('pool');
                 break;
             case 'chip':
                 el.amount.value = target.dataset.amount;

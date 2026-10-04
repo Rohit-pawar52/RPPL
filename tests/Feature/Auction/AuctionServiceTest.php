@@ -120,8 +120,12 @@ class AuctionServiceTest extends TestCase
         $auction = $this->service->create($this->edition);
         $this->assertSame(1, $auction->lots()->count());
 
-        $paysLater->update(['payment_status' => 'paid']);
-        $stays->update(['payment_status' => 'refunded']);
+        // Changed behind the application's back (a bulk import, a direct
+        // database fix), so the automatic sync never saw it.
+        PlayerRegistration::withoutEvents(function () use ($paysLater, $stays) {
+            $paysLater->update(['payment_status' => 'paid']);
+            $stays->update(['payment_status' => 'refunded']);
+        });
 
         $this->assertSame(['added' => 1, 'removed' => 1], $this->service->refreshPool($auction));
         $this->assertSame([$paysLater->id], $auction->lots()->pluck('player_registration_id')->all());
