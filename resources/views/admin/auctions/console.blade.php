@@ -26,6 +26,7 @@
             'hold' => route('admin.auctions.console.hold', $edition),
             'release' => route('admin.auctions.console.release', $edition),
             'reopen' => route('admin.auctions.console.reopen', $edition),
+            'take-back' => route('admin.auctions.console.take-back', $edition),
             'next-round' => route('admin.auctions.console.next-round', $edition),
             'live-bids' => route('admin.auctions.console.live-bids', $edition),
             'pause' => route('admin.auctions.console.pause', $edition),
@@ -84,7 +85,17 @@
                 </section>
 
                 <section id="ac-bids" class="rounded-lg border border-slate-200 bg-white p-3" aria-label="Bids on this player"></section>
-                <section id="ac-sales" class="rounded-lg border border-slate-200 bg-white p-3" aria-label="Recent sales"></section>
+                <section class="rounded-lg border border-slate-200 bg-white p-3" aria-label="Sold players">
+                    <label for="ac-sold-search" class="text-xs font-medium text-slate-700">Sold players <span id="ac-sold-count" class="font-normal text-slate-400"></span></label>
+                    <input
+                        id="ac-sold-search"
+                        type="search"
+                        autocomplete="off"
+                        placeholder="Find a sale by player, team or village…"
+                        class="mt-1 h-9 w-full rounded-md border border-slate-300 px-2.5 text-[13px] focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100"
+                    />
+                    <div id="ac-sold" class="mt-2"></div>
+                </section>
 
                 <details class="rounded-lg border border-slate-200 bg-white p-3">
                     <summary class="cursor-pointer text-xs font-medium text-slate-700">Someone turned up on the day? Add a player</summary>

@@ -7,6 +7,7 @@ use App\Models\AuctionBid;
 use App\Models\AuctionLot;
 use App\Models\Edition;
 use App\Models\EditionTeam;
+use App\Models\MatchPlayer;
 use App\Models\Player;
 use App\Models\PlayerRegistration;
 use App\Models\Role;
@@ -348,9 +349,72 @@ class AuctionConsoleTest extends TestCase
         $this->assertSame([4000, 596000, 1], [$alpha['spent'], $alpha['left'], $alpha['count']]);
         $this->assertSame(4000, $alpha['players'][0]['amount']);
 
-        $sale = $sold->json('state.sales.0');
+        $sale = $sold->json('state.sold.0');
         $this->assertSame([4000, $lot['name']], [$sale['amount'], $sale['name']]);
         $this->assertSame(1, TeamPlayer::count());
+    }
+
+    public function test_the_sold_list_has_every_sale_newest_first_and_says_which_can_be_undone(): void
+    {
+        $this->liveAuction(5);
+
+        $names = [];
+        foreach ([$this->alpha, $this->beta, $this->alpha] as $team) {
+            $lot = $this->callOne();
+            $names[] = $lot['name'];
+            $bid = $this->bid($lot, $team, ['amount' => 2000])->assertOk();
+            $this->act('sell', ['lot_id' => $lot['id'], 'version' => $bid->json('state.lot.version')])->assertOk();
+
+            // Sales a few seconds apart, as in a real hall (the time of a sale is kept to the second).
+            $this->travel(5)->seconds();
+        }
+
+        $state = $this->actingAs($this->admin)->getJson($this->url('state'))->assertOk()->json('state');
+        $this->assertCount(3, $state['sold']);
+        // Newest first, numbered in the order they happened.
+        $this->assertSame([3, 2, 1], array_column($state['sold'], 'number'));
+        $this->assertSame(array_reverse($names), array_column($state['sold'], 'name'));
+        $this->assertSame([2000, 1, false, false], [$state['sold'][0]['amount'], $state['sold'][0]['bids'], $state['sold'][0]['locked'], $state['sold'][0]['orphan']]);
+        $this->assertSame($this->alpha->team->name, $state['sold'][0]['team']);
+
+        // A player who has played a match is marked: the sale can no longer be undone.
+        MatchPlayer::factory()->create(['team_player_id' => TeamPlayer::first()->id]);
+        $locked = collect($this->actingAs($this->admin)->getJson($this->url('state'))->json('state.sold'))->where('locked', true);
+        $this->assertCount(1, $locked);
+    }
+
+    public function test_an_old_sale_is_taken_back_from_the_console(): void
+    {
+        $this->liveAuction(4);
+        $first = $this->callOne();
+        $bid = $this->bid($first, $this->alpha, ['amount' => 4000])->assertOk();
+        $this->act('sell', ['lot_id' => $first['id'], 'version' => $bid->json('state.lot.version')])->assertOk();
+        $second = $this->callOne();
+        $bid = $this->bid($second, $this->beta, ['amount' => 1000])->assertOk();
+        $this->act('sell', ['lot_id' => $second['id'], 'version' => $bid->json('state.lot.version')])->assertOk();
+
+        $response = $this->act('take-back', ['lot_id' => $first['id']])->assertOk();
+
+        $this->assertSame($first['name'].' is back among the waiting players.', $response->json('message'));
+        $this->assertSame(1, $response->json('state.counts.sold'));
+        $this->assertSame(0, TeamPlayer::where('edition_team_id', $this->alpha->id)->count());
+        $this->assertSame(600000, $this->team($response, $this->alpha)['left']);
+        $this->assertContains($first['name'], collect($response->json('state.waiting'))->pluck('name')->all());
+
+        // A player who is not sold is refused, with the fresh state.
+        $this->act('take-back', ['lot_id' => $first['id']])
+            ->assertStatus(422)
+            ->assertJsonPath('key', 'auction');
+    }
+
+    public function test_taking_a_sale_back_is_for_those_who_run_the_auction(): void
+    {
+        $this->liveAuction(2);
+        $lot = $this->callOne();
+        $scorer = User::factory()->create(['role_id' => Role::firstOrCreate(['slug' => 'scorer'], ['name' => 'Scorer'])->id]);
+
+        $this->act('take-back', ['lot_id' => $lot['id']], $scorer)->assertForbidden();
+        $this->act('take-back', ['lot_id' => $lot['id']], $this->auctioneer)->assertStatus(422);
     }
 
     public function test_selling_without_a_bid_is_refused(): void

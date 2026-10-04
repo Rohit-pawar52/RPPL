@@ -95,6 +95,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('hold', [AuctionConsoleController::class, 'hold'])->name('hold');
             Route::post('release', [AuctionConsoleController::class, 'release'])->name('release');
             Route::post('reopen', [AuctionConsoleController::class, 'reopen'])->name('reopen');
+            Route::post('take-back', [AuctionConsoleController::class, 'takeBack'])->name('take-back');
             Route::post('next-round', [AuctionConsoleController::class, 'nextRound'])->name('next-round');
             Route::post('live-bids', [AuctionConsoleController::class, 'liveBids'])->name('live-bids');
             Route::post('pause', [AuctionConsoleController::class, 'pause'])->name('pause');
