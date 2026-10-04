@@ -7,7 +7,7 @@
 
     <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         @forelse($photos as $photo)
-            @php $photoUrl = Illuminate\Support\Facades\Storage::url($photo->photo_path); @endphp
+            @php $photoUrl = media_url($photo->photo_path); @endphp
             <figure class="pub-card pub-card-link overflow-hidden">
                 {{-- A plain link to the full image; the script in the viewer
                      upgrades it to an in-page dialog, so it still works without JS. --}}
@@ -23,7 +23,6 @@
                         alt="{{ $photo->title }}"
                         loading="lazy"
                         class="h-full w-full object-cover"
-                        onerror="this.style.visibility='hidden'"
                     />
                 </a>
                 <figcaption class="p-3">

@@ -9,15 +9,7 @@
         @forelse($newsItems as $news)
             <article class="pub-card pub-card-link flex flex-col overflow-hidden">
                 <a href="{{ route('public.news.show', $news->slug) }}" class="pub-media block aspect-video w-full" tabindex="-1" aria-hidden="true">
-                    @if($news->coverImage)
-                        <img
-                            src="{{ Illuminate\Support\Facades\Storage::url($news->coverImage->image_path) }}"
-                            alt="{{ $news->title }}"
-                            loading="lazy"
-                            class="h-full w-full object-cover"
-                            onerror="this.style.visibility='hidden'"
-                        />
-                    @endif
+                    <x-media-image :path="$news->coverImage?->image_path" kind="image" alt="{{ $news->title }}" loading="lazy" class="h-full w-full object-cover" />
                 </a>
                 <div class="flex flex-1 flex-col p-4">
                     <p class="pub-eyebrow">{{ display_datetime($news->published_at, 'd M Y') }}</p>

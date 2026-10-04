@@ -107,6 +107,7 @@ class RulesPageTest extends TestCase
     public function test_rule_content_image_and_important_marker_render_safely(): void
     {
         Storage::fake('public');
+        Storage::disk('public')->put('rules/pitch-diagram.png', 'picture');
         $type = RuleType::factory()->create();
         Rule::factory()->important()->create([
             'rule_type_id' => $type->id,

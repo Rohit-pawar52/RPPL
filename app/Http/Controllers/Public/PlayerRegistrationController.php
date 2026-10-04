@@ -9,6 +9,7 @@ use App\Models\Edition;
 use App\Services\Registration\GuestPlayerRegistrationService;
 use App\Services\Registration\PlayerRegistrationStatusLookupService;
 use App\Services\Settings\SettingsService;
+use App\Support\Media;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
@@ -59,7 +60,7 @@ class PlayerRegistrationController extends Controller
 
         return [
             'upi_id' => $upiId,
-            'qr_url' => $qrPath ? Storage::url($qrPath) : null,
+            'qr_url' => Media::existingUrl($qrPath),
             'pay_link' => $upiId ? 'upi://pay?'.http_build_query([
                 'pa' => $upiId,
                 'pn' => $this->settings->get('general.short_name'),

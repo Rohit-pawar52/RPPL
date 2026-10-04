@@ -21,7 +21,7 @@
             @if($news->images->isNotEmpty())
                 <div class="mt-7 grid gap-3 {{ $news->images->count() > 1 ? 'grid-cols-2' : 'grid-cols-1' }}">
                     @foreach($news->images as $image)
-                        @php $imageUrl = Illuminate\Support\Facades\Storage::url($image->image_path); @endphp
+                        @php $imageUrl = media_url($image->image_path); @endphp
                         <a
                             href="{{ $imageUrl }}"
                             target="_blank"
@@ -34,7 +34,6 @@
                                 alt="{{ $news->title }}"
                                 loading="lazy"
                                 class="w-full object-cover"
-                                onerror="this.style.visibility='hidden'"
                             />
                         </a>
                     @endforeach

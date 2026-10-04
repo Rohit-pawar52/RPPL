@@ -94,8 +94,6 @@
                 action="{{ route('public.player-registration.store') }}"
                 enctype="multipart/form-data"
                 class="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]"
-                data-max-bytes="{{ $maxFileKb * 1024 }}"
-                data-too-large="{{ __('registration.js.too_large', ['size' => $maxSize]) }}"
                 data-submitting="{{ __('registration.form.submitting') }}"
                 data-progress-text="{{ __('registration.form.progress', ['done' => ':done', 'total' => ':total']) }}"
                 data-progress-ready="{{ __('registration.form.ready') }}"
@@ -152,7 +150,9 @@
                         'accept' => 'image/jpeg,image/png,image/webp',
                         'hint' => __('registration.fields.photo_hint', ['size' => $maxSize]),
                         'emptyText' => __('registration.upload.choose_photo'),
-                        'icon' => 'camera',
+                        'kind' => 'user',
+                        'maxBytes' => $maxFileKb * 1024,
+                        'tooLarge' => __('registration.js.too_large', ['size' => $maxSize]),
                     ])
                 </x-public.form-section>
 
@@ -199,7 +199,7 @@
                         @if($payment['qr_url'])
                             <div class="text-center">
                                 <p class="mb-1.5 text-[11px] font-medium text-slate-600">{{ __('registration.payment.scan') }}</p>
-                                <img src="{{ $payment['qr_url'] }}" alt="UPI QR" class="mx-auto h-44 w-44 max-w-full rounded-lg border border-line bg-white object-contain p-1.5 shadow-sm" />
+                                <img src="{{ $payment['qr_url'] }}" alt="UPI QR" data-no-fallback onerror="this.parentElement.remove()" class="mx-auto h-44 w-44 max-w-full rounded-lg border border-line bg-white object-contain p-1.5 shadow-sm" />
                             </div>
                         @endif
 
@@ -246,7 +246,9 @@
                             'accept' => 'image/jpeg,image/png',
                             'hint' => __('registration.fields.payment_proof_hint', ['size' => $maxSize]),
                             'emptyText' => __('registration.upload.choose_proof'),
-                            'icon' => 'receipt',
+                            'kind' => 'image',
+                            'maxBytes' => $maxFileKb * 1024,
+                            'tooLarge' => __('registration.js.too_large', ['size' => $maxSize]),
                         ])
                     </div>
                     <p class="-mt-1 mb-3.5 flex items-start gap-1.5 text-[11px] leading-snug text-slate-500">
@@ -277,7 +279,6 @@
                 var form = document.getElementById('player-registration-form');
                 if (!form) return;
 
-                var maxBytes = parseInt(form.dataset.maxBytes, 10);
                 var submit = form.querySelector('button[type="submit"]');
                 var submitLabel = submit.textContent;
 
@@ -287,54 +288,6 @@
                     summary.scrollIntoView({ block: 'center' });
                     summary.focus({ preventScroll: true });
                 }
-
-                // The file pickers: show what was chosen (name, size, a
-                // thumbnail for a picture). A file that is too large is caught
-                // here, before a slow upload on mobile data, instead of after.
-                var formatSize = function (bytes) {
-                    return bytes >= 1048576 ? (bytes / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(bytes / 1024)) + ' KB';
-                };
-
-                form.querySelectorAll('[data-upload]').forEach(function (box) {
-                    var input = box.querySelector('input[type="file"]');
-                    var note = box.querySelector('[data-file-note]');
-                    var preview = box.querySelector('[data-file-preview]');
-                    var empty = box.querySelector('[data-upload-empty]');
-                    var chosen = box.querySelector('[data-upload-chosen]');
-
-                    var reset = function () {
-                        empty.classList.remove('hidden');
-                        chosen.classList.add('hidden');
-                        chosen.classList.remove('flex');
-                        if (preview) { preview.classList.add('hidden'); preview.removeAttribute('src'); }
-                    };
-
-                    input.addEventListener('change', function () {
-                        var file = input.files && input.files[0];
-
-                        if (note) note.textContent = '';
-                        reset();
-                        if (!file) return;
-
-                        if (file.size > maxBytes) {
-                            input.value = '';
-                            if (note) note.textContent = form.dataset.tooLarge;
-                            return;
-                        }
-
-                        box.querySelector('[data-file-name]').textContent = file.name;
-                        box.querySelector('[data-file-size]').textContent = formatSize(file.size);
-
-                        if (preview && file.type.indexOf('image/') === 0) {
-                            preview.src = URL.createObjectURL(file);
-                            preview.classList.remove('hidden');
-                        }
-
-                        empty.classList.add('hidden');
-                        chosen.classList.remove('hidden');
-                        chosen.classList.add('flex');
-                    });
-                });
 
                 // "3 of 9 required fields done", with a bar.
                 var required = {};

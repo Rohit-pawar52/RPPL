@@ -48,11 +48,7 @@
                         <td class="px-4 py-2 font-medium text-neutral-800">
                             <a href="{{ route('admin.contributors.show', $contributor) }}" class="flex items-center gap-2 hover:underline">
                                 <span class="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-50 text-neutral-300">
-                                    @if($contributor->photo_path)
-                                        <img src="{{ Illuminate\Support\Facades\Storage::url($contributor->photo_path) }}" alt="{{ $contributor->name }}" class="h-full w-full object-cover" />
-                                    @else
-                                        <x-icon name="camera" class="h-3 w-3" />
-                                    @endif
+                                    <x-media-image :path="$contributor->photo_path" kind="user" alt="" class="h-full w-full object-cover" />
                                 </span>
                                 {{ $contributor->name }}
                             </a>

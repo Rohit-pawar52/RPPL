@@ -33,15 +33,7 @@
     <div class="pub-card p-4 sm:p-5">
         <div class="flex items-center gap-4">
             <div class="pub-media flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-line text-xl font-bold text-slate-500 sm:h-20 sm:w-20 sm:text-2xl">
-                {{ mb_strtoupper(mb_substr($player->name, 0, 1)) }}
-                @if($player->photo_path)
-                    <img
-                        src="{{ Illuminate\Support\Facades\Storage::url($player->photo_path) }}"
-                        alt="{{ $player->name }}"
-                        class="absolute inset-0 h-full w-full bg-white object-cover"
-                        onerror="this.style.visibility='hidden'"
-                    />
-                @endif
+                <x-media-image :path="$player->photo_path" kind="user" alt="" class="absolute inset-0 h-full w-full bg-white object-cover" />
             </div>
 
             <div class="min-w-0">

@@ -7,7 +7,7 @@
     Expects $latestVideos, $latestNews, $latestPhotos.
 --}}
 @php
-    $storage = fn (?string $path) => $path ? Illuminate\Support\Facades\Storage::url($path) : null;
+    $storage = fn (?string $path) => media_url($path);
 
     $sections = collect([
         [
@@ -71,11 +71,7 @@
                         <li>
                             <a href="{{ $item['href'] }}" class="flex items-center gap-3 px-4 py-2.5 transition hover:bg-slate-50">
                                 <span class="relative flex h-12 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-100 text-slate-300">
-                                    @if($item['thumb'])
-                                        <img src="{{ $item['thumb'] }}" alt="" loading="lazy" class="h-full w-full object-cover" onerror="this.style.visibility='hidden'" />
-                                    @else
-                                        <x-icon :name="$section['icon']" class="h-5 w-5" />
-                                    @endif
+                                    <img src="{{ $item['thumb'] }}" alt="" loading="lazy" data-fallback="image" class="h-full w-full object-cover" />
                                     @if($item['play'])
                                         <span class="absolute inset-0 flex items-center justify-center bg-slate-900/25 text-white"><x-icon name="play" class="h-4 w-4" /></span>
                                     @endif

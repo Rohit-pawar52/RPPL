@@ -5,6 +5,7 @@ namespace Tests\Feature\Public;
 use App\Models\News;
 use App\Models\NewsImage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -15,8 +16,18 @@ class NewsDirectoryTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Storage::fake('public');
+    }
+
     private function image(News $news, string $path, int $sortOrder): NewsImage
     {
+        // The picture is really on the disk, as it is for a post saved by the admin.
+        Storage::disk('public')->put($path, 'picture');
+
         return NewsImage::create(['news_id' => $news->id, 'image_path' => $path, 'sort_order' => $sortOrder]);
     }
 
@@ -59,14 +70,14 @@ class NewsDirectoryTest extends TestCase
         $this->assertStringNotContainsString('news/second.jpg', $html);
     }
 
-    public function test_text_only_news_renders_a_card_without_an_image(): void
+    public function test_text_only_news_shows_the_default_picture_on_its_card(): void
     {
         News::factory()->create(['title' => 'Text Only Headline']);
 
         $html = $this->get(route('public.news.index'))->assertOk()->assertSee('Text Only Headline')->getContent();
 
-        // News cards are the only images on this page that lazy-load.
-        $this->assertStringNotContainsString('loading="lazy"', $html);
+        // No picture of its own: the card shows the default one, never a broken image or its alt text.
+        $this->assertStringContainsString('images/default.png', $html);
     }
 
     public function test_listing_excerpt_is_shortened_and_the_full_text_is_not_shown(): void

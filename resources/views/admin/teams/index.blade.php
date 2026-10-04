@@ -51,15 +51,7 @@
                     <tr class="hover:bg-slate-50">
                         <td class="px-4 py-2">
                             <div class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-slate-300">
-                                @if($team->logo_path)
-                                    <img
-                                        src="{{ Illuminate\Support\Facades\Storage::url($team->logo_path) }}"
-                                        alt="{{ $team->name }}"
-                                        class="h-full w-full object-cover"
-                                    />
-                                @else
-                                    <x-icon name="shield" class="h-4 w-4" />
-                                @endif
+                                <x-media-image :path="$team->logo_path" kind="image" alt="" class="h-full w-full object-cover" />
                             </div>
                         </td>
                         <td class="px-4 py-2 font-medium text-slate-800">

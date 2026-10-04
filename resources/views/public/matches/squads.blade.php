@@ -16,11 +16,7 @@
             <section class="pub-card overflow-hidden">
                 <header class="pub-card-head justify-start">
                     <span class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line bg-slate-50 text-slate-300">
-                        @if($editionTeam->team->logo_path)
-                            <img src="{{ Illuminate\Support\Facades\Storage::url($editionTeam->team->logo_path) }}" alt="{{ $editionTeam->team->name }}" class="h-full w-full object-cover" />
-                        @else
-                            <x-icon name="shield" class="h-4 w-4" />
-                        @endif
+                        <x-media-image :path="$editionTeam->team->logo_path" kind="image" alt="" class="h-full w-full object-cover" />
                     </span>
                     <span class="min-w-0">
                         <h2 class="pub-card-title truncate">{{ $editionTeam->team->name }}</h2>

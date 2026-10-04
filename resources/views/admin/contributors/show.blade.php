@@ -19,15 +19,7 @@
     <div class="rounded-lg border border-neutral-200 bg-white p-4">
         <div class="flex items-start gap-3">
             <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-50 text-neutral-300">
-                @if($contributor->photo_path)
-                    <img
-                        src="{{ Illuminate\Support\Facades\Storage::url($contributor->photo_path) }}"
-                        alt="{{ $contributor->name }}"
-                        class="h-full w-full object-cover"
-                    />
-                @else
-                    <x-icon name="camera" class="h-6 w-6" />
-                @endif
+                <x-media-image :path="$contributor->photo_path" kind="user" alt="" class="h-full w-full object-cover" />
             </div>
 
             <div class="min-w-0 flex-1">
