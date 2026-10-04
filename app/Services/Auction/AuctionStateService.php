@@ -11,7 +11,6 @@ use App\Models\PlayerRegistration;
 use App\Models\TeamPlayer;
 use App\Services\Statistics\PlayerStatisticsService;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Everything the auction console needs to draw itself, as one plain array
@@ -241,7 +240,7 @@ class AuctionStateService
             return [
                 'name' => $team->team->name,
                 'short_name' => $team->team->short_name,
-                'logo' => $team->team->logo_path ? Storage::url($team->team->logo_path) : null,
+                'logo' => media_url($team->team->logo_path),
                 'purse' => $row['purse'],
                 'spent' => $row['spent'],
                 'left' => $row['left'],
@@ -457,12 +456,12 @@ class AuctionStateService
     private function person(PlayerRegistration $registration): array
     {
         $player = $registration->player;
-        $photo = $registration->photo_path ?: $player->photo_path;
 
         return [
             'registration_id' => $registration->id,
             'name' => $player->name,
-            'photo' => $photo ? Storage::url($photo) : null,
+            // The player's public photo - never the private one submitted with the registration.
+            'photo' => media_url($player->photo_path, 'user'),
             'role' => $player->primary_role ? (Player::PRIMARY_ROLE_LABELS[$player->primary_role] ?? $player->primary_role) : null,
             'batting' => $player->batting_style ? ucfirst(str_replace('_', '-', $player->batting_style)) : null,
             'bowling' => $player->bowling_style && $player->bowling_style !== 'none' ? ucfirst(str_replace('_', ' ', $player->bowling_style)) : null,
@@ -530,7 +529,7 @@ class AuctionStateService
                 'id' => $team->id,
                 'name' => $team->team->name,
                 'short_name' => $team->team->short_name,
-                'logo' => $team->team->logo_path ? Storage::url($team->team->logo_path) : null,
+                'logo' => media_url($team->team->logo_path),
                 'purse' => $row['purse'],
                 'spent' => $row['spent'],
                 'left' => $row['left'],

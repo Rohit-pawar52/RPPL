@@ -8,51 +8,27 @@
 
 <x-form.textarea name="description" label="Description (optional)" :value="$video->description ?? ''" rows="3" maxlength="2000" />
 
-<x-form.file
+<x-form.image-upload
     name="video"
     label="Video file"
     accept="video/mp4,video/webm"
-    :current="$video?->video_path ? basename($video->video_path) : null"
-    :prompt="$video?->video_path ? 'Replace video' : 'Choose video'"
-    :help="'MP4 or WebM, up to '.$maxUploadMb.' MB. Recommended for short RPPL clips (approximately 1–2 minutes).'.($video ? ' Leave empty to keep the current video.' : '')"
+    :current="$video?->video_path"
+    kind="image"
+    shape="wide"
+    empty-text="Click the box to choose a video"
+    change-text="Click the box to change the video"
+    :help="'MP4 or WebM, up to '.$maxUploadMb.' MB. Recommended for short RPPL clips (approximately 1–2 minutes).'.($video ? ' Leave it alone to keep the current video.' : '')"
 />
 
-<div class="mb-3.5">
-    <p class="mb-1 text-xs font-medium text-slate-700">Thumbnail <span class="font-normal text-slate-400">(optional)</span></p>
-
-    <div class="flex items-center gap-3">
-        <div class="flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50 text-slate-300">
-            @if($video?->thumbnail_path)
-                <img
-                    src="{{ Illuminate\Support\Facades\Storage::url($video->thumbnail_path) }}"
-                    alt="{{ $video->title }}"
-                    class="h-full w-full object-cover"
-                />
-            @else
-                <x-icon name="play" class="h-6 w-6" />
-            @endif
-        </div>
-
-        <div class="min-w-0">
-            <label class="cursor-pointer text-[12px] font-medium text-green-700">
-                {{ $video?->thumbnail_path ? 'Replace thumbnail' : 'Upload thumbnail' }}
-                <input
-                    type="file"
-                    name="thumbnail"
-                    accept="image/png,image/jpeg,image/webp"
-                    class="hidden"
-                    onchange="document.getElementById('thumbnail-filename').textContent = this.files[0]?.name ?? ''"
-                />
-            </label>
-            <p id="thumbnail-filename" class="mt-1 max-w-[12rem] truncate text-[11px] text-slate-500"></p>
-            <p class="mt-1 text-[11px] text-slate-400">JPG, PNG or WebP, up to 2 MB.</p>
-        </div>
-    </div>
-
-    @error('thumbnail')
-        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-    @enderror
-</div>
+<x-form.image-upload
+    name="thumbnail"
+    label="Thumbnail (optional)"
+    :current="$video?->thumbnail_path"
+    kind="image"
+    shape="wide"
+    empty-text="Click the picture to choose a thumbnail"
+    help="JPG, PNG or WebP, up to 2 MB."
+/>
 
 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
     <x-form.select

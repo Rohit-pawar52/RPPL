@@ -28,12 +28,7 @@
                     <tr class="hover:bg-slate-50">
                         <td class="px-4 py-2">
                             <div class="flex h-10 w-16 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-50 text-slate-300">
-                                <img
-                                    src="{{ Illuminate\Support\Facades\Storage::url($photo->photo_path) }}"
-                                    alt="{{ $photo->title }}"
-                                    loading="lazy"
-                                    class="h-full w-full object-cover"
-                                />
+                                <x-media-image :path="$photo->photo_path" kind="image" alt="{{ $photo->title }}" loading="lazy" class="h-full w-full object-cover" />
                             </div>
                         </td>
                         <td class="max-w-xs px-4 py-2 font-medium text-slate-800">

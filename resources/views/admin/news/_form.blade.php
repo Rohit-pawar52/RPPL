@@ -17,11 +17,7 @@
             @foreach($news->images as $image)
                 <label class="block w-24 cursor-pointer">
                     <span class="flex h-16 w-24 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
-                        <img
-                            src="{{ Illuminate\Support\Facades\Storage::url($image->image_path) }}"
-                            alt="{{ $news->title }}"
-                            class="h-full w-full object-cover"
-                        />
+                        <x-media-image :path="$image->image_path" kind="image" :alt="$news->title" class="h-full w-full object-cover" />
                     </span>
                     <span class="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
                         <input
@@ -38,29 +34,15 @@
         <p class="mb-2 text-[11px] text-slate-400">Tick Remove on any image to delete it when you save. The first image is used as the cover.</p>
     @endif
 
-    <div class="rounded-md border border-dashed px-3 py-3 {{ $errors->has('images') || $errors->has('images.*') ? 'border-red-400' : 'border-slate-300' }}">
-        <label class="cursor-pointer text-[12px] font-medium text-green-700">
-            {{ $news ? 'Add images' : 'Choose images' }}
-            <input
-                type="file"
-                name="images[]"
-                multiple
-                accept="image/png,image/jpeg,image/webp"
-                class="hidden"
-                onchange="document.getElementById('news-images-count').textContent = this.files.length ? this.files.length + ' file(s) selected' : ''"
-            />
-        </label>
-        <p id="news-images-count" class="mt-1 text-[11px] text-slate-500"></p>
-    </div>
-    <p class="mt-1 text-[11px] text-slate-400">JPG, PNG or WebP, up to 5 MB each, at most {{ $maxImages }} images per post.</p>
-    @error('images')
-        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-    @enderror
-    @foreach($errors->get('images.*') as $messages)
-        @foreach($messages as $message)
-            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-        @endforeach
-    @endforeach
+    <x-form.image-upload
+        name="images[]"
+        multiple
+        kind="image"
+        :empty-text="$news ? 'Click + to add more pictures' : 'Click + to choose pictures'"
+        :help="'JPG, PNG or WebP, up to 5 MB each, at most '.$maxImages.' images per post.'"
+        :max-bytes="5 * 1024 * 1024"
+        too-large="That picture is larger than 5 MB - please choose a smaller one."
+    />
 </div>
 
 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">

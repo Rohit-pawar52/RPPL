@@ -8,6 +8,7 @@
         <link rel="icon" href="{{ $branding->faviconUrl }}">
     @endif
     @include('layouts.partials.theme-vars')
+    @include('layouts.partials.image-fallback')
 
     {{-- Applies the remembered desktop sidebar state before first paint so
          the sidebar never flashes open and then collapses. --}}

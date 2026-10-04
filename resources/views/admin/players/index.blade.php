@@ -75,15 +75,7 @@
                     <tr class="hover:bg-slate-50">
                         <td class="px-4 py-2">
                             <div class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-slate-300">
-                                @if($player->photo_path)
-                                    <img
-                                        src="{{ Illuminate\Support\Facades\Storage::url($player->photo_path) }}"
-                                        alt="{{ $player->name }}"
-                                        class="h-full w-full object-cover"
-                                    />
-                                @else
-                                    <x-icon name="user" class="h-4 w-4" />
-                                @endif
+                                <x-media-image :path="$player->photo_path" kind="user" alt="" class="h-full w-full object-cover" />
                             </div>
                         </td>
                         <td class="px-4 py-2 font-medium text-slate-800">

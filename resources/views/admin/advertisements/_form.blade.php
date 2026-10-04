@@ -36,25 +36,30 @@
     :value="$advertisement->media_type ?? 'image'"
 />
 
-<x-form.file
+<x-form.image-upload
     name="media"
-    label="Image or video file"
+    label="Image or video"
     accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
-    :current="$advertisement?->media_path ? basename($advertisement->media_path) : null"
-    :prompt="$advertisement?->media_path ? 'Replace file' : 'Choose file'"
-    :help="'Image: JPG, PNG or WebP up to '.$maxImageMb.' MB. Video: MP4 or WebM up to '.$maxVideoMb.' MB, plays muted on a loop.'.($advertisement ? ' Leave empty to keep the current file.' : '')"
+    :current="$advertisement?->media_path"
+    kind="image"
+    shape="wide"
+    empty-text="Click the box to choose a picture or a clip"
+    change-text="Click the box to change it"
+    :help="'Image: JPG, PNG or WebP up to '.$maxImageMb.' MB. Video: MP4 or WebM up to '.$maxVideoMb.' MB, plays muted on a loop.'.($advertisement ? ' Leave it alone to keep the current file.' : '')"
 />
 
 <p class="-mt-2 mb-3.5 text-[11px] text-slate-500">
     Best picture size for the chosen spot: <span id="spot-size-hint" class="font-semibold text-green-700">{{ \App\Models\Advertisement::SPOTS[$advertisement?->spotKey() ?? 'normal-banner']['size'] }} (ratio {{ \App\Models\Advertisement::SPOTS[$advertisement?->spotKey() ?? 'normal-banner']['ratio'] }})</span>
 </p>
 
-<x-form.file
+<x-form.image-upload
     name="poster"
-    label="Preview image (video only, optional)"
+    label="Preview picture (video only, optional)"
     accept="image/jpeg,image/png,image/webp"
-    :current="$advertisement?->poster_path ? basename($advertisement->poster_path) : null"
-    :prompt="$advertisement?->poster_path ? 'Replace preview' : 'Choose preview'"
+    :current="$advertisement?->poster_path"
+    kind="image"
+    shape="wide"
+    empty-text="Click the box to choose a preview picture"
     help="Shown while the video loads. JPG, PNG or WebP up to 2 MB."
 />
 

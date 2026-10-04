@@ -58,11 +58,7 @@
                         <td class="px-2 py-1.5">
                             <div class="flex items-center gap-2">
                                 <div class="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-50 text-neutral-300">
-                                    @if($player->photo_path)
-                                        <img src="{{ Illuminate\Support\Facades\Storage::url($player->photo_path) }}" alt="{{ $player->name }}" class="h-full w-full object-cover" />
-                                    @else
-                                        <x-icon name="user" class="h-3.5 w-3.5" />
-                                    @endif
+                                    <x-media-image :path="$player->photo_path" kind="user" alt="" class="h-full w-full object-cover" />
                                 </div>
                                 <span class="font-medium text-neutral-800">{{ $player->name }}</span>
                             </div>
@@ -130,11 +126,7 @@
                         <td class="px-2 py-1.5">
                             <div class="flex items-center gap-2">
                                 <div class="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-50 text-neutral-300">
-                                    @if($player->photo_path)
-                                        <img src="{{ Illuminate\Support\Facades\Storage::url($player->photo_path) }}" alt="{{ $player->name }}" class="h-full w-full object-cover" />
-                                    @else
-                                        <x-icon name="user" class="h-3.5 w-3.5" />
-                                    @endif
+                                    <x-media-image :path="$player->photo_path" kind="user" alt="" class="h-full w-full object-cover" />
                                 </div>
                                 <span class="font-medium text-neutral-800">{{ $player->name }}</span>
                             </div>

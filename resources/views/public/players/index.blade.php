@@ -22,15 +22,7 @@
             @php $team = $player->latestRegistration?->teamPlayer?->editionTeam?->team; @endphp
             <a href="{{ route('public.players.show', $player) }}" class="pub-card pub-card-link flex items-center gap-3 p-3.5">
                 <div class="pub-media flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-line text-sm font-bold text-slate-500">
-                    {{ mb_strtoupper(mb_substr($player->name, 0, 1)) }}
-                    @if($player->photo_path)
-                        <img
-                            src="{{ Illuminate\Support\Facades\Storage::url($player->photo_path) }}"
-                            alt="{{ $player->name }}"
-                            class="absolute inset-0 h-full w-full bg-white object-cover"
-                            onerror="this.style.visibility='hidden'"
-                        />
-                    @endif
+                    <x-media-image :path="$player->photo_path" kind="user" alt="" class="absolute inset-0 h-full w-full bg-white object-cover" />
                 </div>
                 <div class="min-w-0">
                     <p class="truncate text-sm font-semibold text-slate-900">{{ $player->name }}</p>

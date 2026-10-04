@@ -34,13 +34,8 @@
                     <tr class="hover:bg-slate-50">
                         <td class="px-4 py-2">
                             <div class="flex h-10 w-20 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-50 text-slate-300">
-                                @if(! $advertisement->isVideo())
-                                    <img src="{{ $advertisement->mediaUrl() }}" alt="{{ $advertisement->title }}" class="h-full w-full object-contain" />
-                                @elseif($advertisement->posterUrl())
-                                    <img src="{{ $advertisement->posterUrl() }}" alt="{{ $advertisement->title }}" class="h-full w-full object-contain" />
-                                @else
-                                    <x-icon name="play" class="h-5 w-5" />
-                                @endif
+                                {{-- The picture (or a clip's preview picture); the default one when there is none or it is gone. --}}
+                                <x-media-image :path="$advertisement->isVideo() ? $advertisement->poster_path : $advertisement->media_path" kind="image" alt="" class="h-full w-full object-contain" />
                             </div>
                         </td>
                         <td class="max-w-xs px-4 py-2 font-medium text-slate-800">

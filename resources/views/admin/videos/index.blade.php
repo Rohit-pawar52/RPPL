@@ -28,15 +28,7 @@
                     <tr class="hover:bg-slate-50">
                         <td class="px-4 py-2">
                             <div class="flex h-10 w-16 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-50 text-slate-300">
-                                @if($video->thumbnail_path)
-                                    <img
-                                        src="{{ Illuminate\Support\Facades\Storage::url($video->thumbnail_path) }}"
-                                        alt="{{ $video->title }}"
-                                        class="h-full w-full object-cover"
-                                    />
-                                @else
-                                    <x-icon name="play" class="h-5 w-5" />
-                                @endif
+                                <x-media-image :path="$video->thumbnail_path" kind="image" alt="{{ $video->title }}" class="h-full w-full object-cover" />
                             </div>
                         </td>
                         <td class="max-w-xs px-4 py-2 font-medium text-slate-800">

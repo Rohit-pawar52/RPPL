@@ -72,3 +72,9 @@ dated log of standing instructions this file summarizes.
   `paid in full`) should be space-separated, human-readable strings used
   directly as both the internal value and the badge-component lookup key —
   `<x-status-badge>` uses CSS `capitalize`, which breaks on underscores.
+- Pictures: never a raw `<img src="{{ Storage::url(...) }}">`. Show a stored
+  picture with `<x-media-image :path="..." kind="user|image" alt="" />` (or
+  `media_url()`), so a missing file shows `public/images/default.png` /
+  `default-user.jpeg` instead of a broken image or alt text; upload one with
+  `<x-form.image-upload>` (a clickable preview box), not a bare file input.
+  Both apply to the admin panel and the public site (see memory.md, 2026-10-05).

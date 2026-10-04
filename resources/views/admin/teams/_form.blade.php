@@ -5,37 +5,16 @@
 
 <div class="grid gap-6 sm:grid-cols-[6.5rem_1fr]">
     <div>
-        <p class="mb-1 text-xs font-medium text-slate-700">Logo</p>
-
-        <div class="flex flex-col items-center gap-2">
-            <div class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-slate-300">
-                @if($team?->logo_path)
-                    <img
-                        src="{{ Illuminate\Support\Facades\Storage::url($team->logo_path) }}"
-                        alt="{{ $team->name }}"
-                        class="h-full w-full object-cover"
-                    />
-                @else
-                    <x-icon name="shield" class="h-7 w-7" />
-                @endif
-            </div>
-
-            <label class="cursor-pointer text-[11px] font-medium text-green-700">
-                {{ $team?->logo_path ? 'Replace logo' : 'Upload logo' }}
-                <input
-                    type="file"
-                    name="logo"
-                    accept="image/png,image/jpeg,image/webp"
-                    class="hidden"
-                    onchange="document.getElementById('logo-filename').textContent = this.files[0]?.name ?? ''"
-                />
-            </label>
-            <p id="logo-filename" class="max-w-[7rem] truncate text-center text-[11px] text-slate-400"></p>
-        </div>
-
-        @error('logo')
-            <p class="mt-1 text-center text-xs text-red-600">{{ $message }}</p>
-        @enderror
+        <x-form.image-upload
+            name="logo"
+            label="Logo"
+            :current="$team?->logo_path"
+            kind="image"
+            shape="circle"
+            stack
+            empty-text="Click the picture to add a logo"
+            help="JPG, PNG or WebP."
+        />
     </div>
 
     <div>

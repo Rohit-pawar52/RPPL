@@ -9,6 +9,7 @@
         <link rel="icon" href="{{ $branding->faviconUrl }}">
     @endif
     @include('layouts.partials.theme-vars')
+    @include('layouts.partials.image-fallback')
     @vite(['resources/css/app.css', 'resources/js/push-notifications.js'])
 </head>
 <body class="pub-shell h-full text-[14px] text-slate-800 antialiased">

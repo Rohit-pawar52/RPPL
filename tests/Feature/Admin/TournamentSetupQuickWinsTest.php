@@ -54,7 +54,9 @@ class TournamentSetupQuickWinsTest extends TestCase
 
     public function test_a_new_edition_cannot_start_active_while_another_is_active(): void
     {
-        Edition::factory()->create(['status' => 'active']);
+        // A fixed year: the factory picks a random one (2020-2099) and, one run in
+        // eighty, picked the 2099 this test then checks was never created.
+        Edition::factory()->create(['status' => 'active', 'year' => 2026]);
 
         $this->actingAs($this->admin)
             ->post(route('admin.editions.store'), ['name' => 'RPPL 2099', 'year' => 2099, 'status' => 'active'])
