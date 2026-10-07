@@ -382,7 +382,7 @@ The repository ships a `Dockerfile` (with `docker/`) that builds the site and th
 
 Everything else has a Render-friendly default (`APP_ENV=production`, `APP_DEBUG=false`, PostgreSQL, `QUEUE_CONNECTION=sync`, `BROADCAST_CONNECTION=log`, errors logged to the Render log) and can be overridden with an environment variable of the same name.
 
-What happens on every start: the database is migrated (`migrate --force` — never `migrate:fresh`, so data survives restarts); if the database has no roles yet it is filled once with the [demo dataset](#demo-data) in a single transaction; then the site starts on Render's `$PORT`. Change the demo admin password (`admin@rppl.test` / `password`) right after the first login.
+What happens on every start: the database is migrated (`migrate --force` — never `migrate:fresh`, so data survives restarts); if the database has no roles yet it is filled once with the [demo dataset](#demo-data) in a single transaction; then the site starts on Render's `$PORT`. On every start it also makes sure the default admin login exists — `admin@gmail.com` / `12345678` (created only if missing; a password you change later is never reset; set `SEED_ADMIN=false` to stop it). The demo dataset has its own admin too (`admin@rppl.test` / `password`). These passwords are public, so change them right after the first login. Locally the same login comes from `php artisan db:seed --class=AdminUserSeeder`.
 
 Good to know on the free plan:
 - Files uploaded through the admin panel (sponsor ads, photos, branding, payment proofs) live on the container's disk, which Render wipes on every restart/redeploy. Use a paid persistent disk or external storage before relying on uploads.

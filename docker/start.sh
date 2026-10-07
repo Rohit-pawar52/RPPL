@@ -39,6 +39,14 @@ if [ "$USERS" = "0" ]; then
   php artisan tinker --no-ansi --execute='\Illuminate\Support\Facades\DB::transaction(fn () => \Illuminate\Support\Facades\Artisan::call("db:seed", ["--force" => true]));'
 fi
 
+# Make sure the default admin login (admin@gmail.com / 12345678) exists, also on a database that was
+# seeded earlier. It only creates the user when missing and never resets a changed password. That
+# password is public: change it after the first login, or set SEED_ADMIN=false to stop creating it.
+# Not fatal: a problem here must not stop the site from starting.
+if [ "${SEED_ADMIN:-true}" != "false" ]; then
+  php artisan db:seed --class=AdminUserSeeder --force || echo "WARNING: could not create the default admin user (see the error above)." >&2
+fi
+
 # The cache store is the database, so this has to come after migrate.
 php artisan cache:clear || true
 php artisan storage:link --force || true
