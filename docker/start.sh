@@ -30,10 +30,11 @@ php artisan config:clear
 # migration fails the deploy instead of starting a broken site.
 php artisan migrate --force
 
-# First start only: an empty database (no roles) gets the demo dataset, loaded in ONE transaction so
-# a failure can never leave it half-seeded (which the next start would then skip).
-ROLES=$(php artisan tinker --no-ansi --execute='echo \App\Models\Role::count();' 2>/dev/null | tail -1 || true)
-if [ "$ROLES" = "0" ]; then
+# First start only: a database with no users yet gets the demo dataset, loaded in ONE transaction so
+# a failure can never leave it half-seeded (which the next start would then skip). Users, not roles:
+# a migration already inserts a role, so a freshly migrated database is never "role-less".
+USERS=$(php artisan tinker --no-ansi --execute='echo \App\Models\User::count();' 2>/dev/null | tail -1 || true)
+if [ "$USERS" = "0" ]; then
   echo "Empty database: loading the demo dataset..."
   php artisan tinker --no-ansi --execute='\Illuminate\Support\Facades\DB::transaction(fn () => \Illuminate\Support\Facades\Artisan::call("db:seed", ["--force" => true]));'
 fi
