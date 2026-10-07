@@ -370,6 +370,26 @@ That one entry invokes Laravel's Scheduler every minute, which internally runs w
 
 Verify what's currently registered at any time with `php artisan schedule:list`.
 
+### Deploying on Render (free web service + free PostgreSQL)
+
+The repository ships a `Dockerfile` (with `docker/`) that builds the site and the admin panel into one container: it compiles the frontend, serves the app with Apache/PHP, and installs Tesseract for the payment-proof OCR. In Render, create a **Web Service** from this repo (language **Docker**, health check path `/up`) and a free **PostgreSQL** database, then set these environment variables on the web service:
+
+| Variable | Value |
+| --- | --- |
+| `APP_KEY` | output of `php artisan key:generate --show --no-ansi` (required — the container refuses to start without it) |
+| `APP_URL` | `https://<your-service>.onrender.com` |
+| `DATABASE_URL` | the database's **Internal Database URL** |
+
+Everything else has a Render-friendly default (`APP_ENV=production`, `APP_DEBUG=false`, PostgreSQL, `QUEUE_CONNECTION=sync`, `BROADCAST_CONNECTION=log`, errors logged to the Render log) and can be overridden with an environment variable of the same name.
+
+What happens on every start: the database is migrated (`migrate --force` — never `migrate:fresh`, so data survives restarts); if the database has no roles yet it is filled once with the [demo dataset](#demo-data) in a single transaction; then the site starts on Render's `$PORT`. Change the demo admin password (`admin@rppl.test` / `password`) right after the first login.
+
+Good to know on the free plan:
+- Files uploaded through the admin panel (sponsor ads, photos, branding, payment proofs) live on the container's disk, which Render wipes on every restart/redeploy. Use a paid persistent disk or external storage before relying on uploads.
+- There is no queue worker, cron or Reverb. Queued work runs inline (`sync`), live scores/auction updates fall back to polling, and the reminder scheduler only runs if you set `RUN_SCHEDULER=true` (runs it once a minute inside the container, while the service is awake).
+- The service sleeps after ~15 minutes without traffic and the first request after that can take 30–60 seconds; a 419 "page expired" right after a long idle period is normal (the session was lost).
+- Render's free PostgreSQL expires about 30 days after creation — export a backup (`pg_dump`) or move to a paid database before then.
+
 ## Demo data
 
 `php artisan migrate:fresh --seed` seeds a complete, internally-consistent demo dataset — two independent seasons of the same four teams (Mumbai Indians, Royal Challengers Bengaluru, Chennai Super Kings, Kolkata Knight Riders), with real connected data behind every module in the Features list:
