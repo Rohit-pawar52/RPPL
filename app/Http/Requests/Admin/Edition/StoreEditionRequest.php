@@ -13,12 +13,12 @@ class StoreEditionRequest extends FormRequest
     use ValidatesRegistrationPeriod;
 
     /**
-     * Authorization is handled by EditionController's authorizeResource()
-     * (EditionPolicy), so this stays true to avoid duplicating that check.
+     * Asks EditionPolicy before anything is validated: a validation message such as "already taken"
+     * must not tell somebody who may not manage this what already exists. EditionController checks again.
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('create', Edition::class) ?? false;
     }
 
     /**

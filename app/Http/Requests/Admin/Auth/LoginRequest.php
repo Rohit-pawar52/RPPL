@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
@@ -45,8 +46,13 @@ class LoginRequest extends FormRequest
      */
     public function authenticate(): void
     {
+        // The email is compared in lower case on both sides: MySQL ignores case in a comparison already,
+        // but PostgreSQL (Render) and SQLite do not, and "Admin@Example.com" must not be a different
+        // login from "admin@example.com". (The login rate limiter lower-cases the email for its key too.)
+        $email = Str::lower(trim($this->string('email')->toString()));
+
         $credentials = [
-            'email' => $this->string('email')->toString(),
+            'email' => fn ($query) => $query->whereRaw('LOWER(email) = ?', [$email]),
             'password' => $this->string('password')->toString(),
             'is_active' => true,
         ];

@@ -85,6 +85,34 @@ class AuthenticationTest extends TestCase
             ->assertSee('Registrations');
     }
 
+    public function test_login_ignores_the_case_of_the_email_whichever_way_it_was_stored(): void
+    {
+        // PostgreSQL compares emails exactly, so this proves the app does the case-insensitive match itself.
+        $lower = User::factory()->create(['role_id' => $this->adminRole->id, 'email' => 'boss@example.test', 'password' => 'password']);
+        $capitals = User::factory()->create(['role_id' => $this->adminRole->id, 'email' => 'Mixed.Case@Example.test', 'password' => 'password']);
+
+        $this->post(route('admin.login.store'), ['email' => 'Boss@EXAMPLE.test', 'password' => 'password'])
+            ->assertRedirect(route('admin.dashboard'));
+        $this->assertAuthenticatedAs($lower);
+
+        $this->post(route('admin.logout'));
+
+        $this->post(route('admin.login.store'), ['email' => 'mixed.case@example.test', 'password' => 'password'])
+            ->assertRedirect(route('admin.dashboard'));
+        $this->assertAuthenticatedAs($capitals);
+    }
+
+    public function test_an_inactive_account_still_cannot_sign_in_whatever_the_email_case(): void
+    {
+        User::factory()->create(['role_id' => $this->adminRole->id, 'email' => 'off@example.test', 'password' => 'password', 'is_active' => false]);
+
+        $this->from(route('admin.login'))
+            ->post(route('admin.login.store'), ['email' => 'OFF@example.test', 'password' => 'password'])
+            ->assertSessionHasErrors('email');
+
+        $this->assertGuest();
+    }
+
     public function test_invalid_credentials_are_rejected_with_a_generic_message(): void
     {
         $admin = User::factory()->create([

@@ -11,13 +11,12 @@ use Illuminate\Validation\Rule;
 class StoreTeamPlayerRequest extends FormRequest
 {
     /**
-     * Authorization is handled explicitly in TeamPlayerController via
-     * $this->authorize() (TeamPlayerPolicy), so this stays true to
-     * avoid duplicating that check.
+     * Asks TeamPlayerPolicy before anything is validated: a validation message such as "already taken"
+     * must not tell somebody who may not manage this what already exists. TeamPlayerController checks again.
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('create', TeamPlayer::class) ?? false;
     }
 
     /**

@@ -9,13 +9,14 @@ use Illuminate\Validation\Rule;
 class UpdateTeamRequest extends FormRequest
 {
     /**
-     * Authorization is handled explicitly in TeamController via
-     * $this->authorize() (TeamPolicy), so this stays true to avoid
-     * duplicating that check.
+     * Asks TeamPolicy before anything is validated: a validation message such as "already taken"
+     * must not tell somebody who may not manage this what already exists. TeamController checks again.
      */
     public function authorize(): bool
     {
-        return true;
+        $target = $this->route('team');
+
+        return $target instanceof Team && ($this->user()?->can('update', $target) ?? false);
     }
 
     /**

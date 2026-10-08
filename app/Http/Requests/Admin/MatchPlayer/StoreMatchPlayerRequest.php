@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\MatchPlayer;
 
 use App\Models\GameMatch;
+use App\Models\MatchPlayer;
 use App\Models\TeamPlayer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -10,13 +11,12 @@ use Illuminate\Validation\Rule;
 class StoreMatchPlayerRequest extends FormRequest
 {
     /**
-     * Authorization is handled explicitly in MatchPlayerController via
-     * $this->authorize() (MatchPlayerPolicy), so this stays true to
-     * avoid duplicating that check.
+     * Asks MatchPlayerPolicy before anything is validated: a validation message such as "already taken"
+     * must not tell somebody who may not manage this what already exists. MatchPlayerController checks again.
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('create', MatchPlayer::class) ?? false;
     }
 
     /**

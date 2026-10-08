@@ -9,13 +9,12 @@ use Illuminate\Validation\Rule;
 class StorePlayerRegistrationRequest extends FormRequest
 {
     /**
-     * Authorization is handled explicitly in PlayerRegistrationController
-     * via $this->authorize() (PlayerRegistrationPolicy), so this stays
-     * true to avoid duplicating that check.
+     * Asks PlayerRegistrationPolicy before anything is validated: a validation message such as "already taken"
+     * must not tell somebody who may not manage this what already exists. PlayerRegistrationController checks again.
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('create', PlayerRegistration::class) ?? false;
     }
 
     /**

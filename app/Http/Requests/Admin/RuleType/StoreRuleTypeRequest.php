@@ -2,19 +2,19 @@
 
 namespace App\Http\Requests\Admin\RuleType;
 
+use App\Models\RuleType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreRuleTypeRequest extends FormRequest
 {
     /**
-     * Authorization is handled explicitly in RuleTypeController via
-     * $this->authorize() (RuleTypePolicy), so this stays true to avoid
-     * duplicating that check.
+     * Asks RuleTypePolicy before anything is validated: a validation message such as "already taken"
+     * must not tell somebody who may not manage this what already exists. RuleTypeController checks again.
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('create', RuleType::class) ?? false;
     }
 
     /**
