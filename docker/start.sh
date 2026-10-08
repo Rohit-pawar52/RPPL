@@ -39,13 +39,19 @@ if [ "$USERS" = "0" ]; then
   php artisan tinker --no-ansi --execute='\Illuminate\Support\Facades\DB::transaction(fn () => \Illuminate\Support\Facades\Artisan::call("db:seed", ["--force" => true]));'
 fi
 
-# Make sure the default admin login (admin@gmail.com / 12345678) exists, also on a database that was
-# seeded earlier. It only creates the user when missing and never resets a changed password. That
-# password is public: change it after the first login, or set SEED_ADMIN=false to stop creating it.
+# Secure admin bootstrap (php artisan rppl:ensure-admin). There is no built-in admin login and no
+# default password. A "usable" admin is an ACTIVE admin whose password is not a published one: the demo
+# dataset loaded above brings admin@rppl.test / scorer@rppl.test (password "password"), and sites
+# deployed earlier also have admin@gmail.com (12345678) - anybody can sign in with those, so they never
+# count. When there is no usable admin, one is created from the ADMIN_EMAIL / ADMIN_PASSWORD (and
+# optional ADMIN_NAME) environment variables set in the Render dashboard; missing or invalid values
+# create nothing and are reported in the log. --lock-demo-accounts then deactivates those published
+# logins (never deletes them: the demo data refers to them) once a usable admin exists, and without
+# one it deactivates nothing but warns loudly that they are still open. A usable admin is never
+# touched: its password only changes on the "Change password" page, or, for a lost password, by
+# setting RESET_ADMIN_PASSWORD=true for ONE start (remove it again afterwards).
 # Not fatal: a problem here must not stop the site from starting.
-if [ "${SEED_ADMIN:-true}" != "false" ]; then
-  php artisan db:seed --class=AdminUserSeeder --force || echo "WARNING: could not create the default admin user (see the error above)." >&2
-fi
+php artisan rppl:ensure-admin --lock-demo-accounts || echo "WARNING: rppl:ensure-admin failed (see the error above): the site has no private admin login yet, and any demo login stays usable with its published password. Set ADMIN_EMAIL and ADMIN_PASSWORD (at least 12 characters) in the Render environment and redeploy." >&2
 
 # The cache store is the database, so this has to come after migrate.
 php artisan cache:clear || true

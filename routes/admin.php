@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\Account\PasswordController;
 use App\Http\Controllers\Admin\AdvertisementController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AnnouncementController;
@@ -52,12 +53,26 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('login.store');
     });
 
+    // What every signed-in, still active account may do for itself - also one whose role cannot open
+    // the panel (panel.access), which would otherwise be stuck on a 403 with no way to sign out.
+    Route::middleware(['auth', 'active'])->group(function () {
+        Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
+
+        // Changing your own password. The current password is checked on every try, so updating is
+        // throttled per user: it must not be guessable by hammering this form.
+        Route::prefix('account/password')->name('account.password.')->group(function () {
+            Route::get('/', [PasswordController::class, 'edit'])->name('edit');
+            Route::put('/', [PasswordController::class, 'update'])
+                ->middleware('throttle:6,1,account-password')
+                ->name('update');
+        });
+    });
+
     // "active" runs right after "auth" (is this session even still allowed
     // to exist) and before "can:access-admin-panel" (what is it allowed to
     // do) — authentication status and authorization role are deliberately
     // kept as separate checks.
     Route::middleware(['auth', 'active', 'can:access-admin-panel'])->group(function () {
-        Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
         Route::get('dashboard', DashboardController::class)->name('dashboard');
 
         // Read-side reporting/navigation hub (Phase 3.43) — links to
