@@ -6,35 +6,29 @@ use App\Models\Announcement;
 use App\Models\User;
 
 /**
- * Resource-specific authorization for Announcement management (Phase
- * 3.45). Mirrors VenuePolicy/TeamPolicy/PlayerPolicy: only the admin
- * role may manage announcements — scorers never get any of these
- * abilities.
+ * Resource-specific authorization for Announcement management (Phase 3.45). Looking at the
+ * announcements takes the `announcements.view` permission; adding, changing or deleting one takes
+ * `announcements.manage` (which includes viewing).
  */
 class AnnouncementPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('announcements.view');
     }
 
     public function create(User $user): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('announcements.manage');
     }
 
     public function update(User $user, Announcement $announcement): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('announcements.manage');
     }
 
     public function delete(User $user, Announcement $announcement): bool
     {
-        return $this->isAdmin($user);
-    }
-
-    private function isAdmin(User $user): bool
-    {
-        return $user->role?->slug === 'admin';
+        return $user->hasPermission('announcements.manage');
     }
 }

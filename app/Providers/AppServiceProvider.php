@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\Advertisement\AdvertisementDisplayService;
 use App\Services\Auction\AuctionChangeAnnouncer;
 use App\Services\Auction\AuctionService;
+use App\Support\Permissions;
 use App\View\Composers\AnnouncementTickerComposer;
 use App\View\Composers\BrandingComposer;
 use App\View\Composers\ContentPageFooterComposer;
@@ -157,12 +158,13 @@ class AppServiceProvider extends ServiceProvider
         // Running the player auction.
         Gate::define('run-auction', fn (User $user) => $user->hasPermission('auction.run'));
 
-        // Tournament management (editions, teams, players, registrations,
-        // squads, venues, reports, settings) is admin-only. Scorers do not
-        // automatically receive this ability.
-        Gate::define('manage-tournament', function (User $user) {
-            return $user->role?->slug === 'admin';
-        });
+        // One gate per permission key, so a permission can be asked directly:
+        // `@can('reports.view')`, `$user->can('settings.manage')`, `authorize('...')` (navigation,
+        // views, controllers that are not about one record). Per-record checks stay in the policies.
+        foreach (Permissions::keys() as $permission) {
+            Gate::define($permission, fn (User $user) => $user->hasPermission($permission));
+        }
+
     }
 
     /**

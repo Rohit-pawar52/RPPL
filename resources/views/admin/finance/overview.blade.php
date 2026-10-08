@@ -60,7 +60,11 @@
                             @foreach($duesRows as $row)
                                 <tr class="hover:bg-neutral-50">
                                     <td class="px-4 py-2 font-medium text-neutral-800">
-                                        <a href="{{ route('admin.contributors.show', $row['contributor']) }}" class="hover:underline">{{ $row['contributor']->name }}</a>
+                                        @can('view', $row['contributor'])
+                                            <a href="{{ route('admin.contributors.show', $row['contributor']) }}" class="hover:underline">{{ $row['contributor']->name }}</a>
+                                        @else
+                                            {{ $row['contributor']->name }}
+                                        @endcan
                                     </td>
                                     <td class="px-4 py-2 text-right text-neutral-600">{{ money($row['target']) }}</td>
                                     <td class="px-4 py-2 text-right text-neutral-600">{{ money($row['paid']) }}</td>
@@ -73,11 +77,13 @@
                 </div>
             @endif
 
-            <div class="mt-3">
-                <a href="{{ route('admin.finance.committee', ['edition_id' => $edition->id]) }}" class="text-xs theme-link hover:underline">
-                    Manage committee &rarr;
-                </a>
-            </div>
+            @can('viewAny', \App\Models\EditionCommitteeMember::class)
+                <div class="mt-3">
+                    <a href="{{ route('admin.finance.committee', ['edition_id' => $edition->id]) }}" class="text-xs theme-link hover:underline">
+                        Manage committee &rarr;
+                    </a>
+                </div>
+            @endcan
         @endif
     @endif
 @endsection

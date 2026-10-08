@@ -45,7 +45,11 @@
         </p>
     @elseif($editionTeams->isEmpty())
         <p class="mb-3 text-xs text-slate-500">
-            No teams in this season yet &mdash; <a href="{{ route('admin.editions.teams.index', $edition) }}" class="font-medium text-green-700 hover:underline">add teams</a> to put players in them.
+            @can('viewAny', \App\Models\EditionTeam::class)
+                No teams in this season yet &mdash; <a href="{{ route('admin.editions.teams.index', $edition) }}" class="font-medium text-green-700 hover:underline">add teams</a> to put players in them.
+            @else
+                No teams in this season yet.
+            @endcan
         </p>
     @else
         {{-- Bulk "Add to team": the row checkboxes below belong to this form

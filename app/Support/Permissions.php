@@ -27,6 +27,24 @@ final class Permissions
     public const SYSTEM_ROLES = ['admin', 'scorer', 'auctioneer'];
 
     /**
+     * Holding the key on the left also grants the keys on the right: running, scoring or finalizing a
+     * match all happen on the match page, and sending a push notification happens on its page, so each
+     * includes the matching `.view`. (`<module>.manage` includes `<module>.view` too, see implied().)
+     *
+     * @var array<string, list<string>>
+     */
+    private const IMPLIES = [
+        'matches.run' => ['matches.view'],
+        'scoring.score' => ['matches.view'],
+        'matches.finalize' => ['matches.view'],
+        'matches.reopen' => ['matches.view'],
+        'notifications.send' => ['notifications.view'],
+    ];
+
+    /** @var array<string, list<string>>|null key => the keys whose holding grants it (itself included) */
+    private static ?array $grantors = null;
+
+    /**
      * group => [key => [label, delegable, default roles]].
      *
      * @var array<string, array<string, array{0: string, 1: bool, 2: list<string>}>>
@@ -159,8 +177,47 @@ final class Permissions
     }
 
     /**
-     * Keep only real, delegable keys, and add `<module>.view` for every `<module>.manage` so the
-     * stored set never holds a manage right without the matching view.
+     * What holding `$key` also grants (not including itself): the module's `.view` for a
+     * `.manage`, plus the explicit IMPLIES list.
+     *
+     * @return list<string>
+     */
+    public static function implied(string $key): array
+    {
+        $implied = self::IMPLIES[$key] ?? [];
+
+        if (str_ends_with($key, '.manage') && self::exists($view = substr($key, 0, -7).'.view')) {
+            $implied[] = $view;
+        }
+
+        return $implied;
+    }
+
+    /**
+     * Every key whose holding grants `$key`: the key itself and anything that implies it.
+     *
+     * @return list<string>
+     */
+    public static function grantedBy(string $key): array
+    {
+        if (self::$grantors === null) {
+            self::$grantors = [];
+
+            foreach (self::keys() as $holder) {
+                self::$grantors[$holder][] = $holder;
+
+                foreach (self::implied($holder) as $granted) {
+                    self::$grantors[$granted][] = $holder;
+                }
+            }
+        }
+
+        return self::$grantors[$key] ?? [];
+    }
+
+    /**
+     * Keep only real, delegable keys, and add everything each of them implies (see implied()) so the
+     * stored set never holds, say, a manage right without the matching view.
      *
      * @param  iterable<mixed>  $keys
      * @return list<string>
@@ -177,8 +234,10 @@ final class Permissions
         }
 
         foreach (array_keys($clean) as $key) {
-            if (str_ends_with($key, '.manage') && in_array($view = substr($key, 0, -7).'.view', $allowed, true)) {
-                $clean[$view] = true;
+            foreach (self::implied($key) as $implied) {
+                if (in_array($implied, $allowed, true)) {
+                    $clean[$implied] = true;
+                }
             }
         }
 

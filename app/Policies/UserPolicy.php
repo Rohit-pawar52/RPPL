@@ -6,7 +6,11 @@ use App\Models\User;
 
 /**
  * Resource-specific authorization for application login account
- * management. Admin only — a scorer never gets any of these abilities.
+ * management. `users.view` lets a role look at accounts, `users.manage`
+ * lets it create and edit them. Both are access-control permissions that
+ * are never delegable (see App\Support\Permissions): only the admin role
+ * holds them, because whoever may create accounts or pick their role could
+ * otherwise hand out full control.
  * No delete ability exists: accounts are deactivated, never deleted
  * (see UserController's lack of a destroy route).
  */
@@ -14,26 +18,21 @@ class UserPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('users.view');
     }
 
     public function view(User $user, User $model): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('users.view');
     }
 
     public function create(User $user): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('users.manage');
     }
 
     public function update(User $user, User $model): bool
     {
-        return $this->isAdmin($user);
-    }
-
-    private function isAdmin(User $user): bool
-    {
-        return $user->role?->slug === 'admin';
+        return $user->hasPermission('users.manage');
     }
 }

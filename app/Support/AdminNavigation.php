@@ -84,7 +84,21 @@ class AdminNavigation
 
         $ability = $entry['ability'] ?? null;
 
-        return $ability === null || ($user !== null && $user->can($ability));
+        if ($ability === null) {
+            return true;
+        }
+
+        if ($user === null) {
+            return false;
+        }
+
+        // A policy ability and the model it is asked about: ['viewAny', Role::class].
+        if (is_array($ability)) {
+            return $user->can(...$ability);
+        }
+
+        // Otherwise a Gate name, e.g. 'score-matches'.
+        return $user->can($ability);
     }
 
     /**

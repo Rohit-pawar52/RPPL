@@ -8,8 +8,10 @@ use App\Models\EditionContribution;
 use App\Models\EditionTransaction;
 use App\Models\GameMatch;
 use App\Models\PlayerRegistration;
+use App\Models\User;
 use App\Services\Finance\ContributorRankingService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 /**
@@ -23,12 +25,11 @@ use Illuminate\View\View;
  * (EditionTransaction::summaryForEdition(), the same grouped
  * registration query the dashboard uses, and ContributorRankingService).
  *
- * Admin-only throughout: every report here either contains financial
- * data or links to an admin-only resource, so gating the whole hub
- * behind the existing "manage-tournament" Gate (the same broad-area
- * check EditionPolicy/EditionTransactionPolicy/etc. already enforce
- * per-resource) is the simplest correct V1, per this phase's own
- * explicit instruction not to invent a weaker scorer-facing subset.
+ * The whole hub needs the reports.view permission (held by the admin
+ * only, by default). The exports it links to are still authorized by
+ * their own controllers and policies, so reports.view alone never opens
+ * them; the Financial Summary page is the exception, since it reads the
+ * finance figures itself — so it needs finance.view on top of reports.view.
  */
 class ReportsController extends Controller
 {
@@ -36,7 +37,7 @@ class ReportsController extends Controller
 
     public function index(Request $request): View
     {
-        $this->authorize('manage-tournament');
+        Gate::allowIf(fn (User $user) => $user->hasPermission('reports.view'));
 
         $edition = $this->resolveEdition($request);
 
@@ -68,7 +69,9 @@ class ReportsController extends Controller
      */
     public function financialSummary(Request $request): View
     {
-        $this->authorize('manage-tournament');
+        // Every figure on this page is money (registration fees, income/expense, contributions), so
+        // being allowed to open reports is not enough: the role must also be allowed to see finance.
+        Gate::allowIf(fn (User $user) => $user->hasPermission('reports.view') && $user->hasPermission('finance.view'));
 
         $edition = $this->resolveEdition($request);
 

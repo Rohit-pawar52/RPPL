@@ -5,6 +5,10 @@
 @section('content')
     @include('admin.editions._crumbs', ['edition' => $edition, 'section' => 'Teams'])
 
+    {{-- A team's name opens its squad, which needs the teams permission (this page only needs editions.view):
+         without it the name stays plain text. --}}
+    @php $canOpenSquads = auth()->user()->can('viewAny', \App\Models\TeamPlayer::class); @endphp
+
     <div class="grid items-start gap-4 lg:grid-cols-[1fr_20rem]">
         {{-- Teams already in this season --}}
         <x-admin.card :title="'Teams in '.$edition->name.' ('.$editionTeams->count().')'" flush>
@@ -22,7 +26,7 @@
                         @php $matchCount = $editionTeam->matches_as_team_a_count + $editionTeam->matches_as_team_b_count; @endphp
                         <tr class="hover:bg-slate-50">
                             <td class="px-4 py-1.5">
-                                <a href="{{ route('admin.editions.squads.show', [$edition, $editionTeam]) }}" class="flex items-center gap-2 font-medium text-slate-800 hover:underline">
+                                <a @if($canOpenSquads) href="{{ route('admin.editions.squads.show', [$edition, $editionTeam]) }}" @endif class="flex items-center gap-2 font-medium text-slate-800{{ $canOpenSquads ? ' hover:underline' : '' }}">
                                     <span class="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-slate-300">
                                         <x-media-image :path="$editionTeam->team->logo_path" kind="image" alt="" class="h-full w-full object-cover" />
                                     </span>

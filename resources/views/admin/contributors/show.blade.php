@@ -27,7 +27,7 @@
                     <h2 class="text-base font-semibold text-neutral-900">{{ $contributor->name }}</h2>
                     <x-status-badge :status="$contributor->is_active ? 'active' : 'inactive'" />
                 </div>
-                {{-- Admin-only page: phone may be shown here. --}}
+                {{-- Needs contributors.view (admin by default): phone may be shown here. --}}
                 <p class="mt-1 text-xs text-neutral-500">{{ $contributor->phone ?: 'No phone on file' }}</p>
             </div>
         </div>

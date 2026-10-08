@@ -67,9 +67,11 @@
                     Add
                 </button>
 
-                <a href="{{ route('admin.contributors.create') }}" class="text-xs theme-link hover:underline">
-                    + New contributor
-                </a>
+                @can('create', \App\Models\Contributor::class)
+                    <a href="{{ route('admin.contributors.create') }}" class="text-xs theme-link hover:underline">
+                        + New contributor
+                    </a>
+                @endcan
             </form>
         </div>
 
@@ -89,7 +91,11 @@
                     @forelse($dues as $row)
                         <tr class="hover:bg-neutral-50">
                             <td class="px-4 py-2 font-medium text-neutral-800">
-                                <a href="{{ route('admin.contributors.show', $row['contributor']) }}" class="hover:underline">{{ $row['contributor']->name }}</a>
+                                @can('view', $row['contributor'])
+                                    <a href="{{ route('admin.contributors.show', $row['contributor']) }}" class="hover:underline">{{ $row['contributor']->name }}</a>
+                                @else
+                                    {{ $row['contributor']->name }}
+                                @endcan
                             </td>
                             <td class="px-4 py-2 text-right text-neutral-600">{{ money($row['target']) }}</td>
                             <td class="px-4 py-2 text-right text-neutral-600">{{ money($row['paid']) }}</td>
@@ -97,14 +103,16 @@
                             <td class="px-4 py-2"><x-status-badge :status="$row['status']" /></td>
                             <td class="px-4 py-2">
                                 <div class="flex items-center justify-end gap-1">
-                                    <a
-                                        href="{{ route('admin.edition-contributions.create', ['edition_id' => $edition->id, 'contributor_id' => $row['contributor']->id]) }}"
-                                        title="Record contribution"
-                                        aria-label="Record contribution for {{ $row['contributor']->name }}"
-                                        class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 theme-hover-primary"
-                                    >
-                                        <x-icon name="currency" class="h-4 w-4" />
-                                    </a>
+                                    @can('create', \App\Models\EditionContribution::class)
+                                        <a
+                                            href="{{ route('admin.edition-contributions.create', ['edition_id' => $edition->id, 'contributor_id' => $row['contributor']->id]) }}"
+                                            title="Record contribution"
+                                            aria-label="Record contribution for {{ $row['contributor']->name }}"
+                                            class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 theme-hover-primary"
+                                        >
+                                            <x-icon name="currency" class="h-4 w-4" />
+                                        </a>
+                                    @endcan
                                     <form
                                             method="POST"
                                             action="{{ route('admin.finance.committee.destroy', $row['membership']) }}"

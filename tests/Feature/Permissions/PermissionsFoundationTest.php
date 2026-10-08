@@ -68,6 +68,46 @@ class PermissionsFoundationTest extends TestCase
         $this->assertFalse($user->hasPermission('photos.manage'));
     }
 
+    public function test_running_a_match_or_sending_a_notification_includes_looking_at_it(): void
+    {
+        $role = Role::create(['name' => 'Match helper', 'slug' => 'match-helper']);
+        $role->syncPermissions(['scoring.score', 'notifications.send']);
+        $user = $this->userWith($role->fresh());
+
+        // These actions all happen on the match / notification page, so that page must open.
+        $this->assertTrue($user->hasPermission('matches.view'));
+        $this->assertTrue($user->hasPermission('notifications.view'));
+
+        // ...but nothing stronger comes with them.
+        $this->assertFalse($user->hasPermission('matches.manage'));
+        $this->assertFalse($user->hasPermission('matches.run'));
+        $this->assertFalse($user->hasPermission('notifications.manage'));
+
+        // The implied keys are stored too, so the role editor shows them ticked.
+        $this->assertEqualsCanonicalizing(
+            ['scoring.score', 'matches.view', 'notifications.send', 'notifications.view'],
+            $role->permissionKeys()
+        );
+    }
+
+    public function test_every_permission_can_be_asked_as_a_gate_and_follows_the_role(): void
+    {
+        $role = Role::create(['name' => 'Editor', 'slug' => 'editor']);
+        $role->syncPermissions(['news.manage']);
+        $user = $this->userWith($role->fresh());
+
+        $this->assertTrue($user->can('news.view'));
+        $this->assertTrue($user->can('news.manage'));
+        $this->assertFalse($user->can('photos.view'));
+        $this->assertFalse($user->can('roles.manage'));
+
+        $admin = $this->userWith(Role::create(['name' => 'Admin', 'slug' => 'admin']));
+
+        foreach (Permissions::keys() as $key) {
+            $this->assertTrue($admin->can($key), "admin should pass the {$key} gate");
+        }
+    }
+
     public function test_access_control_permissions_are_never_delegable(): void
     {
         $role = Role::create(['name' => 'Sneaky', 'slug' => 'sneaky']);

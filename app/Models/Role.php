@@ -103,14 +103,8 @@ class Role extends Model
             return false;
         }
 
-        $held = $this->permissionKeys();
-
-        if (in_array($key, $held, true)) {
-            return true;
-        }
-
-        // Being allowed to manage a module includes looking at it.
-        return str_ends_with($key, '.view')
-            && in_array(substr($key, 0, -5).'.manage', $held, true);
+        // The key itself, or a stronger one that includes it (manage includes view, scoring includes
+        // looking at the match, ...: see Permissions::implied()).
+        return array_intersect(Permissions::grantedBy($key), $this->permissionKeys()) !== [];
     }
 }

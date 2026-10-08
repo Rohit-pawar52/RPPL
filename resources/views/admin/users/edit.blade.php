@@ -42,6 +42,11 @@
                     :options="$roles->pluck('name', 'id')"
                     :value="old('role_id', $targetUser->role_id)"
                 />
+                @can('viewAny', \App\Models\Role::class)
+                    <p class="-mt-2 mb-3.5 text-[11px] text-slate-400">
+                        What each role may do is set under <a href="{{ route('admin.roles.index') }}" class="underline hover:text-slate-600">Roles</a>.
+                    </p>
+                @endcan
 
                 <x-form.select
                     name="is_active"

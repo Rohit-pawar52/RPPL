@@ -11,13 +11,16 @@ use Illuminate\Validation\Validator;
 class UpdateUserRequest extends FormRequest
 {
     /**
-     * Authorization is handled explicitly in UserController via
-     * $this->authorize() (UserPolicy), so this stays true to avoid
-     * duplicating that check.
+     * Asks UserPolicy (users.manage - never delegable, so administrators
+     * only) before anything is validated, so a signed-in panel user who may
+     * not manage accounts learns nothing from the validation messages (such
+     * as whether an email already has an account). UserController checks again.
      */
     public function authorize(): bool
     {
-        return true;
+        $target = $this->route('user');
+
+        return $target instanceof User && ($this->user()?->can('update', $target) ?? false);
     }
 
     /**

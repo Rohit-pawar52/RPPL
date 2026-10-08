@@ -11,8 +11,8 @@ use Tests\TestCase;
 
 /**
  * Phase 3.46 — admin management of the three fixed content pages.
- * Proves authorization (the "manage-tournament" Gate, same as
- * Settings/Reports/DataCleanup), deterministic demo seeding, per-tab
+ * Proves authorization (the content_pages.manage permission, which only
+ * the admin holds by default), deterministic demo seeding, per-tab
  * updates, and that `type` can never be changed through the request.
  */
 class ContentPageManagementTest extends TestCase
