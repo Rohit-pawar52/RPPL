@@ -63,6 +63,29 @@ class User extends Authenticatable
     }
 
     /**
+     * Whether this user's role allows the permission (see App\Support\Permissions). Deny by default:
+     * a user without a role, or a key that is not in the catalog, is never allowed.
+     */
+    public function hasPermission(string $key): bool
+    {
+        return $this->role?->hasPermission($key) ?? false;
+    }
+
+    /**
+     * @param  list<string>  $keys
+     */
+    public function hasAnyPermission(array $keys): bool
+    {
+        foreach ($keys as $key) {
+            if ($this->hasPermission($key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * players.user_id is UNIQUE, so a user has at most one player profile.
      */
     public function player(): HasOne

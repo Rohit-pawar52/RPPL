@@ -142,24 +142,20 @@ class AppServiceProvider extends ServiceProvider
      */
     private function configureAuthorization(): void
     {
-        // Anyone who can authenticate at /admin/login (admin, scorer or
-        // auctioneer) may enter the admin shell itself. What each of them
-        // can then open is decided by the policies and the two role gates
-        // below.
-        Gate::define('access-admin-panel', function (User $user) {
-            return in_array($user->role?->slug, ['admin', 'scorer', 'auctioneer'], true);
-        });
+        // What a role may do is stored per role (App\Support\Permissions,
+        // edited under Roles in the admin panel); these gates and the
+        // per-resource policies only ask the user's role. The admin role
+        // always holds every permission.
 
-        // Running matches: scoring, toss, playing XI. Admin and scorer.
-        Gate::define('score-matches', function (User $user) {
-            return in_array($user->role?->slug, ['admin', 'scorer'], true);
-        });
+        // Whoever holds panel.access may enter the admin shell itself. What
+        // they can then open is decided by the policies and the gates below.
+        Gate::define('access-admin-panel', fn (User $user) => $user->hasPermission('panel.access'));
 
-        // Running the player auction. Admin and auctioneer — an auctioneer
-        // gets nothing outside the auction.
-        Gate::define('run-auction', function (User $user) {
-            return in_array($user->role?->slug, ['admin', 'auctioneer'], true);
-        });
+        // Running matches: scoring, toss, playing XI.
+        Gate::define('score-matches', fn (User $user) => $user->hasAnyPermission(['scoring.score', 'matches.run']));
+
+        // Running the player auction.
+        Gate::define('run-auction', fn (User $user) => $user->hasPermission('auction.run'));
 
         // Tournament management (editions, teams, players, registrations,
         // squads, venues, reports, settings) is admin-only. Scorers do not
