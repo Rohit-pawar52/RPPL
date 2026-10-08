@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\EditionTeam;
 
+use App\Models\EditionTeam;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -10,9 +11,13 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class CreateSeasonTeamRequest extends FormRequest
 {
+    /**
+     * Asks EditionTeamPolicy before anything is validated: a validation message such as "already taken"
+     * must not tell somebody who may not manage this what already exists. SeasonTeamController checks again.
+     */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('create', EditionTeam::class) ?? false;
     }
 
     /**

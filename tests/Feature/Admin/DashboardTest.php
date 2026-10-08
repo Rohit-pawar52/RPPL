@@ -168,10 +168,10 @@ class DashboardTest extends TestCase
     }
 
     /**
-     * Existing dashboard authorization (accessible to anyone who can
-     * enter the admin panel — admin or scorer, per
-     * AppServiceProvider's access-admin-panel gate) is unchanged by
-     * Phase 3.42; this proves it explicitly rather than assuming.
+     * Existing dashboard authorization (the tournament dashboard is for
+     * whoever holds panel.access and dashboard.tournament — admin and
+     * scorer by default) is unchanged by Phase 3.42; this proves it
+     * explicitly rather than assuming.
      */
     public function test_scorer_can_still_access_dashboard(): void
     {

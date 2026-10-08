@@ -5,30 +5,29 @@ namespace App\Policies;
 use App\Models\RuleType;
 use App\Models\User;
 
+/**
+ * Rule types are part of the rules section, so they share its permissions: looking at them takes
+ * `rules.view`; adding, changing or deleting one takes `rules.manage` (which includes viewing).
+ */
 class RuleTypePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('rules.view');
     }
 
     public function create(User $user): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('rules.manage');
     }
 
     public function update(User $user, RuleType $ruleType): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('rules.manage');
     }
 
     public function delete(User $user, RuleType $ruleType): bool
     {
-        return $this->isAdmin($user);
-    }
-
-    private function isAdmin(User $user): bool
-    {
-        return $user->role?->slug === 'admin';
+        return $user->hasPermission('rules.manage');
     }
 }

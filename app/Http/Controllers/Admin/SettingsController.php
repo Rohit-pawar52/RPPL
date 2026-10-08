@@ -9,17 +9,20 @@ use App\Http\Requests\Admin\Settings\UpdatePaymentSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdatePublicWebsiteSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateSystemSettingsRequest;
 use App\Http\Requests\Admin\Settings\UpdateUpiSettingsRequest;
+use App\Models\User;
 use App\Services\Settings\BrandingUploadService;
 use App\Services\Settings\SettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 /**
  * Admin management of the Settings module's persisted values (Phase
- * 3.44B2). Gated behind the existing "manage-tournament" Gate, the same
- * broad admin-only check ReportsController/DataCleanupController use for
- * a non-Policy, non-resource admin page.
+ * 3.44B2). Every action, including just opening the page, needs the
+ * settings.manage permission (there is no separate view permission for
+ * settings). Checked inline, like ReportsController/DataCleanupController
+ * do for a non-Policy, non-resource admin page.
  *
  * Deliberately narrow: this controller only reads/writes settings and
  * branding files through SettingsService/BrandingUploadService. It never
@@ -36,7 +39,7 @@ class SettingsController extends Controller
 
     public function index(Request $request): View
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeSettings();
 
         $tab = $request->query('tab', 'general');
 
@@ -52,7 +55,7 @@ class SettingsController extends Controller
 
     public function updateGeneral(UpdateGeneralSettingsRequest $request): RedirectResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeSettings();
 
         $data = $request->validated();
 
@@ -89,7 +92,7 @@ class SettingsController extends Controller
 
     public function updateContact(UpdateContactSettingsRequest $request): RedirectResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeSettings();
 
         $data = $request->validated();
 
@@ -106,7 +109,7 @@ class SettingsController extends Controller
 
     public function updateSystem(UpdateSystemSettingsRequest $request): RedirectResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeSettings();
 
         $data = $request->validated();
 
@@ -147,7 +150,7 @@ class SettingsController extends Controller
 
     public function updatePayments(UpdatePaymentSettingsRequest $request): RedirectResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeSettings();
 
         $data = $request->validated();
 
@@ -182,7 +185,7 @@ class SettingsController extends Controller
      */
     public function updateUpi(UpdateUpiSettingsRequest $request): RedirectResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeSettings();
 
         $data = $request->validated();
 
@@ -204,7 +207,7 @@ class SettingsController extends Controller
 
     public function updatePublicWebsite(UpdatePublicWebsiteSettingsRequest $request): RedirectResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeSettings();
 
         $data = $request->validated();
 
@@ -214,5 +217,10 @@ class SettingsController extends Controller
 
         return redirect()->route('admin.settings.index', ['tab' => 'public-website'])
             ->with('success', 'Public website settings updated.');
+    }
+
+    private function authorizeSettings(): void
+    {
+        Gate::allowIf(fn (User $user) => $user->hasPermission('settings.manage'));
     }
 }

@@ -18,8 +18,8 @@ class DeleteStaleFcmTokensRequest extends FormRequest
     public const DAYS_OPTIONS = [7, 14, 30, 60, 90, 180, 365];
 
     /**
-     * Authorization is handled explicitly in DataCleanupController via
-     * $this->authorize('manage-tournament'), so this stays true to avoid
+     * Authorization is handled explicitly in DataCleanupController (the
+     * data_cleanup.manage permission), so this stays true to avoid
      * duplicating that check.
      */
     public function authorize(): bool

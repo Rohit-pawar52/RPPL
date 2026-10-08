@@ -5,18 +5,20 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ContentPage\UpdateContentPageRequest;
 use App\Models\ContentPage;
+use App\Models\User;
 use App\Services\ContentPage\ContentPageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 /**
  * A single admin screen managing all three fixed content pages (Phase
  * 3.46) — no create/delete: the canonical rows always exist via
  * DemoContentPageSeeder, and this controller only ever reads/updates
- * them. Gated behind "manage-tournament", the same broad admin-only
- * Gate ReportsController/DataCleanupController/SettingsController use
- * for a non-Policy, non-resource admin page.
+ * them. Needs the content_pages.manage permission, checked inline like
+ * ReportsController/DataCleanupController/SettingsController do for a
+ * non-Policy, non-resource admin page.
  */
 class ContentPageController extends Controller
 {
@@ -24,7 +26,7 @@ class ContentPageController extends Controller
 
     public function index(Request $request): View
     {
-        $this->authorize('manage-tournament');
+        Gate::allowIf(fn (User $user) => $user->hasPermission('content_pages.manage'));
 
         $tab = $request->query('tab', ContentPage::TYPE_PRIVACY_POLICY);
 
@@ -46,7 +48,7 @@ class ContentPageController extends Controller
      */
     public function update(UpdateContentPageRequest $request, ContentPage $contentPage): RedirectResponse
     {
-        $this->authorize('manage-tournament');
+        Gate::allowIf(fn (User $user) => $user->hasPermission('content_pages.manage'));
 
         $data = $request->validated();
 

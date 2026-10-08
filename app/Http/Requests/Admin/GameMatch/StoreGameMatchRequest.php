@@ -10,13 +10,12 @@ use Illuminate\Validation\Rule;
 class StoreGameMatchRequest extends FormRequest
 {
     /**
-     * Authorization is handled explicitly in GameMatchController via
-     * $this->authorize() (GameMatchPolicy), so this stays true to avoid
-     * duplicating that check.
+     * Asks GameMatchPolicy before anything is validated: a validation message such as "already taken"
+     * must not tell somebody who may not manage this what already exists. GameMatchController checks again.
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('create', GameMatch::class) ?? false;
     }
 
     /**

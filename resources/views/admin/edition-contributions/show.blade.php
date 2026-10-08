@@ -14,9 +14,13 @@
             <h2 class="text-base font-semibold text-neutral-900">
                 {{ money($contribution->amount) }}
             </h2>
-            <a href="{{ route('admin.contributors.show', $contribution->contributor) }}" class="text-xs font-medium theme-link hover:underline">
-                {{ $contribution->contributorName() }}
-            </a>
+            @can('view', $contribution->contributor)
+                <a href="{{ route('admin.contributors.show', $contribution->contributor) }}" class="text-xs font-medium theme-link hover:underline">
+                    {{ $contribution->contributorName() }}
+                </a>
+            @else
+                <span class="text-xs font-medium text-neutral-700">{{ $contribution->contributorName() }}</span>
+            @endcan
         </div>
 
         <dl class="mt-3 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">

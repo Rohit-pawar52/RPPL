@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\Account\PasswordController;
 use App\Http\Controllers\Admin\AdvertisementController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AnnouncementController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Admin\PhotoController;
 use App\Http\Controllers\Admin\PlayerController;
 use App\Http\Controllers\Admin\PlayerRegistrationController;
 use App\Http\Controllers\Admin\ReportsController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\RuleController;
 use App\Http\Controllers\Admin\RuleTypeController;
 use App\Http\Controllers\Admin\ScorecardController;
@@ -51,12 +53,26 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('login.store');
     });
 
+    // What every signed-in, still active account may do for itself - also one whose role cannot open
+    // the panel (panel.access), which would otherwise be stuck on a 403 with no way to sign out.
+    Route::middleware(['auth', 'active'])->group(function () {
+        Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
+
+        // Changing your own password. The current password is checked on every try, so updating is
+        // throttled per user: it must not be guessable by hammering this form.
+        Route::prefix('account/password')->name('account.password.')->group(function () {
+            Route::get('/', [PasswordController::class, 'edit'])->name('edit');
+            Route::put('/', [PasswordController::class, 'update'])
+                ->middleware('throttle:6,1,account-password')
+                ->name('update');
+        });
+    });
+
     // "active" runs right after "auth" (is this session even still allowed
     // to exist) and before "can:access-admin-panel" (what is it allowed to
     // do) — authentication status and authorization role are deliberately
     // kept as separate checks.
     Route::middleware(['auth', 'active', 'can:access-admin-panel'])->group(function () {
-        Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
         Route::get('dashboard', DashboardController::class)->name('dashboard');
 
         // Read-side reporting/navigation hub (Phase 3.43) — links to
@@ -278,12 +294,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('committee/{edition_committee_member}', [EditionCommitteeMemberController::class, 'destroy'])->name('committee.destroy');
             Route::post('committee/copy-previous', [EditionCommitteeMemberController::class, 'copyPrevious'])->name('committee.copy-previous');
         });
-        Route::get('committee-members', fn () => redirect()->route('admin.finance.committee'))->name('committee-members.index');
+        // The redirects still ask for committee.view, so they never reveal (via the contributor id in
+        // the redirect target) that a committee member exists to someone who may not see the committee.
+        Route::get('committee-members', fn () => redirect()->route('admin.finance.committee'))
+            ->middleware('can:committee.view')
+            ->name('committee-members.index');
         Route::get('committee-members/{committee_member}', function (CommitteeMember $committee_member) {
             return $committee_member->contributor
                 ? redirect()->route('admin.contributors.show', $committee_member->contributor)
                 : redirect()->route('admin.finance.committee');
-        })->name('committee-members.show');
+        })->middleware('can:committee.view')->name('committee-members.show');
 
         Route::resource('contributors', ContributorController::class);
         // Must precede the resource route below — otherwise "export"
@@ -300,6 +320,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // No destroy: accounts are deactivated (is_active), never
         // deleted — see UserController's docblock.
         Route::resource('users', UserController::class)->except(['destroy']);
+        // Roles and the permissions each holds. Admin only: roles.view /
+        // roles.manage are never delegable (RolePolicy). A role is deleted
+        // only when no user has it, and the built-in roles never are.
+        Route::resource('roles', RoleController::class);
         // No per-item destroy: a broadcast's content is never deleted
         // individually — see NotificationController's docblock. Bulk,
         // date-based retention cleanup exists separately below

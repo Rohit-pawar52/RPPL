@@ -197,9 +197,13 @@
                             <td class="whitespace-nowrap px-2 py-1.5 text-slate-500">{{ display_datetime($match->scheduled_at, 'd M Y') }}</td>
                             <td class="hidden px-2 py-1.5 text-slate-600 md:table-cell">{{ $match->edition->name }}</td>
                             <td class="px-2 py-1.5 text-slate-800">
-                                <a href="{{ route('admin.matches.show', $match) }}" class="hover:underline">
+                                @can('view', $match)
+                                    <a href="{{ route('admin.matches.show', $match) }}" class="hover:underline">
+                                        {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
+                                    </a>
+                                @else
                                     {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
-                                </a>
+                                @endcan
                             </td>
                             <td class="px-2 py-1.5 text-slate-700">
                                 @if($row['batting'])

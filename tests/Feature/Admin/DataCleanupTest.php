@@ -17,8 +17,8 @@ use Tests\TestCase;
  * authorization. FCM token cleanup is covered by
  * DataCleanupFcmTokenTest, registration documents by
  * DataCleanupRegistrationDocumentsTest, and failed jobs by
- * DataCleanupFailedJobsTest — all four share this same admin-only gate
- * and DataCleanupLogger audit trail.
+ * DataCleanupFailedJobsTest — all four share this same
+ * data_cleanup.manage permission and DataCleanupLogger audit trail.
  */
 class DataCleanupTest extends TestCase
 {

@@ -12,6 +12,7 @@ use App\Models\Edition;
 use App\Models\FcmToken;
 use App\Models\Notification;
 use App\Models\NotificationSend;
+use App\Models\User;
 use App\Services\DataCleanup\DataCleanupLogger;
 use App\Services\DataCleanup\FailedJobCleanupService;
 use App\Services\DataCleanup\FailedJobViewService;
@@ -24,6 +25,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -33,9 +35,10 @@ use Illuminate\View\View;
  * expanded this from notifications-only to also cover registration
  * documents and failed queue jobs). Never runs automatically, always
  * an explicit click with an explicit confirmation and a server-
- * calculated preview count first. Gated behind the existing
- * "manage-tournament" Gate, the same broad admin-only check
- * ReportsController uses for a non-resource, non-Policy page.
+ * calculated preview count first. Every action here, previews and
+ * read-only views included, needs the data_cleanup.manage permission,
+ * checked inline like ReportsController does for a non-resource,
+ * non-Policy page.
  *
  * Three tabs (?tab=notifications|registration-documents|system),
  * mirroring the Settings module's own ?tab= pattern exactly — each tab
@@ -61,7 +64,7 @@ class DataCleanupController extends Controller
 
     public function index(Request $request): View
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeCleanup();
 
         $tab = $request->query('tab', 'notifications');
 
@@ -99,7 +102,7 @@ class DataCleanupController extends Controller
      */
     public function failedJobDetail(string $uuid): View
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeCleanup();
 
         $failedJob = $this->failedJobViews->find($uuid);
 
@@ -113,13 +116,13 @@ class DataCleanupController extends Controller
     /**
      * Read-only server-calculated count for a date-cutoff category —
      * backs the live preview on the Notifications/System tabs before an
-     * admin confirms. Same viewAny-equivalent admin-only gate as every
+     * admin confirms. Same data_cleanup.manage check as every
      * destructive action here; a preview is never treated as harmless
      * just because it doesn't delete anything.
      */
     public function previewCutoff(Request $request): JsonResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeCleanup();
 
         $validated = $request->validate([
             'category' => ['required', Rule::in(['notifications', 'notification-sends', 'failed-jobs'])],
@@ -144,7 +147,7 @@ class DataCleanupController extends Controller
      */
     public function previewStaleFcmTokens(Request $request): JsonResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeCleanup();
 
         $validated = $request->validate([
             'days' => ['required', 'integer', Rule::in(DeleteStaleFcmTokensRequest::DAYS_OPTIONS)],
@@ -161,7 +164,7 @@ class DataCleanupController extends Controller
      */
     public function previewRegistrationDocuments(Request $request): JsonResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeCleanup();
 
         $validated = $request->validate([
             'edition_id' => ['required', 'integer', 'exists:editions,id'],
@@ -176,7 +179,7 @@ class DataCleanupController extends Controller
 
     public function destroyNotifications(DeleteNotificationsRequest $request): RedirectResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeCleanup();
 
         $beforeDate = $request->validated('before_date');
         $before = $this->timezoneFormatter->startOfDisplayDate($beforeDate);
@@ -198,7 +201,7 @@ class DataCleanupController extends Controller
 
     public function destroyNotificationSends(DeleteNotificationSendsRequest $request): RedirectResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeCleanup();
 
         $beforeDate = $request->validated('before_date');
         $before = $this->timezoneFormatter->startOfDisplayDate($beforeDate);
@@ -220,7 +223,7 @@ class DataCleanupController extends Controller
 
     public function destroyInactiveFcmTokens(Request $request): RedirectResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeCleanup();
 
         $deleted = $this->notifications->deleteInactiveFcmTokens();
 
@@ -233,7 +236,7 @@ class DataCleanupController extends Controller
 
     public function destroyStaleFcmTokens(DeleteStaleFcmTokensRequest $request): RedirectResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeCleanup();
 
         $days = $request->validated('days');
         $before = now()->subDays($days);
@@ -249,7 +252,7 @@ class DataCleanupController extends Controller
 
     public function destroyRegistrationDocuments(DeleteRegistrationDocumentsRequest $request): RedirectResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeCleanup();
 
         $edition = Edition::findOrFail($request->validated('edition_id'));
         $documentType = $request->validated('document_type');
@@ -284,7 +287,7 @@ class DataCleanupController extends Controller
      */
     public function destroyMediaFiles(Request $request, string $category): RedirectResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeCleanup();
 
         abort_unless($this->mediaFiles->has($category), 404);
 
@@ -322,7 +325,7 @@ class DataCleanupController extends Controller
 
     public function destroyFailedJobs(DeleteFailedJobsRequest $request): RedirectResponse
     {
-        $this->authorize('manage-tournament');
+        $this->authorizeCleanup();
 
         $beforeDate = $request->validated('before_date');
         $before = $this->timezoneFormatter->startOfDisplayDate($beforeDate);
@@ -340,5 +343,10 @@ class DataCleanupController extends Controller
         return redirect()
             ->route('admin.data-cleanup.index', ['tab' => 'system'])
             ->with('success', "Deleted {$deleted} failed job record(s).");
+    }
+
+    private function authorizeCleanup(): void
+    {
+        Gate::allowIf(fn (User $user) => $user->hasPermission('data_cleanup.manage'));
     }
 }

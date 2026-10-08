@@ -11,7 +11,7 @@ use App\Models\GameMatch;
 use App\Models\PlayerRegistration;
 use App\Models\TeamPlayer;
 use App\Services\Finance\ContributorRankingService;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -30,24 +30,28 @@ class DashboardController extends Controller
 {
     public function __construct(private readonly ContributorRankingService $contributorRanking) {}
 
-    public function __invoke(): View
+    public function __invoke(Request $request): View
     {
-        $edition = $this->currentEdition();
+        $user = $request->user();
 
-        // An auctioneer gets nothing outside the auction — no match,
-        // registration or finance figures — so their dashboard is the
-        // auction alone.
-        if (Gate::denies('manage-tournament') && Gate::denies('score-matches')) {
-            return view('admin.dashboard.auctioneer', [
-                'edition' => $edition,
-                'auction' => $edition?->auction,
-            ]);
+        // The tournament dashboard (matches, teams, registrations) is for
+        // roles holding dashboard.tournament. Anyone else who can enter the
+        // panel gets only what their role is for: an auctioneer's dashboard
+        // is the auction alone — no match, registration or finance figures —
+        // and a role with neither gets a plain welcome page: no figures and
+        // no edition lookup.
+        if (! $user->hasPermission('dashboard.tournament')) {
+            return $user->hasPermission('auction.run')
+                ? $this->auctionDashboard()
+                : view('admin.dashboard.welcome');
         }
 
-        // Payment and finance figures are admin-only: scorers reach this
-        // dashboard too (access-admin-panel), but those numbers are neither
-        // queried nor rendered for them.
-        $canViewFinance = Gate::allows('manage-tournament');
+        $edition = $this->currentEdition();
+
+        // Payment and finance figures need finance.view: other roles that
+        // reach this dashboard (a scorer, say) get neither the numbers nor
+        // the queries behind them.
+        $canViewFinance = $user->hasPermission('finance.view');
 
         $registeredPlayers = 0;
         $paidRegistrations = 0;
@@ -169,6 +173,20 @@ class DashboardController extends Controller
             'contributionCount' => $contributionCount,
             'recognizedContributorsCount' => $recognizedContributorsCount,
             'canViewFinance' => $canViewFinance,
+        ]);
+    }
+
+    /**
+     * What an auctioneer sees instead of the tournament dashboard: the
+     * current season's auction and a way into it.
+     */
+    private function auctionDashboard(): View
+    {
+        $edition = $this->currentEdition();
+
+        return view('admin.dashboard.auctioneer', [
+            'edition' => $edition,
+            'auction' => $edition?->auction,
         ]);
     }
 

@@ -9,13 +9,14 @@ use Illuminate\Validation\Rule;
 class UpdatePlayerRequest extends FormRequest
 {
     /**
-     * Authorization is handled explicitly in PlayerController via
-     * $this->authorize() (PlayerPolicy), so this stays true to avoid
-     * duplicating that check.
+     * Asks PlayerPolicy before anything is validated: a validation message such as "already taken"
+     * must not tell somebody who may not manage this what already exists. PlayerController checks again.
      */
     public function authorize(): bool
     {
-        return true;
+        $target = $this->route('player');
+
+        return $target instanceof Player && ($this->user()?->can('update', $target) ?? false);
     }
 
     /**

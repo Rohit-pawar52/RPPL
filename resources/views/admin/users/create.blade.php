@@ -27,6 +27,11 @@
                     :value="old('role_id')"
                 />
             </div>
+            @can('viewAny', \App\Models\Role::class)
+                <p class="-mt-2 mb-3.5 text-[11px] text-slate-400">
+                    What each role may do is set under <a href="{{ route('admin.roles.index') }}" class="underline hover:text-slate-600">Roles</a>.
+                </p>
+            @endcan
 
             <div class="grid gap-x-4 sm:grid-cols-2">
                 <x-form.input name="password" label="Password" type="password" required />

@@ -2,19 +2,19 @@
 
 namespace App\Http\Requests\Admin\EditionTeam;
 
+use App\Models\EditionTeam;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreEditionTeamRequest extends FormRequest
 {
     /**
-     * Authorization is handled explicitly in EditionTeamController via
-     * $this->authorize() (EditionTeamPolicy), so this stays true to
-     * avoid duplicating that check.
+     * Asks EditionTeamPolicy before anything is validated: a validation message such as "already taken"
+     * must not tell somebody who may not manage this what already exists. EditionTeamController checks again.
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('create', EditionTeam::class) ?? false;
     }
 
     /**

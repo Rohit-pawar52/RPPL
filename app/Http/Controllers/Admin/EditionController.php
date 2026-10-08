@@ -81,25 +81,43 @@ class EditionController extends Controller
             ->with('success', 'Edition created successfully.');
     }
 
-    public function show(Edition $edition): View
+    public function show(Request $request, Edition $edition): View
     {
         $this->authorize('view', $edition);
 
         $edition->loadCount(['playerRegistrations', 'editionTeams', 'matches']);
 
-        $financeTotals = EditionTransaction::query()
-            ->where('edition_id', $edition->id)
-            ->selectRaw("COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as income")
-            ->selectRaw("COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as expense")
-            ->first();
-        $financeIncome = (float) $financeTotals->income;
-        $financeExpense = (float) $financeTotals->expense;
+        // Money (the ledger and the contributions) is only worked out for a role that may see finance:
+        // editions.view is enough to open this page, and must not be a way to read the books. The hub
+        // draws its Finance card from these, and only when they are there.
+        $financeSummary = null;
+        $contributionSummary = null;
 
-        $contributionTotals = EditionContribution::query()
-            ->where('edition_id', $edition->id)
-            ->selectRaw('COUNT(DISTINCT committee_member_id) as contributors')
-            ->selectRaw('COALESCE(SUM(amount), 0) as total')
-            ->first();
+        if ($request->user()->hasPermission('finance.view')) {
+            $financeTotals = EditionTransaction::query()
+                ->where('edition_id', $edition->id)
+                ->selectRaw("COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as income")
+                ->selectRaw("COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as expense")
+                ->first();
+            $financeIncome = (float) $financeTotals->income;
+            $financeExpense = (float) $financeTotals->expense;
+
+            $contributionTotals = EditionContribution::query()
+                ->where('edition_id', $edition->id)
+                ->selectRaw('COUNT(DISTINCT committee_member_id) as contributors')
+                ->selectRaw('COALESCE(SUM(amount), 0) as total')
+                ->first();
+
+            $financeSummary = [
+                'income' => $financeIncome,
+                'expense' => $financeExpense,
+                'balance' => $financeIncome - $financeExpense,
+            ];
+            $contributionSummary = [
+                'contributors' => (int) $contributionTotals->contributors,
+                'total' => (float) $contributionTotals->total,
+            ];
+        }
 
         $registrations = PlayerRegistration::where('edition_id', $edition->id);
         $squadPlayers = TeamPlayer::whereHas('editionTeam', fn ($query) => $query->where('edition_id', $edition->id))->count();
@@ -125,27 +143,23 @@ class EditionController extends Controller
             'standings' => $this->standings->getEditionStandings($edition),
             'leaderboard' => $this->statistics->getEditionLeaderboard($edition),
             'records' => $this->statistics->getEditionRecords($edition),
-            'financeSummary' => [
-                'income' => $financeIncome,
-                'expense' => $financeExpense,
-                'balance' => $financeIncome - $financeExpense,
-            ],
-            'contributionSummary' => [
-                'contributors' => (int) $contributionTotals->contributors,
-                'total' => (float) $contributionTotals->total,
-            ],
+            'financeSummary' => $financeSummary,
+            'contributionSummary' => $contributionSummary,
         ]);
     }
 
     /**
-     * Admin-only PDF snapshot of the tournament for this Edition — a
-     * presentation layer over the same StandingsService/
-     * PlayerStatisticsService/registration-and-match data show() already
-     * loads, never a duplicate calculation. Deliberately excludes the
-     * EditionTransaction finance ledger and committee contributions,
-     * which are a separate reporting domain (Phases 3.25/3.27).
+     * PDF snapshot of the tournament for this Edition, for whoever may view
+     * it (editions.view) — a presentation layer over the same
+     * StandingsService/PlayerStatisticsService/registration-and-match data
+     * show() already loads, never a duplicate calculation. Deliberately
+     * excludes the EditionTransaction finance ledger and committee
+     * contributions, which are a separate reporting domain (Phases
+     * 3.25/3.27). The one money line it has — the paid registration fees —
+     * is only worked out and printed for a role that also holds
+     * finance.view.
      */
-    public function reportPdf(Edition $edition): Response
+    public function reportPdf(Request $request, Edition $edition): Response
     {
         $this->authorize('view', $edition);
 
@@ -158,10 +172,13 @@ class EditionController extends Controller
             ->groupBy('payment_status')
             ->pluck('count', 'payment_status');
 
-        $paidRegistrationFees = (float) PlayerRegistration::query()
-            ->where('edition_id', $edition->id)
-            ->where('payment_status', 'paid')
-            ->sum('registration_fee');
+        // null = not to be shown (the report-pdf view prints the line only when it has an amount).
+        $paidRegistrationFees = $request->user()->hasPermission('finance.view')
+            ? (float) PlayerRegistration::query()
+                ->where('edition_id', $edition->id)
+                ->where('payment_status', 'paid')
+                ->sum('registration_fee')
+            : null;
 
         $matchStatusCounts = $edition->matches()
             ->select('match_status')

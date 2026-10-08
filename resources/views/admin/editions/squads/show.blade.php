@@ -3,10 +3,25 @@
 @section('title', $editionTeam->team->name.' squad')
 
 @section('content')
+    @php
+        // This page opens with the teams permission, so the links to other modules are drawn only for a
+        // role that may open them (editions list/hub, player profiles).
+        $canOpenEditions = auth()->user()->can('viewAny', \App\Models\Edition::class);
+        $canOpenPlayers = auth()->user()->can('viewAny', \App\Models\Player::class);
+    @endphp
+
     <nav aria-label="Season" class="mb-3 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
-        <a href="{{ route('admin.editions.index') }}" class="hover:text-slate-800 hover:underline">Editions</a>
+        @if($canOpenEditions)
+            <a href="{{ route('admin.editions.index') }}" class="hover:text-slate-800 hover:underline">Editions</a>
+        @else
+            <span>Editions</span>
+        @endif
         <span class="text-slate-300" aria-hidden="true">&rsaquo;</span>
-        <a href="{{ route('admin.editions.show', $edition) }}" class="hover:text-slate-800 hover:underline">{{ $edition->name }}</a>
+        @if($canOpenEditions)
+            <a href="{{ route('admin.editions.show', $edition) }}" class="hover:text-slate-800 hover:underline">{{ $edition->name }}</a>
+        @else
+            <span>{{ $edition->name }}</span>
+        @endif
         <span class="text-slate-300" aria-hidden="true">&rsaquo;</span>
         <a href="{{ route('admin.editions.squads.index', $edition) }}" class="hover:text-slate-800 hover:underline">Squads</a>
         <span class="text-slate-300" aria-hidden="true">&rsaquo;</span>
@@ -38,7 +53,11 @@
                         @forelse($squad as $teamPlayer)
                             <tr>
                                 <td class="px-4 py-1">
-                                    <a href="{{ route('admin.players.show', $teamPlayer->playerRegistration->player) }}" class="font-medium text-slate-800 hover:underline">{{ $teamPlayer->playerRegistration->player->name }}</a>
+                                    @if($canOpenPlayers)
+                                        <a href="{{ route('admin.players.show', $teamPlayer->playerRegistration->player) }}" class="font-medium text-slate-800 hover:underline">{{ $teamPlayer->playerRegistration->player->name }}</a>
+                                    @else
+                                        <span class="font-medium text-slate-800">{{ $teamPlayer->playerRegistration->player->name }}</span>
+                                    @endif
                                     @if($teamPlayer->playerRegistration->payment_status !== 'paid')
                                         <span class="ml-1 text-[11px] text-amber-700">{{ $teamPlayer->playerRegistration->payment_status }}</span>
                                     @endif

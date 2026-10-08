@@ -4,16 +4,19 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PageView;
+use App\Models\User;
 use App\Services\Analytics\AdminAnalyticsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
- * Read-only admin view of the public page-view analytics. Admin-only, like
- * Reports (the manage-tournament Gate); nothing here writes anything.
+ * Read-only admin view of the public page-view analytics. Needs the
+ * analytics.view permission (independent of reports.view); nothing here
+ * writes anything.
  *
  * The filters are validated from the query string, but a bad value renders
  * the page with the default range plus the error messages — it never
@@ -26,7 +29,7 @@ class AnalyticsController extends Controller
 
     public function index(Request $request): View
     {
-        $this->authorize('manage-tournament');
+        Gate::allowIf(fn (User $user) => $user->hasPermission('analytics.view'));
 
         $validator = Validator::make($request->query(), [
             'range' => ['nullable', Rule::in(AdminAnalyticsService::PRESETS)],

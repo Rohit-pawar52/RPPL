@@ -66,6 +66,10 @@
                         <x-icon name="external" class="h-4 w-4" />
                         View site
                     </a>
+                    <a href="{{ route('admin.account.password.edit') }}" class="flex items-center gap-2 px-3 py-2 text-[13px] text-slate-700 hover:bg-slate-50">
+                        <x-icon name="key" class="h-4 w-4" />
+                        Change password
+                    </a>
                     <form method="POST" action="{{ route('admin.logout') }}">
                         @csrf
                         <button type="submit" class="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-slate-700 hover:bg-slate-50">
