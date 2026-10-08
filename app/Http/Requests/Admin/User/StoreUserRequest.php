@@ -2,18 +2,20 @@
 
 namespace App\Http\Requests\Admin\User;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreUserRequest extends FormRequest
 {
     /**
-     * Authorization is handled explicitly in UserController via
-     * $this->authorize() (UserPolicy), so this stays true to avoid
-     * duplicating that check.
+     * Asks UserPolicy (users.manage - never delegable, so administrators
+     * only) before anything is validated. Validation errors such as "this
+     * email is already taken" would otherwise tell any signed-in panel user
+     * which addresses have an account. UserController checks again.
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('create', User::class) ?? false;
     }
 
     /**

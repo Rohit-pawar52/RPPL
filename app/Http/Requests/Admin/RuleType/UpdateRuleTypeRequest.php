@@ -8,13 +8,14 @@ use Illuminate\Foundation\Http\FormRequest;
 class UpdateRuleTypeRequest extends FormRequest
 {
     /**
-     * Authorization is handled explicitly in RuleTypeController via
-     * $this->authorize() (RuleTypePolicy), so this stays true to avoid
-     * duplicating that check.
+     * Asks RuleTypePolicy before anything is validated: a validation message such as "already taken"
+     * must not tell somebody who may not manage this what already exists. RuleTypeController checks again.
      */
     public function authorize(): bool
     {
-        return true;
+        $target = $this->route('rule_type');
+
+        return $target instanceof RuleType && ($this->user()?->can('update', $target) ?? false);
     }
 
     /**

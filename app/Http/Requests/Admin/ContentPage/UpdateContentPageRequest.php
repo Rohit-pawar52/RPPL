@@ -7,9 +7,9 @@ use Illuminate\Foundation\Http\FormRequest;
 class UpdateContentPageRequest extends FormRequest
 {
     /**
-     * Authorization is handled explicitly in ContentPageController via
-     * $this->authorize('manage-tournament'), so this stays true to
-     * avoid duplicating that check.
+     * Authorization is handled explicitly in ContentPageController (the
+     * content_pages.manage permission), so this stays true to avoid
+     * duplicating that check.
      */
     public function authorize(): bool
     {

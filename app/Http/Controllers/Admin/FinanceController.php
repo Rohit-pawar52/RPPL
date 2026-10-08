@@ -6,16 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Models\EditionContribution;
 use App\Models\EditionTransaction;
+use App\Models\User;
 use App\Services\Finance\CommitteeDuesService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 /**
  * Finance "Overview" tab (Phase 3.48) — the landing page for the
- * consolidated Finance sidebar entry. Read-only: reuses
- * EditionTransaction::summaryForEdition() (the same calculation the
- * dashboard/Reports already use, so the three screens can never
- * disagree) and CommitteeDuesService for the committee dues summary.
+ * consolidated Finance sidebar entry. Needs the finance.view permission.
+ * Read-only: reuses EditionTransaction::summaryForEdition() (the same
+ * calculation the dashboard/Reports already use, so the three screens can
+ * never disagree) and CommitteeDuesService for the committee dues summary.
  * Never redefines either calculation itself.
  */
 class FinanceController extends Controller
@@ -24,7 +26,7 @@ class FinanceController extends Controller
 
     public function overview(Request $request): View
     {
-        $this->authorize('manage-tournament');
+        Gate::allowIf(fn (User $user) => $user->hasPermission('finance.view'));
 
         $edition = $this->resolveEdition($request);
         $editions = Edition::orderByDesc('year')->get(['id', 'name', 'year']);

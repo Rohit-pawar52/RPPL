@@ -29,7 +29,10 @@
                     </tr>
                 @empty
                     <x-admin.empty table colspan="4">
-                        No teams in this season yet. <a href="{{ route('admin.editions.teams.index', $edition) }}" class="font-medium text-green-700 hover:underline">Add teams first</a>.
+                        No teams in this season yet.
+                        @can('viewAny', \App\Models\EditionTeam::class)
+                            <a href="{{ route('admin.editions.teams.index', $edition) }}" class="font-medium text-green-700 hover:underline">Add teams first</a>.
+                        @endcan
                     </x-admin.empty>
                 @endforelse
             </tbody>

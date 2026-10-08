@@ -98,9 +98,13 @@
                         </td>
                         <td class="px-4 py-2 text-neutral-700">{{ $contribution->edition->name }}</td>
                         <td class="px-4 py-2 font-medium text-neutral-800">
-                            <a href="{{ route('admin.contributors.show', $contribution->contributor) }}" class="hover:underline">
+                            @can('view', $contribution->contributor)
+                                <a href="{{ route('admin.contributors.show', $contribution->contributor) }}" class="hover:underline">
+                                    {{ $contribution->contributorName() }}
+                                </a>
+                            @else
                                 {{ $contribution->contributorName() }}
-                            </a>
+                            @endcan
                         </td>
                         <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">
                             {{ $contribution->sourceLabel() }}

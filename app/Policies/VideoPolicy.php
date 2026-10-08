@@ -5,30 +5,29 @@ namespace App\Policies;
 use App\Models\User;
 use App\Models\Video;
 
+/**
+ * Looking at the video list takes the `videos.view` permission; adding, changing or deleting a
+ * video takes `videos.manage` (which includes viewing).
+ */
 class VideoPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('videos.view');
     }
 
     public function create(User $user): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('videos.manage');
     }
 
     public function update(User $user, Video $video): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('videos.manage');
     }
 
     public function delete(User $user, Video $video): bool
     {
-        return $this->isAdmin($user);
-    }
-
-    private function isAdmin(User $user): bool
-    {
-        return $user->role?->slug === 'admin';
+        return $user->hasPermission('videos.manage');
     }
 }

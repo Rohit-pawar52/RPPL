@@ -5,7 +5,9 @@
 @section('subtitle', "Push notifications sent to subscribed visitors.")
 
 @section('actions')
-    <x-admin.button href="{{ route('admin.data-cleanup.index') }}" variant="ghost">Data Cleanup</x-admin.button>
+    @can('data_cleanup.manage')
+        <x-admin.button href="{{ route('admin.data-cleanup.index') }}" variant="ghost">Data Cleanup</x-admin.button>
+    @endcan
     <x-admin.button href="{{ route('admin.notifications.create') }}" variant="primary">+ New notification</x-admin.button>
 @endsection
 

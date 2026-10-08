@@ -7,38 +7,36 @@ use App\Models\User;
 
 /**
  * Resource-specific authorization for Player Registration management.
- * Mirrors EditionPolicy/PlayerPolicy: only the admin role may manage
- * registrations — scorers never get any of these abilities.
+ * Mirrors EditionPolicy/PlayerPolicy: `registrations.view` lets a role
+ * look at registrations (and their private documents),
+ * `registrations.manage` lets it add, import, edit, verify payment of and
+ * delete them (it includes viewing). The admin role holds both; a scorer
+ * holds neither.
  */
 class PlayerRegistrationPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('registrations.view');
     }
 
     public function view(User $user, PlayerRegistration $playerRegistration): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('registrations.view');
     }
 
     public function create(User $user): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('registrations.manage');
     }
 
     public function update(User $user, PlayerRegistration $playerRegistration): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('registrations.manage');
     }
 
     public function delete(User $user, PlayerRegistration $playerRegistration): bool
     {
-        return $this->isAdmin($user);
-    }
-
-    private function isAdmin(User $user): bool
-    {
-        return $user->role?->slug === 'admin';
+        return $user->hasPermission('registrations.manage');
     }
 }

@@ -7,38 +7,34 @@ use App\Models\Venue;
 
 /**
  * Resource-specific authorization for Venue management. Mirrors
- * TeamPolicy/PlayerPolicy/EditionPolicy: only the admin role may manage
- * venues — scorers never get any of these abilities.
+ * TeamPolicy/PlayerPolicy/EditionPolicy: `venues.view` lets a role look
+ * at venues, `venues.manage` lets it create, update and delete them (it
+ * includes viewing). The admin role holds both; a scorer holds neither.
  */
 class VenuePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('venues.view');
     }
 
     public function view(User $user, Venue $venue): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('venues.view');
     }
 
     public function create(User $user): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('venues.manage');
     }
 
     public function update(User $user, Venue $venue): bool
     {
-        return $this->isAdmin($user);
+        return $user->hasPermission('venues.manage');
     }
 
     public function delete(User $user, Venue $venue): bool
     {
-        return $this->isAdmin($user);
-    }
-
-    private function isAdmin(User $user): bool
-    {
-        return $user->role?->slug === 'admin';
+        return $user->hasPermission('venues.manage');
     }
 }
