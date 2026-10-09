@@ -33,7 +33,14 @@
         @endforeach
     </div>
 
-    <div class="{{ $activeTab === 'payments' ? 'max-w-5xl' : 'max-w-2xl' }} rounded-lg border border-neutral-200 bg-white p-4">
-        @include('admin.settings.tabs.' . $activeTab)
-    </div>
+    @if($activeTab === 'general')
+        {{-- The General tab is made of its own cards. --}}
+        <div class="max-w-5xl">
+            @include('admin.settings.tabs.general')
+        </div>
+    @else
+        <div class="{{ $activeTab === 'payments' ? 'max-w-5xl' : 'max-w-2xl' }} rounded-xl border border-line bg-white p-4 sm:p-5">
+            @include('admin.settings.tabs.' . $activeTab)
+        </div>
+    @endif
 @endsection

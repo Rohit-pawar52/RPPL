@@ -2,44 +2,40 @@
 
 @section('title', 'User Details')
 
-@section('content')
-    <div class="mb-4 flex items-center justify-between">
-        <a href="{{ route('admin.users.index') }}" class="text-xs text-slate-500 hover:text-slate-700">
-            &larr; Back to users
-        </a>
-        <a
-            href="{{ route('admin.users.edit', $targetUser) }}"
-            class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
-        >
-            <x-icon name="pencil" class="h-3.5 w-3.5" />
-            Edit
-        </a>
-    </div>
+@section('actions')
+    <x-admin.button href="{{ route('admin.users.index') }}" variant="secondary" icon="arrow-left">Back to users</x-admin.button>
+    <x-admin.button href="{{ route('admin.users.edit', $targetUser) }}" icon="pencil">Edit</x-admin.button>
+@endsection
 
-    <div class="rounded-lg border border-slate-200 bg-white p-4">
-        <div class="flex items-center justify-between gap-3">
-            <h2 class="text-base font-semibold text-slate-900">
-                {{ $targetUser->name }}
-                @if($targetUser->id === auth()->id())
-                    <span class="text-xs font-normal text-slate-400">(you)</span>
-                @endif
-            </h2>
+@section('content')
+    <x-admin.card class="max-w-3xl">
+        <div class="flex items-center gap-4">
+            <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-navy-900 text-xl font-bold uppercase text-white">{{ \Illuminate\Support\Str::substr($targetUser->name, 0, 1) }}</span>
+            <div class="min-w-0 flex-1">
+                <h2 class="truncate text-lg font-bold tracking-tight text-slate-900">
+                    {{ $targetUser->name }}
+                    @if($targetUser->id === auth()->id())
+                        <span class="text-xs font-medium text-slate-400">(you)</span>
+                    @endif
+                </h2>
+                <p class="truncate text-[13px] text-slate-500">{{ $targetUser->email }}</p>
+            </div>
             <x-status-badge :status="$targetUser->is_active ? 'active' : 'inactive'" />
         </div>
 
-        <dl class="mt-3 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
-            <div>
-                <dt class="text-slate-400">Email</dt>
-                <dd class="mt-0.5 font-medium text-slate-800">{{ $targetUser->email }}</dd>
+        <dl class="mt-5 grid grid-cols-2 gap-4 border-t border-line pt-5 sm:grid-cols-3">
+            <div class="col-span-2 sm:col-span-1">
+                <dt class="text-xs text-slate-500">Email</dt>
+                <dd class="mt-0.5 break-all text-[13px] font-semibold text-slate-900">{{ $targetUser->email }}</dd>
             </div>
             <div>
-                <dt class="text-slate-400">Role</dt>
-                <dd class="mt-0.5 font-medium text-slate-800">{{ $targetUser->role->name }}</dd>
+                <dt class="text-xs text-slate-500">Role</dt>
+                <dd class="mt-0.5 text-[13px] font-semibold text-slate-900">{{ $targetUser->role->name }}</dd>
             </div>
             <div>
-                <dt class="text-slate-400">Created</dt>
-                <dd class="mt-0.5 font-medium text-slate-800">{{ display_datetime($targetUser->created_at, 'd M Y') }}</dd>
+                <dt class="text-xs text-slate-500">Created</dt>
+                <dd class="mt-0.5 text-[13px] font-semibold text-slate-900">{{ display_datetime($targetUser->created_at, 'd M Y') }}</dd>
             </div>
         </dl>
-    </div>
+    </x-admin.card>
 @endsection

@@ -1,11 +1,9 @@
 {{--
-    Phase 3.48 — the Finance tab bar, shared across five separate
-    controllers/routes (Overview, Contributions, Ledger, Contributors,
-    Committee). Styled identically to the Settings tab bar
-    (resources/views/admin/settings/index.blade.php) so Finance reads as
-    one consolidated admin area rather than five unrelated pages, even
-    though each tab keeps its own URL. $edition (nullable) is threaded
-    through so switching tabs keeps looking at the same edition.
+    The Finance tab bar, shared across five separate controllers/routes
+    (Overview, Contributions, Ledger, Contributors, Committee). One tab bar
+    so Finance reads as one consolidated admin area even though each tab
+    keeps its own URL. $edition (nullable) is threaded through so switching
+    tabs keeps looking at the same edition.
 
     Each tab is a page of its own module with its own permission, so a
     role only gets the tabs it may open (e.g. one that may see
@@ -26,14 +24,9 @@
 @endphp
 
 @if($tabs !== [])
-<div class="mb-4 flex flex-wrap gap-1 border-b border-neutral-200">
-    @foreach($tabs as $tab)
-        <a
-            href="{{ route($tab['route'], $editionQuery) }}"
-            class="rounded-t-md px-3 py-2 text-[13px] font-medium {{ request()->routeIs($tab['active']) ? 'border-b-2 theme-primary-border theme-primary-text' : 'text-neutral-500 hover:text-neutral-700' }}"
-        >
-            {{ $tab['label'] }}
-        </a>
-    @endforeach
-</div>
+    <x-crud.tabs aria-label="Finance sections">
+        @foreach($tabs as $tab)
+            <x-crud.tab :href="route($tab['route'], $editionQuery)" :active="request()->routeIs($tab['active'])">{{ $tab['label'] }}</x-crud.tab>
+        @endforeach
+    </x-crud.tabs>
 @endif

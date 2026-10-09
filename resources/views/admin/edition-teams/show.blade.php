@@ -3,29 +3,30 @@
 @section('title', 'Edition Team Details')
 
 @section('content')
-    <div class="mb-4">
-        <a href="{{ route('admin.edition-teams.index') }}" class="text-xs text-slate-500 hover:text-slate-700">
-            &larr; Back to edition teams
-        </a>
-    </div>
+    <x-crud.back :href="route('admin.edition-teams.index')">Edition teams</x-crud.back>
 
-    <div class="rounded-lg border border-slate-200 bg-white p-4">
-        <div class="flex items-center justify-between gap-3">
-            <h2 class="text-base font-semibold text-slate-900">
-                {{ $editionTeam->team->name }} &middot; {{ $editionTeam->edition->name }}
-            </h2>
-            <x-status-badge :status="$editionTeam->team->is_active ? 'active' : 'inactive'" />
-        </div>
-        <p class="mt-1 text-xs text-slate-500">
-            Added {{ display_datetime($editionTeam->created_at, 'd M Y') }}
+    <div class="space-y-4 lg:space-y-5">
+        <x-crud.profile
+            :title="$editionTeam->team->name"
+            :path="$editionTeam->team->logo_path"
+            kind="image"
+            shape="square"
+            :status="$editionTeam->team->is_active ? 'active' : 'inactive'"
+            :subtitle="$editionTeam->edition->name.' · added '.display_datetime($editionTeam->created_at, 'd M Y')"
+        >
             @unless($editionTeam->team->is_active)
-                &middot; <span class="text-slate-400">team is currently inactive</span>
+                <span class="text-slate-400">team is currently inactive</span>
             @endunless
-        </p>
-    </div>
 
-    <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <x-stat-card label="Squad players" :value="$editionTeam->team_players_count" icon="users" />
-        <x-stat-card label="Matches" :value="$editionTeam->matches_as_team_a_count + $editionTeam->matches_as_team_b_count" icon="trophy" />
+            <x-slot:actions>
+                <x-admin.button :href="route('admin.team-players.index', ['edition_team_id' => $editionTeam->id])" variant="secondary" icon="users">See squad</x-admin.button>
+                <x-admin.button :href="route('admin.teams.show', $editionTeam->team)" variant="secondary" icon="shield">Team page</x-admin.button>
+            </x-slot:actions>
+        </x-crud.profile>
+
+        <div class="grid grid-cols-2 gap-3 sm:max-w-md">
+            <x-crud.kpi label="Squad players" :value="$editionTeam->team_players_count" icon="users" tone="brand" />
+            <x-crud.kpi label="Matches" :value="$editionTeam->matches_as_team_a_count + $editionTeam->matches_as_team_b_count" icon="trophy" />
+        </div>
     </div>
 @endsection

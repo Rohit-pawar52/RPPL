@@ -3,49 +3,47 @@
 @section('title', 'Contributor Details')
 
 @section('content')
-    <div class="mb-4 flex items-center justify-between">
-        <a href="{{ route('admin.contributors.index') }}" class="text-xs text-neutral-500 hover:text-neutral-700">
-            &larr; Back to contributors
-        </a>
-        <a
-            href="{{ route('admin.contributors.edit', $contributor) }}"
-            class="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
+    {{-- Needs contributors.view (admin by default): the phone may be shown here. --}}
+    <x-crud.back :href="route('admin.contributors.index')">Contributors</x-crud.back>
+
+    <div class="space-y-4 lg:space-y-5">
+        <x-crud.profile
+            :title="$contributor->name"
+            :path="$contributor->photo_path"
+            kind="user"
+            :status="$contributor->is_active ? 'active' : 'inactive'"
+            :subtitle="$contributor->phone ?: 'No phone on file'"
         >
-            <x-icon name="pencil" class="h-3.5 w-3.5" />
-            Edit
-        </a>
-    </div>
-
-    <div class="rounded-lg border border-neutral-200 bg-white p-4">
-        <div class="flex items-start gap-3">
-            <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-50 text-neutral-300">
-                <x-media-image :path="$contributor->photo_path" kind="user" alt="" class="h-full w-full object-cover" />
-            </div>
-
-            <div class="min-w-0 flex-1">
-                <div class="flex items-center justify-between gap-3">
-                    <h2 class="text-base font-semibold text-neutral-900">{{ $contributor->name }}</h2>
-                    <x-status-badge :status="$contributor->is_active ? 'active' : 'inactive'" />
-                </div>
-                {{-- Needs contributors.view (admin by default): phone may be shown here. --}}
-                <p class="mt-1 text-xs text-neutral-500">{{ $contributor->phone ?: 'No phone on file' }}</p>
-            </div>
-        </div>
-
-        <p class="mt-3 text-xs text-neutral-500">
-            <span class="font-medium text-neutral-600">Committee{{ $currentEdition ? ' ('.$currentEdition->name.')' : '' }}:</span>
             @if($isCurrentCommitteeMember)
-                <span class="inline-flex items-center whitespace-nowrap rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
-                    Committee Member
-                </span>
-            @else
-                Not a committee member{{ $currentEdition ? " of {$currentEdition->name}" : '' }}
+                <span class="crud-pill crud-pill-blue">Committee Member{{ $currentEdition ? ' · '.$currentEdition->name : '' }}</span>
             @endif
-        </p>
 
-        <p class="mt-1 text-xs text-neutral-500">
-            <span class="font-medium text-neutral-600">Contributions recorded:</span>
-            {{ $contributor->contributions_count }}
-        </p>
+            <x-slot:actions>
+                @can('create', \App\Models\EditionContribution::class)
+                    <x-admin.button :href="route('admin.edition-contributions.create', ['contributor_id' => $contributor->id])" variant="secondary" icon="currency">Record contribution</x-admin.button>
+                @endcan
+                <x-admin.button :href="route('admin.contributors.edit', $contributor)" icon="pencil">Edit</x-admin.button>
+            </x-slot:actions>
+        </x-crud.profile>
+
+        <x-admin.card title="Summary">
+            <dl class="crud-facts">
+                <x-crud.fact big label="Contributions recorded">{{ $contributor->contributions_count }}</x-crud.fact>
+                <x-crud.fact label="Committee{{ $currentEdition ? ' ('.$currentEdition->name.')' : '' }}" class="col-span-2">
+                    @if($isCurrentCommitteeMember)
+                        <span class="crud-pill crud-pill-blue">Committee Member</span>
+                    @else
+                        <span class="font-normal text-slate-500">Not a committee member{{ $currentEdition ? " of {$currentEdition->name}" : '' }}</span>
+                    @endif
+                </x-crud.fact>
+            </dl>
+            @if($contributor->contributions_count > 0)
+                @can('viewAny', \App\Models\EditionContribution::class)
+                    <p class="mt-4 border-t border-line pt-3">
+                        <a href="{{ route('admin.edition-contributions.index', ['contributor_id' => $contributor->id]) }}" class="crud-link text-[13px]">See all contributions &rarr;</a>
+                    </p>
+                @endcan
+            @endif
+        </x-admin.card>
     </div>
 @endsection

@@ -2,44 +2,45 @@
     $navigation = app(\App\Support\AdminNavigation::class)->forUser(auth()->user());
 @endphp
 
-{{-- Mobile-only backdrop behind the drawer; JS toggles the "hidden" class --}}
-<div id="admin-backdrop" class="fixed inset-0 z-40 hidden bg-navy-950/60 lg:hidden"></div>
+{{-- Mobile-only backdrop behind the drawer; admin-nav.js toggles the "hidden" class --}}
+<div id="admin-backdrop" class="fixed inset-0 z-40 hidden bg-navy-950/60 backdrop-blur-[2px] lg:hidden no-print"></div>
 
 <aside
     id="admin-sidebar"
-    class="adm-side fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col transition-transform duration-150 lg:sticky lg:top-0 lg:z-30 lg:h-screen lg:w-64 lg:shrink-0 lg:translate-x-0"
+    class="sb fixed inset-y-0 left-0 z-50 w-72 max-w-[86vw] -translate-x-full transition-transform duration-200 motion-reduce:transition-none lg:sticky lg:top-0 lg:z-30 lg:h-screen lg:w-64 lg:max-w-none lg:shrink-0 lg:translate-x-0"
 >
     {{-- Brand --}}
     <a
         href="{{ route('admin.dashboard') }}"
-        class="adm-brand flex h-14 shrink-0 items-center gap-2.5 border-b border-white/10 px-4 font-semibold text-white"
+        class="sb-brand"
         aria-label="{{ $branding->shortName }} Admin"
     >
         @if($branding->logoUrl)
-            <img src="{{ $branding->logoUrl }}" alt="" class="h-8 w-8 shrink-0 rounded-md bg-white/10 object-contain" />
+            <span class="sb-logo"><img src="{{ $branding->logoUrl }}" alt="" class="h-full w-full object-contain p-0.5" /></span>
         @else
-            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-green-500 text-sm font-bold text-navy-950">
-                {{ Illuminate\Support\Str::substr($branding->shortName, 0, 1) }}
-            </span>
+            <span class="sb-logo sb-logo-letter">{{ Illuminate\Support\Str::upper(Illuminate\Support\Str::substr($branding->shortName, 0, 1)) }}</span>
         @endif
-        <span class="adm-label truncate text-sm">{{ $branding->shortName }} Admin</span>
+        <span class="sb-label min-w-0 leading-tight">
+            <span class="block truncate text-sm font-bold tracking-tight">{{ $branding->shortName }}</span>
+            <span class="block truncate text-[11px] font-medium text-slate-400">Admin console</span>
+        </span>
     </a>
 
-    <nav class="admin-nav-scroll min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2.5 py-3" aria-label="Admin navigation">
+    <nav class="sb-nav" aria-label="Admin navigation">
         @foreach($navigation['top'] as $item)
             <a
                 href="{{ $item['url'] }}"
                 data-tip="{{ $item['label'] }}"
                 @if($item['active']) aria-current="page" @endif
-                class="adm-link {{ $item['active'] ? 'adm-link-active' : '' }}"
+                class="sb-link {{ $item['active'] ? 'sb-link-active' : '' }}"
             >
-                <x-icon :name="$item['icon']" class="h-[18px] w-[18px] shrink-0" />
-                <span class="adm-label truncate">{{ $item['label'] }}</span>
+                <x-icon :name="$item['icon']" class="sb-ico" />
+                <span class="sb-label truncate">{{ $item['label'] }}</span>
             </a>
         @endforeach
 
         @if($navigation['groups'] !== [])
-            <p class="adm-eyebrow">Manage</p>
+            <p class="sb-section">Manage</p>
         @endif
 
         {{-- Each "Management" group is a native <details>: no JS needed to
@@ -48,21 +49,21 @@
             <details class="adm-group" data-group="{{ $group['key'] }}" @if($group['active']) open @endif>
                 <summary
                     data-tip="{{ $group['label'] }}"
-                    class="adm-link justify-between {{ $group['active'] ? 'text-white' : '' }}"
+                    class="sb-link justify-between {{ $group['active'] ? 'sb-group-active text-white' : '' }}"
                 >
-                    <span class="flex min-w-0 items-center gap-2.5">
-                        <x-icon :name="$group['icon']" class="h-[18px] w-[18px] shrink-0 {{ $group['active'] ? 'text-green-400' : '' }}" />
-                        <span class="adm-label truncate">{{ $group['label'] }}</span>
+                    <span class="flex min-w-0 items-center gap-3">
+                        <x-icon :name="$group['icon']" class="sb-ico" />
+                        <span class="sb-label truncate">{{ $group['label'] }}</span>
                     </span>
-                    <x-icon name="chevron-down" class="adm-chevron h-4 w-4 shrink-0 text-slate-500" />
+                    <x-icon name="chevron-down" class="sb-chevron" />
                 </summary>
 
-                <div class="adm-children">
+                <div class="sb-sub">
                     @foreach($group['items'] as $item)
                         <a
                             href="{{ $item['url'] }}"
                             @if($item['active']) aria-current="page" @endif
-                            class="adm-sublink {{ $item['active'] ? 'adm-sublink-active' : '' }}"
+                            class="sb-sublink {{ $item['active'] ? 'sb-sublink-active' : '' }}"
                         >
                             <span class="truncate">{{ $item['label'] }}</span>
                         </a>
@@ -73,16 +74,16 @@
     </nav>
 
     {{-- Desktop only: collapse to an icon rail --}}
-    <div class="hidden shrink-0 border-t border-white/10 p-2.5 lg:block">
+    <div class="sb-foot hidden lg:block">
         <button
             type="button"
             id="admin-sidebar-collapse"
-            class="adm-link"
-            data-tip="Expand sidebar"
+            class="sb-link"
+            data-tip="Collapse sidebar"
             aria-pressed="false"
         >
-            <x-icon name="panel-left" class="h-[18px] w-[18px] shrink-0" />
-            <span class="adm-label">Collapse</span>
+            <x-icon name="panel-left" class="sb-ico" />
+            <span class="sb-label">Collapse</span>
         </button>
     </div>
 </aside>

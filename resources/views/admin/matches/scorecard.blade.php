@@ -3,41 +3,43 @@
 @section('title', 'Scorecard')
 
 @section('content')
-    <div class="mb-4 flex items-center justify-between gap-3">
-        <a href="{{ route('admin.matches.show', $match) }}" class="text-xs text-neutral-500 hover:text-neutral-700">
-            &larr; Back to match
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <a href="{{ route('admin.matches.show', $match) }}" class="ops-back">
+            <x-ops.icon name="arrow-left" class="h-3.5 w-3.5" />
+            Back to match
         </a>
         @if($match->innings()->exists())
-            <a href="{{ route('public.matches.scorecard.pdf', $match) }}" class="rounded-md border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50">
+            <a href="{{ route('public.matches.scorecard.pdf', $match) }}" class="btn btn-secondary btn-sm">
+                <x-ops.icon name="download" class="h-3.5 w-3.5" />
                 Download PDF
             </a>
         @endif
     </div>
 
-    <div class="rounded-lg border border-neutral-200 bg-white p-4">
-        <div class="flex items-center justify-between gap-3">
-            <h2 class="text-base font-semibold text-neutral-900">
-                {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
-            </h2>
+    <header class="rounded-2xl bg-gradient-to-br from-navy-900 to-navy-800 p-4 text-white shadow-raised sm:p-6">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <p class="sc-kicker">
+                {{ $match->edition->name }}
+                @if($match->venue)
+                    &middot; {{ $match->venue->name }}
+                @endif
+            </p>
             <x-status-badge :status="$match->match_status" />
         </div>
-        <p class="mt-1 text-xs text-neutral-500">
-            {{ $match->edition->name }}
-            @if($match->venue)
-                &middot; {{ $match->venue->name }}
-            @endif
-        </p>
+        <h2 class="mt-2 break-words text-2xl font-bold tracking-tight">
+            {{ $match->teamA->team->name }} <span class="font-normal text-white/50">vs</span> {{ $match->teamB->team->name }}
+        </h2>
 
         @if($match->match_status === 'completed' && $match->match_result)
-            <p class="mt-2 text-sm font-medium text-neutral-800">{{ $match->match_result }}</p>
+            <p class="mt-2 text-base font-semibold text-accent-dark">{{ $match->match_result }}</p>
         @endif
-    </div>
+    </header>
 
     @forelse($inningsScorecards as $card)
         @include('shared.scorecard._innings', ['card' => $card])
     @empty
-        <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4 text-center text-xs text-neutral-400">
+        <x-admin.empty icon="document-chart" class="ops-card mt-4 py-12">
             No innings started yet.
-        </div>
+        </x-admin.empty>
     @endforelse
 @endsection

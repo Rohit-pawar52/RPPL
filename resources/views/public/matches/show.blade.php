@@ -6,46 +6,39 @@
     @include('public.matches._header', ['match' => $match, 'active' => 'info'])
 
     @php
-        $hasMain = ($match->match_status === 'completed' && $match->match_result) || $match->firstInnings || $match->secondInnings;
+        $isLive = $match->match_status === 'live';
+        $links = [];
+
+        if ($match->innings_count > 0) {
+            $links[] = ['icon' => 'document-chart', 'title' => __('matches.nav.scorecard'), 'hint' => __('ux_public_matches.match.scorecard_hint'), 'url' => route('public.matches.scorecard', $match)];
+        }
+        if ($isLive && $match->innings_count > 0) {
+            $links[] = ['icon' => 'play', 'title' => __('matches.list.follow_live'), 'hint' => __('ux_public_matches.match.live_hint'), 'url' => route('public.matches.live', $match), 'live' => true];
+        }
+        $links[] = ['icon' => 'users', 'title' => __('matches.squads.playing_xi'), 'hint' => __('ux_public_matches.match.squads_hint'), 'url' => route('public.matches.squads', $match)];
+        $links[] = ['icon' => 'chart-bar', 'title' => __('public.nav.points_table'), 'hint' => __('ux_public_matches.match.table_hint', ['edition' => $match->edition->name]), 'url' => route('public.editions.show', $match->edition).'#points'];
+        $links[] = ['icon' => 'calendar', 'title' => __('ux_public_matches.match.season_matches'), 'hint' => __('ux_public_matches.match.season_matches_hint', ['edition' => $match->edition->name]), 'url' => route('public.matches.index', ['edition_id' => $match->edition_id])];
     @endphp
 
-    {{-- Nothing to show beside the details (e.g. a not-yet-started match):
-         the details card takes the main column instead of leaving it empty. --}}
-    @unless($hasMain)
-        <div class="max-w-xl">
+    <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-5">
+        <div class="min-w-0">
+            <h2 class="mx-section-title mb-3">{{ __('ux_public_matches.match.explore') }}</h2>
+            <div class="grid gap-3 sm:grid-cols-2">
+                @foreach($links as $link)
+                    <a href="{{ $link['url'] }}" @class(['mx-tile', 'mx-tile-live' => $link['live'] ?? false])>
+                        <span class="mx-tile-icon"><x-icon :name="$link['icon']" class="size-5" /></span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block truncate text-sm font-semibold text-slate-900">{{ $link['title'] }}</span>
+                            <span class="mt-0.5 block truncate text-xs text-slate-500">{{ $link['hint'] }}</span>
+                        </span>
+                        <span class="text-slate-300" aria-hidden="true">&rarr;</span>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+
+        <aside class="min-w-0">
             @include('public.matches._details', ['match' => $match])
-        </div>
-    @endunless
-
-    <div @class(['grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start', 'hidden' => ! $hasMain])>
-        <div class="min-w-0 space-y-4">
-            @if($match->match_status === 'completed' && $match->match_result)
-                <p class="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">{{ $match->match_result }}</p>
-            @endif
-
-            @if($match->firstInnings || $match->secondInnings)
-                <x-public.card :title="__('matches.info.innings')" flush>
-                    <div class="divide-y divide-line">
-                        @foreach([$match->firstInnings, $match->secondInnings] as $inn)
-                            @if($inn)
-                                <div class="flex items-center justify-between gap-3 px-4 py-3.5">
-                                    <span class="min-w-0 truncate text-sm font-semibold text-slate-800">{{ $inn->battingTeam->team->name }}</span>
-                                    <span class="flex shrink-0 items-baseline gap-2 whitespace-nowrap">
-                                        <span class="text-xl font-bold tabular-nums text-slate-900">{{ $inn->total_runs }}/{{ $inn->total_wickets }}</span>
-                                        <span class="text-xs text-slate-500">({{ __('matches.common.overs_count', ['overs' => $inn->oversDisplay()]) }})</span>
-                                    </span>
-                                </div>
-                            @endif
-                        @endforeach
-                    </div>
-                </x-public.card>
-            @endif
-        </div>
-
-        @if($hasMain)
-            <aside class="space-y-4">
-                @include('public.matches._details', ['match' => $match])
-            </aside>
-        @endif
+        </aside>
     </div>
 @endsection

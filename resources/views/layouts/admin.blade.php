@@ -27,6 +27,8 @@
             'warning' => session('warning'),
             'info' => session('info'),
         ];
+        // Resolved once for both the sidebar and the top bar.
+        $navigation = app(\App\Support\AdminNavigation::class)->forUser(auth()->user());
     @endphp
     <script>
         window.flash = @json($flash);
@@ -34,33 +36,40 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="h-full text-[13px] text-slate-800 antialiased">
+<body class="admin-app h-full text-[13px] text-slate-800 antialiased">
+    <a href="#admin-main" class="sr-only z-[100] rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-pop focus:not-sr-only focus:fixed focus:left-3 focus:top-3">Skip to content</a>
+
     <div class="flex min-h-full">
         @include('layouts.partials.admin-sidebar')
 
         <div class="flex min-w-0 flex-1 flex-col">
             @include('layouts.partials.admin-header')
 
-            <main class="min-w-0 flex-1 p-4 lg:p-6">
-                {{-- Page header: title, optional one-line subtitle and action
-                     buttons. Pages set them with @section('subtitle', '…')
-                     and @section('actions') … @endsection. --}}
-                <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
-                    <div class="min-w-0">
-                        <h1 class="break-words text-xl font-semibold tracking-tight text-slate-900">@yield('title', 'Dashboard')</h1>
-                        @hasSection('subtitle')
-                            <p class="mt-0.5 text-[13px] text-slate-500">@yield('subtitle')</p>
-                        @endif
-                    </div>
+            <main id="admin-main" class="min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+                <div class="mx-auto w-full max-w-[1600px]">
+                    {{-- Page header: title, optional one-line subtitle and action
+                         buttons. Pages set them with @section('subtitle', '…')
+                         and @section('actions') … @endsection. A page that draws
+                         its own heading (the dashboard) sets @section('bare', '1'). --}}
+                    @if(! $__env->hasSection('bare'))
+                        <div class="adm-page-head">
+                            <div class="min-w-0">
+                                <h1 class="adm-page-title">@yield('title', 'Dashboard')</h1>
+                                @hasSection('subtitle')
+                                    <p class="adm-page-sub">@yield('subtitle')</p>
+                                @endif
+                            </div>
 
-                    @hasSection('actions')
-                        <div class="flex shrink-0 flex-wrap items-center gap-2">
-                            @yield('actions')
+                            @hasSection('actions')
+                                <div class="adm-page-actions no-print">
+                                    @yield('actions')
+                                </div>
+                            @endif
                         </div>
                     @endif
-                </div>
 
-                @yield('content')
+                    @yield('content')
+                </div>
             </main>
 
             @include('layouts.partials.admin-footer')

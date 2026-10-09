@@ -4,63 +4,84 @@
 
 {{--
     Public per-match Playing XI. Deliberately the announced XI
-    (MatchPlayer rows) only — never the full squad — so a bench player
+    (MatchPlayer rows) only - never the full squad - so a bench player
     is never shown as if they played. See MatchController::squads() for
     how the two teams' XIs are split without an N+1 query.
+
+    On a phone the two teams are one tap apart (a pure CSS switch, no JS:
+    radios + group-has); from md up both sit side by side.
 --}}
 @section('content')
     @include('public.matches._header', ['match' => $match, 'active' => 'squads'])
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-        @foreach([[$match->teamA, $teamAPlayers], [$match->teamB, $teamBPlayers]] as [$editionTeam, $players])
-            <section class="pub-card overflow-hidden">
-                <header class="pub-card-head justify-start">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line bg-slate-50 text-slate-300">
-                        <x-media-image :path="$editionTeam->team->logo_path" kind="image" alt="" class="h-full w-full object-cover" />
-                    </span>
-                    <span class="min-w-0">
-                        <h2 class="pub-card-title truncate">{{ $editionTeam->team->name }}</h2>
-                        <span class="pub-eyebrow block">{{ __('matches.squads.playing_xi') }}</span>
-                    </span>
-                </header>
+    <div class="group/squad mt-4">
+        <div class="mx-seg mb-4 md:hidden" role="radiogroup" aria-label="{{ __('matches.squads.playing_xi') }}">
+            @foreach([[$match->teamA, 'a'], [$match->teamB, 'b']] as [$editionTeam, $key])
+                <label class="mx-seg-item">
+                    <input type="radio" name="squad-team" value="{{ $key }}" class="sr-only" {{ $key === 'a' ? 'checked' : '' }}>
+                    <x-mx.team-logo :team="$editionTeam->team" size="xs" />
+                    <span class="truncate">{{ $editionTeam->team->short_name ?: $editionTeam->team->name }}</span>
+                </label>
+            @endforeach
+        </div>
 
-                @forelse($players as $matchPlayer)
-                    @php
-                        $player = $matchPlayer->teamPlayer->playerRegistration->player;
-                        $roleLabel = match ($matchPlayer->teamPlayer->role) {
-                            'batter' => __('matches.squads.role.batter'),
-                            'bowler' => __('matches.squads.role.bowler'),
-                            'all_rounder' => __('matches.squads.role.all_rounder'),
-                            'wicket_keeper' => __('matches.squads.role.wicket_keeper'),
-                            default => null,
-                        };
-                        $marker = match (true) {
-                            $matchPlayer->is_captain && $matchPlayer->is_wicket_keeper => __('matches.squads.captain_and_wicket_keeper'),
-                            $matchPlayer->is_captain => __('matches.squads.captain'),
-                            $matchPlayer->is_wicket_keeper => __('matches.squads.wicket_keeper'),
-                            default => null,
-                        };
-                    @endphp
-                    <div class="flex min-h-12 items-center justify-between gap-3 border-b border-line px-4 py-2.5 text-[13px] last:border-b-0">
-                        <div class="min-w-0">
-                            <p class="truncate font-medium text-slate-800">
-                                {{ $player->name }}
-                                @if($marker)
-                                    <span class="text-[11px] font-semibold text-green-700">{{ $marker }}</span>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            @foreach([[$match->teamA, $teamAPlayers, 'a'], [$match->teamB, $teamBPlayers, 'b']] as [$editionTeam, $players, $key])
+                @if($key === 'a')
+                    <section class="pub-card overflow-hidden max-md:group-has-[input[value='b']:checked]/squad:hidden">
+                @else
+                    <section class="pub-card overflow-hidden max-md:hidden max-md:group-has-[input[value='b']:checked]/squad:block">
+                @endif
+                    <header class="flex items-center gap-3 border-b border-line bg-slate-50/70 px-4 py-3.5 sm:px-5">
+                        <x-mx.team-logo :team="$editionTeam->team" size="md" />
+                        <div class="min-w-0 flex-1">
+                            <h2 class="truncate text-[15px] font-semibold tracking-tight text-slate-900">{{ $editionTeam->team->name }}</h2>
+                            <p class="pub-eyebrow">{{ __('matches.squads.playing_xi') }}</p>
+                        </div>
+                        @if($players->isNotEmpty())
+                            <span class="mx-seg-count">{{ $players->count() }}</span>
+                        @endif
+                    </header>
+
+                    @forelse($players as $matchPlayer)
+                        @php
+                            $player = $matchPlayer->teamPlayer->playerRegistration->player;
+                            $roleLabel = match ($matchPlayer->teamPlayer->role) {
+                                'batter' => __('matches.squads.role.batter'),
+                                'bowler' => __('matches.squads.role.bowler'),
+                                'all_rounder' => __('matches.squads.role.all_rounder'),
+                                'wicket_keeper' => __('matches.squads.role.wicket_keeper'),
+                                default => null,
+                            };
+                        @endphp
+                        <div class="mx-player">
+                            <span class="mx-avatar">
+                                <x-media-image :path="$player->photo_path" kind="user" alt="" class="h-full w-full object-cover" loading="lazy" />
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <p class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm font-semibold text-slate-900">
+                                    <span class="truncate">{{ $player->name }}</span>
+                                    @if($matchPlayer->is_captain && $matchPlayer->is_wicket_keeper)
+                                        <span class="mx-badge mx-badge-c">{{ __('matches.squads.captain_and_wicket_keeper') }}</span>
+                                    @elseif($matchPlayer->is_captain)
+                                        <span class="mx-badge mx-badge-c">{{ __('matches.squads.captain') }}</span>
+                                    @elseif($matchPlayer->is_wicket_keeper)
+                                        <span class="mx-badge mx-badge-wk">{{ __('matches.squads.wicket_keeper') }}</span>
+                                    @endif
+                                </p>
+                                @if($roleLabel)
+                                    <p class="pub-meta">{{ $roleLabel }}</p>
                                 @endif
-                            </p>
-                            @if($roleLabel)
-                                <p class="pub-meta">{{ $roleLabel }}</p>
+                            </div>
+                            @if($matchPlayer->teamPlayer->jersey_number)
+                                <span class="mx-jersey">#{{ $matchPlayer->teamPlayer->jersey_number }}</span>
                             @endif
                         </div>
-                        @if($matchPlayer->teamPlayer->jersey_number)
-                            <span class="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-slate-500">#{{ $matchPlayer->teamPlayer->jersey_number }}</span>
-                        @endif
-                    </div>
-                @empty
-                    <p class="pub-empty">{{ __('matches.squads.not_announced') }}</p>
-                @endforelse
-            </section>
-        @endforeach
+                    @empty
+                        <x-public.empty icon="users">{{ __('matches.squads.not_announced') }}</x-public.empty>
+                    @endforelse
+                </section>
+            @endforeach
+        </div>
     </div>
 @endsection

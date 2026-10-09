@@ -6,53 +6,55 @@
 
 @section('actions')
     @can('create', \App\Models\Role::class)
-        <x-admin.button href="{{ route('admin.roles.create') }}" variant="primary">+ New role</x-admin.button>
+        <x-admin.button href="{{ route('admin.roles.create') }}" variant="primary" icon="plus">New role</x-admin.button>
     @endcan
 @endsection
 
 @section('content')
-    <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table class="w-full min-w-[640px] text-left text-[13px]">
-            <thead class="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-400">
+    <div class="adm-table-wrap">
+        <table class="adm-table">
+            <thead>
                 <tr>
-                    <th class="px-4 py-2 font-medium">Name</th>
-                    <th class="hidden px-4 py-2 font-medium md:table-cell">Code</th>
-                    <th class="px-4 py-2 text-right font-medium">Users</th>
-                    <th class="px-4 py-2 text-right font-medium">Permissions</th>
-                    <th class="px-4 py-2 text-right font-medium">Actions</th>
+                    <th>Name</th>
+                    <th class="hidden md:table-cell">Code</th>
+                    <th class="text-right">Users</th>
+                    <th class="text-right">Permissions</th>
+                    <th class="text-right"><span class="sr-only">Actions</span></th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+            <tbody>
                 @forelse($roles as $role)
-                    <tr class="hover:bg-slate-50">
-                        <td class="px-4 py-2 font-medium text-slate-800">
-                            <a href="{{ route('admin.roles.show', $role) }}" class="hover:underline">{{ $role->name }}</a>
-                            @if($role->isSystem())
-                                <span class="ml-1 align-middle">@include('admin.roles._built-in-badge')</span>
-                            @endif
+                    <tr>
+                        <td>
+                            <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                <a href="{{ route('admin.roles.show', $role) }}" class="font-semibold text-slate-900 hover:text-link hover:underline">{{ $role->name }}</a>
+                                @if($role->isSystem())
+                                    @include('admin.roles._built-in-badge')
+                                @endif
+                            </div>
                         </td>
-                        <td class="hidden px-4 py-2 font-mono text-[12px] text-slate-500 md:table-cell">{{ $role->slug }}</td>
-                        <td class="px-4 py-2 text-right text-slate-600">
+                        <td class="hidden font-mono text-[12px] text-slate-500 md:table-cell">{{ $role->slug }}</td>
+                        <td class="num">
                             @if($role->users_count > 0)
                                 @can('viewAny', \App\Models\User::class)
-                                    <a href="{{ route('admin.users.index', ['role_id' => $role->id]) }}" class="hover:underline">{{ $role->users_count }}</a>
+                                    <a href="{{ route('admin.users.index', ['role_id' => $role->id]) }}" class="font-semibold text-link hover:text-link-hover hover:underline">{{ $role->users_count }}</a>
                                 @else
                                     {{ $role->users_count }}
                                 @endcan
                             @else
-                                0
+                                <span class="text-slate-400">0</span>
                             @endif
                         </td>
-                        <td class="px-4 py-2 text-right text-slate-600">
+                        <td class="num">
                             {{ $role->isAdmin() ? 'All' : ($permissionCounts[$role->id] ?? 0) }}
                         </td>
-                        <td class="px-4 py-2">
+                        <td>
                             <div class="flex items-center justify-end gap-1">
                                 <a
                                     href="{{ route('admin.roles.show', $role) }}"
                                     title="View"
                                     aria-label="View {{ $role->name }}"
-                                    class="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                    class="btn btn-ghost btn-icon btn-sm max-sm:hidden"
                                 >
                                     <x-icon name="eye" class="h-4 w-4" />
                                 </a>
@@ -61,7 +63,7 @@
                                         href="{{ route('admin.roles.edit', $role) }}"
                                         title="Edit"
                                         aria-label="Edit {{ $role->name }}"
-                                        class="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-green-700"
+                                        class="btn btn-ghost btn-icon btn-sm max-sm:min-h-10 max-sm:w-10"
                                     >
                                         <x-icon name="pencil" class="h-4 w-4" />
                                     </a>
@@ -80,7 +82,7 @@
                                             type="submit"
                                             title="Delete"
                                             aria-label="Delete {{ $role->name }}"
-                                            class="rounded p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600"
+                                            class="btn btn-ghost btn-icon btn-sm text-slate-500 hover:bg-red-50 hover:text-red-600 max-sm:min-h-10 max-sm:w-10"
                                         >
                                             <x-icon name="trash" class="h-4 w-4" />
                                         </button>
@@ -90,13 +92,21 @@
                         </td>
                     </tr>
                 @empty
-                    <x-admin.empty table colspan="5">No roles yet.</x-admin.empty>
+                    <x-admin.empty table colspan="5" icon="shield">
+                        No roles yet.
+                        @can('create', \App\Models\Role::class)
+                            <x-slot:action>
+                                <x-admin.button :href="route('admin.roles.create')" icon="plus" size="sm">Add the first role</x-admin.button>
+                            </x-slot:action>
+                        @endcan
+                    </x-admin.empty>
                 @endforelse
             </tbody>
         </table>
     </div>
 
-    <p class="mt-3 text-[11px] text-slate-400">
-        Built-in roles can&rsquo;t be deleted, and the administrator role can&rsquo;t be changed. A role can only be deleted when no login uses it.
+    <p class="mt-4 flex gap-2 text-xs leading-5 text-slate-500">
+        <x-admin.icon name="info" class="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+        <span>Built-in roles can&rsquo;t be deleted, and the administrator role can&rsquo;t be changed. A role can only be deleted when no login uses it.</span>
     </p>
 @endsection

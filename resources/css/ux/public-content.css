@@ -1,0 +1,320 @@
+/*
+ * Public teams, players, news, photos, videos, rules, registration, auction.
+ *
+ * One small family of "pc-" component classes shared by those pages (the
+ * hero band, chips, stat tiles, search box, empty state, panels), so every
+ * page reads as one design. Colours that belong to the brand come from the
+ * admin-editable theme (brand / brand-soft / action / accent-dark / navy-*);
+ * green, red, amber stay only where they carry a meaning (live, sold, lost,
+ * important-warning).
+ */
+@layer components {
+    /* ---------- Page chrome ---------- */
+    .pc-toolbar {
+        @apply mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between;
+    }
+    .pc-count {
+        @apply text-xs font-medium text-slate-500;
+    }
+    .pc-h2 {
+        @apply mb-3 flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900;
+    }
+    .pc-h2-badge {
+        @apply inline-flex min-w-6 items-center justify-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-500;
+    }
+    .pc-back {
+        @apply mb-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg text-xs font-semibold text-slate-500 transition hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+
+    /* ---------- Search box (filters as you type, Enter searches everyone) ---------- */
+    .pc-search {
+        @apply relative w-full sm:max-w-sm;
+    }
+    .pc-search-icon {
+        @apply pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400;
+    }
+    .pc-search-input {
+        @apply h-11 w-full appearance-none rounded-xl border border-slate-300 bg-white pl-10 pr-24 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 hover:border-slate-400 focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/15;
+    }
+    .pc-search-input::-webkit-search-cancel-button,
+    .pc-search-input::-webkit-search-decoration {
+        -webkit-appearance: none;
+        appearance: none;
+    }
+    .pc-search-actions {
+        @apply absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-0.5;
+    }
+    .pc-search-clear {
+        @apply flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-hover hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-brand;
+    }
+
+    /* ---------- Hero band (team / player / auction headline) ---------- */
+    .pc-hero {
+        @apply relative isolate overflow-hidden rounded-2xl bg-linear-to-br from-navy-900 to-navy-800 text-white shadow-raised;
+    }
+    .pc-hero::before {
+        content: '';
+        @apply pointer-events-none absolute -right-24 -top-28 -z-10 h-72 w-72 rounded-full bg-brand/30 blur-3xl;
+    }
+    .pc-hero::after {
+        content: '';
+        @apply pointer-events-none absolute -bottom-32 -left-16 -z-10 h-64 w-64 rounded-full bg-white/5 blur-3xl;
+    }
+    .pc-eyebrow {
+        @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400;
+    }
+    .pc-hero .pc-eyebrow {
+        @apply text-accent-dark;
+    }
+
+    /* ---------- Chips (season switcher, filters) ---------- */
+    .pc-chips {
+        @apply flex gap-2 overflow-x-auto pb-1;
+        scrollbar-width: none;
+    }
+    .pc-chips::-webkit-scrollbar {
+        display: none;
+    }
+    .pc-chip {
+        @apply inline-flex min-h-9 shrink-0 select-none items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-white px-3.5 text-xs font-semibold text-slate-600 transition hover:border-brand/50 hover:bg-hover hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+    .pc-chip-active {
+        @apply border-brand bg-brand-soft text-brand hover:text-brand;
+    }
+    .pc-chip[data-rule-link][aria-current='true'] {
+        @apply border-brand bg-brand-soft text-brand;
+    }
+    .pc-chip-dark {
+        @apply border-white/15 bg-white/10 text-white/80 hover:border-white/30 hover:bg-white/15 hover:text-white focus-visible:outline-accent-dark;
+    }
+    .pc-chip-dark.pc-chip-active {
+        @apply border-accent-dark bg-accent-dark text-navy-950 hover:bg-accent-dark hover:text-navy-950;
+    }
+
+    /* ---------- Stat tiles ---------- */
+    .pc-stat {
+        @apply min-w-0 rounded-xl border border-line bg-white px-2 py-3 text-center shadow-card sm:px-4 sm:py-4;
+    }
+    .pc-stat-label {
+        @apply truncate text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:text-[11px];
+    }
+    .pc-stat-value {
+        @apply mt-1.5 text-2xl font-bold leading-none tracking-tight tabular-nums text-slate-900 sm:text-3xl;
+    }
+    .pc-stat-sub {
+        @apply mt-1.5 truncate text-[11px] text-slate-500;
+    }
+    .pc-stat-accent {
+        @apply border-brand/30 bg-brand-soft;
+    }
+    .pc-stat-accent .pc-stat-value {
+        @apply text-brand;
+    }
+
+    /* ---------- Panels ---------- */
+    .pc-panel {
+        @apply overflow-hidden rounded-xl border border-line bg-white shadow-card;
+    }
+    .pc-panel-head {
+        @apply flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line px-4 py-3;
+    }
+    .pc-panel-title {
+        @apply text-sm font-semibold tracking-tight text-slate-900;
+    }
+
+    /* ---------- Directory cards ---------- */
+    .pc-card-link {
+        @apply relative block rounded-2xl border border-line bg-white shadow-card transition duration-150 hover:border-brand/40 hover:shadow-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand motion-safe:hover:-translate-y-0.5;
+    }
+    .pc-avatar {
+        @apply relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-line bg-slate-100;
+    }
+    .pc-avatar img {
+        @apply absolute inset-0 h-full w-full bg-white object-cover;
+    }
+    .pc-role-pill {
+        @apply inline-flex max-w-full items-center truncate rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600;
+    }
+    .pc-role-pill-brand {
+        @apply bg-brand-soft text-brand;
+    }
+
+    /* ---------- Empty states ---------- */
+    .pc-empty {
+        @apply flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-12 text-center;
+    }
+    .pc-empty-icon {
+        @apply mb-1 flex h-14 w-14 items-center justify-center rounded-full bg-brand-soft text-brand;
+    }
+    .pc-empty-title {
+        @apply text-sm font-semibold text-slate-800;
+    }
+    .pc-empty-hint {
+        @apply max-w-sm text-xs leading-relaxed text-slate-500;
+    }
+
+    /* ---------- Share row (news article) ---------- */
+    .pc-share {
+        @apply inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-brand/50 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+
+    /* ---------- Article body ---------- */
+    .pc-article {
+        @apply max-w-[68ch] whitespace-pre-line break-words text-[17px] leading-[1.8] text-slate-700;
+    }
+    .pc-article::first-line {
+        @apply font-medium text-slate-900;
+    }
+
+    /* ---------- Photo masonry: columns that keep each picture's own shape ---------- */
+    .pc-masonry {
+        @apply columns-2 gap-2 sm:columns-3 sm:gap-3 lg:columns-4;
+    }
+    .pc-masonry-item {
+        @apply mb-2 break-inside-avoid sm:mb-3;
+    }
+    .pc-masonry-link {
+        @apply relative block min-h-24 overflow-hidden rounded-xl bg-slate-200 shadow-card transition duration-150 hover:shadow-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+    .pc-masonry-link img {
+        @apply transition duration-300;
+    }
+    .pc-masonry-cap {
+        @apply pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-navy-950/85 via-navy-950/40 to-transparent px-3 pb-2.5 pt-10 text-white;
+    }
+
+    /* ---------- Lightbox (the shared photo viewer) ---------- */
+    #rppl-photo-dialog {
+        @apply m-0 h-dvh max-h-none w-screen max-w-none border-0 bg-transparent p-0 text-white;
+    }
+    #rppl-photo-dialog[open] {
+        @apply flex flex-col;
+    }
+    #rppl-photo-dialog::backdrop {
+        background: rgb(3 10 20 / 0.94);
+    }
+    .pc-lb-btn {
+        @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white;
+    }
+
+    /* ---------- Rules ---------- */
+    .pc-rule {
+        @apply relative scroll-mt-36 rounded-xl border border-line bg-white p-4 shadow-card sm:p-5;
+    }
+    .pc-rule-important {
+        @apply border-brand/30 bg-brand-soft/60;
+    }
+    .pc-rule-important::before {
+        content: '';
+        @apply absolute inset-y-3 left-0 w-1 rounded-r-full bg-brand;
+    }
+    .pc-rule-no {
+        @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold tabular-nums text-slate-500;
+    }
+    .pc-rule-important .pc-rule-no {
+        @apply bg-brand text-brand-fg;
+    }
+    .pc-index-link {
+        @apply flex items-start gap-2 rounded-lg px-2.5 py-1.5 text-[13px] leading-snug text-slate-600 transition hover:bg-hover hover:text-slate-900;
+    }
+    .pc-index-link[aria-current='true'] {
+        @apply bg-brand-soft font-semibold text-brand;
+    }
+
+    /* ---------- Registration form ---------- */
+    .pc-section {
+        @apply rounded-xl border border-line bg-white shadow-card;
+    }
+    .pc-section-head {
+        @apply flex flex-wrap items-center gap-x-2.5 gap-y-0.5 border-b border-line px-4 py-3;
+    }
+    .pc-section-no {
+        @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-navy-900 text-[11px] font-bold text-white;
+    }
+    .pc-label {
+        @apply mb-1 block text-xs font-semibold text-slate-700;
+    }
+    .pc-input {
+        @apply h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 hover:border-slate-400 focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/15;
+    }
+    .pc-input-error {
+        @apply border-red-400 hover:border-red-400 focus:border-red-500 focus:ring-red-100;
+    }
+    .pc-choice {
+        @apply flex min-h-11 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-4 text-[13px] font-medium text-slate-700 shadow-sm transition hover:border-slate-400 peer-checked:border-brand peer-checked:bg-brand-soft peer-checked:font-semibold peer-checked:text-brand peer-checked:ring-1 peer-checked:ring-brand peer-focus-visible:ring-4 peer-focus-visible:ring-brand/25;
+    }
+    .peer:checked + .pc-choice > svg {
+        display: block;
+    }
+    .pc-choice-error {
+        @apply border-red-400;
+    }
+    .pc-submitbar {
+        @apply sticky z-20 rounded-xl border border-line bg-white/95 p-3 shadow-pop backdrop-blur;
+        bottom: max(0.5rem, env(safe-area-inset-bottom));
+    }
+
+    /* ---------- Success page: a few light confetti dots ---------- */
+    .pc-confetti {
+        @apply pointer-events-none absolute inset-0 overflow-hidden;
+    }
+    .pc-confetti > span {
+        @apply absolute -top-3 block h-2 w-1.5 rounded-sm bg-accent-dark opacity-0;
+    }
+    .pc-confetti > span:nth-child(3n) {
+        @apply bg-white/80;
+    }
+    .pc-confetti > span:nth-child(3n + 1) {
+        @apply bg-amber-300;
+    }
+    .pc-confetti > span:nth-child(1) { left: 8%; animation-delay: 0.05s; }
+    .pc-confetti > span:nth-child(2) { left: 17%; animation-delay: 0.35s; }
+    .pc-confetti > span:nth-child(3) { left: 26%; animation-delay: 0.15s; }
+    .pc-confetti > span:nth-child(4) { left: 35%; animation-delay: 0.5s; }
+    .pc-confetti > span:nth-child(5) { left: 44%; animation-delay: 0.1s; }
+    .pc-confetti > span:nth-child(6) { left: 53%; animation-delay: 0.4s; }
+    .pc-confetti > span:nth-child(7) { left: 62%; animation-delay: 0.2s; }
+    .pc-confetti > span:nth-child(8) { left: 71%; animation-delay: 0.55s; }
+    .pc-confetti > span:nth-child(9) { left: 80%; animation-delay: 0.25s; }
+    .pc-confetti > span:nth-child(10) { left: 89%; animation-delay: 0.45s; }
+    .pc-confetti > span:nth-child(11) { left: 94%; animation-delay: 0.3s; }
+    .pc-confetti > span:nth-child(12) { left: 3%; animation-delay: 0.6s; }
+}
+
+/* Motion only for people who have not asked for less of it. */
+@media (prefers-reduced-motion: no-preference) {
+    .pc-masonry-link:hover img {
+        transform: scale(1.05);
+    }
+    .pc-confetti > span {
+        animation: pc-confetti-fall 2.4s ease-in 1 both;
+    }
+    .pc-rise {
+        animation: pc-rise 0.4s ease-out both;
+    }
+}
+
+@keyframes pc-confetti-fall {
+    0% {
+        opacity: 0;
+        transform: translateY(0) rotate(0deg);
+    }
+    15% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(15rem) rotate(260deg);
+    }
+}
+
+@keyframes pc-rise {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

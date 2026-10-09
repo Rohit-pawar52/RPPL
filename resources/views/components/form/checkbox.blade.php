@@ -1,24 +1,35 @@
-{{-- $checked is the fallback when there is no old input. Callers that need
-     an explicit "off" value add their own hidden input before this one. --}}
+{{--
+    One tick box with its label.
+
+    $checked is the fallback when there is no old input. Callers that need an
+    explicit "off" value add their own hidden input before this one.
+
+    Props
+      label    the text beside the box (or put it in the slot)
+      name     the field name; it is also the element id
+      value    the submitted value (default "1")
+      checked  ticked when there is no old input
+      help     a small hint under the box
+--}}
 @props(['label' => null, 'name', 'value' => '1', 'checked' => false, 'help' => null])
 
-<div class="mb-3.5">
-    <label for="{{ $name }}" class="inline-flex cursor-pointer items-center gap-2 text-[13px] text-slate-700">
+<div class="fld">
+    <label for="{{ $name }}" class="fld-check">
         <input
             id="{{ $name }}"
             name="{{ $name }}"
             type="checkbox"
             value="{{ $value }}"
             @checked(old($name, $checked))
-            {{ $attributes->merge(['class' => 'h-4 w-4 rounded border-slate-300 text-green-600 focus:ring-2 focus:ring-green-500']) }}
+            {{ $attributes }}
         />
         <span>{{ $label ?? $slot }}</span>
     </label>
 
     @if($help)
-        <p class="mt-1 text-[11px] text-slate-400">{{ $help }}</p>
+        <p class="fld-help ml-7">{{ $help }}</p>
     @endif
     @error($name)
-        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+        <p class="fld-error ml-7">{{ $message }}</p>
     @enderror
 </div>

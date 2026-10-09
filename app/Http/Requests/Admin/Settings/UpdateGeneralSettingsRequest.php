@@ -28,6 +28,14 @@ class UpdateGeneralSettingsRequest extends FormRequest
             'primary_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'secondary_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'button_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            // Optional: left empty, the site works the shade out itself.
+            'button_hover_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'button_text_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'link_hover_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'hover_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            // Sent by the settings form; a request without them leaves the current values alone.
+            'header_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'button_shape' => ['nullable', 'string', 'in:square,rounded,pill'],
             'announcement_background_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'announcement_text_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             // The `image` validation rule has no ico support at all

@@ -228,10 +228,12 @@ class NewsDirectoryTest extends TestCase
     {
         $html = $this->get(route('public.home'))->assertOk()->getContent();
 
-        // Each appears twice: the desktop "More" dropdown and the mobile drawer.
-        $this->assertSame(2, substr_count($html, 'href="'.route('public.news.index').'"'));
-        $this->assertSame(2, substr_count($html, 'href="'.route('public.photos.index').'"'));
-        $this->assertGreaterThanOrEqual(2, substr_count($html, 'href="'.route('public.videos.index').'"'));
+        // Within the header each appears twice: the desktop "More" dropdown and the mobile menu
+        // (the footer carries its own links, so only the header is counted).
+        $header = substr($html, 0, strpos($html, '</header>'));
+        $this->assertSame(2, substr_count($header, 'href="'.route('public.news.index').'"'));
+        $this->assertSame(2, substr_count($header, 'href="'.route('public.photos.index').'"'));
+        $this->assertGreaterThanOrEqual(2, substr_count($header, 'href="'.route('public.videos.index').'"'));
 
         // Existing More items are preserved.
         foreach (['public.venues.index', 'public.editions.index', 'public.player-registration.create', 'public.rules.index', 'public.faqs'] as $route) {
@@ -239,7 +241,7 @@ class NewsDirectoryTest extends TestCase
         }
 
         // The first occurrence (desktop) sits inside the "More" menu.
-        $moreMenu = substr($html, strpos($html, '<details class="group relative">'));
+        $moreMenu = substr($html, strpos($html, '<details class="group relative flex self-stretch" data-menu>'));
         $moreMenu = substr($moreMenu, 0, strpos($moreMenu, '</details>'));
         foreach (['public.news.index', 'public.videos.index', 'public.photos.index'] as $route) {
             $this->assertStringContainsString(route($route), $moreMenu);

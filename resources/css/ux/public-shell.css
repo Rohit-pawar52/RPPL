@@ -1,0 +1,237 @@
+/*
+ * Public site shell (header, mobile menu, footer) and the home page.
+ * Owned by the public-shell area. Colours always come from the theme utilities
+ * (brand, action, navy-*, accent-dark ...) so an admin's colour change reaches
+ * every rule here with no build.
+ */
+@layer components {
+    /* ---------- Header: desktop links ---------- */
+    .ps-nav-link {
+        @apply relative flex items-center gap-1 whitespace-nowrap px-3 text-[13.5px] font-medium text-white/70 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent-dark;
+    }
+    /* The active link gets a short bar under it in the brand accent. */
+    .ps-nav-link::after {
+        content: '';
+        position: absolute;
+        right: 0.75rem;
+        bottom: 0;
+        left: 0.75rem;
+        height: 3px;
+        border-radius: 3px 3px 0 0;
+        background: var(--rppl-accent-on-dark);
+        transform: scaleX(0);
+        transition: transform 0.15s ease;
+    }
+    .ps-nav-link-active {
+        @apply text-white;
+    }
+    .ps-nav-link-active::after {
+        transform: scaleX(1);
+    }
+
+    /* "More" drop-down rows */
+    .ps-menu-item {
+        @apply flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13.5px] font-medium text-slate-700 transition-colors hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand;
+    }
+    .ps-menu-item-active {
+        @apply bg-brand-soft text-brand;
+    }
+    .ps-menu-icon {
+        @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface text-slate-500;
+    }
+    .ps-menu-item-active .ps-menu-icon {
+        @apply bg-white text-brand;
+    }
+
+    /* ---------- Header: mobile / tablet sheet ---------- */
+    .ps-sheet {
+        @apply fixed inset-x-0 bottom-0 z-50 overflow-y-auto bg-white;
+        top: var(--ps-sheet-top, 3.5rem);
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+    .ps-tile {
+        @apply flex min-h-14 items-center gap-3 rounded-xl border border-line bg-white p-2.5 text-[15px] font-semibold text-slate-800 transition-colors hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+    .ps-tile-icon {
+        @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface text-slate-500;
+    }
+    .ps-tile-active {
+        @apply border-brand bg-brand-soft text-brand;
+    }
+    .ps-tile-active .ps-tile-icon {
+        @apply bg-white text-brand;
+    }
+    .ps-row {
+        @apply flex min-h-12 items-center gap-3 rounded-xl px-3 text-[15px] font-medium text-slate-700 transition-colors hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand;
+    }
+    .ps-row-active {
+        @apply bg-brand-soft text-brand;
+    }
+
+    /* The page behind an open sheet does not scroll. */
+    html.ps-menu-open {
+        overflow: hidden;
+    }
+
+    /* The notice ticker: a touch taller and easier to read than the base rules. */
+    .pub-shell .rppl-ticker-item {
+        padding: 0.5rem 0.625rem;
+        font-size: 0.8125rem;
+    }
+
+    /* ---------- Sign-in pages (guest layout) ---------- */
+    .ps-guest {
+        background:
+            radial-gradient(60rem 28rem at 15% -10%, color-mix(in srgb, var(--rppl-primary) 28%, transparent), transparent 60%),
+            radial-gradient(40rem 24rem at 100% 110%, color-mix(in srgb, var(--rppl-primary) 18%, transparent), transparent 60%);
+    }
+
+    /* ---------- Home: hero ---------- */
+    .ps-hero {
+        @apply relative isolate overflow-hidden rounded-2xl bg-gradient-to-br from-navy-900 to-navy-800 text-white shadow-raised;
+    }
+    /* A soft brand glow, top right, plus a faint ball-seam arc bottom left. */
+    .ps-hero::before {
+        content: '';
+        position: absolute;
+        z-index: -1;
+        top: -7rem;
+        right: -5rem;
+        width: 22rem;
+        height: 22rem;
+        border-radius: 9999px;
+        background: radial-gradient(closest-side, color-mix(in srgb, var(--rppl-primary) 55%, transparent), transparent);
+        opacity: 0.55;
+    }
+    .ps-hero::after {
+        content: '';
+        position: absolute;
+        z-index: -1;
+        bottom: -9rem;
+        left: -6rem;
+        width: 20rem;
+        height: 20rem;
+        border-radius: 9999px;
+        border: 2px dashed rgb(255 255 255 / 0.07);
+    }
+    .ps-hero-stat {
+        @apply rounded-xl bg-white/10 px-3.5 py-2.5 ring-1 ring-inset ring-white/10;
+    }
+
+    /* ---------- Home: the match row ---------- */
+    .ps-match {
+        @apply relative flex shrink-0 rounded-xl border border-line bg-white shadow-card snap-start flex-col gap-3 p-4 transition duration-150 hover:-translate-y-px hover:shadow-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+    .ps-match-live {
+        @apply border-navy-700 bg-gradient-to-br from-navy-900 to-navy-800 text-white shadow-raised focus-visible:outline-accent-dark;
+    }
+
+    /* ---------- Content pages (privacy, terms, FAQ) ---------- */
+    .ps-prose {
+        @apply text-[15px] leading-7 text-slate-700;
+        overflow-wrap: anywhere;
+    }
+    .ps-prose > :first-child {
+        margin-top: 0;
+    }
+    .ps-prose h2 {
+        @apply mb-3 mt-9 scroll-mt-24 border-t border-line pt-7 text-xl font-bold tracking-tight text-slate-900;
+    }
+    .ps-prose h2:first-child {
+        @apply mt-0 border-t-0 pt-0;
+    }
+    .ps-prose h3 {
+        @apply mb-2 mt-6 scroll-mt-24 text-base font-semibold tracking-tight text-slate-900;
+    }
+    .ps-prose h4 {
+        @apply mb-1.5 mt-5 text-sm font-semibold text-slate-900;
+    }
+    .ps-prose p {
+        @apply mb-4;
+    }
+    .ps-prose ul,
+    .ps-prose ol {
+        @apply mb-4 space-y-1.5 pl-5;
+    }
+    .ps-prose ul {
+        list-style-type: disc;
+    }
+    .ps-prose ol {
+        list-style-type: decimal;
+    }
+    .ps-prose li::marker {
+        color: var(--rppl-primary);
+    }
+    .ps-prose a {
+        @apply font-medium text-link underline decoration-brand/30 underline-offset-2 hover:text-link-hover hover:decoration-current;
+    }
+    .ps-prose strong {
+        @apply font-semibold text-slate-900;
+    }
+    .ps-prose blockquote {
+        @apply mb-4 rounded-r-lg border-l-4 border-brand bg-brand-soft/60 px-4 py-3 text-slate-700;
+    }
+    .ps-prose hr {
+        @apply my-8 border-line;
+    }
+    .ps-prose table {
+        @apply mb-4 block w-full overflow-x-auto text-[13px];
+    }
+    .ps-prose th {
+        @apply bg-slate-50 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500;
+    }
+    .ps-prose td {
+        @apply border-t border-line px-3 py-2;
+    }
+    .ps-prose code {
+        @apply rounded bg-slate-100 px-1 py-0.5 text-[13px] text-slate-800;
+    }
+
+    /* "On this page": chips scrolling sideways on a phone, a sticky list from lg up. */
+    .ps-toc-list {
+        @apply -mx-4 flex gap-2 overflow-x-auto px-4 pb-1;
+        scrollbar-width: none;
+    }
+    .ps-toc-list::-webkit-scrollbar {
+        display: none;
+    }
+    .ps-toc-link {
+        @apply shrink-0 whitespace-nowrap rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:border-brand hover:bg-hover hover:text-brand;
+    }
+    .ps-toc-link-active {
+        @apply border-brand bg-brand-soft text-brand;
+    }
+    @media (min-width: 1024px) {
+        .ps-toc-list {
+            @apply mx-0 flex-col gap-0.5 overflow-visible px-0 pb-0;
+        }
+        .ps-toc-link {
+            @apply whitespace-normal rounded-lg border-0 bg-transparent px-3 py-2 text-[13px];
+        }
+        .ps-toc-link-active {
+            @apply bg-brand-soft;
+        }
+    }
+
+    /* ---------- Error pages ---------- */
+    .ps-error-code {
+        @apply bg-gradient-to-b from-slate-200 to-slate-100 bg-clip-text text-[7rem] font-black leading-none tracking-tighter text-transparent sm:text-[9rem];
+    }
+}
+
+@keyframes ps-sheet-in {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@media (prefers-reduced-motion: no-preference) {
+    details[open] > .ps-sheet {
+        animation: ps-sheet-in 0.16s ease-out;
+    }
+}

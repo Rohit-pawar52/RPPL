@@ -1,0 +1,47 @@
+/*
+ * Shared kit (owned by the lead) - the button family and a few small
+ * primitives that every page, public or admin, can use. Colours, hover
+ * colours, text colour and corner shape all come from the theme the admin
+ * edits in Settings > General (css variables written by
+ * layouts/partials/theme-vars), so nothing here needs a code change to
+ * restyle.
+ */
+@layer components {
+    .btn {
+        @apply inline-flex min-h-9 select-none items-center justify-center gap-2 whitespace-nowrap px-4 py-2 text-[13px] font-semibold leading-5 transition duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60;
+        border-radius: var(--rppl-radius-btn);
+    }
+    .btn-primary {
+        @apply bg-action text-action-fg shadow-sm hover:bg-action-hover focus-visible:outline-action;
+    }
+    .btn-secondary {
+        @apply border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-brand hover:bg-hover focus-visible:outline-brand;
+    }
+    .btn-soft {
+        @apply bg-brand-soft text-brand hover:bg-hover focus-visible:outline-brand;
+    }
+    .btn-ghost {
+        @apply text-slate-600 hover:bg-hover hover:text-slate-900 focus-visible:outline-brand;
+    }
+    .btn-danger {
+        @apply bg-red-600 text-white shadow-sm hover:bg-red-700 focus-visible:outline-red-600;
+    }
+    .btn-danger-soft {
+        @apply border border-red-200 bg-white text-red-700 hover:bg-red-50 focus-visible:outline-red-600;
+    }
+    .btn-sm {
+        @apply min-h-8 px-3 py-1.5 text-xs;
+    }
+    .btn-lg {
+        @apply min-h-11 px-5 py-2.5 text-sm;
+    }
+    .btn-block {
+        @apply w-full;
+    }
+    .btn-icon {
+        @apply min-h-9 w-9 px-0;
+    }
+    .btn-icon.btn-sm {
+        @apply min-h-8 w-8;
+    }
+}

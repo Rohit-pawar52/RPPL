@@ -3,40 +3,67 @@
 @section('title', __('directory.players.title').' · '.$branding->shortName)
 
 @section('content')
-    <x-public.page-header :title="__('directory.players.title')">
-        <form method="GET" action="{{ route('public.players.index') }}" class="flex items-center gap-2" role="search">
-            <input
-                type="search"
-                name="search"
-                value="{{ $search }}"
-                placeholder="{{ __('directory.common.search_by_name') }}"
-                aria-label="{{ __('directory.common.search_by_name') }}"
-                class="h-10 w-44 rounded-lg border border-slate-300 bg-white px-3 text-[13px] focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-600/20 sm:w-56"
-            />
-            <button type="submit" class="pub-btn h-10">{{ __('directory.common.search') }}</button>
-        </form>
-    </x-public.page-header>
+    <x-public.page-header :title="__('directory.players.title')" />
 
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        @forelse($players as $player)
-            @php $team = $player->latestRegistration?->teamPlayer?->editionTeam?->team; @endphp
-            <a href="{{ route('public.players.show', $player) }}" class="pub-card pub-card-link flex items-center gap-3 p-3.5">
-                <div class="pub-media flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-line text-sm font-bold text-slate-500">
-                    <x-media-image :path="$player->photo_path" kind="user" alt="" class="absolute inset-0 h-full w-full bg-white object-cover" />
-                </div>
-                <div class="min-w-0">
-                    <p class="truncate text-sm font-semibold text-slate-900">{{ $player->name }}</p>
-                    <p class="pub-meta truncate">{{ $team?->name ?? __('directory.players.no_team') }}</p>
-                </div>
-            </a>
-        @empty
-            <x-public.card class="col-span-full">
-                <x-public.empty>{{ __('directory.players.empty') }}</x-public.empty>
-            </x-public.card>
-        @endforelse
+    <div class="pc-toolbar">
+        @include('public._directory-search', [
+            'action' => route('public.players.index'),
+            'search' => $search,
+            'placeholder' => __('directory.common.search_by_name'),
+            'target' => '#pc-player-grid',
+            'empty' => '#pc-player-nomatch',
+        ])
+        <p class="pc-count">{{ trans_choice('ux_public_content.count.players', $players->total(), ['count' => $players->total()]) }}</p>
     </div>
 
-    <div class="mt-5">
+    @if($players->isEmpty())
+        <div class="pc-empty">
+            <span class="pc-empty-icon"><x-icon name="users" class="h-7 w-7" /></span>
+            @if($search !== '')
+                <p class="pc-empty-title">{{ __('ux_public_content.search.none_title', ['term' => $search]) }}</p>
+                <p class="pc-empty-hint">{{ __('ux_public_content.search.none_hint') }}</p>
+                <a href="{{ route('public.players.index') }}" class="btn btn-primary mt-2">{{ __('ux_public_content.search.clear') }}</a>
+            @else
+                <p class="pc-empty-title">{{ __('directory.players.empty') }}</p>
+            @endif
+        </div>
+    @else
+        <div id="pc-player-grid" class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+            @foreach($players as $player)
+                @php
+                    $team = $player->latestRegistration?->teamPlayer?->editionTeam?->team;
+                    $roleLabel = $player->primary_role
+                        ? (\Illuminate\Support\Facades\Lang::has('directory.roles.'.$player->primary_role) ? __('directory.roles.'.$player->primary_role) : str_replace('_', ' ', ucfirst($player->primary_role)))
+                        : null;
+                @endphp
+                <a
+                    href="{{ route('public.players.show', $player) }}"
+                    class="group pc-card-link overflow-hidden"
+                    data-filter-text="{{ mb_strtolower($player->name.' '.($team?->name ?? '')) }}"
+                >
+                    <span class="relative block aspect-square w-full overflow-hidden bg-slate-100">
+                        <x-media-image :path="$player->photo_path" kind="user" alt="" loading="lazy" class="h-full w-full object-cover object-top transition duration-300 motion-safe:group-hover:scale-105" />
+                        @if($roleLabel)
+                            <span class="pc-role-pill absolute bottom-2 left-2 bg-white/90 shadow-sm backdrop-blur">{{ $roleLabel }}</span>
+                        @endif
+                    </span>
+                    <span class="block min-w-0 px-3 py-2.5 sm:px-4 sm:py-3">
+                        <span class="block truncate text-sm font-semibold text-slate-900 group-hover:text-brand">{{ $player->name }}</span>
+                        <span class="block truncate text-xs text-slate-500">{{ $team?->name ?? __('directory.players.no_team') }}</span>
+                    </span>
+                </a>
+            @endforeach
+        </div>
+
+        <div id="pc-player-nomatch" class="pc-empty" hidden>
+            <span class="pc-empty-icon"><x-icon name="users" class="h-7 w-7" /></span>
+            <p class="pc-empty-title">{{ __('ux_public_content.search.no_match_title') }}</p>
+            <p class="pc-empty-hint">{{ __('ux_public_content.search.no_match_hint') }}</p>
+            <button type="button" class="btn btn-primary mt-2" data-pc-submit="#pc-player-nomatch">{{ __('ux_public_content.search.search_all') }}</button>
+        </div>
+    @endif
+
+    <div class="mt-6">
         {{ $players->links() }}
     </div>
 @endsection

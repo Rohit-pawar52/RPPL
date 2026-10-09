@@ -82,6 +82,12 @@ class SettingsController extends Controller
             'general.primary_color' => $data['primary_color'],
             'general.secondary_color' => $data['secondary_color'],
             'general.button_color' => $data['button_color'],
+            'general.button_hover_color' => $data['button_hover_color'] ?? null,
+            'general.button_text_color' => $data['button_text_color'] ?? null,
+            'general.link_hover_color' => $data['link_hover_color'] ?? null,
+            'general.hover_color' => $data['hover_color'] ?? null,
+            ...(isset($data['header_color']) ? ['general.header_color' => $data['header_color']] : []),
+            ...(isset($data['button_shape']) ? ['general.button_shape' => $data['button_shape']] : []),
             'general.announcement_background_color' => $data['announcement_background_color'],
             'general.announcement_text_color' => $data['announcement_text_color'],
         ]);

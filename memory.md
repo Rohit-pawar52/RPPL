@@ -30,6 +30,10 @@ We're working solo — don't push/pull/open a PR after every small edit. Batch s
 
 Everywhere a picture is shown — on the public website AND in the admin panel — a missing one (no path, file gone from storage, broken link) must show a default picture, never a broken-image icon or its alt text: `public/images/default-user.jpeg` for a person (players, contributors), `public/images/default.png` for anything else. Use `<x-media-image :path="..." kind="user|image" alt="" />` (or `media_url($path, $kind)`) instead of a raw `<img src="{{ Storage::url(...) }}">`; a script in every layout also swaps pictures that fail in the browser. Everywhere a picture is uploaded — admin and public — use `<x-form.image-upload>` (a clickable box showing the saved picture or the default, previewing the chosen file), never a bare "Choose file" input. Only non-picture uploads (spreadsheet imports) keep `<x-form.file>`. Sponsor ads are the exception to the default picture (a broken sponsor removes its own slot).
 
+### 2026-10-09 — UI/UX refresh and the editable theme
+
+Every page (public + admin) follows one premium, mobile-first design, and every task should take as few clicks as possible: if a flow needs two or four pointless clicks, redesign the flow (inline actions, whole-row links, sticky action bars, pre-filled forms). Colours that belong to the brand or to actions come from the database through CSS variables, never hardcoded: use the `.btn` family and the utilities `bg-action text-action-fg hover:bg-action-hover text-brand bg-brand-soft text-link hover:bg-hover bg-navy-*` (Settings > General > Theme: primary / secondary / header colours, button colour + hover + text colour, link hover, hover highlight, button shape; optional ones are Auto). Green / red / amber are for meaning only (paid, failed, pending). A new page must be checked at 390 / 820 / 1280 px with no sideways scroll, and use `<x-media-image>` / `<x-form.image-upload>` for pictures.
+
 ## Project setup log
 
 ### 2026-09-17 — GitHub repository and workflow set up

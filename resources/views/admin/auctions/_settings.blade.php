@@ -8,6 +8,7 @@
         name="team_purse"
         label="Purse for each team (points)"
         type="number"
+        inputmode="numeric"
         min="1"
         step="1"
         :value="$values['team_purse']"
@@ -17,6 +18,7 @@
         name="min_bid"
         label="Minimum bid (points)"
         type="number"
+        inputmode="numeric"
         min="1"
         step="1"
         :value="$values['min_bid']"
@@ -26,16 +28,20 @@
         name="bid_step"
         label="Bid goes up by (points)"
         type="number"
+        inputmode="numeric"
         min="1"
         step="1"
         :value="$values['bid_step']"
         required
     />
     <div class="grid gap-x-4 grid-cols-2">
-        <x-form.input name="min_squad" label="Minimum squad" type="number" min="1" max="50" :value="$values['min_squad']" required />
-        <x-form.input name="max_squad" label="Maximum squad" type="number" min="1" max="50" :value="$values['max_squad']" required />
+        <x-form.input name="min_squad" label="Minimum squad" type="number" inputmode="numeric" min="1" max="50" :value="$values['min_squad']" required />
+        <x-form.input name="max_squad" label="Maximum squad" type="number" inputmode="numeric" min="1" max="50" :value="$values['max_squad']" required />
     </div>
 </div>
+
+{{-- The rules above, in plain words, as they are typed. --}}
+<p id="auction-rules-summary" class="mb-4 rounded-xl border border-brand/20 bg-brand-soft px-4 py-3 text-[13px] leading-relaxed text-slate-700" aria-live="polite"></p>
 
 <input type="hidden" name="show_live_bids" value="0" />
 <x-form.checkbox
@@ -58,9 +64,39 @@
         name="notify_sale_min"
         label="Also notify when a player is sold for at least (points)"
         type="number"
+        inputmode="numeric"
         min="1"
         step="1"
         :value="$values['notify_sale_min']"
         help="Leave empty to send nothing per sale — so nobody gets a message for every player."
     />
 </div>
+
+<script>
+    (function () {
+        var box = document.getElementById('auction-rules-summary');
+        if (!box || box.dataset.ready) { return; }
+        box.dataset.ready = '1';
+
+        function field(id) { return document.getElementById(id); }
+        function pts(value) {
+            var number = Math.round(Number(value) || 0);
+            var digits = String(Math.abs(number));
+            if (digits.length > 3) {
+                digits = digits.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + digits.slice(-3);
+            }
+            return (number < 0 ? '-' : '') + digits;
+        }
+        function draw() {
+            var purse = field('team_purse').value, min = field('min_bid').value, step = field('bid_step').value;
+            var lo = field('min_squad').value, hi = field('max_squad').value;
+            if (!purse || !min || !step || !lo || !hi) { box.textContent = 'Fill in the rules above and they are explained here.'; return; }
+            box.innerHTML = 'In plain words: <b>every team gets ' + pts(purse) + ' points</b>. A player starts at <b>' + pts(min) + '</b> and each bid goes up by <b>' + pts(step) + '</b>. A squad must have <b>' + lo + ' to ' + hi + ' players</b>, and a team always keeps enough points to still reach the minimum squad.';
+        }
+        ['team_purse', 'min_bid', 'bid_step', 'min_squad', 'max_squad'].forEach(function (id) {
+            var input = field(id);
+            if (input) { input.addEventListener('input', draw); }
+        });
+        draw();
+    })();
+</script>

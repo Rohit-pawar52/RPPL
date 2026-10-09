@@ -23,13 +23,16 @@
     $tallTable = $standings->count() > 5;
 @endphp
 
-<section class="mt-4" aria-labelledby="season-summary-title">
-    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h2 id="season-summary-title" class="pub-h2 inline-flex items-center gap-2">
-            <x-icon name="trophy" class="h-4 w-4 text-green-600" />
-            {{ $edition->name }} &middot; {{ __('home.summary.title') }}
+<section aria-labelledby="season-summary-title">
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <h2 id="season-summary-title" class="flex items-center gap-2 text-lg font-semibold tracking-tight text-slate-900">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-soft text-brand"><x-icon name="trophy" class="h-[18px] w-[18px]" /></span>
+            <span>{{ $edition->name }} &middot; {{ __('home.summary.title') }}</span>
         </h2>
-        <x-public.status-pill :status="$edition->status" />
+        <a href="{{ route('public.editions.show', $edition) }}" class="inline-flex min-h-8 items-center gap-1 text-xs font-semibold text-link transition-colors hover:text-link-hover">
+            {{ __('home.summary.full_table') }}
+            <x-icon name="arrow-right" class="h-3.5 w-3.5" />
+        </a>
     </div>
 
     {{-- One grid: the points table takes two of the three columns on wide
@@ -40,31 +43,34 @@
                 <table class="pub-table min-w-[320px]">
                     <thead>
                         <tr>
-                            <th class="w-10">#</th>
+                            <th class="w-10 !pl-4 sm:!pl-5">#</th>
                             <th>{{ __('matches.table.team') }}</th>
                             <th class="text-right">{{ __('matches.table.played') }}</th>
                             <th class="text-right">{{ __('matches.table.won') }}</th>
                             <th class="text-right">{{ __('matches.table.lost') }}</th>
-                            <th class="text-right">{{ __('matches.table.points') }}</th>
+                            <th class="!pr-4 text-right sm:!pr-5">{{ __('matches.table.points') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($standings as $row)
                             @php $standingTeam = $row['edition_team']?->team; @endphp
-                            <tr class="{{ $row['position'] <= 2 ? '[&>td]:bg-green-50/60' : '' }}">
-                                <td class="text-slate-400">{{ $row['position'] }}</td>
+                            <tr class="{{ $row['position'] <= 2 ? '[&>td]:bg-brand-soft/50' : '' }}">
+                                <td class="!pl-4 tabular-nums text-slate-400 sm:!pl-5">{{ $row['position'] }}</td>
                                 <td class="font-medium text-slate-800">
                                     @if($standingTeam)
-                                        <a href="{{ route('public.teams.show', $standingTeam) }}" class="hover:underline">
-                                            <span class="sm:hidden">{{ $standingTeam->short_name ?: $standingTeam->name }}</span>
-                                            <span class="hidden sm:inline">{{ $standingTeam->name }}</span>
+                                        <a href="{{ route('public.teams.show', $standingTeam) }}" class="flex min-w-0 items-center gap-2.5 hover:underline">
+                                            <x-public.team-logo :team="$standingTeam" class="size-7" />
+                                            <span class="min-w-0 truncate">
+                                                <span class="sm:hidden">{{ $standingTeam->short_name ?: $standingTeam->name }}</span>
+                                                <span class="hidden sm:inline">{{ $standingTeam->name }}</span>
+                                            </span>
                                         </a>
                                     @endif
                                 </td>
                                 <td class="text-right tabular-nums">{{ $row['played'] }}</td>
                                 <td class="text-right tabular-nums">{{ $row['won'] }}</td>
                                 <td class="text-right tabular-nums">{{ $row['lost'] }}</td>
-                                <td class="text-right font-bold tabular-nums text-slate-900">{{ $row['points'] }}</td>
+                                <td class="!pr-4 text-right text-[15px] font-bold tabular-nums text-slate-900 sm:!pr-5">{{ $row['points'] }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -82,6 +88,9 @@
     </div>
 
     @if($filled->isEmpty())
-        <p class="pub-meta mt-3">{{ __('home.summary.empty') }}</p>
+        <p class="mt-3 flex items-center gap-2 text-xs text-slate-500">
+            <x-icon name="chart-bar" class="h-4 w-4 shrink-0 text-slate-400" />
+            {{ __('home.summary.empty') }}
+        </p>
     @endif
 </section>

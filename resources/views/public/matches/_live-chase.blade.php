@@ -1,21 +1,38 @@
 {{--
-    Expects: $chase (LiveMatchService 'chase' array — non-null only while a
+    The chase panel of the score header: what the batting side still needs.
+    Expects: $chase (LiveMatchService 'chase' array - non-null only while a
     second innings is live) and $chasingTeam (string|null).
     KEEP IN SYNC with renderChase() in resources/js/public-live-match.js.
 --}}
-<p class="text-[13px] font-semibold text-green-800">
-    @if($chase['runs_needed'] > 0)
-        {{ $chasingTeam ?? 'Chasing side' }} need {{ $chase['runs_needed'] }} {{ \Illuminate\Support\Str::plural('run', $chase['runs_needed']) }}
-        from {{ $chase['balls_remaining'] }} {{ \Illuminate\Support\Str::plural('ball', $chase['balls_remaining']) }}
-    @else
-        {{ $chasingTeam ?? 'Chasing side' }} have reached the target
-    @endif
-</p>
-<dl class="mt-3 grid grid-cols-4 gap-2 text-center">
-    @foreach([['Target', $chase['target']], ['Need', $chase['runs_needed']], ['Balls', $chase['balls_remaining']], ['RRR', number_format((float) $chase['required_run_rate'], 2)]] as [$statLabel, $statValue])
-        <div class="rounded-lg bg-white px-1 py-2 ring-1 ring-inset ring-green-200">
-            <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{{ $statLabel }}</dt>
-            <dd class="mt-0.5 text-sm font-bold tabular-nums text-slate-900">{{ $statValue }}</dd>
-        </div>
-    @endforeach
-</dl>
+@php
+    $teamLabel = $chasingTeam ?? __('ux_public_matches.chase.chasing_side');
+    $scored = max(0, (int) $chase['target'] - (int) $chase['runs_needed']);
+    $percent = $chase['target'] > 0 ? min(100, (int) round($scored / $chase['target'] * 100)) : 0;
+@endphp
+<div class="mx-chase">
+    <p class="mx-chase-headline">
+        @if($chase['runs_needed'] > 0)
+            {{ __('ux_public_matches.chase.need', [
+                'team' => $teamLabel,
+                'runs' => trans_choice('ux_public_matches.chase.runs', $chase['runs_needed'], ['count' => $chase['runs_needed']]),
+                'balls' => trans_choice('ux_public_matches.chase.balls', $chase['balls_remaining'], ['count' => $chase['balls_remaining']]),
+            ]) }}
+        @else
+            {{ __('ux_public_matches.chase.reached', ['team' => $teamLabel]) }}
+        @endif
+    </p>
+    <div class="mx-chase-bar" aria-hidden="true"><span style="width: {{ $percent }}%"></span></div>
+    <dl class="mx-chase-grid">
+        @foreach([
+            [__('ux_public_matches.chase.target'), $chase['target']],
+            [__('ux_public_matches.chase.need_label'), $chase['runs_needed']],
+            [__('ux_public_matches.chase.balls_label'), $chase['balls_remaining']],
+            [__('ux_public_matches.chase.rrr'), number_format((float) $chase['required_run_rate'], 2)],
+        ] as [$statLabel, $statValue])
+            <div>
+                <dt>{{ $statLabel }}</dt>
+                <dd>{{ $statValue }}</dd>
+            </div>
+        @endforeach
+    </dl>
+</div>

@@ -3,62 +3,55 @@
 @section('title', 'Transaction Details')
 
 @section('content')
-    <div class="mb-4 flex items-center justify-between">
-        <a href="{{ route('admin.edition-transactions.index') }}" class="text-xs text-neutral-500 hover:text-neutral-700">
-            &larr; Back to transactions
-        </a>
-        @unless($transaction->contribution)
-            <a
-                href="{{ route('admin.edition-transactions.edit', $transaction) }}"
-                class="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
-            >
-                <x-icon name="pencil" class="h-3.5 w-3.5" />
-                Edit
-            </a>
-        @endunless
-    </div>
+    @php $isIncome = $transaction->type === 'income'; @endphp
 
-    @if($transaction->contribution)
-        <div class="mb-4 flex items-center justify-between gap-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
-            <span>
-                <span class="font-medium text-neutral-800">Created from contribution.</span>
-                It is locked from manual editing/deletion here — a contribution and its ledger transaction are always changed together, only via the contribution itself.
-            </span>
-            <a href="{{ route('admin.edition-contributions.show', $transaction->contribution) }}" class="shrink-0 whitespace-nowrap font-medium theme-link hover:underline">
-                View Contribution
-            </a>
-        </div>
-    @endif
+    <x-crud.back :href="route('admin.edition-transactions.index')">Ledger</x-crud.back>
 
-    <div class="rounded-lg border border-neutral-200 bg-white p-4">
-        <div class="flex items-center justify-between gap-3">
-            <h2 class="text-base font-semibold text-neutral-900">
-                {{ money($transaction->amount) }}
-            </h2>
-            <x-status-badge :status="$transaction->type" />
-        </div>
+    <div class="space-y-4 lg:space-y-5">
+        @if($transaction->contribution)
+            <div class="crud-note crud-note-warn flex flex-wrap items-center justify-between gap-3">
+                <span>
+                    <span class="font-semibold">Created from contribution.</span>
+                    It is locked from manual editing/deletion here — a contribution and its ledger transaction are always changed together, only via the contribution itself.
+                </span>
+                <a href="{{ route('admin.edition-contributions.show', $transaction->contribution) }}" class="crud-link shrink-0 whitespace-nowrap">View Contribution &rarr;</a>
+            </div>
+        @endif
 
-        <dl class="mt-3 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
-            <div>
-                <dt class="text-neutral-400">Edition</dt>
-                <dd class="mt-0.5 font-medium text-neutral-800">{{ $transaction->edition->name }}</dd>
+        <section class="crud-profile">
+            <div class="crud-profile-band" aria-hidden="true"></div>
+            <div class="crud-profile-body">
+                <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+                    <span class="crud-profile-avatar crud-profile-avatar-square">
+                        <span class="flex h-24 w-24 items-center justify-center rounded-xl {{ $isIncome ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600' }}">
+                            <x-crud.glyph :name="$isIncome ? 'income' : 'expense'" class="h-10 w-10" />
+                        </span>
+                    </span>
+                    <div class="min-w-0 pb-1">
+                        <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                            <h2 class="crud-profile-name tabular-nums {{ $isIncome ? 'text-green-600!' : 'text-red-600!' }}">{{ $isIncome ? '+' : '−' }}{{ money($transaction->amount) }}</h2>
+                            <x-status-badge :status="$transaction->type" />
+                        </div>
+                        <p class="mt-1 text-sm text-slate-500">{{ $transaction->category ?: 'No category' }} &middot; {{ $transaction->transaction_date->format('d M Y') }}</p>
+                    </div>
+                </div>
+
+                @unless($transaction->contribution)
+                    <div class="crud-profile-actions">
+                        <x-admin.button :href="route('admin.edition-transactions.edit', $transaction)" icon="pencil">Edit</x-admin.button>
+                    </div>
+                @endunless
             </div>
-            <div>
-                <dt class="text-neutral-400">Date</dt>
-                <dd class="mt-0.5 font-medium text-neutral-800">{{ $transaction->transaction_date->format('d M Y') }}</dd>
-            </div>
-            <div>
-                <dt class="text-neutral-400">Category</dt>
-                <dd class="mt-0.5 font-medium text-neutral-800">{{ $transaction->category ?? '—' }}</dd>
-            </div>
-            <div class="col-span-2 sm:col-span-3">
-                <dt class="text-neutral-400">Description</dt>
-                <dd class="mt-0.5 font-medium text-neutral-800">{{ $transaction->description ?? '—' }}</dd>
-            </div>
-            <div>
-                <dt class="text-neutral-400">Recorded by</dt>
-                <dd class="mt-0.5 font-medium text-neutral-800">{{ $transaction->createdBy->name }}</dd>
-            </div>
-        </dl>
+        </section>
+
+        <x-admin.card title="Details">
+            <dl class="crud-facts">
+                <x-crud.fact label="Edition">{{ $transaction->edition->name }}</x-crud.fact>
+                <x-crud.fact label="Date">{{ $transaction->transaction_date->format('d M Y') }}</x-crud.fact>
+                <x-crud.fact label="Category">{{ $transaction->category ?? '—' }}</x-crud.fact>
+                <x-crud.fact label="Recorded by">{{ $transaction->createdBy->name }}</x-crud.fact>
+                <x-crud.fact label="Description" class="col-span-2 sm:col-span-4">{{ $transaction->description ?? '—' }}</x-crud.fact>
+            </dl>
+        </x-admin.card>
     </div>
 @endsection

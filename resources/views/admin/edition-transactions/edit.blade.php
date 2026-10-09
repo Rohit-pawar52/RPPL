@@ -3,27 +3,9 @@
 @section('title', 'Edit Transaction')
 
 @section('content')
-    <div class="mb-4">
-        <a href="{{ route('admin.edition-transactions.index') }}" class="text-xs text-neutral-500 hover:text-neutral-700">
-            &larr; Back to transactions
-        </a>
-    </div>
+    <x-crud.back :href="route('admin.edition-transactions.index')">Ledger</x-crud.back>
 
-    <div class="max-w-2xl rounded-lg border border-neutral-200 bg-white p-4">
-        <form method="POST" action="{{ route('admin.edition-transactions.update', $transaction) }}" novalidate>
-            @csrf
-            @method('PUT')
-
-            @include('admin.edition-transactions._form')
-
-            <div class="mt-2 flex items-center gap-2">
-                <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
-                    Save changes
-                </button>
-                <a href="{{ route('admin.edition-transactions.index') }}" class="rounded-md border border-neutral-200 px-3 py-2 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50">
-                    Cancel
-                </a>
-            </div>
-        </form>
-    </div>
+    <x-crud.form :action="route('admin.edition-transactions.update', $transaction)" method="PUT" :cancel="route('admin.edition-transactions.index')" submit="Save changes">
+        @include('admin.edition-transactions._form')
+    </x-crud.form>
 @endsection

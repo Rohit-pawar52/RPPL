@@ -4,40 +4,42 @@
      active 7-day "Not Now" cooldown, not already shown this browser
      session) and reveals it after a short delay — never at first
      paint, never the browser-native permission popup. A non-modal
-     corner card, not a full-width bar, so it never competes with the
-     announcement ticker or covers header navigation. --}}
+     card in the corner (a floating sheet on a phone), never a full-width
+     bar, so it never competes with the announcement ticker or covers
+     header navigation. The JS toggles the `hidden` class, so that class
+     and the element ids below must stay. --}}
 <div
     id="rppl-push-soft-prompt"
-    class="hidden fixed inset-x-4 bottom-4 z-50 mx-auto max-w-sm rounded-lg border border-neutral-200 bg-white p-4 shadow-lg sm:inset-x-auto sm:right-4"
+    class="hidden fixed inset-x-3 bottom-3 z-50 mx-auto max-w-sm rounded-2xl border border-line bg-white p-4 shadow-pop sm:inset-x-auto sm:bottom-5 sm:right-5 sm:mx-0 sm:w-[22rem]"
     role="dialog"
     aria-labelledby="rppl-push-soft-prompt-title"
     aria-describedby="rppl-push-soft-prompt-message"
 >
     <div class="flex items-start gap-3">
-        <span class="theme-primary-soft-bg theme-primary-text flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-            <x-icon name="bell" class="h-4 w-4" />
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand">
+            <x-icon name="bell" class="h-5 w-5" />
         </span>
         <div class="min-w-0 flex-1">
-            <p id="rppl-push-soft-prompt-title" class="text-[13px] font-semibold text-neutral-900">
-                Never miss an update from {{ $branding->shortName }}
+            <p id="rppl-push-soft-prompt-title" class="text-sm font-semibold tracking-tight text-slate-900">
+                {{ __('ux_public_shell.push.title', ['name' => $branding->shortName]) }}
             </p>
-            <p id="rppl-push-soft-prompt-message" class="mt-0.5 text-xs text-neutral-500">
-                Get important match timings, postponements and tournament updates.
+            <p id="rppl-push-soft-prompt-message" class="mt-1 text-[13px] leading-snug text-slate-500">
+                {{ __('ux_public_shell.push.message') }}
             </p>
-            <div class="mt-3 flex items-center gap-2">
+            <div class="mt-3.5 flex items-center gap-2">
                 <button
                     type="button"
                     id="rppl-push-soft-prompt-enable"
-                    class="rounded-md theme-button px-3 py-1.5 text-xs font-medium"
+                    class="btn btn-primary btn-sm"
                 >
-                    Enable Notifications
+                    {{ __('ux_public_shell.push.enable') }}
                 </button>
                 <button
                     type="button"
                     id="rppl-push-soft-prompt-dismiss"
-                    class="rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
+                    class="btn btn-ghost btn-sm"
                 >
-                    Not Now
+                    {{ __('ux_public_shell.push.dismiss') }}
                 </button>
             </div>
         </div>

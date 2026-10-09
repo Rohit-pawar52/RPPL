@@ -3,41 +3,61 @@
 @section('title', __('directory.teams.title').' · '.$branding->shortName)
 
 @section('content')
-    <x-public.page-header :title="__('directory.teams.title')">
-        <form method="GET" action="{{ route('public.teams.index') }}" class="flex items-center gap-2" role="search">
-            <input
-                type="search"
-                name="search"
-                value="{{ $search }}"
-                placeholder="{{ __('directory.common.search_by_name') }}"
-                aria-label="{{ __('directory.common.search_by_name') }}"
-                class="h-10 w-44 rounded-lg border border-slate-300 bg-white px-3 text-[13px] focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-600/20 sm:w-56"
-            />
-            <button type="submit" class="pub-btn h-10">{{ __('directory.common.search') }}</button>
-        </form>
-    </x-public.page-header>
+    <x-public.page-header :title="__('directory.teams.title')" />
 
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        @forelse($teams as $team)
-            <a href="{{ route('public.teams.show', $team) }}" class="pub-card pub-card-link flex items-center gap-3 p-3.5">
-                <div class="pub-media flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-line bg-slate-100 text-sm font-bold text-slate-500">
-                    <x-media-image :path="$team->logo_path" kind="image" alt="" class="absolute inset-0 h-full w-full bg-white object-cover" />
-                </div>
-                <div class="min-w-0">
-                    <p class="truncate text-sm font-semibold text-slate-900">{{ $team->name }}</p>
-                    @if($team->short_name)
-                        <p class="pub-meta truncate">{{ $team->short_name }}</p>
-                    @endif
-                </div>
-            </a>
-        @empty
-            <x-public.card class="col-span-full">
-                <x-public.empty>{{ __('directory.teams.empty') }}</x-public.empty>
-            </x-public.card>
-        @endforelse
+    <div class="pc-toolbar">
+        @include('public._directory-search', [
+            'action' => route('public.teams.index'),
+            'search' => $search,
+            'placeholder' => __('directory.common.search_by_name'),
+            'target' => '#pc-team-grid',
+            'empty' => '#pc-team-nomatch',
+        ])
+        <p class="pc-count">{{ trans_choice('ux_public_content.count.teams', $teams->total(), ['count' => $teams->total()]) }}</p>
     </div>
 
-    <div class="mt-5">
+    @if($teams->isEmpty())
+        <div class="pc-empty">
+            <span class="pc-empty-icon"><x-icon name="shield" class="h-7 w-7" /></span>
+            @if($search !== '')
+                <p class="pc-empty-title">{{ __('ux_public_content.search.none_title', ['term' => $search]) }}</p>
+                <p class="pc-empty-hint">{{ __('ux_public_content.search.none_hint') }}</p>
+                <a href="{{ route('public.teams.index') }}" class="btn btn-primary mt-2">{{ __('ux_public_content.search.clear') }}</a>
+            @else
+                <p class="pc-empty-title">{{ __('directory.teams.empty') }}</p>
+            @endif
+        </div>
+    @else
+        <div id="pc-team-grid" class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+            @foreach($teams as $team)
+                <a
+                    href="{{ route('public.teams.show', $team) }}"
+                    class="group pc-card-link flex flex-col items-center gap-3 p-4 text-center sm:p-5"
+                    data-filter-text="{{ mb_strtolower($team->name.' '.$team->short_name) }}"
+                >
+                    <span class="pc-avatar h-16 w-16 sm:h-20 sm:w-20">
+                        <x-media-image :path="$team->logo_path" kind="image" alt="" loading="lazy" />
+                    </span>
+                    <span class="block w-full min-w-0">
+                        <span class="block truncate text-sm font-semibold text-slate-900 group-hover:text-brand">{{ $team->name }}</span>
+                        @if($team->short_name)
+                            <span class="pc-role-pill mt-1.5">{{ $team->short_name }}</span>
+                        @endif
+                    </span>
+                </a>
+            @endforeach
+        </div>
+
+        {{-- Shown by the search box when what was typed matches nothing on this page. --}}
+        <div id="pc-team-nomatch" class="pc-empty" hidden>
+            <span class="pc-empty-icon"><x-icon name="shield" class="h-7 w-7" /></span>
+            <p class="pc-empty-title">{{ __('ux_public_content.search.no_match_title') }}</p>
+            <p class="pc-empty-hint">{{ __('ux_public_content.search.no_match_hint') }}</p>
+            <button type="button" class="btn btn-primary mt-2" data-pc-submit="#pc-team-nomatch">{{ __('ux_public_content.search.search_all') }}</button>
+        </div>
+    @endif
+
+    <div class="mt-6">
         {{ $teams->links() }}
     </div>
 @endsection
