@@ -22,9 +22,9 @@
 
     <div class="crud-toolbar">
         <x-table-filters :action="route('admin.edition-contributions.index')" :filters="$filters" :date-range="true" :per-page="$perPage">
-            <x-crud.search :value="$filters['search'] ?? ''" placeholder="Search contributor name&hellip;" />
+            <x-crud.search :value="$filters['search'] ?? ''" placeholder="Search contributor name or village&hellip;" />
             <x-crud.select name="edition_id" all="All editions" :value="$filters['edition_id'] ?? ''" :options="$editions->pluck('name', 'id')->all()" />
-            <x-crud.select name="contributor_id" all="All contributors" :value="$filters['contributor_id'] ?? ''" :options="$contributors->pluck('name', 'id')->all()" />
+            <x-crud.select name="contributor_id" all="All contributors" :value="$filters['contributor_id'] ?? ''" :options="$contributors->mapWithKeys(fn ($contributor) => [$contributor->id => $contributor->label()])->all()" />
         </x-table-filters>
     </div>
 
@@ -80,6 +80,9 @@
                                 @else
                                     {{ $contribution->contributorName() }}
                                 @endcan
+                                @if($contribution->contributorVillage())
+                                    <span class="crud-meta">{{ $contribution->contributorVillage() }}</span>
+                                @endif
                                 <span class="crud-meta md:hidden">{{ $contribution->contributed_at->format('d M Y') }} &middot; {{ $contribution->edition->name }}</span>
                             </td>
                             <td class="hidden md:table-cell">{{ $contribution->sourceLabel() }}</td>

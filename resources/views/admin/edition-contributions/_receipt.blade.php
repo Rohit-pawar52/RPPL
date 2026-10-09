@@ -24,7 +24,7 @@
     <table class="details">
         <tr>
             <td class="label">Received From</td>
-            <td class="value">{{ $contribution->contributorName() }}</td>
+            <td class="value">{{ $contribution->contributorName() }}@if($contribution->contributorVillage()), {{ $contribution->contributorVillage() }}@endif</td>
         </tr>
         <tr>
             <td class="label">Edition</td>

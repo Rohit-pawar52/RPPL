@@ -86,6 +86,9 @@
                                             @else
                                                 {{ $row['contributor']->name }}
                                             @endcan
+                                            @if(filled($row['contributor']->village))
+                                                <span class="font-normal text-slate-400">&middot; {{ $row['contributor']->village }}</span>
+                                            @endif
                                         </td>
                                         <td class="text-right tabular-nums">{{ money($row['target']) }}</td>
                                         <td class="text-right font-medium tabular-nums text-green-600">{{ money($row['paid']) }}</td>

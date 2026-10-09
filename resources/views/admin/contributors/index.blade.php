@@ -13,7 +13,7 @@
 
     <div class="crud-toolbar">
         <x-table-filters :action="route('admin.contributors.index')" :filters="$filters" :per-page="$perPage">
-            <x-crud.search :value="$filters['search'] ?? ''" placeholder="Search name&hellip;" />
+            <x-crud.search :value="$filters['search'] ?? ''" placeholder="Search name, village or phone&hellip;" />
             <x-crud.select name="status" all="All statuses" :value="$filters['status'] ?? ''" :options="['active' => 'Active', 'inactive' => 'Inactive']" />
         </x-table-filters>
     </div>
@@ -25,6 +25,7 @@
                     <tr>
                         <th class="w-16">Photo</th>
                         <th><x-sortable-header column="name" :sort="$sort" :direction="$direction">Name</x-sortable-header></th>
+                        <th class="hidden sm:table-cell"><x-sortable-header column="village" :sort="$sort" :direction="$direction">Village</x-sortable-header></th>
                         <th>Status</th>
                         <th class="hidden md:table-cell"><x-sortable-header column="contributions_count" :sort="$sort" :direction="$direction">Contributions</x-sortable-header></th>
                         <th class="hidden lg:table-cell">Committee{{ $currentEdition ? ' ('.$currentEdition->name.')' : '' }}</th>
@@ -41,9 +42,17 @@
                             <td class="c-title">
                                 <a href="{{ route('admin.contributors.show', $contributor) }}" class="crud-row-link">{{ $contributor->name }}</a>
                                 <span class="crud-meta md:hidden">
+                                    @if($contributor->village){{ $contributor->village }} &middot; @endif
                                     {{ $contributor->contributions_count }} {{ \Illuminate\Support\Str::plural('contribution', $contributor->contributions_count) }}
                                     @if($isMember) &middot; Committee @endif
                                 </span>
+                            </td>
+                            <td class="hidden sm:table-cell">
+                                @if($contributor->village)
+                                    {{ $contributor->village }}
+                                @else
+                                    <span class="text-slate-400">—</span>
+                                @endif
                             </td>
                             <td class="c-sub">
                                 <x-status-badge :status="$contributor->is_active ? 'active' : 'inactive'" />
@@ -66,7 +75,7 @@
                             </td>
                         </tr>
                     @empty
-                        <x-admin.empty table colspan="6" icon="users">
+                        <x-admin.empty table colspan="7" icon="users">
                             {{ array_filter($filters) ? 'No contributors match these filters.' : 'No contributors found.' }}
                             <x-slot:action>
                                 @if(array_filter($filters))

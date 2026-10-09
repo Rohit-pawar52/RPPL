@@ -12,7 +12,7 @@
             :path="$contributor->photo_path"
             kind="user"
             :status="$contributor->is_active ? 'active' : 'inactive'"
-            :subtitle="$contributor->phone ?: 'No phone on file'"
+            :subtitle="collect([$contributor->village, $contributor->phone ?: 'No phone on file'])->filter()->implode(' · ')"
         >
             @if($isCurrentCommitteeMember)
                 <span class="crud-pill crud-pill-blue">Committee Member{{ $currentEdition ? ' · '.$currentEdition->name : '' }}</span>
@@ -29,6 +29,8 @@
         <x-admin.card title="Summary">
             <dl class="crud-facts">
                 <x-crud.fact big label="Contributions recorded">{{ $contributor->contributions_count }}</x-crud.fact>
+                <x-crud.fact label="Village">{{ $contributor->village ?: '—' }}</x-crud.fact>
+                <x-crud.fact label="Address" class="col-span-2">{{ $contributor->address ?: '—' }}</x-crud.fact>
                 <x-crud.fact label="Committee{{ $currentEdition ? ' ('.$currentEdition->name.')' : '' }}" class="col-span-2">
                     @if($isCurrentCommitteeMember)
                         <span class="crud-pill crud-pill-blue">Committee Member</span>

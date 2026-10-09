@@ -24,7 +24,7 @@ class ContributorController extends Controller
 {
     use FiltersAdminTables;
 
-    private const ALLOWED_SORTS = ['name', 'contributions_count'];
+    private const ALLOWED_SORTS = ['name', 'village', 'contributions_count'];
 
     public function __construct(private readonly ContributorService $contributors) {}
 
@@ -42,9 +42,14 @@ class ContributorController extends Controller
             // Deliberately NOT scoped to active() by default: this is
             // the admin management list, which must keep showing both
             // active and inactive contributors unless explicitly filtered.
+            // Name, village or phone: the three things somebody at the ground can say about a person.
             ->when(
                 $filters['search'] ?? null,
-                fn ($query, $search) => $query->where('name', 'like', '%'.$search.'%')
+                fn ($query, $search) => $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('village', 'like', '%'.$search.'%')
+                        ->orWhere('phone', 'like', '%'.$search.'%');
+                })
             )
             ->when($filters['status'] ?? null, function ($query, $status) {
                 if ($status === 'active') {
@@ -82,7 +87,7 @@ class ContributorController extends Controller
     {
         $this->authorize('create', Contributor::class);
 
-        $this->contributors->createContributor($request->safe()->except('photo'), $request->file('photo'));
+        $this->contributors->createContributor($request->safe()->except(['photo', 'confirm_duplicate']), $request->file('photo'));
 
         return redirect()
             ->route('admin.contributors.index')
