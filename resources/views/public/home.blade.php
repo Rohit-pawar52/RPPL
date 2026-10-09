@@ -3,8 +3,8 @@
 @section('title', $branding->shortName.' · '.$branding->applicationName)
 
 {{--
-    Public homepage - "what is on right now?" first. Top to bottom: a slim hero
-    (season, key numbers, Matches / Register) -> sponsor banner -> auction
+    Public homepage - "what is on right now?" first. Top to bottom: sponsor
+    banner -> auction
     banner (only while an auction is on) -> the match row (live / next matches,
     a sponsor card, latest results) -> sponsor banner -> the season summary
     (points table + top players) -> latest news / photos / videos -> sponsor
@@ -15,8 +15,6 @@
 --}}
 @section('content')
     <div class="space-y-5 lg:space-y-8">
-        @include('public.home._hero')
-
         <x-ad-slot tier="main" />
 
         @include('public.home._auction-card')
