@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Public\AuctionController;
 use App\Http\Controllers\Public\ContentPageController;
+use App\Http\Controllers\Public\ContributorController;
 use App\Http\Controllers\Public\EditionController;
 use App\Http\Controllers\Public\FcmTokenController;
 use App\Http\Controllers\Public\HomeController;
@@ -40,6 +41,9 @@ Route::middleware([EnsurePublicSiteIsNotUnderMaintenance::class, SetPublicLocale
     Route::post('language/{locale}', [LanguageController::class, 'switch'])
         ->whereIn('locale', LanguageController::LOCALES)
         ->name('public.language.switch');
+
+    // Everyone who has contributed, with their village and picture (the homepage slider links here).
+    Route::get('contributors', [ContributorController::class, 'index'])->name('public.contributors.index');
 
     Route::prefix('editions')->name('public.editions.')->group(function () {
         Route::get('/', [EditionController::class, 'index'])->name('index');

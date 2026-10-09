@@ -9,6 +9,7 @@ use App\Models\News;
 use App\Models\Photo;
 use App\Models\Video;
 use App\Services\Auction\AuctionStateService;
+use App\Services\Finance\ContributorRankingService;
 use App\Services\LiveMatch\LiveMatchService;
 use App\Services\Statistics\PlayerStatisticsService;
 use App\Services\Statistics\StandingsService;
@@ -45,11 +46,17 @@ class HomeController extends Controller
      */
     private const SUMMARY_ROWS = 5;
 
+    /**
+     * Contributors in the slider above the footer; "View more" opens the full list.
+     */
+    private const CONTRIBUTORS_IN_SLIDER = 20;
+
     public function __construct(
         private readonly StandingsService $standings,
         private readonly PlayerStatisticsService $statistics,
         private readonly LiveMatchService $liveMatch,
         private readonly AuctionStateService $auctions,
+        private readonly ContributorRankingService $contributorRanking,
     ) {}
 
     public function __invoke(): View
@@ -61,6 +68,7 @@ class HomeController extends Controller
         $standings = collect();
         $highlights = [];
         $liveMatchData = null;
+        $contributorRanking = [];
 
         if ($edition) {
             $matchEagerLoads = [
@@ -93,6 +101,7 @@ class HomeController extends Controller
 
             $standings = collect($this->standings->getEditionStandings($edition)['standings']);
             $highlights = $this->statistics->getEditionHighlights($edition, self::SUMMARY_ROWS);
+            $contributorRanking = $this->contributorRanking->getEditionRanking($edition);
         }
 
         return view('public.home', [
@@ -104,6 +113,8 @@ class HomeController extends Controller
             'liveMatchData' => $liveMatchData,
             'standings' => $standings,
             'highlights' => $highlights,
+            'contributors' => array_slice($contributorRanking, 0, self::CONTRIBUTORS_IN_SLIDER),
+            'contributorsTotal' => count($contributorRanking),
             // Not edition-scoped: the tournament's own clips, news and photos.
             'latestVideos' => Video::query()->active()->ordered()->limit(self::MEDIA_ITEMS)->get(),
             'latestNews' => News::query()->visible()->with('coverImage')->ordered()->limit(self::MEDIA_ITEMS)->get(),
