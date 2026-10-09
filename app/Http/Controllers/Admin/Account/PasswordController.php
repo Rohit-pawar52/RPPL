@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin\Account;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Account\UpdatePasswordRequest;
+use App\Support\PublicLogins;
 use App\Support\UserSessions;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -17,9 +19,16 @@ use Illuminate\View\View;
  */
 class PasswordController extends Controller
 {
-    public function edit(): View
+    public function edit(Request $request): View
     {
-        return view('admin.account.password');
+        $user = $request->user();
+
+        return view('admin.account.password', [
+            // Explained on the page itself, so it is clear why nothing else opens (EnsurePasswordIsPrivate).
+            'publicPassword' => config('admin.force_private_password')
+                && PublicLogins::listsEmail($user->email)
+                && PublicLogins::usesPublicPassword($user),
+        ]);
     }
 
     public function update(UpdatePasswordRequest $request): RedirectResponse

@@ -40,4 +40,12 @@ return [
     */
     'password_min_length' => 12,
 
+    /*
+    | A login that still has a PUBLISHED password (App\Support\PublicLogins: the demo logins and the
+    | old admin@gmail.com / 12345678) may open only the Change password page until it has changed it.
+    | On by default in production, off elsewhere so the demo logins keep working on a development
+    | machine. Set ADMIN_FORCE_PRIVATE_PASSWORD=true/false to override either way.
+    */
+    'force_private_password' => filter_var(env('ADMIN_FORCE_PRIVATE_PASSWORD', env('APP_ENV') === 'production'), FILTER_VALIDATE_BOOLEAN),
+
 ];

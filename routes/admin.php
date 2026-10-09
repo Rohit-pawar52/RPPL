@@ -71,8 +71,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
     // "active" runs right after "auth" (is this session even still allowed
     // to exist) and before "can:access-admin-panel" (what is it allowed to
     // do) — authentication status and authorization role are deliberately
-    // kept as separate checks.
-    Route::middleware(['auth', 'active', 'can:access-admin-panel'])->group(function () {
+    // kept as separate checks. "private-password" sits between them: a login
+    // that still has a published password (production only) can open nothing
+    // here until it has changed it on the Change password page above.
+    Route::middleware(['auth', 'active', 'private-password', 'can:access-admin-panel'])->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
 
         // Read-side reporting/navigation hub (Phase 3.43) — links to

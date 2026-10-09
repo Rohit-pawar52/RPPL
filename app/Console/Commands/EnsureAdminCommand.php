@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Support\PublicLogins;
 use App\Support\UserSessions;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Console\Command;
@@ -39,17 +40,12 @@ use Symfony\Component\Console\Formatter\OutputFormatter;
 class EnsureAdminCommand extends Command
 {
     /**
-     * Logins whose passwords are published: in the README, in the demo seeder (the demo dataset a new
-     * Render database is filled with) and, for admin@gmail.com, in an earlier version of
-     * docker/start.sh that already ran on deployed sites. Lower-case email => the published password.
+     * Logins whose passwords are published (the list lives in PublicLogins, which the sign-in check
+     * uses too, so the two can never disagree). Lower-case email => the published password.
      *
      * @var array<string, string>
      */
-    public const PUBLIC_LOGINS = [
-        'admin@rppl.test' => 'password',
-        'scorer@rppl.test' => 'password',
-        'admin@gmail.com' => '12345678',
-    ];
+    public const PUBLIC_LOGINS = PublicLogins::PAIRS;
 
     protected $signature = 'rppl:ensure-admin
                             {--lock-demo-accounts : Deactivate the logins with published passwords (demo dataset, old default admin) once a usable admin exists}';
@@ -220,9 +216,7 @@ class EnsureAdminCommand extends Command
 
     private function usesPublicPassword(User $user): bool
     {
-        $published = self::PUBLIC_LOGINS[Str::lower($user->email)] ?? null;
-
-        return $published !== null && Hash::check($published, $user->password);
+        return PublicLogins::usesPublicPassword($user);
     }
 
     /**
