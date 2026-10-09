@@ -113,7 +113,7 @@ if (dataEl && root) {
             error: 'border-red-200 bg-red-50 text-red-800',
         };
 
-        el.notice.className = `rounded-md border px-3 py-2 text-[13px] ${styles[kind] || styles.ok}`;
+        el.notice.className = `rounded-xl border px-4 py-3 text-sm font-medium ${styles[kind] || styles.ok}`;
         el.notice.textContent = message;
 
         window.clearTimeout(noticeTimer);
@@ -184,10 +184,13 @@ if (dataEl && root) {
         const styles = {
             live: 'bg-green-50 text-green-700 ring-green-200',
             paused: 'bg-amber-50 text-amber-700 ring-amber-200',
-            completed: 'bg-neutral-100 text-neutral-600 ring-neutral-200',
+            completed: 'bg-slate-100 text-slate-600 ring-slate-200',
         };
+        const dot = status === 'live'
+            ? '<span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-60 motion-safe:animate-ping"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-green-600"></span></span>'
+            : '';
 
-        return `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ring-1 ring-inset ${styles[status] || styles.completed}">${esc(status)}</span>`;
+        return `<span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold capitalize ring-1 ring-inset ${styles[status] || styles.completed}">${dot}${esc(status)}</span>`;
     }
 
     /**
@@ -206,7 +209,7 @@ if (dataEl && root) {
         }
 
         el.pool.innerHTML = parts.length
-            ? `<div class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-900"><span>${parts.join('. ')}.</span><button type="button" data-action="refresh-pool" class="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600">Update the pool</button></div>`
+            ? `<div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-900"><span class="min-w-0 flex-1">${parts.join('. ')}.</span><button type="button" data-action="refresh-pool" class="btn bg-amber-500 text-white hover:bg-amber-600">Update the pool</button></div>`
             : '';
     }
 
@@ -216,26 +219,26 @@ if (dataEl && root) {
         const paused = auction.status === 'paused';
         const done = auction.status === 'completed';
 
-        const stat = (label, number) => `<span class="text-xs text-slate-500">${esc(label)} <b class="tabular-nums text-slate-800">${number}</b></span>`;
+        const stat = (label, number) => `<span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">${esc(label)} <b class="tabular-nums text-slate-900">${number}</b></span>`;
 
         el.toolbar.innerHTML = `
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-2">
                 ${statusBadge(auction.status)}
-                <span class="text-xs font-medium text-slate-700">Round ${auction.round}</span>
+                <span class="text-xs font-semibold text-slate-700">Round ${auction.round}</span>
                 ${stat('Waiting', counts.pending)}
                 ${stat('Hold', counts.hold)}
                 ${stat('Sold', counts.sold)}
                 ${stat('Unsold', counts.unsold)}
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                <label class="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
-                    <input type="checkbox" data-action="toggle-live" ${auction.show_live_bids ? 'checked' : ''} class="h-4 w-4 rounded border-slate-300 text-green-600 focus:ring-green-500" ${done ? 'disabled' : ''} />
+                <label class="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-2 text-xs text-slate-600">
+                    <input type="checkbox" data-action="toggle-live" ${auction.show_live_bids ? 'checked' : ''} class="h-5 w-5 rounded border-slate-300" ${done ? 'disabled' : ''} />
                     Show bids live on the website
                 </label>
-                ${counts.hold > 0 && !done ? `<button type="button" data-action="next-round" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Start round ${auction.round + 1} (${counts.hold} on hold)</button>` : ''}
-                ${live ? '<button type="button" data-action="pause" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Pause</button>' : ''}
-                ${paused ? '<button type="button" data-action="resume" class="rounded-md bg-green-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-green-700">Resume</button>' : ''}
-                ${!done ? `<a href="${esc(urls.setup)}" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Finish the auction…</a>` : ''}
+                ${counts.hold > 0 && !done ? `<button type="button" data-action="next-round" class="btn btn-secondary btn-sm min-h-10">Start round ${auction.round + 1} (${counts.hold} on hold)</button>` : ''}
+                ${live ? '<button type="button" data-action="pause" class="btn btn-secondary btn-sm min-h-10">Pause</button>' : ''}
+                ${paused ? '<button type="button" data-action="resume" class="btn btn-primary btn-sm min-h-10">Resume</button>' : ''}
+                ${!done ? `<a href="${esc(urls.setup)}" class="btn btn-ghost btn-sm min-h-10">Finish the auction…</a>` : ''}
             </div>`;
     }
 
@@ -247,62 +250,69 @@ if (dataEl && root) {
             const waiting = counts.pending;
 
             el.lot.innerHTML = `
-                <div class="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-8 text-center">
-                    <p class="text-sm font-semibold text-slate-800">${done ? 'The auction is completed' : 'No player on the block'}</p>
-                    <p class="mt-1 text-xs text-slate-500">${done
+                <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center">
+                    <p class="text-xl font-bold tracking-tight text-slate-900">${done ? 'The auction is completed' : 'No player on the block'}</p>
+                    <p class="mx-auto mt-1 max-w-md text-[13px] text-slate-500">${done
                         ? 'Nothing more can be called.'
                         : waiting > 0
                             ? `${waiting} ${waiting === 1 ? 'player is' : 'players are'} waiting. Call one at random, or find a player with the search box.`
                             : counts.hold > 0
                                 ? `Nobody is waiting, but ${counts.hold} ${counts.hold === 1 ? 'player is' : 'players are'} on hold — start the next round to bring ${counts.hold === 1 ? 'them' : 'them'} back.`
                                 : 'Nobody is waiting. You can finish the auction.'}</p>
-                    ${!done && waiting > 0 ? '<button type="button" data-action="random" class="mt-4 rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700">Call a random player</button>' : ''}
-                </div>`;
+                </div>
+                ${!done && waiting > 0 ? `<div class="ac-actionbar"><button type="button" data-action="random" class="btn btn-primary btn-lg min-h-14 w-full text-base font-bold">Call a random player <span class="rounded-full bg-white/20 px-2 text-xs tabular-nums">${waiting} waiting</span></button></div>` : ''}`;
 
             return;
         }
 
         const tags = [lot.role, lot.batting ? `${lot.batting} bat` : null, lot.bowling ? `${lot.bowling} bowler` : null]
             .filter(Boolean)
-            .map((tag) => `<span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">${esc(tag)}</span>`)
+            .map((tag) => `<span class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white">${esc(tag)}</span>`)
             .join('');
 
         const where = [lot.village, lot.tehsil, lot.district].filter(Boolean).join(', ');
         const stats = lot.stats
-            ? `<p class="mt-2 text-xs text-slate-600"><span class="font-medium text-slate-700">Before:</span> ${lot.stats.matches} ${lot.stats.matches === 1 ? 'match' : 'matches'} · ${lot.stats.runs} runs${lot.stats.highest !== null ? ` (best ${lot.stats.highest})` : ''} · ${lot.stats.wickets} ${lot.stats.wickets === 1 ? 'wicket' : 'wickets'}${lot.stats.best_bowling ? ` (best ${esc(lot.stats.best_bowling)})` : ''}</p>`
-            : '<p class="mt-2 text-xs text-slate-400">First time in RPPL</p>';
+            ? `<p class="mt-2 text-xs text-white/75"><span class="font-semibold text-white">Before:</span> ${lot.stats.matches} ${lot.stats.matches === 1 ? 'match' : 'matches'} · ${lot.stats.runs} runs${lot.stats.highest !== null ? ` (best ${lot.stats.highest})` : ''} · ${lot.stats.wickets} ${lot.stats.wickets === 1 ? 'wicket' : 'wickets'}${lot.stats.best_bowling ? ` (best ${esc(lot.stats.best_bowling)})` : ''}</p>`
+            : '<p class="mt-2 text-xs text-white/60">First time in RPPL</p>';
 
         // The player's photo, or the default picture when there is none (or it fails to load).
-        const photo = `<div class="relative h-24 w-24 overflow-hidden rounded-lg bg-slate-100"><img src="${esc(lot.photo || '')}" alt="" data-fallback="user" class="h-full w-full object-cover" /></div>`;
+        const photo = `<div class="relative h-28 w-28 overflow-hidden rounded-2xl bg-white/10 ring-2 ring-white/30 sm:h-36 sm:w-36"><img src="${esc(lot.photo || '')}" alt="" data-fallback="user" class="h-full w-full object-cover" /></div>`;
 
         const hasBid = lot.current_bid !== null;
         const live = auction.status === 'live';
 
         el.lot.innerHTML = `
-            <div class="rounded-lg border border-slate-200 bg-white p-4">
+            <div class="rounded-2xl bg-gradient-to-br from-navy-900 to-navy-800 p-4 text-white shadow-raised sm:p-6">
                 <div class="flex flex-wrap items-start gap-4">
                     <div class="shrink-0">${photo}</div>
-                    <div class="min-w-0 flex-1">
-                        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">On the block${lot.round > 1 ? ` · round ${lot.round}` : ''}</p>
-                        <h2 class="mt-0.5 break-words text-2xl font-bold tracking-tight text-slate-900">${esc(lot.name)}</h2>
-                        <div class="mt-1.5 flex flex-wrap items-center gap-1.5">${tags}</div>
-                        ${where || lot.age ? `<p class="mt-1.5 text-xs text-slate-500">${esc(where)}${where && lot.age ? ' · ' : ''}${lot.age ? `${lot.age} yrs` : ''}</p>` : ''}
+                    <div class="min-w-0 flex-1 basis-48">
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-white/60">On the block${lot.round > 1 ? ` · round ${lot.round}` : ''}</p>
+                        <h2 class="mt-0.5 break-words text-3xl font-bold leading-tight tracking-tight sm:text-4xl">${esc(lot.name)}</h2>
+                        <div class="mt-2 flex flex-wrap items-center gap-1.5">${tags}</div>
+                        ${where || lot.age ? `<p class="mt-2 text-xs text-white/75">${esc(where)}${where && lot.age ? ' · ' : ''}${lot.age ? `${lot.age} yrs` : ''}</p>` : ''}
                         ${stats}
                     </div>
-                    <div class="min-w-[11rem] rounded-lg ${hasBid ? 'bg-green-50 ring-1 ring-green-200' : 'bg-slate-50 ring-1 ring-slate-200'} px-4 py-3 text-right">
-                        <p class="text-[11px] font-semibold uppercase tracking-wide ${hasBid ? 'text-green-700' : 'text-slate-400'}">${hasBid ? 'Current bid' : 'Base price'}</p>
-                        <p class="text-3xl font-bold tabular-nums ${hasBid ? 'text-green-800' : 'text-slate-700'}">${pts(hasBid ? lot.current_bid : auction.min_bid)}</p>
-                        <p class="text-xs ${hasBid ? 'font-medium text-green-700' : 'text-slate-400'}">${hasBid ? esc(lot.leading_team.name) : 'No bid yet'}</p>
+                </div>
+
+                <div class="mt-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-2 rounded-xl ${hasBid ? 'bg-green-500/20 ring-1 ring-green-300/50' : 'bg-white/10'} px-4 py-3">
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase tracking-wide ${hasBid ? 'text-green-200' : 'text-white/60'}">${hasBid ? 'Current bid' : 'Base price'}</p>
+                        <p class="text-5xl font-bold leading-none tracking-tight tabular-nums sm:text-6xl">${pts(hasBid ? lot.current_bid : auction.min_bid)}</p>
                     </div>
+                    <p class="text-right text-base font-semibold ${hasBid ? 'text-green-100' : 'text-white/60'}">${hasBid ? esc(lot.leading_team.name) : 'No bid yet'}</p>
                 </div>
-                <div class="mt-4 flex flex-wrap items-center gap-2">
-                    <button type="button" data-action="sell" ${hasBid && live ? '' : 'disabled'} class="rounded-md bg-green-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">
-                        ${hasBid ? `SOLD to ${esc(lot.leading_team.name)} · ${pts(lot.current_bid)}` : 'SOLD'}
-                    </button>
-                    <button type="button" data-action="hold" ${live ? '' : 'disabled'} class="rounded-md border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50">Hold for later</button>
-                    <button type="button" data-action="undo" ${hasBid && live ? '' : 'disabled'} class="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">Undo last bid</button>
-                    <button type="button" data-action="release" ${live ? '' : 'disabled'} class="ml-auto rounded-md px-3 py-2.5 text-xs font-medium text-slate-500 hover:bg-slate-100 disabled:opacity-50">Wrong player? Put back</button>
+
+                <div class="mt-3 text-right">
+                    <button type="button" data-action="release" ${live ? '' : 'disabled'} class="rounded-lg px-3 py-2 text-xs font-medium text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-40">Wrong player? Put back</button>
                 </div>
+            </div>
+
+            <div class="ac-actionbar">
+                <button type="button" data-action="sell" ${hasBid && live ? '' : 'disabled'} class="ac-sell">
+                    ${hasBid ? `SOLD to ${esc(lot.leading_team.name)} · ${pts(lot.current_bid)}` : 'SOLD'}
+                </button>
+                <button type="button" data-action="hold" ${live ? '' : 'disabled'} class="ac-hold">Hold</button>
+                <button type="button" data-action="undo" ${hasBid && live ? '' : 'disabled'} class="ac-undo" aria-label="Undo last bid">Undo bid</button>
             </div>`;
     }
 
@@ -312,36 +322,37 @@ if (dataEl && root) {
             const action = teamAction(team);
             const usedPct = team.purse > 0 ? Math.min(100, Math.round(((team.purse - team.left) / team.purse) * 100)) : 0;
             const open = openSquads.has(team.id);
+            const leading = lot && lot.leading_team && lot.leading_team.id === team.id;
 
             const buttonStyle = {
-                ok: 'bg-green-600 text-white hover:bg-green-700',
+                ok: 'bg-action text-action-fg hover:bg-action-hover',
                 reserve: 'bg-amber-500 text-white hover:bg-amber-600',
                 leading: 'bg-green-50 text-green-700 ring-1 ring-green-200',
             }[action.kind] || 'bg-slate-100 text-slate-400';
 
             return `
-                <div class="rounded-lg border ${lot && lot.leading_team && lot.leading_team.id === team.id ? 'border-green-400 ring-1 ring-green-300' : 'border-slate-200'} bg-white p-3">
+                <div class="rounded-xl border ${leading ? 'border-green-400 bg-green-50/50 ring-2 ring-green-200' : 'border-line bg-white'} p-3 shadow-card">
                     <div class="flex items-center justify-between gap-2">
-                        <p class="truncate text-[13px] font-semibold text-slate-900" title="${esc(team.name)}">${esc(team.name)}</p>
-                        <span class="shrink-0 text-[11px] tabular-nums text-slate-500">${team.count}/${state.auction.max_squad}</span>
+                        <p class="truncate text-sm font-bold text-slate-900" title="${esc(team.name)}">${esc(team.name)}</p>
+                        <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-600" title="Players bought / maximum squad">${team.count}/${state.auction.max_squad}</span>
                     </div>
-                    <p class="mt-1 text-xl font-bold tabular-nums text-slate-900">${pts(team.left)} <span class="text-[11px] font-medium text-slate-400">left</span></p>
-                    <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100" aria-hidden="true"><div class="h-full rounded-full bg-green-500" style="width: ${usedPct}%"></div></div>
+                    <p class="mt-1.5 text-2xl font-bold leading-7 tabular-nums text-slate-900">${pts(team.left)} <span class="text-[11px] font-medium text-slate-400">left</span></p>
+                    <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100" aria-hidden="true"><div class="h-full rounded-full bg-brand" style="width: ${usedPct}%"></div></div>
                     <p class="mt-1.5 text-[11px] text-slate-500">
-                        Max bid <b class="tabular-nums text-slate-700">${team.full ? '—' : pts(team.max_bid)}</b>
+                        Max bid <b class="tabular-nums text-slate-800">${team.full ? '—' : pts(team.max_bid)}</b>
                         ${team.still_needed > 0 ? ` · needs ${team.still_needed} more` : ''}
                     </p>
-                    <button type="button" data-action="bid" data-team="${team.id}" ${action.enabled ? '' : 'disabled'} class="mt-2 w-full rounded-md px-2 py-2 text-[13px] font-semibold ${buttonStyle} disabled:cursor-not-allowed">${esc(action.label)}</button>
+                    <button type="button" data-action="bid" data-team="${team.id}" ${action.enabled ? '' : 'disabled'} class="mt-2.5 flex min-h-14 w-full items-center justify-center rounded-xl px-2 text-center text-sm font-bold leading-tight transition active:scale-[0.98] ${buttonStyle} disabled:cursor-not-allowed">${esc(action.label)}</button>
                     <details data-squad="${team.id}" class="mt-2" ${open ? 'open' : ''}>
-                        <summary class="cursor-pointer text-[11px] text-slate-500 hover:text-slate-800">Squad (${team.players.length})</summary>
-                        <ul class="mt-1 space-y-0.5 text-[11px] text-slate-600">
+                        <summary class="flex min-h-9 cursor-pointer items-center text-xs text-slate-500 hover:text-slate-800">Squad (${team.players.length})</summary>
+                        <ul class="mt-1 space-y-1 text-xs text-slate-600">
                             ${team.players.length ? team.players.map((p) => `<li class="flex justify-between gap-2"><span class="truncate">${esc(p.name)}</span><span class="tabular-nums text-slate-500">${p.amount === null ? '—' : pts(p.amount)}</span></li>`).join('') : '<li class="text-slate-400">No players yet</li>'}
                         </ul>
                     </details>
                 </div>`;
         });
 
-        el.teams.innerHTML = `<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">${tiles.join('')}</div>`;
+        el.teams.innerHTML = `<div class="grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-4">${tiles.join('')}</div>`;
     }
 
     function renderResults() {
@@ -358,12 +369,12 @@ if (dataEl && root) {
 
         const shown = list.slice(0, 8);
         const rows = shown.map((row) => `
-            <li class="flex items-center justify-between gap-2 py-1.5">
+            <li class="flex items-center justify-between gap-2 py-2">
                 <span class="min-w-0">
-                    <span class="block truncate text-[13px] font-medium text-slate-800">${esc(row.name)}</span>
+                    <span class="block truncate text-[13px] font-semibold text-slate-800">${esc(row.name)}</span>
                     <span class="block truncate text-[11px] text-slate-400">${esc([row.role, row.village].filter(Boolean).join(' · '))}${row.status === 'hold' ? ' · on hold' : ''}</span>
                 </span>
-                <button type="button" data-action="call" data-lot="${row.id}" ${live ? '' : 'disabled'} class="shrink-0 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">Call</button>
+                <button type="button" data-action="call" data-lot="${row.id}" ${live ? '' : 'disabled'} class="btn btn-secondary btn-sm min-h-10 shrink-0 px-4 disabled:opacity-50">Call</button>
             </li>`).join('');
 
         const note = query
@@ -371,18 +382,18 @@ if (dataEl && root) {
             : `<p class="mt-1 text-[11px] text-slate-400">${state.counts.pending} waiting${state.counts.hold ? ` · ${state.counts.hold} on hold (listed above)` : ''}. Type to find anyone.</p>`;
 
         el.results.innerHTML = `
-            ${rows ? `<ul class="divide-y divide-slate-100">${rows}</ul>` : `<p class="text-xs text-slate-400">${query ? 'Nobody matches.' : 'Nobody is on hold.'}</p>`}
+            ${rows ? `<ul class="divide-y divide-line">${rows}</ul>` : `<p class="text-xs text-slate-400">${query ? 'Nobody matches.' : 'Nobody is on hold.'}</p>`}
             ${note}
-            ${state.counts.pending > 0 ? '<button type="button" data-action="random" class="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Call a random waiting player</button>' : ''}`;
+            ${state.counts.pending > 0 ? '<button type="button" data-action="random" class="btn btn-secondary mt-3 w-full">Call a random waiting player</button>' : ''}`;
     }
 
     function renderBids() {
         const bids = state.lot ? state.lot.bids : [];
 
         el.bids.innerHTML = `
-            <h3 class="text-xs font-semibold text-slate-700">Bids on this player</h3>
+            <h3 class="text-sm font-semibold tracking-tight text-slate-900">Bids on this player</h3>
             ${bids.length
-                ? `<ol class="mt-1.5 space-y-1 text-[12px]">${bids.map((bid, index) => `<li class="flex justify-between gap-2 ${index === 0 ? 'font-semibold text-slate-900' : 'text-slate-500'}"><span class="truncate">${esc(bid.team)}${bid.override ? ' <span class="rounded bg-amber-100 px-1 text-[10px] font-medium text-amber-800">override</span>' : ''}</span><span class="shrink-0 tabular-nums">${pts(bid.amount)} <span class="text-[10px] font-normal text-slate-400">${esc(bid.at)}</span></span></li>`).join('')}</ol>`
+                ? `<ol class="mt-2 space-y-1.5 text-[13px]">${bids.map((bid, index) => `<li class="flex justify-between gap-2 ${index === 0 ? 'font-bold text-slate-900' : 'text-slate-500'}"><span class="truncate">${esc(bid.team)}${bid.override ? ' <span class="rounded bg-amber-100 px-1 text-[10px] font-medium text-amber-800">override</span>' : ''}</span><span class="shrink-0 tabular-nums">${pts(bid.amount)} <span class="text-[10px] font-normal text-slate-400">${esc(bid.at)}</span></span></li>`).join('')}</ol>`
                 : '<p class="mt-1 text-xs text-slate-400">No bids yet.</p>'}`;
     }
 
@@ -409,23 +420,23 @@ if (dataEl && root) {
             if (sale.locked) {
                 actions = '<span class="text-[11px] text-slate-400" title="This player has played a match, so the sale cannot be undone.">played a match</span>';
             } else {
-                actions = `${sale.orphan ? '' : `<button type="button" data-action="reopen" data-lot="${sale.lot_id}" ${live ? '' : 'disabled'} title="Back on the block with the last bid" class="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40">Reopen</button>`}
-                    <button type="button" data-action="take-back" data-lot="${sale.lot_id}" ${running ? '' : 'disabled'} title="Out of the team, waiting again" class="rounded-md border border-red-200 bg-white px-2 py-1 text-[11px] font-medium text-red-700 hover:bg-red-50 disabled:opacity-40">Take back</button>`;
+                actions = `${sale.orphan ? '' : `<button type="button" data-action="reopen" data-lot="${sale.lot_id}" ${live ? '' : 'disabled'} title="Back on the block with the last bid" class="btn btn-secondary btn-sm min-h-10 disabled:opacity-40">Reopen</button>`}
+                    <button type="button" data-action="take-back" data-lot="${sale.lot_id}" ${running ? '' : 'disabled'} title="Out of the team, waiting again" class="btn btn-danger-soft btn-sm min-h-10 disabled:opacity-40">Take back</button>`;
             }
 
             return `
-                <li class="flex items-start justify-between gap-2 py-2">
+                <li class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 py-2.5">
                     <span class="min-w-0">
-                        <span class="block truncate text-[13px] font-medium text-slate-800"><span class="mr-1 text-[11px] font-normal tabular-nums text-slate-400">#${sale.number}</span>${esc(sale.name)}</span>
-                        <span class="block text-[11px] leading-snug text-slate-500">${esc(sale.team || 'no team')} · ${pts(sale.amount)}${sale.bids ? ` · ${sale.bids} ${sale.bids === 1 ? 'bid' : 'bids'}` : ''}${sale.at ? ` · ${esc(sale.at)}` : ''}</span>
+                        <span class="block truncate text-[13px] font-semibold text-slate-800"><span class="mr-1 text-[11px] font-normal tabular-nums text-slate-400">#${sale.number}</span>${esc(sale.name)}</span>
+                        <span class="block text-[11px] leading-snug text-slate-500">${esc(sale.team || 'no team')} · <b class="tabular-nums text-slate-700">${pts(sale.amount)}</b>${sale.bids ? ` · ${sale.bids} ${sale.bids === 1 ? 'bid' : 'bids'}` : ''}${sale.at ? ` · ${esc(sale.at)}` : ''}</span>
                     </span>
-                    <span class="flex shrink-0 gap-1">${actions}</span>
+                    <span class="flex shrink-0 gap-1.5">${actions}</span>
                 </li>`;
         }).join('');
 
         el.soldCount.textContent = `(${all.length})`;
         el.sold.innerHTML = rows
-            ? `<ul data-sold-list class="max-h-80 divide-y divide-slate-100 overflow-y-auto">${rows}</ul>`
+            ? `<ul data-sold-list class="max-h-96 divide-y divide-line overflow-y-auto">${rows}</ul>`
             : `<p class="text-xs text-slate-400">${query ? 'No sale matches.' : 'Nobody is sold yet.'}</p>`;
 
         const fresh = el.sold.querySelector('[data-sold-list]');
@@ -435,8 +446,8 @@ if (dataEl && root) {
     }
 
     function renderChips() {
-        el.chips.innerHTML = `${chips.map((amount) => `<button type="button" data-action="chip" data-amount="${amount}" class="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium tabular-nums text-slate-700 hover:bg-slate-50">${pts(amount)}</button>`).join('')}
-            <button type="button" data-action="edit-chips" class="rounded-md px-1.5 py-1 text-[11px] text-slate-400 hover:text-slate-700">edit</button>`;
+        el.chips.innerHTML = `${chips.map((amount) => `<button type="button" data-action="chip" data-amount="${amount}" class="inline-flex min-h-10 items-center rounded-full border border-slate-300 bg-white px-3.5 text-sm font-semibold tabular-nums text-slate-700 transition hover:border-brand hover:bg-hover active:scale-95">${pts(amount)}</button>`).join('')}
+            <button type="button" data-action="edit-chips" class="min-h-10 rounded-lg px-2 text-xs text-slate-400 hover:text-slate-700">edit</button>`;
     }
 
     // ----- Talking to the server ---------------------------------------------

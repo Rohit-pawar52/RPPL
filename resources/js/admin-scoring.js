@@ -81,28 +81,45 @@ document.addEventListener('DOMContentLoaded', () => {
         el.innerHTML = `Target ${chase.target} &middot; Need ${chase.runs_needed} from ${chase.balls_remaining} &middot; RRR ${Number(chase.required_run_rate).toFixed(2)}`;
     }
 
+    // KEEP IN SYNC with admin/scoring/_batter-figure, _bowler-figure and _over-strip.
     function renderBatterFigure(player) {
-        return player ? `${escapeHtml(player.name)} ${player.runs} (${player.balls})` : '—';
+        return player
+            ? `<span class="sc-name">${escapeHtml(player.name)}</span><span class="sc-fig">${player.runs}<i>(${player.balls})</i></span>`
+            : '<span class="sc-name">—</span><span class="sc-fig">&nbsp;</span>';
     }
 
     function renderBowlerFigure(player) {
-        return player ? `${escapeHtml(player.name)} ${player.overs_display}-${player.runs_conceded}-${player.wickets}` : '—';
+        return player
+            ? `<span class="sc-name">${escapeHtml(player.name)}</span><span class="sc-fig">${player.overs_display}-${player.runs_conceded}-${player.wickets}</span>`
+            : '<span class="sc-name">—</span><span class="sc-fig">&nbsp;</span>';
+    }
+
+    function ballKind(ball) {
+        const label = String(ball.label);
+
+        if (ball.is_wicket) return 'wicket';
+        if (label === '6') return 'six';
+        if (label === '4') return 'four';
+        if (label === '0') return 'dot';
+        if (!/^\d+$/.test(label)) return 'extra';
+
+        return 'run';
     }
 
     function renderOverStrip(over) {
         if (!over) {
-            return '<span class="text-xs text-neutral-400">No deliveries yet.</span>';
+            return '<span class="text-xs text-white/60">No deliveries yet.</span>';
         }
 
         return over.balls
             .map((ball) => {
-                const classes = ball.is_wicket ? 'bg-red-50 text-red-600' : 'bg-neutral-100 text-neutral-700';
+                const kind = ballKind(ball);
 
                 if (ball.is_correctable) {
-                    return `<button type="button" class="scorer-over-ball scorer-over-ball-correctable rounded px-1.5 py-0.5 text-[11px] font-semibold ${classes} ring-1 ring-inset ring-blue-300 hover:ring-blue-500" data-delivery-id="${ball.id}" title="Click to correct this delivery">${escapeHtml(ball.label)}</button>`;
+                    return `<button type="button" class="scorer-over-ball scorer-over-ball-correctable sc-ball sc-ball-correctable sc-ball-${kind}" data-delivery-id="${ball.id}" title="Tap to correct this delivery">${escapeHtml(ball.label)}</button>`;
                 }
 
-                return `<span class="rounded px-1.5 py-0.5 text-[11px] font-semibold ${classes}">${escapeHtml(ball.label)}</span>`;
+                return `<span class="sc-ball sc-ball-${kind}">${escapeHtml(ball.label)}</span>`;
             })
             .join('');
     }
@@ -112,6 +129,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const crrEl = document.getElementById('scorer-crr');
         if (crrEl) crrEl.textContent = `CRR ${Number(state.innings.crr).toFixed(2)}`;
+
+        const scoreEl = document.getElementById('scorer-score');
+        if (scoreEl) scoreEl.textContent = `${state.innings.total_runs}/${state.innings.total_wickets}`;
+
+        const oversEl = document.getElementById('scorer-overs');
+        if (oversEl) oversEl.textContent = state.innings.overs_display;
+
+        const freeHitEl = document.getElementById('scorer-free-hit');
+        if (freeHitEl) freeHitEl.hidden = !state.is_free_hit;
+
+        const undoButton = document.getElementById('scorer-undo-button');
+        if (undoButton && !actionInFlight) undoButton.disabled = !state.can_undo;
 
         renderChase(state.chase);
 
@@ -126,14 +155,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const partnershipEl = document.getElementById('scorer-partnership');
         if (partnershipEl) {
-            partnershipEl.innerHTML = `Partnership: <span class="font-medium text-neutral-800">${state.partnership.runs} runs (${state.partnership.balls} balls)</span>`;
+            partnershipEl.innerHTML = `Partnership: <span class="font-semibold text-slate-800">${state.partnership.runs} runs (${state.partnership.balls} balls)</span>`;
         }
 
         const lastWicketEl = document.getElementById('scorer-last-wicket');
         if (lastWicketEl) {
             lastWicketEl.innerHTML = state.last_wicket
-                ? `Last Wicket: <span class="font-medium text-neutral-800">${escapeHtml(state.last_wicket.player)} ${state.last_wicket.runs} (${state.last_wicket.balls}) &mdash; ${state.last_wicket.team_score}, ${state.last_wicket.over_notation} ov</span>`
-                : 'Last Wicket: <span class="font-medium text-neutral-800">—</span>';
+                ? `Last Wicket: <span class="font-semibold text-slate-800">${escapeHtml(state.last_wicket.player)} ${state.last_wicket.runs} (${state.last_wicket.balls}) &mdash; ${state.last_wicket.team_score}, ${state.last_wicket.over_notation} ov</span>`
+                : 'Last Wicket: <span class="font-semibold text-slate-800">—</span>';
         }
 
         const thisOverEl = document.getElementById('scorer-this-over');
@@ -164,6 +193,17 @@ document.addEventListener('DOMContentLoaded', () => {
         quickPad?.querySelectorAll('button').forEach((button) => {
             button.disabled = busy;
         });
+
+        // Coming out of "busy" the undo key follows what the server last said (nothing to undo = off).
+        if (!busy && latestState) {
+            const undoButton = document.getElementById('scorer-undo-button');
+            if (undoButton) undoButton.disabled = !latestState.can_undo;
+        }
+    }
+
+    function closeSituationalPanel() {
+        situationalPanel.hidden = true;
+        situationalPanel.innerHTML = '';
     }
 
     function requiresPhaseReload(state) {
@@ -261,31 +301,40 @@ document.addEventListener('DOMContentLoaded', () => {
         openExtraRunsPanel('no_ball');
     });
 
-    function openExtraRunsPanel(kind) {
-        const label = kind === 'wide' ? 'Runs physically run on the wide' : 'Bat runs off this no ball';
-        const field = kind === 'wide' ? 'wide_running_runs' : 'runs_off_bat';
-
+    // One tap on a number sends the ball: the keys of a "how many?" panel.
+    function renderCountPanel(title, values, onPick) {
         situationalPanel.hidden = false;
         situationalPanel.innerHTML = `
-            <label class="mb-2 block text-xs font-medium text-neutral-700">${label}</label>
-            <input type="number" min="0" max="6" value="0" id="scorer-extra-runs-input" class="mb-2 w-24 rounded-md border border-neutral-300 px-2 py-1 text-[13px]" />
-            <div class="flex gap-2">
-                <button type="button" id="scorer-extra-runs-confirm" class="rounded-md theme-button px-3 py-1.5 text-[13px] font-medium">Confirm</button>
-                <button type="button" id="scorer-extra-runs-cancel" class="rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] font-medium text-neutral-600">Cancel</button>
+            <p class="mb-2 text-xs font-semibold text-slate-700">${title}</p>
+            <div class="grid gap-2" style="grid-template-columns: repeat(${values.length}, minmax(0, 1fr));">
+                ${values.map((value) => `<button type="button" class="sc-pick min-h-12 text-base" data-count="${value}">${value}</button>`).join('')}
             </div>
+            <button type="button" id="scorer-panel-cancel" class="btn btn-ghost btn-sm mt-2">Cancel</button>
         `;
 
-        document.getElementById('scorer-extra-runs-cancel').addEventListener('click', () => {
-            situationalPanel.hidden = true;
-            situationalPanel.innerHTML = '';
-        });
-
-        document.getElementById('scorer-extra-runs-confirm').addEventListener('click', () => {
-            const value = Number(document.getElementById('scorer-extra-runs-input').value || 0);
-            const payload = kind === 'wide' ? { is_wide: true, [field]: value } : { is_no_ball: true, [field]: value };
-            submitDelivery(payload);
+        document.getElementById('scorer-panel-cancel').addEventListener('click', closeSituationalPanel);
+        situationalPanel.querySelectorAll('[data-count]').forEach((button) => {
+            button.addEventListener('click', () => onPick(Number(button.dataset.count)));
         });
     }
+
+    function openExtraRunsPanel(kind) {
+        if (kind === 'wide') {
+            renderCountPanel('Wide &mdash; runs physically run', [1, 2, 3, 4], (value) => submitDelivery({ is_wide: true, wide_running_runs: value }));
+
+            return;
+        }
+
+        renderCountPanel('No ball &mdash; runs off the bat', [0, 1, 2, 3, 4, 5, 6], (value) => submitDelivery({ is_no_ball: true, runs_off_bat: value }));
+    }
+
+    document.getElementById('scorer-quick-bye')?.addEventListener('click', () => {
+        renderCountPanel('Byes &mdash; how many?', [1, 2, 3, 4, 5], (value) => submitDelivery({ bye_runs: value }));
+    });
+
+    document.getElementById('scorer-quick-legbye')?.addEventListener('click', () => {
+        renderCountPanel('Leg byes &mdash; how many?', [1, 2, 3, 4, 5], (value) => submitDelivery({ leg_bye_runs: value }));
+    });
 
     // ----- Wicket follow-up (frozen rule 50: situational, not on the primary pad) -----
 
@@ -298,8 +347,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const allowedTypes = isFreeHit ? ['run_out', 'obstructing_field'] : Object.keys(wicketTypes);
 
-        const dismissedOptions = [striker, nonStriker]
-            .filter(Boolean)
+        const batters = [striker, nonStriker].filter(Boolean);
+
+        const dismissedOptions = batters
             .map((p) => `<option value="${p.id}">${escapeHtml(p.name)}</option>`)
             .join('');
 
@@ -309,33 +359,47 @@ document.addEventListener('DOMContentLoaded', () => {
             .map(([id, name]) => `<option value="${id}">${escapeHtml(name)}</option>`)
             .join('');
 
+        // The two selects the confirm button reads stay in the page (hidden); the big
+        // keys below only set them, so one tap picks who is out and how.
         situationalPanel.hidden = false;
         situationalPanel.innerHTML = `
             ${isFreeHit ? '<p class="mb-2 text-[11px] font-semibold text-amber-700">Free Hit — only Run Out or Obstructing the Field is valid.</p>' : ''}
-            <div class="grid gap-2 sm:grid-cols-2">
-                <label class="text-xs font-medium text-neutral-700">Dismissed
-                    <select id="scorer-wicket-dismissed" class="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1.5 text-[13px]">${dismissedOptions}</select>
+            <p class="mb-1.5 text-xs font-semibold text-slate-700">Who is out?</p>
+            <div class="grid grid-cols-2 gap-2" data-pick-for="scorer-wicket-dismissed">
+                ${batters.map((p, index) => `<button type="button" class="sc-pick sc-pick-red min-h-12" data-value="${p.id}" aria-pressed="${index === 0 ? 'true' : 'false'}"><span class="truncate">${escapeHtml(p.name)}${index === 0 ? ' *' : ''}</span></button>`).join('')}
+            </div>
+            <p class="mb-1.5 mt-3 text-xs font-semibold text-slate-700">How?</p>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4" data-pick-for="scorer-wicket-type">
+                ${allowedTypes.map((type, index) => `<button type="button" class="sc-pick sc-pick-red" data-value="${type}" aria-pressed="${index === 0 ? 'true' : 'false'}">${escapeHtml(wicketTypes[type] ?? type)}</button>`).join('')}
+            </div>
+            <select id="scorer-wicket-dismissed" class="hidden" aria-hidden="true" tabindex="-1">${dismissedOptions}</select>
+            <select id="scorer-wicket-type" class="hidden" aria-hidden="true" tabindex="-1">${typeOptions}</select>
+            <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                <label class="text-xs font-medium text-slate-600">Fielder (optional)
+                    <select id="scorer-wicket-fielder" class="ops-input mt-1 min-h-11"><option value="">None</option>${fielderOptions}</select>
                 </label>
-                <label class="text-xs font-medium text-neutral-700">Type
-                    <select id="scorer-wicket-type" class="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1.5 text-[13px]">${typeOptions}</select>
-                </label>
-                <label class="text-xs font-medium text-neutral-700">Fielder (optional)
-                    <select id="scorer-wicket-fielder" class="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1.5 text-[13px]"><option value="">None</option>${fielderOptions}</select>
-                </label>
-                <label class="text-xs font-medium text-neutral-700">Runs completed (if any)
-                    <input type="number" min="0" max="11" value="0" id="scorer-wicket-runs" class="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1.5 text-[13px]" />
+                <label class="text-xs font-medium text-slate-600">Runs completed (if any)
+                    <input type="number" inputmode="numeric" min="0" max="11" value="0" id="scorer-wicket-runs" class="ops-input mt-1 min-h-11" />
                 </label>
             </div>
-            <div class="mt-3 flex gap-2">
-                <button type="button" id="scorer-wicket-confirm" class="rounded-md theme-button px-3 py-1.5 text-[13px] font-medium">Confirm Wicket</button>
-                <button type="button" id="scorer-wicket-cancel" class="rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] font-medium text-neutral-600">Cancel</button>
+            <div class="mt-3 grid grid-cols-[1fr_auto] gap-2">
+                <button type="button" id="scorer-wicket-confirm" class="btn btn-danger btn-lg min-h-12">Confirm Wicket</button>
+                <button type="button" id="scorer-wicket-cancel" class="btn btn-secondary btn-lg min-h-12">Cancel</button>
             </div>
         `;
 
-        document.getElementById('scorer-wicket-cancel').addEventListener('click', () => {
-            situationalPanel.hidden = true;
-            situationalPanel.innerHTML = '';
+        situationalPanel.querySelectorAll('[data-pick-for]').forEach((group) => {
+            const select = document.getElementById(group.dataset.pickFor);
+
+            group.querySelectorAll('[data-value]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    select.value = button.dataset.value;
+                    group.querySelectorAll('[data-value]').forEach((other) => other.setAttribute('aria-pressed', other === button ? 'true' : 'false'));
+                });
+            });
         });
+
+        document.getElementById('scorer-wicket-cancel').addEventListener('click', closeSituationalPanel);
 
         document.getElementById('scorer-wicket-confirm').addEventListener('click', () => {
             submitDelivery({
@@ -398,31 +462,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
         correctionPanel.classList.remove('hidden');
         correctionPanel.innerHTML = `
-            <h4 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-amber-700">Correct Delivery ${escapeHtml(delivery.label)}</h4>
+            <h4 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-amber-800">Correct Delivery ${escapeHtml(delivery.label)}</h4>
             <div class="grid gap-2 sm:grid-cols-3">
-                <label class="text-xs font-medium text-neutral-700">Runs off bat
-                    <input type="number" min="0" max="11" id="scorer-correct-runs" value="${raw.runs_off_bat}" class="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1.5 text-[13px]" ${raw.is_wide ? 'disabled' : ''} />
+                <label class="text-xs font-medium text-slate-700">Runs off bat
+                    <input type="number" min="0" max="11" id="scorer-correct-runs" value="${raw.runs_off_bat}" class="ops-input mt-1 min-h-11" ${raw.is_wide ? 'disabled' : ''} />
                 </label>
-                <label class="flex items-center gap-2 text-xs font-medium text-neutral-700">
+                <label class="flex items-center gap-2 text-xs font-medium text-slate-700">
                     <input type="checkbox" id="scorer-correct-is-wicket" ${raw.is_wicket ? 'checked' : ''} /> Wicket
                 </label>
                 <div></div>
-                <label class="text-xs font-medium text-neutral-700">Dismissed
-                    <select id="scorer-correct-dismissed" class="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1.5 text-[13px]">${dismissedOptions}</select>
+                <label class="text-xs font-medium text-slate-700">Dismissed
+                    <select id="scorer-correct-dismissed" class="ops-input mt-1 min-h-11">${dismissedOptions}</select>
                 </label>
-                <label class="text-xs font-medium text-neutral-700">Wicket type
-                    <select id="scorer-correct-type" class="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1.5 text-[13px]">${typeOptions}</select>
+                <label class="text-xs font-medium text-slate-700">Wicket type
+                    <select id="scorer-correct-type" class="ops-input mt-1 min-h-11">${typeOptions}</select>
                 </label>
-                <label class="text-xs font-medium text-neutral-700">Commentary
-                    <input type="text" id="scorer-correct-commentary" value="${escapeHtml(raw.commentary ?? '')}" class="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1.5 text-[13px]" />
+                <label class="text-xs font-medium text-slate-700">Commentary
+                    <input type="text" id="scorer-correct-commentary" value="${escapeHtml(raw.commentary ?? '')}" class="ops-input mt-1 min-h-11" />
                 </label>
             </div>
-            <label class="mt-2 block text-xs font-medium text-neutral-700">Reason (optional)
-                <input type="text" id="scorer-correct-reason" class="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1.5 text-[13px]" placeholder="e.g. Miscounted runs" />
+            <label class="mt-2 block text-xs font-medium text-slate-700">Reason (optional)
+                <input type="text" id="scorer-correct-reason" class="ops-input mt-1 min-h-11" placeholder="e.g. Miscounted runs" />
             </label>
             <div class="mt-3 flex gap-2">
-                <button type="button" id="scorer-correct-confirm" class="rounded-md theme-button px-3 py-1.5 text-[13px] font-medium">Save Correction</button>
-                <button type="button" id="scorer-correct-cancel" class="rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] font-medium text-neutral-600">Cancel</button>
+                <button type="button" id="scorer-correct-confirm" class="btn btn-primary min-h-11">Save Correction</button>
+                <button type="button" id="scorer-correct-cancel" class="btn btn-secondary min-h-11">Cancel</button>
             </div>
         `;
 
@@ -470,6 +534,9 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(poll, POLL_INTERVAL_MS);
     }
 
+    // Read the state once straight away, not only after the first poll: the Wicket key and the
+    // corrections work from it, so right after a page load they would otherwise do nothing for a few seconds.
+    fetchAndApplyState();
     setTimeout(poll, POLL_INTERVAL_MS);
 
     document.addEventListener('visibilitychange', () => {

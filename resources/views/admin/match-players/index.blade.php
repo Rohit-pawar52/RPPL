@@ -3,28 +3,32 @@
 @section('title', 'Playing XI')
 
 @section('content')
-    <div class="mb-4">
-        <a href="{{ route('admin.matches.show', $match) }}" class="text-xs text-neutral-500 hover:text-neutral-700">
-            &larr; Back to match
+    <div class="mb-3">
+        <a href="{{ route('admin.matches.show', $match) }}" class="ops-back">
+            <x-ops.icon name="arrow-left" class="h-3.5 w-3.5" />
+            Back to match
         </a>
     </div>
 
-    <div class="rounded-lg border border-neutral-200 bg-white p-4">
-        <div class="flex items-center justify-between gap-3">
-            <h2 class="text-base font-semibold text-neutral-900">
+    <header class="ops-card ops-card-body">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
                 {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }} &mdash; Playing XI
             </h2>
             <x-status-badge :status="$match->match_status" />
         </div>
-        <p class="mt-1 text-xs text-neutral-500">
+        <p class="mt-1 text-xs text-slate-500">
             {{ $match->edition->name }}
             &middot;
             {{ display_datetime($match->scheduled_at, 'd M Y, h:i A') }}
         </p>
-    </div>
+        @if($canModify)
+            <p class="mt-3 text-xs text-slate-500">Tick 11 players for each team and save that team. Captain and wicketkeeper are set after saving.</p>
+        @endif
+    </header>
 
     @unless($canModify)
-        <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-700">
+        <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
             The Playing XI for this match is locked and can no longer be changed.
         </div>
     @endunless

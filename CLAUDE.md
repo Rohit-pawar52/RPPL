@@ -78,3 +78,9 @@ dated log of standing instructions this file summarizes.
   `default-user.jpeg` instead of a broken image or alt text; upload one with
   `<x-form.image-upload>` (a clickable preview box), not a bare file input.
   Both apply to the admin panel and the public site (see memory.md, 2026-10-05).
+- Look and feel: brand/action colours come from the admin-editable theme, never
+  hardcoded. Use the `.btn` family (`btn btn-primary`, `btn-secondary`, ...) and
+  the utilities `bg-action`, `text-brand`, `text-link`, `hover:bg-hover`,
+  `bg-navy-*` (= the header colour); keep green/red/amber for meaning only
+  (paid, failed, pending). Pages are mobile-first (check 390/820/1280, no sideways
+  scroll) and should need the fewest clicks possible (see memory.md, 2026-10-09).

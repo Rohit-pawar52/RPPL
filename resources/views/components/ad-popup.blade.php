@@ -47,7 +47,7 @@
             type="button"
             data-ad-popup-close
             aria-label="{{ __('ads.close') }}"
-            class="absolute right-2 top-2 z-10 flex items-center justify-center rounded-full bg-slate-900/70 leading-none text-white transition hover:bg-slate-900 {{ $big ? 'h-[clamp(2rem,2.6vw,3.5rem)] w-[clamp(2rem,2.6vw,3.5rem)] text-[clamp(1.25rem,1.8vw,2.5rem)]' : 'h-8 w-8 text-xl' }}"
+            class="absolute right-2 top-2 z-10 flex items-center justify-center rounded-full bg-slate-900/70 leading-none text-white backdrop-blur-sm transition hover:bg-slate-900 {{ $big ? 'h-[clamp(2rem,2.6vw,3.5rem)] w-[clamp(2rem,2.6vw,3.5rem)] text-[clamp(1.25rem,1.8vw,2.5rem)]' : 'h-10 w-10 text-2xl' }}"
         >&times;</button>
 
         <div class="relative overflow-hidden bg-slate-50" style="height: {{ $big ? 'clamp(9rem, 16vw, 22rem)' : 'clamp(7rem, 21vw, 10.5rem)' }};">

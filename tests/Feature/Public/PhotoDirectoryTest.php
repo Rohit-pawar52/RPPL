@@ -70,14 +70,14 @@ class PhotoDirectoryTest extends TestCase
 
         // Desktop "More" dropdown and mobile drawer each carry both links.
         $this->assertSame(2, substr_count($html, 'href="'.route('public.videos.index').'"') - $this->videoLinksOutsideHeader($html));
-        $this->assertSame(2, substr_count($html, 'href="'.route('public.photos.index').'"'));
+        $this->assertSame(2, substr_count(substr($html, 0, strpos($html, '</header>')), 'href="'.route('public.photos.index').'"'));
 
         // Existing More items are preserved.
         foreach (['public.venues.index', 'public.editions.index', 'public.player-registration.create', 'public.rules.index', 'public.faqs'] as $route) {
             $this->assertStringContainsString('href="'.route($route).'"', $html);
         }
 
-        $moreMenu = substr($html, strpos($html, '<details class="group relative">'));
+        $moreMenu = substr($html, strpos($html, '<details class="group relative flex self-stretch" data-menu>'));
         $moreMenu = substr($moreMenu, 0, strpos($moreMenu, '</details>'));
         $this->assertStringContainsString(route('public.videos.index'), $moreMenu);
         $this->assertStringContainsString(route('public.photos.index'), $moreMenu);

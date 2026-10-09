@@ -5,27 +5,25 @@
     scoring exists (out of scope for this phase) — the main innings
     scores are never touched by this action.
 --}}
-<div class="mt-3 rounded-md border border-neutral-100 bg-neutral-50 p-3">
-    <p class="mb-2 text-xs text-neutral-500">The main innings are tied. If a Super Over was played, record its winner here instead of finalizing as a tie.</p>
+<div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 sm:p-4">
+    <p class="mb-3 text-xs text-amber-800">The main innings are tied. If a Super Over was played, record its winner here instead of finalizing as a tie.</p>
 
-    <form method="POST" action="{{ route('admin.matches.super-over', $match) }}" class="flex flex-wrap items-end gap-2">
+    <form method="POST" action="{{ route('admin.matches.super-over', $match) }}" class="grid gap-x-3 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_auto] sm:items-end">
         @csrf
-        <div class="w-44">
-            <x-form.select
-                name="winner_team_id"
-                label="Super Over winner"
-                placeholder="Select team"
-                :options="[
-                    $match->edition_team_a_id => $match->teamA->team->name,
-                    $match->edition_team_b_id => $match->teamB->team->name,
-                ]"
-            />
+        <x-form.select
+            name="winner_team_id"
+            label="Super Over winner"
+            placeholder="Select team"
+            :options="[
+                $match->edition_team_a_id => $match->teamA->team->name,
+                $match->edition_team_b_id => $match->teamB->team->name,
+            ]"
+        />
+        <x-form.input name="reason" label="Reason / Super Over note" placeholder="e.g. Super Over: Team A 12/0, Team B 9/1" />
+        <div class="mb-3.5">
+            <button type="submit" class="btn btn-primary min-h-10 max-sm:w-full">
+                Record Super Over Result
+            </button>
         </div>
-        <div class="min-w-[220px] flex-1">
-            <x-form.input name="reason" label="Reason / Super Over note" placeholder="e.g. Super Over: Team A 12/0, Team B 9/1" />
-        </div>
-        <button type="submit" class="mb-3.5 rounded-md theme-button px-3 py-1.5 text-[13px] font-medium">
-            Record Super Over Result
-        </button>
     </form>
 </div>

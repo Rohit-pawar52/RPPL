@@ -49,9 +49,9 @@ class ThemeColorTest extends TestCase
         $response = $this->get(route('public.home'));
 
         $response->assertOk();
-        $response->assertSee('--rppl-primary: #2563eb;', false);
-        $response->assertSee('--rppl-secondary: #737373;', false);
-        $response->assertSee('--rppl-button: #2563eb;', false);
+        $response->assertSee('--rppl-primary: #15803d;', false);
+        $response->assertSee('--rppl-secondary: #64748b;', false);
+        $response->assertSee('--rppl-button: #15803d;', false);
     }
 
     public function test_configured_primary_color_renders_into_the_runtime_theme_variable(): void
@@ -93,7 +93,7 @@ class ThemeColorTest extends TestCase
         $response = $this->get(route('public.home'));
 
         $response->assertOk();
-        $response->assertSee('--rppl-primary: #2563eb;', false);
+        $response->assertSee('--rppl-primary: #15803d;', false);
         $response->assertDontSee('not-a-color', false);
     }
 
@@ -111,7 +111,7 @@ class ThemeColorTest extends TestCase
         $response->assertOk();
         $response->assertDontSee('<script>alert(1)</script>', false);
         // Falls back to the registered default instead of the corrupted value.
-        $response->assertSee('--rppl-button: #2563eb;', false);
+        $response->assertSee('--rppl-button: #15803d;', false);
     }
 
     // ----- HexColor / ForegroundContrast units -----
@@ -147,7 +147,9 @@ class ThemeColorTest extends TestCase
         $response = $this->actingAs($this->admin())->get(route('admin.teams.create'));
 
         $response->assertOk();
-        $response->assertSee('theme-button', false);
+        // The unified button family (.btn-primary) reads the admin-set button colour, hover colour,
+        // text colour and corner shape from the runtime theme variables.
+        $response->assertSee('btn-primary', false);
         $response->assertDontSee('bg-blue-600', false);
     }
 
@@ -165,8 +167,15 @@ class ThemeColorTest extends TestCase
         $response = $this->actingAs($this->admin())->get(route('admin.data-cleanup.index'));
 
         $response->assertOk();
-        // Destructive buttons stay on the semantic red palette, never theme-button.
-        $response->assertSee('bg-red-50', false);
+        // Destructive buttons use the danger button classes, never the themed primary button...
+        $response->assertSee('btn-danger-soft', false);
+        $response->assertDontSee('theme-button', false);
+
+        // ...and those classes are defined on the semantic red palette, not on the brand variables.
+        preg_match('/\.btn-danger-soft \{(.*?)\}/s', file_get_contents(resource_path('css/ux/kit.css')), $rule);
+        $this->assertStringContainsString('red-', $rule[1] ?? '');
+        $this->assertStringNotContainsString('brand', $rule[1] ?? '');
+        $this->assertStringNotContainsString('action', $rule[1] ?? '');
     }
 
     public function test_status_badges_remain_semantic_and_are_never_converted_to_theme_classes(): void
@@ -210,7 +219,7 @@ class ThemeColorTest extends TestCase
 
     public function test_changing_a_color_setting_changes_rendered_css_on_the_very_next_request(): void
     {
-        $this->get(route('public.home'))->assertSee('--rppl-primary: #2563eb;', false);
+        $this->get(route('public.home'))->assertSee('--rppl-primary: #15803d;', false);
 
         app(SettingsService::class)->set('general.primary_color', '#abcdef');
 

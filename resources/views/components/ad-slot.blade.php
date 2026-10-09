@@ -19,7 +19,7 @@
         <p class="pub-eyebrow">{{ __('ads.our_sponsors') }}</p>
         <ul class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-3">
             @foreach($ads as $ad)
-                <li class="flex h-12 items-center">
+                <li class="flex h-14 items-center rounded-lg bg-surface px-3">
                     <img
                         src="{{ $ad->mediaUrl() }}"
                         alt="{{ $ad->title }}"
@@ -62,7 +62,7 @@
                 </div>
                 <div class="flex flex-1 flex-col justify-center border-t border-line px-3 py-2">
                     <p class="truncate text-[13px] font-semibold text-slate-800">{{ $ad->title }}</p>
-                    <p class="pub-meta uppercase tracking-wide">{{ __('ads.sponsored') }}</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{{ __('ads.sponsored') }}</p>
                 </div>
             </div>
         </aside>
@@ -79,14 +79,14 @@
             {{ $attributes }}
             aria-label="{{ __('ads.sponsored') }}"
         >
-            <div class="rppl-ad-banner pub-card relative overflow-hidden bg-slate-50">
+            <div class="rppl-ad-banner pub-card relative overflow-hidden bg-slate-50 shadow-card">
                 @if($backdrop)
                     <div aria-hidden="true" data-ad-backdrop style="position: absolute; inset: 0; background: url('{{ $backdrop }}') center / cover no-repeat; filter: blur(18px); transform: scale(1.2); opacity: .75;"></div>
                 @endif
                 <div style="position: relative; width: 100%; height: 100%;">
                     <x-ad-slot-media :ad="$ad" :eager="$tier === 'main'" />
                 </div>
-                <span class="pointer-events-none absolute right-2 top-2 rounded bg-slate-900/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">{{ __('ads.sponsored') }}</span>
+                <span class="pointer-events-none absolute bottom-2 right-2 rounded-full bg-slate-900/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur-sm">{{ __('ads.sponsored') }}</span>
             </div>
         </aside>
 

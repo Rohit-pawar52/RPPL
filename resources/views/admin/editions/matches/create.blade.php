@@ -5,18 +5,16 @@
 @section('content')
     @include('admin.editions._crumbs', ['edition' => $edition, 'section' => 'Matches'])
 
-    <div class="max-w-2xl rounded-lg border border-slate-200 bg-white p-4">
-        <h1 class="mb-3 text-sm font-semibold text-slate-800">Add a match to {{ $edition->name }}</h1>
+    <h2 class="mb-3 text-base font-semibold tracking-tight text-slate-900">Add a match to {{ $edition->name }}</h2>
 
-        <form method="POST" action="{{ route('admin.editions.matches.store', $edition) }}" id="season-match-form" novalidate>
-            @csrf
+    <form method="POST" action="{{ route('admin.editions.matches.store', $edition) }}" id="season-match-form" class="max-w-3xl" novalidate>
+        @csrf
 
-            @include('admin.matches._form', ['fixedEdition' => $edition])
+        @include('admin.matches._form', ['fixedEdition' => $edition])
 
-            <div class="mt-4 flex items-center gap-2">
-                <x-admin.button type="submit">Save match</x-admin.button>
-                <x-admin.button :href="route('admin.editions.matches.index', $edition)" variant="secondary">Cancel</x-admin.button>
-            </div>
-        </form>
-    </div>
+        <div class="ops-savebar">
+            <button type="submit" class="btn btn-primary btn-lg max-sm:flex-1">Save match</button>
+            <a href="{{ route('admin.editions.matches.index', $edition) }}" class="btn btn-secondary btn-lg">Cancel</a>
+        </div>
+    </form>
 @endsection

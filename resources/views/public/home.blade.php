@@ -3,37 +3,43 @@
 @section('title', $branding->shortName.' · '.$branding->applicationName)
 
 {{--
-    Public homepage — compact, match-first. Top to bottom: sponsor banner →
-    one scrolling row of match cards (live/next, a sponsor card, latest
-    results) → Videos / News / Photos cards → sponsor banner → the current
-    season's summary (points table + top few of each stats board) → sponsor
+    Public homepage - "what is on right now?" first. Top to bottom: a slim hero
+    (season, key numbers, Matches / Register) -> sponsor banner -> auction
+    banner (only while an auction is on) -> the match row (live / next matches,
+    a sponsor card, latest results) -> sponsor banner -> the season summary
+    (points table + top players) -> latest news / photos / videos -> sponsor
     logos. Every sponsor slot renders nothing when no sponsor is live, so an
     empty slot never leaves a gap. Purely presentational: every score,
-    standing and stat comes pre-computed from HomeController — nothing is
+    standing and stat comes pre-computed from HomeController - nothing is
     recalculated here. The edition itself is reached from the navbar.
 --}}
 @section('content')
-    <x-ad-slot tier="main" />
+    <div class="space-y-5 lg:space-y-8">
+        @include('public.home._hero')
 
-    @include('public.home._auction-card')
+        <x-ad-slot tier="main" />
 
-    @if(! $edition)
-        <div class="pub-card mt-4 px-4 py-8 text-center">
-            <x-icon name="trophy" class="mx-auto h-5 w-5 text-slate-300" />
-            <p class="mt-2 text-[13px] text-slate-600">{{ __('matches.home.no_editions') }}</p>
-            <p class="pub-meta mt-0.5">{{ __('matches.home.no_editions_hint') }}</p>
-        </div>
-    @else
-        @include('public.home._match-row')
-    @endif
+        @include('public.home._auction-card')
 
-    @include('public.home._media-cards')
+        @if(! $edition)
+            <div class="pub-card px-4 py-10 text-center">
+                <x-public.empty icon="trophy">
+                    {{ __('matches.home.no_editions') }}
+                    <span class="mt-1 block text-xs text-slate-400">{{ __('matches.home.no_editions_hint') }}</span>
+                </x-public.empty>
+            </div>
+        @else
+            @include('public.home._match-row')
+        @endif
 
-    @if($edition)
-        <x-ad-slot tier="normal" class="mt-4" />
+        @if($edition)
+            <x-ad-slot tier="normal" />
 
-        @include('public.home._season-summary')
-    @endif
+            @include('public.home._season-summary')
+        @endif
 
-    <x-ad-slot tier="mini" class="mt-4" />
+        @include('public.home._media-cards')
+
+        <x-ad-slot tier="mini" />
+    </div>
 @endsection

@@ -46,7 +46,10 @@ class MatchController extends Controller
         $past = GameMatch::query()
             ->whereIn('match_status', ['completed', 'abandoned', 'cancelled'])
             ->when($editionId, fn ($query, $id) => $query->where('edition_id', $id))
-            ->with(['edition', 'teamA.team', 'teamB.team', 'venue'])
+            ->with([
+                'edition', 'teamA.team', 'teamB.team', 'venue',
+                'firstInnings.battingTeam.team', 'secondInnings.battingTeam.team',
+            ])
             ->orderByDesc('scheduled_at')
             ->paginate(15)
             ->withQueryString();

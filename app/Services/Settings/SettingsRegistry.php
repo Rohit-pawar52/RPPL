@@ -31,19 +31,35 @@ final class SettingsRegistry
         // throughout the current Blade views — the same "sensible
         // current-brand-compatible fallback" the Phase 3.44A audit asked
         // for, not an arbitrary new palette.
+        // (Updated with the UI refresh: the defaults are now the brand
+        // green of the public site, so an unconfigured site is one colour
+        // story from the public pages to the admin panel.)
         'general.application_name' => ['type' => Setting::TYPE_STRING, 'default' => 'RajaBhoj Pawar Premier League'],
         'general.short_name' => ['type' => Setting::TYPE_STRING, 'default' => 'RPPL'],
         'general.tagline' => ['type' => Setting::TYPE_STRING, 'default' => null],
         'general.logo_path' => ['type' => Setting::TYPE_IMAGE, 'default' => null],
         'general.favicon_path' => ['type' => Setting::TYPE_IMAGE, 'default' => null],
-        'general.primary_color' => ['type' => Setting::TYPE_COLOR, 'default' => '#2563eb'],
-        'general.secondary_color' => ['type' => Setting::TYPE_COLOR, 'default' => '#737373'],
-        'general.button_color' => ['type' => Setting::TYPE_COLOR, 'default' => '#2563eb'],
+        'general.primary_color' => ['type' => Setting::TYPE_COLOR, 'default' => '#15803d'],
+        'general.secondary_color' => ['type' => Setting::TYPE_COLOR, 'default' => '#64748b'],
+        'general.button_color' => ['type' => Setting::TYPE_COLOR, 'default' => '#15803d'],
+        // Optional theme overrides: when empty (null) the site works the
+        // value out from the colors above - a darker button for hover,
+        // black or white button text for contrast, a darker link for
+        // hover, a soft tint of the primary color for the hover highlight.
+        'general.button_hover_color' => ['type' => Setting::TYPE_COLOR, 'default' => null],
+        'general.button_text_color' => ['type' => Setting::TYPE_COLOR, 'default' => null],
+        'general.link_hover_color' => ['type' => Setting::TYPE_COLOR, 'default' => null],
+        'general.hover_color' => ['type' => Setting::TYPE_COLOR, 'default' => null],
+        // The dark band of the public header and footer and of the admin
+        // sidebar (its darker and lighter shades are derived from it).
+        'general.header_color' => ['type' => Setting::TYPE_COLOR, 'default' => '#0b2e3f'],
+        // square | rounded | pill - the corners of every button.
+        'general.button_shape' => ['type' => Setting::TYPE_STRING, 'default' => 'rounded'],
         // Global appearance for the public announcement ticker (Phase
         // 3.45) — shared by every ticker message, never one color per
         // announcement. Defaults to the same brand blue on white text,
         // a legible high-visibility notice-bar look out of the box.
-        'general.announcement_background_color' => ['type' => Setting::TYPE_COLOR, 'default' => '#2563eb'],
+        'general.announcement_background_color' => ['type' => Setting::TYPE_COLOR, 'default' => '#15803d'],
         'general.announcement_text_color' => ['type' => Setting::TYPE_COLOR, 'default' => '#ffffff'],
 
         // System — system.display_timezone is a DISPLAY preference only;

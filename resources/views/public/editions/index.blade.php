@@ -5,41 +5,36 @@
 @section('content')
     <x-public.page-header :title="__('directory.editions.heading')" />
 
-    <x-public.card flush>
-        <div class="pub-table-wrap">
-            <table class="pub-table min-w-[420px]">
-                <thead>
-                    <tr>
-                        <th>{{ __('directory.editions.edition') }}</th>
-                        <th>{{ __('directory.editions.status') }}</th>
-                        <th class="hidden text-right sm:table-cell">{{ __('directory.editions.teams') }}</th>
-                        <th class="hidden text-right sm:table-cell">{{ __('directory.editions.matches') }}</th>
-                        <th><span class="sr-only">{{ __('directory.editions.view') }}</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($editions as $edition)
-                        <tr>
-                            <td>
-                                <a href="{{ route('public.editions.show', $edition) }}" class="font-semibold text-slate-900 hover:text-green-700">
-                                    {{ $edition->name }}
-                                </a>
-                                <p class="pub-meta">{{ $edition->year }}</p>
-                            </td>
-                            <td><x-public.status-pill :status="$edition->status" /></td>
-                            <td class="hidden text-right tabular-nums sm:table-cell">{{ $edition->edition_teams_count }}</td>
-                            <td class="hidden text-right tabular-nums sm:table-cell">{{ $edition->matches_count }}</td>
-                            <td class="whitespace-nowrap text-right">
-                                <a href="{{ route('public.editions.show', $edition) }}" class="pub-link text-xs">{{ __('directory.editions.view') }} &rarr;</a>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5"><x-public.empty>{{ __('directory.editions.empty') }}</x-public.empty></td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+    @if($editions->isEmpty())
+        <x-public.card>
+            <x-public.empty icon="trophy">{{ __('directory.editions.empty') }}</x-public.empty>
+        </x-public.card>
+    @else
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            @foreach($editions as $edition)
+                <a href="{{ route('public.editions.show', $edition) }}" @class(['mx-season', 'mx-season-active' => $edition->status === 'active'])>
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="pub-eyebrow">{{ $edition->year }}</p>
+                            <h2 class="mt-1 break-words text-xl font-bold tracking-tight text-slate-900">{{ $edition->name }}</h2>
+                        </div>
+                        <x-public.status-pill :status="$edition->status" />
+                    </div>
+
+                    <dl class="grid grid-cols-2 gap-3 border-t border-line pt-4">
+                        <div>
+                            <dt class="pub-eyebrow">{{ __('directory.editions.teams') }}</dt>
+                            <dd class="mt-0.5 text-2xl font-bold tabular-nums text-slate-900">{{ $edition->edition_teams_count }}</dd>
+                        </div>
+                        <div>
+                            <dt class="pub-eyebrow">{{ __('directory.editions.matches') }}</dt>
+                            <dd class="mt-0.5 text-2xl font-bold tabular-nums text-slate-900">{{ $edition->matches_count }}</dd>
+                        </div>
+                    </dl>
+
+                    <span class="mt-auto text-xs font-semibold text-brand">{{ __('directory.editions.view') }} &rarr;</span>
+                </a>
+            @endforeach
         </div>
-    </x-public.card>
+    @endif
 @endsection

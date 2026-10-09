@@ -13,6 +13,7 @@ export function initConfirmDeleteForms() {
                 title: form.dataset.confirmTitle,
                 text: form.dataset.confirmText,
                 confirmButtonText: 'Yes, delete',
+                danger: true,
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit();

@@ -1,0 +1,482 @@
+/*
+ * Admin master-data, content and finance pages (players, teams, news, photos,
+ * advertisements, notifications, transactions, contributions ...).
+ *
+ * One file for the whole area; every class is prefixed `crud-` so nothing here
+ * can clash with another area. Colours come from the admin theme (brand /
+ * action / hover / navy). green and red are kept only for meaning (income,
+ * expense, paid, failed).
+ *
+ * Anatomy shared by every page:
+ *   list  : title + count + "+ New" -> toolbar (search + filters) -> card with a
+ *           table (stacked cards on a phone) -> pager
+ *   form  : two columns (fields | picture + status) -> sticky action bar
+ *   show  : profile header -> facts / related cards
+ */
+@layer components {
+    /* ---------- surfaces ---------- */
+    .crud-card {
+        @apply rounded-xl border border-line bg-white shadow-card;
+    }
+    .crud-card-head {
+        @apply flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3 sm:px-5;
+    }
+    .crud-card-title {
+        @apply text-sm font-semibold tracking-tight text-slate-900;
+    }
+    .crud-card-body {
+        @apply p-4 sm:p-5;
+    }
+    .crud-kicker {
+        @apply text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+    .crud-hint {
+        @apply text-xs text-slate-500;
+    }
+    .crud-link {
+        @apply font-medium text-link hover:text-link-hover hover:underline;
+    }
+    .crud-back {
+        @apply mb-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg pr-2 text-xs font-medium text-slate-500 transition hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+
+    /* ---------- toolbar: search + filters (inside <x-table-filters>) ---------- */
+    .crud-toolbar {
+        @apply mb-4 rounded-xl border border-line bg-white p-3 shadow-card;
+    }
+    .crud-field {
+        @apply h-10 min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-800 transition placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25;
+    }
+    .crud-search {
+        @apply relative min-w-[11rem] flex-1 sm:max-w-xs;
+    }
+    .crud-search > svg {
+        @apply pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400;
+    }
+    .crud-search > input {
+        @apply w-full pl-9!;
+    }
+    .crud-select {
+        @apply max-w-full flex-1 pr-8 sm:flex-none;
+    }
+    .crud-more {
+        @apply basis-full;
+        grid-column: 1 / -1;
+    }
+    .crud-more > summary {
+        @apply inline-flex min-h-8 cursor-pointer select-none list-none items-center gap-1.5 rounded-lg px-1 text-xs font-medium text-slate-500 hover:text-brand;
+    }
+    .crud-more > summary::-webkit-details-marker {
+        display: none;
+    }
+    .crud-more[open] > summary {
+        @apply text-brand;
+    }
+    .crud-more-grid {
+        @apply mt-2 flex flex-wrap items-center gap-2;
+    }
+
+    /* ---------- chips (quick filters as links) ---------- */
+    .crud-chips {
+        @apply -mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0;
+        scrollbar-width: none;
+    }
+    .crud-chips::-webkit-scrollbar {
+        display: none;
+    }
+    .crud-chip {
+        @apply inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-white px-3.5 text-[13px] font-medium text-slate-600 shadow-card transition hover:border-slate-300 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+    .crud-chip[aria-current='true'] {
+        @apply border-brand bg-brand-soft text-brand;
+    }
+    .crud-chip-label {
+        @apply px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+
+    /* ---------- table ---------- */
+    .crud-table-wrap {
+        @apply overflow-hidden rounded-xl border border-line bg-white shadow-card;
+    }
+    .crud-table-scroll {
+        @apply overflow-x-auto;
+    }
+    .crud-table {
+        @apply w-full text-left text-[13px];
+    }
+    .crud-table thead th {
+        @apply whitespace-nowrap border-b border-line bg-slate-50/80 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+    .crud-table tbody tr {
+        @apply border-t border-line transition-colors first:border-t-0 hover:bg-hover;
+    }
+    .crud-table tbody td {
+        @apply px-4 py-3 align-middle text-slate-600;
+    }
+    .crud-table .c-title {
+        @apply font-medium text-slate-900;
+    }
+    .crud-table .c-num {
+        @apply text-right tabular-nums;
+    }
+    .crud-row {
+        @apply relative;
+    }
+    /* The title link covers the whole row, so the row itself is the link. */
+    .crud-row-link {
+        @apply text-slate-900 hover:text-brand;
+    }
+    .crud-row-link::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+    }
+    .c-actions,
+    .c-check,
+    .c-amount a,
+    .c-sub form {
+        position: relative;
+        z-index: 1;
+    }
+    .crud-meta {
+        @apply mt-0.5 block text-xs font-normal text-slate-500;
+    }
+    .crud-actions {
+        @apply flex items-center justify-end gap-0.5;
+    }
+    .crud-icon-btn {
+        @apply inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-400 md:h-9 md:w-9 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-brand;
+    }
+    .crud-icon-btn-brand {
+        @apply hover:bg-brand-soft hover:text-brand;
+    }
+    .crud-icon-btn-danger {
+        @apply hover:bg-red-50 hover:text-red-600 focus-visible:outline-red-600;
+    }
+    .crud-money {
+        @apply font-semibold tabular-nums;
+    }
+    .crud-money-in {
+        @apply text-green-600;
+    }
+    .crud-money-out {
+        @apply text-red-600;
+    }
+    .crud-pill {
+        @apply inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium leading-4 text-slate-600;
+    }
+    .crud-pill-brand {
+        @apply bg-brand-soft text-brand;
+    }
+    .crud-pill-blue {
+        @apply bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200;
+    }
+    .crud-pill-amber {
+        @apply bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200;
+    }
+
+    /* ---------- gallery tiles (photos, videos) ---------- */
+    .crud-tiles {
+        @apply grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5;
+    }
+    .crud-tile {
+        @apply relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-white shadow-card transition duration-150 motion-safe:hover:-translate-y-px hover:shadow-raised;
+    }
+    .crud-tile-media {
+        @apply relative block aspect-[4/3] overflow-hidden bg-slate-100;
+    }
+    .crud-tile-media img {
+        @apply h-full w-full object-cover transition duration-300;
+    }
+    .crud-tile-body {
+        @apply flex flex-1 flex-col gap-2 p-3;
+    }
+
+    /* ---------- kpi tiles (finance summary strip, counts) ---------- */
+    .crud-kpis {
+        @apply mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4;
+    }
+    .crud-kpi {
+        @apply relative flex min-w-0 flex-col gap-1 overflow-hidden rounded-xl border border-line bg-white p-4 shadow-card;
+    }
+    .crud-kpi-label {
+        @apply flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+    .crud-kpi-value {
+        @apply truncate text-xl font-bold tabular-nums tracking-tight text-slate-900 sm:text-2xl;
+    }
+    .crud-kpi-sub {
+        @apply truncate text-xs text-slate-500;
+    }
+    .crud-kpi-in .crud-kpi-value {
+        @apply text-green-600;
+    }
+    .crud-kpi-out .crud-kpi-value {
+        @apply text-red-600;
+    }
+    .crud-kpi-brand .crud-kpi-value {
+        @apply text-brand;
+    }
+    .crud-kpi-icon {
+        @apply flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500;
+    }
+    .crud-kpi-in .crud-kpi-icon {
+        @apply bg-green-50 text-green-600;
+    }
+    .crud-kpi-out .crud-kpi-icon {
+        @apply bg-red-50 text-red-600;
+    }
+    .crud-kpi-brand .crud-kpi-icon {
+        @apply bg-brand-soft text-brand;
+    }
+
+    /* ---------- floating "+ New" on a phone ---------- */
+    .crud-fab {
+        @apply fixed bottom-4 right-4 z-30 inline-flex h-14 items-center justify-center gap-2 rounded-full bg-action px-5 text-sm font-semibold text-action-fg shadow-pop transition hover:bg-action-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action sm:hidden;
+    }
+    .crud-fab-space {
+        @apply h-20 sm:hidden;
+    }
+
+    /* ---------- tabs (finance, content pages, data cleanup) ---------- */
+    .crud-tabs {
+        @apply -mx-4 mb-4 flex gap-1 overflow-x-auto border-b border-line px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8;
+        scrollbar-width: none;
+    }
+    .crud-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    .crud-tab {
+        @apply -mb-px inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-3.5 text-[13px] font-medium text-slate-500 transition hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-brand;
+    }
+    .crud-tab[aria-current='page'] {
+        @apply border-brand text-brand;
+    }
+
+    /* ---------- forms ---------- */
+    .crud-grid {
+        @apply grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-5;
+    }
+    .crud-grid-wide {
+        @apply lg:grid-cols-[minmax(0,1fr)_26rem];
+    }
+    .crud-main,
+    .crud-aside {
+        @apply min-w-0 space-y-4;
+    }
+    .crud-aside {
+        @apply lg:sticky lg:top-20;
+    }
+    .crud-cols {
+        @apply grid gap-x-4 sm:grid-cols-2;
+    }
+    .crud-cols-3 {
+        @apply grid gap-x-4 sm:grid-cols-3;
+    }
+    .crud-note {
+        @apply rounded-lg bg-slate-50 px-3 py-2.5 text-xs leading-relaxed text-slate-500;
+    }
+    .crud-note-brand {
+        @apply bg-brand-soft text-slate-600;
+    }
+    .crud-note-warn {
+        @apply bg-amber-50 text-amber-800;
+    }
+    /* A group of choices rendered as big tappable cards (radio / checkbox). */
+    .crud-choice {
+        @apply flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-[13px] text-slate-700 transition hover:border-slate-300 has-[:checked]:border-brand has-[:checked]:bg-brand-soft;
+    }
+    .crud-choice input {
+        @apply mt-0.5 h-4 w-4 shrink-0 accent-[var(--rppl-primary)];
+    }
+    .crud-choice-title {
+        @apply block font-semibold text-slate-900;
+    }
+    .crud-choice-text {
+        @apply mt-0.5 block text-xs text-slate-500;
+    }
+    /* The sticky bar with Save / Cancel. */
+    .crud-actionbar {
+        @apply sticky bottom-3 z-20 mt-6 rounded-xl border border-line bg-white/90 px-3 py-3 shadow-pop backdrop-blur sm:px-4;
+    }
+    .crud-actionbar-inner {
+        @apply flex flex-row-reverse items-center gap-2 lg:mx-auto;
+    }
+    .crud-actionbar-inner > :first-child {
+        @apply max-sm:flex-1;
+    }
+    .crud-actionbar-note {
+        @apply mr-auto hidden text-xs text-slate-500 md:block;
+    }
+    .crud-required {
+        @apply text-red-500;
+    }
+
+    /* ---------- profile header (show pages) ---------- */
+    .crud-profile {
+        @apply overflow-hidden rounded-xl border border-line bg-white shadow-card;
+    }
+    .crud-profile-band {
+        @apply relative h-20 bg-gradient-to-br from-navy-900 to-navy-700 sm:h-24;
+    }
+    .crud-profile-band::after {
+        content: '';
+        position: absolute;
+        right: -2rem;
+        top: -3rem;
+        height: 10rem;
+        width: 10rem;
+        border-radius: 9999px;
+        background: radial-gradient(closest-side, color-mix(in srgb, var(--rppl-primary) 55%, transparent), transparent);
+        opacity: 0.55;
+    }
+    .crud-profile-body {
+        @apply relative flex flex-col gap-4 px-4 pb-4 sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:pb-5;
+    }
+    .crud-profile-avatar {
+        @apply -mt-10 shrink-0 rounded-full bg-white p-1 shadow-raised sm:-mt-12;
+    }
+    .crud-profile-avatar-square {
+        @apply rounded-2xl;
+    }
+    .crud-profile-name {
+        @apply break-words text-xl font-bold tracking-tight text-slate-900 sm:text-2xl;
+    }
+    .crud-profile-actions {
+        @apply flex flex-wrap items-center gap-2;
+    }
+    .crud-facts {
+        @apply grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 lg:grid-cols-4;
+    }
+    .crud-fact-label {
+        @apply text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+    .crud-fact-value {
+        @apply mt-0.5 break-words text-sm font-medium text-slate-900;
+    }
+    .crud-list-row {
+        @apply flex items-center justify-between gap-3 border-t border-line py-2.5 text-[13px] first:border-t-0;
+    }
+
+    /* ---------- the push preview (notifications) ---------- */
+    .crud-push {
+        @apply w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-raised;
+    }
+    .crud-counter {
+        @apply text-[11px] tabular-nums text-slate-400;
+    }
+    .crud-counter[data-near='true'] {
+        @apply font-semibold text-amber-600;
+    }
+    .crud-counter[data-over='true'] {
+        @apply font-semibold text-red-600;
+    }
+
+    /* ---------- destructive zones (data cleanup) ---------- */
+    .crud-danger {
+        @apply rounded-xl border border-red-200 bg-white shadow-card;
+    }
+    .crud-danger-head {
+        @apply flex flex-wrap items-center gap-3 border-b border-red-100 bg-red-50/60 px-4 py-3 sm:px-5;
+    }
+    .crud-danger-icon {
+        @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600;
+    }
+}
+
+/*
+ * A table turned into a list of cards on a phone. Mark the table with
+ * `crud-stack` and give each cell a role:
+ *   c-check   a row checkbox            c-media   picture / logo / icon
+ *   c-title   the name (+ small lines)  c-sub     the status under the name
+ *   c-amount  money on the right        c-actions icon buttons on the right
+ * Any other cell is hidden on a phone (it stays a normal column from md up),
+ * so put what matters on a phone into the roles above.
+ */
+@layer components {
+@media (max-width: 47.99rem) {
+    .crud-stack,
+    .crud-stack tbody {
+        display: block;
+    }
+    .crud-stack thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+    .crud-stack tbody tr {
+        display: grid;
+        grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+        grid-template-areas:
+            'check media title amount actions'
+            'check media sub amount actions';
+        align-items: center;
+        padding: 0.75rem 1rem;
+    }
+    .crud-stack tbody td {
+        display: block;
+        min-width: 0;
+        padding: 0;
+        border: 0;
+    }
+    .crud-stack td:not(.c-check, .c-media, .c-title, .c-sub, .c-amount, .c-actions, [colspan]) {
+        display: none;
+    }
+    .crud-stack td[colspan] {
+        grid-column: 1 / -1;
+    }
+    .crud-stack .c-check {
+        grid-area: check;
+        margin-right: 0.75rem;
+    }
+    .crud-stack .c-media {
+        grid-area: media;
+        width: auto;
+        margin-right: 0.75rem;
+    }
+    .crud-stack .c-title {
+        grid-area: title;
+        align-self: end;
+    }
+    .crud-stack .c-sub {
+        grid-area: sub;
+        align-self: start;
+        margin-top: 0.25rem;
+    }
+    .crud-stack .c-amount {
+        grid-area: amount;
+        margin-left: 0.5rem;
+        text-align: right;
+    }
+    .crud-stack .c-actions {
+        grid-area: actions;
+        margin-left: 0.25rem;
+    }
+    /* a row with nothing under the name: centre the name */
+    .crud-stack tbody tr:not(:has(.c-sub)) .c-title {
+        grid-row: 1 / span 2;
+        align-self: center;
+    }
+    .crud-stack .crud-actions {
+        gap: 0;
+    }
+    /* the sticky bar on a phone: full width buttons */
+    .crud-actionbar-inner > * {
+        min-height: 2.75rem;
+    }
+}
+}
+
+@layer components {
+    .crud-fact-big {
+        @apply text-xl font-bold tabular-nums tracking-tight sm:text-2xl;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .crud-tile:hover .crud-tile-media img {
+        transform: scale(1.05);
+    }
+}

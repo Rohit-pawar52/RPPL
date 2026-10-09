@@ -13,7 +13,7 @@
                 preg_match_all('/\d+/', $spot['size'], $dimensions);
                 [$width, $height] = array_map('intval', array_slice($dimensions[0], 0, 2));
             @endphp
-            <li data-spot="{{ $key }}" data-size="{{ $spot['size'] }}" data-ratio="{{ $spot['ratio'] }}" class="px-3 py-2 text-[11px] leading-snug text-slate-500 {{ $highlight === $key ? 'bg-green-50' : '' }}">
+            <li data-spot="{{ $key }}" data-size="{{ $spot['size'] }}" data-ratio="{{ $spot['ratio'] }}" class="px-3 py-2 text-[11px] leading-snug text-slate-500 {{ $highlight === $key ? 'bg-brand-soft' : '' }}">
                 <div class="flex items-center gap-3">
                     {{-- A little box drawn in the same proportions. --}}
                     <span class="hidden w-20 shrink-0 sm:block">

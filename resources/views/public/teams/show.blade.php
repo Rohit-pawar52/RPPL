@@ -2,99 +2,165 @@
 
 @section('title', $team->name.' · '.$branding->shortName)
 
+@php
+    use Illuminate\Support\Facades\Lang;
+
+    // The squad grouped by playing role, in the order a team sheet is read.
+    $roleOrder = ['batter', 'wicket_keeper', 'all_rounder', 'bowler'];
+    $squadByRole = $squad
+        ->sortBy(fn ($teamPlayer) => $teamPlayer->jersey_number ?? 999)
+        ->groupBy('role')
+        ->sortBy(function ($group, $role) use ($roleOrder) {
+            $position = array_search($role, $roleOrder, true);
+
+            return $position === false ? 99 : $position;
+        });
+
+    $roleLabel = fn (?string $role) => $role === null
+        ? ''
+        : (Lang::has('directory.roles.'.$role) ? __('directory.roles.'.$role) : str_replace('_', ' ', ucfirst($role)));
+@endphp
+
 @section('content')
-    <a href="{{ route('public.teams.index') }}" class="mb-2 inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-900">
+    <a href="{{ route('public.teams.index') }}" class="pc-back">
         <span aria-hidden="true">&larr;</span> {{ __('directory.teams.back') }}
     </a>
 
-    <div class="pub-card p-4 sm:p-5">
-        <div class="flex items-center gap-4">
-            <div class="pub-media flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-line bg-slate-100 text-xl font-bold text-slate-500 sm:h-20 sm:w-20 sm:text-2xl">
-                <x-media-image :path="$team->logo_path" kind="image" alt="" class="absolute inset-0 h-full w-full bg-white object-cover" />
-            </div>
+    {{-- Identity --}}
+    <section class="pc-hero p-5 sm:p-8">
+        <div class="flex flex-col items-center gap-4 text-center sm:flex-row sm:gap-6 sm:text-left">
+            <span class="pc-avatar h-24 w-24 shrink-0 border-0 ring-4 ring-white/15 sm:h-28 sm:w-28">
+                <x-media-image :path="$team->logo_path" kind="image" alt="" />
+            </span>
 
             <div class="min-w-0">
-                <h1 class="pub-h1 break-words">{{ $team->name }}</h1>
-                <p class="pub-meta mt-0.5">{{ $team->short_name ?? __('directory.teams.no_short_name') }}</p>
+                @if($selectedEditionTeam)
+                    <p class="pc-eyebrow">{{ $selectedEditionTeam->edition->name }}</p>
+                @endif
+                <h1 class="mt-1 break-words text-3xl font-bold leading-tight tracking-tight sm:text-4xl">{{ $team->name }}</h1>
+                <p class="mt-1 text-sm text-slate-300">{{ $team->short_name ?? __('directory.teams.no_short_name') }}</p>
             </div>
         </div>
 
         @if($editionTeams->isNotEmpty())
-            <div class="mt-4 flex gap-2 overflow-x-auto border-t border-line pt-3">
+            <div class="pc-chips mt-5 justify-start border-t border-white/10 pt-4 sm:mt-6">
                 @foreach($editionTeams as $editionTeam)
                     <a
                         href="{{ route('public.teams.show', ['team' => $team, 'edition_id' => $editionTeam->edition_id]) }}"
-                        class="inline-flex min-h-9 shrink-0 items-center rounded-full border px-3 text-xs font-semibold {{ $selectedEditionTeam?->id === $editionTeam->id ? 'border-green-600 bg-green-50 text-green-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50' }}"
+                        class="pc-chip pc-chip-dark {{ $selectedEditionTeam?->id === $editionTeam->id ? 'pc-chip-active' : '' }}"
+                        @if($selectedEditionTeam?->id === $editionTeam->id) aria-current="true" @endif
                     >
                         {{ $editionTeam->edition->name }}
                     </a>
                 @endforeach
             </div>
         @else
-            <p class="pub-meta mt-4 border-t border-line pt-3">{{ __('directory.teams.no_history') }}</p>
+            <p class="mt-5 border-t border-white/10 pt-4 text-xs text-slate-300">{{ __('directory.teams.no_history') }}</p>
         @endif
-    </div>
+    </section>
 
+    {{-- Record --}}
     @if($record)
-        <div class="mt-3 grid grid-cols-4 gap-2 text-center sm:gap-3">
+        <div class="mt-4 grid grid-cols-5 gap-2 sm:gap-3">
             @foreach(['played', 'won', 'lost', 'tied'] as $key)
-                <div class="pub-card px-2 py-3">
-                    <p class="pub-eyebrow">{{ __('directory.teams.'.$key) }}</p>
-                    <p class="mt-1 text-xl font-bold tabular-nums text-slate-900">{{ $record[$key] }}</p>
+                <div class="pc-stat">
+                    <p class="pc-stat-label">{{ __('directory.teams.'.$key) }}</p>
+                    <p class="pc-stat-value">{{ $record[$key] }}</p>
                 </div>
             @endforeach
+            <div class="pc-stat pc-stat-accent">
+                <p class="pc-stat-label">{{ __('ux_public_content.team.points') }}</p>
+                <p class="pc-stat-value">{{ $record['points'] ?? 0 }}</p>
+            </div>
         </div>
     @endif
 
-    <x-public.card class="mt-4" flush>
-        <header class="pub-card-head">
-            <h2 class="pub-card-title">{{ __('directory.teams.squad') }} @if($selectedEditionTeam) &middot; {{ $selectedEditionTeam->edition->name }} @endif</h2>
-        </header>
-        <div class="grid grid-cols-1 sm:grid-cols-2">
-            @forelse($squad as $teamPlayer)
-                @php $player = $teamPlayer->playerRegistration->player; @endphp
-                <a href="{{ route('public.players.show', $player) }}" class="flex min-h-14 items-center gap-3 border-b border-line px-4 py-2.5 hover:bg-slate-50 sm:odd:border-r">
-                    <div class="pub-media flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line text-xs font-bold text-slate-500">
-                        <x-media-image :path="$player->photo_path" kind="user" alt="" class="absolute inset-0 h-full w-full bg-white object-cover" />
-                    </div>
-                    <div class="min-w-0">
-                        <p class="truncate text-[13px] font-semibold text-slate-900">{{ $player->name }}</p>
-                        <p class="pub-meta truncate">
-                            @if($teamPlayer->jersey_number) #{{ $teamPlayer->jersey_number }} &middot; @endif
-                            {{ \Illuminate\Support\Facades\Lang::has('directory.roles.'.$teamPlayer->role) ? __('directory.roles.'.$teamPlayer->role) : str_replace('_', ' ', ucfirst($teamPlayer->role)) }}
-                        </p>
-                    </div>
-                </a>
-            @empty
-                <x-public.empty class="col-span-full">{{ __('directory.teams.squad_empty') }}</x-public.empty>
-            @endforelse
-        </div>
-    </x-public.card>
+    {{-- Squad, grouped by role --}}
+    <section class="mt-6 lg:mt-8">
+        <h2 class="pc-h2">
+            {{ __('directory.teams.squad') }} @if($selectedEditionTeam) &middot; {{ $selectedEditionTeam->edition->name }} @endif
+            <span class="pc-h2-badge">{{ $squad->count() }}</span>
+        </h2>
 
-    <x-public.card class="mt-4" flush :title="__('directory.teams.recent_matches')">
-        @forelse($recentMatches as $match)
-            @php
-                $opponent = $match->teamA->id === $selectedEditionTeam->id ? $match->teamB : $match->teamA;
-            @endphp
-            <div class="flex items-center justify-between gap-3 border-b border-line px-4 py-3 text-[13px] last:border-b-0">
-                <div class="min-w-0">
-                    <a href="{{ route('public.matches.show', $match) }}" class="font-semibold text-slate-900 hover:text-green-700">
-                        {{ __('directory.common.vs') }} {{ $opponent->team->name }}
-                    </a>
-                    <p class="pub-meta">
-                        {{ display_datetime($match->scheduled_at, 'd M Y') }}
-                        @if($match->venue)
-                            &middot; {{ $match->venue->name }}
-                        @endif
-                    </p>
-                    @if($match->match_status === 'completed' && $match->match_result)
-                        <p class="mt-0.5 text-xs text-slate-600">{{ $match->match_result }}</p>
-                    @endif
+        @forelse($squadByRole as $role => $members)
+            <div class="pc-panel mb-3">
+                <div class="pc-panel-head bg-slate-50/60 py-2">
+                    <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $roleLabel($role) }}</h3>
+                    <span class="text-xs font-semibold tabular-nums text-slate-400">{{ $members->count() }}</span>
                 </div>
-                <x-public.status-pill :status="$match->match_status" />
+                <div class="overflow-hidden">
+                <div class="-mb-px -mr-px grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    @foreach($members as $teamPlayer)
+                        @php $player = $teamPlayer->playerRegistration->player; @endphp
+                        <a href="{{ route('public.players.show', $player) }}" class="flex min-h-16 items-center gap-3 border-b border-r border-line bg-white px-4 py-2.5 transition hover:bg-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand">
+                            <span class="pc-avatar h-11 w-11">
+                                <x-media-image :path="$player->photo_path" kind="user" alt="" loading="lazy" />
+                            </span>
+                            <span class="min-w-0 flex-1">
+                                <span class="block truncate text-[13px] font-semibold text-slate-900">{{ $player->name }}</span>
+                                <span class="block truncate text-xs text-slate-500">
+                                    @if($teamPlayer->jersey_number) #{{ $teamPlayer->jersey_number }} &middot; @endif
+                                    {{ $roleLabel($teamPlayer->role) }}
+                                </span>
+                            </span>
+                            <span class="shrink-0 text-slate-300" aria-hidden="true">&rsaquo;</span>
+                        </a>
+                    @endforeach
+                </div>
+                </div>
             </div>
         @empty
-            <x-public.empty>{{ __('directory.teams.recent_matches_empty') }}</x-public.empty>
+            <div class="pc-empty">
+                <span class="pc-empty-icon"><x-icon name="users" class="h-7 w-7" /></span>
+                <p class="pc-empty-title">{{ __('directory.teams.squad_empty') }}</p>
+            </div>
         @endforelse
-    </x-public.card>
+    </section>
+
+    {{-- Recent matches --}}
+    <section class="mt-6 lg:mt-8">
+        <h2 class="pc-h2">{{ __('directory.teams.recent_matches') }}</h2>
+
+        @if($recentMatches->isEmpty())
+            <div class="pc-empty">
+                <span class="pc-empty-icon"><x-icon name="calendar" class="h-7 w-7" /></span>
+                <p class="pc-empty-title">{{ __('directory.teams.recent_matches_empty') }}</p>
+            </div>
+        @else
+            <div class="pc-panel divide-y divide-line">
+                @foreach($recentMatches as $match)
+                    @php
+                        $opponent = $match->teamA->id === $selectedEditionTeam->id ? $match->teamB : $match->teamA;
+                        $decided = $match->match_status === 'completed' && $match->winner_team_id !== null;
+                        $won = $decided && $match->winner_team_id === $selectedEditionTeam->id;
+                    @endphp
+                    <a href="{{ route('public.matches.show', $match) }}" class="flex items-center gap-3 px-4 py-3 text-[13px] transition hover:bg-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand">
+                        <span class="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg bg-slate-100 leading-none">
+                            <span class="text-base font-bold tabular-nums text-slate-900">{{ display_datetime($match->scheduled_at, 'd') }}</span>
+                            <span class="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">{{ display_datetime($match->scheduled_at, 'M') }}</span>
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block truncate font-semibold text-slate-900">{{ __('directory.common.vs') }} {{ $opponent->team->name }}</span>
+                            <span class="pub-meta block truncate">
+                                {{ display_datetime($match->scheduled_at, 'd M Y') }}
+                                @if($match->venue)
+                                    &middot; {{ $match->venue->name }}
+                                @endif
+                            </span>
+                            @if($match->match_status === 'completed' && $match->match_result)
+                                <span class="mt-0.5 block text-xs text-slate-600">{{ $match->match_result }}</span>
+                            @endif
+                        </span>
+                        <span class="flex shrink-0 flex-col items-end gap-1">
+                            @if($decided)
+                                <span class="pub-pill {{ $won ? 'pub-pill-success' : 'pub-pill-danger' }}">{{ $won ? __('directory.teams.won') : __('directory.teams.lost') }}</span>
+                            @else
+                                <x-public.status-pill :status="$match->match_status" />
+                            @endif
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+        @endif
+    </section>
 @endsection

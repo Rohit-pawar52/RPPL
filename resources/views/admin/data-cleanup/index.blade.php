@@ -17,18 +17,18 @@
     {{-- Query-string tab selection (?tab=notifications) — mirrors
          admin.settings.index exactly, so a validation-failure redirect
          back to the referring URL naturally reopens the same tab. --}}
-    <div class="mb-4 flex flex-wrap gap-1 border-b border-slate-200">
+    <x-crud.tabs aria-label="Data cleanup sections">
         @foreach($tabs as $tabKey => $tabLabel)
-            <a
-                href="{{ route('admin.data-cleanup.index', ['tab' => $tabKey]) }}"
-                class="rounded-t-md px-3 py-2 text-[13px] font-medium {{ $activeTab === $tabKey ? 'border-b-2 border-green-600 text-green-700' : 'text-slate-500 hover:text-slate-700' }}"
-            >
-                {{ $tabLabel }}
-            </a>
+            <x-crud.tab :href="route('admin.data-cleanup.index', ['tab' => $tabKey])" :active="$activeTab === $tabKey">{{ $tabLabel }}</x-crud.tab>
         @endforeach
+    </x-crud.tabs>
+
+    <div class="crud-note crud-note-warn mb-4 flex items-start gap-2.5">
+        <x-crud.glyph name="alert" class="mt-0.5 h-4 w-4 shrink-0" />
+        <span>Deleting here is permanent. Each action below shows how many records it would remove before you confirm.</span>
     </div>
 
-    <div class="max-w-3xl rounded-lg border border-slate-200 bg-white p-4">
+    <div class="max-w-4xl space-y-4">
         @include('admin.data-cleanup.tabs.' . str_replace('-', '_', $activeTab))
     </div>
 @endsection

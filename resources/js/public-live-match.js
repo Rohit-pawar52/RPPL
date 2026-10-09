@@ -21,12 +21,23 @@ function escapeHtml(value) {
 
 /*
  * Rendering helpers below mirror the Blade partials used for the initial
- * server render (public/matches/_live-innings-row, _live-chase,
- * _live-delivery-row and components/status-badge). They only format the
- * /live-data payload already fetched — never derive score data — and must
- * be kept in sync with those partials so a polled update never shows
- * less (or different) information than a fresh page load.
+ * server render (the score header public/matches/_header + _score-team,
+ * _live-chase, _live-over, _live-delivery-row and components/public/
+ * status-pill). They only format the /live-data payload already fetched —
+ * never derive score data — and must be kept in sync with those partials so
+ * a polled update never shows less (or different) information than a fresh
+ * page load.
+ *
+ * Wording comes from the page itself: live.blade.php puts every sentence
+ * (already translated, with :placeholders) into data-i18n on the root, so a
+ * Hindi visitor keeps getting Hindi after an update.
  */
+let I18N = {};
+
+// ":runs from :balls" -> filled in, in a single pass.
+function fill(template, values) {
+    return String(template ?? '').replace(/:(\w+)/g, (match, key) => (key in values ? String(values[key]) : match));
+}
 
 // Mirrors components/public/status-pill.blade.php: variant per status.
 const STATUS_PILL_VARIANTS = {
@@ -43,43 +54,48 @@ const STATUS_PILL_VARIANTS = {
 function renderStatusBadge(status) {
     const variant = STATUS_PILL_VARIANTS[status] ?? 'neutral';
     const dot = variant === 'live' ? '<span class="live-dot" aria-hidden="true"></span>' : '';
+    const label = (I18N.status && I18N.status[status]) || status;
 
-    return `<span class="pub-pill pub-pill-${variant}">${dot}${escapeHtml(status)}</span>`;
+    return `<span class="pub-pill pub-pill-${variant}">${dot}${escapeHtml(label)}</span>`;
 }
 
 function formatRate(value) {
     return Number(value ?? 0).toFixed(2);
 }
 
-function plural(word, count) {
-    return count === 1 ? word : `${word}s`;
+function countLabel(count, one, many) {
+    return fill(count === 1 ? one : many, { count });
 }
 
-function renderInnings(innings) {
-    return innings
-        .map((i) => {
-            const tint = i.status === 'live' ? 'bg-green-50/50' : '';
-            const crr =
-                i.crr !== undefined && i.crr !== null
-                    ? ` &middot; CRR <span class="font-semibold tabular-nums text-slate-700">${formatRate(i.crr)}</span>`
-                    : '';
+// Each team of the score header: fill its number slots from that team's innings.
+function applyInnings(innings) {
+    document.querySelectorAll('[data-live-team]').forEach((teamEl) => {
+        const row = innings.find((i) => i.batting_team === teamEl.dataset.liveTeam);
 
-            return `
-                <div class="p-4 sm:p-5 ${tint}">
-                    <div class="flex items-center justify-between gap-3">
-                        <p class="pub-eyebrow">Innings ${escapeHtml(String(i.innings_number))}</p>
-                        ${renderStatusBadge(i.status)}
-                    </div>
-                    <p class="mt-2 truncate text-sm font-semibold text-slate-800">${escapeHtml(i.batting_team)}</p>
-                    <p class="mt-1 flex items-baseline gap-2">
-                        <span class="score-figure">${escapeHtml(String(i.total_runs))}/${escapeHtml(String(i.total_wickets))}</span>
-                        <span class="text-xs text-slate-500">(${escapeHtml(i.overs_display)} overs)</span>
-                    </p>
-                    <p class="mt-2 text-xs text-slate-500">vs ${escapeHtml(i.bowling_team)}${crr}</p>
-                </div>
-            `;
-        })
-        .join('');
+        if (!row) {
+            return;
+        }
+
+        const batting = row.status === 'live';
+        const slot = (name) => teamEl.querySelector(`[data-slot="${name}"]`);
+
+        teamEl.querySelector('.mx-team-score')?.classList.remove('hidden');
+        slot('score').textContent = `${row.total_runs}/${row.total_wickets}`;
+        slot('overs').textContent = fill(I18N.overs, { overs: row.overs_display });
+
+        const crrEl = slot('crr');
+        const hasCrr = batting && row.crr !== undefined && row.crr !== null;
+        crrEl.textContent = hasCrr ? fill(I18N.crr, { rate: formatRate(row.crr) }) : '';
+        crrEl.classList.toggle('hidden', !hasCrr);
+
+        slot('batting').classList.toggle('hidden', !batting);
+
+        if (batting) {
+            teamEl.setAttribute('data-batting', '1');
+        } else {
+            teamEl.removeAttribute('data-batting');
+        }
+    });
 }
 
 function renderChase(chase, innings) {
@@ -88,67 +104,122 @@ function renderChase(chase, innings) {
     }
 
     const second = innings.find((i) => Number(i.innings_number) === 2);
-    const team = escapeHtml(second?.batting_team ?? 'Chasing side');
+    const team = second?.batting_team ?? I18N.chasingSide;
     const headline =
         chase.runs_needed > 0
-            ? `${team} need ${chase.runs_needed} ${plural('run', chase.runs_needed)} from ${chase.balls_remaining} ${plural('ball', chase.balls_remaining)}`
-            : `${team} have reached the target`;
+            ? fill(I18N.need, {
+                  team,
+                  runs: countLabel(chase.runs_needed, I18N.runOne, I18N.runMany),
+                  balls: countLabel(chase.balls_remaining, I18N.ballOne, I18N.ballMany),
+              })
+            : fill(I18N.reached, { team });
+
+    const scored = Math.max(0, chase.target - chase.runs_needed);
+    const percent = chase.target > 0 ? Math.min(100, Math.round((scored / chase.target) * 100)) : 0;
 
     const stat = (label, value) => `
-        <div class="rounded-lg bg-white px-1 py-2 ring-1 ring-inset ring-green-200">
-            <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">${label}</dt>
-            <dd class="mt-0.5 text-sm font-bold tabular-nums text-slate-900">${escapeHtml(String(value))}</dd>
+        <div>
+            <dt>${escapeHtml(label)}</dt>
+            <dd>${escapeHtml(String(value))}</dd>
         </div>
     `;
 
     return `
-        <p class="text-[13px] font-semibold text-green-800">${headline}</p>
-        <dl class="mt-3 grid grid-cols-4 gap-2 text-center">
-            ${stat('Target', chase.target)}
-            ${stat('Need', chase.runs_needed)}
-            ${stat('Balls', chase.balls_remaining)}
-            ${stat('RRR', formatRate(chase.required_run_rate))}
-        </dl>
+        <div class="mx-chase">
+            <p class="mx-chase-headline">${escapeHtml(headline)}</p>
+            <div class="mx-chase-bar" aria-hidden="true"><span style="width: ${percent}%"></span></div>
+            <dl class="mx-chase-grid">
+                ${stat(I18N.target, chase.target)}
+                ${stat(I18N.needLabel, chase.runs_needed)}
+                ${stat(I18N.ballsLabel, chase.balls_remaining)}
+                ${stat(I18N.rrr, formatRate(chase.required_run_rate))}
+            </dl>
+        </div>
     `;
 }
 
-function outcomeClasses(d) {
+// Same ladder as the Blade partials: wicket, six, four, any other extra, a plain run.
+function outcomeKind(d) {
     const label = String(d.outcome_label ?? '');
 
     if (d.is_wicket) {
-        return 'ball-badge-wicket';
+        return 'wicket';
     }
 
     if (label === '6') {
-        return 'ball-badge-six';
+        return 'six';
     }
 
     if (label === '4') {
-        return 'ball-badge-four';
+        return 'four';
     }
 
     // Anything non-numeric (Wd, Nb, B, Lb...) is an extra.
     if (!/^\d+$/.test(label)) {
-        return 'ball-badge-extra';
+        return 'extra';
     }
 
-    return '';
+    return 'run';
+}
+
+const overOf = (d) => String(d.ball_label ?? '').split('.')[0];
+
+// "This over": the balls of the over in progress, the last ball and the last wicket.
+function renderThisOver(deliveries) {
+    if (deliveries.length === 0) {
+        return `<p class="pub-empty">${escapeHtml(I18N.noDeliveries)}</p>`;
+    }
+
+    const latest = deliveries[0];
+    const overKey = overOf(latest);
+    const thisOver = [];
+
+    for (const d of deliveries) {
+        if (overOf(d) !== overKey) {
+            break;
+        }
+
+        thisOver.push(d);
+    }
+
+    thisOver.reverse();
+
+    const lastWicket = deliveries.find((d) => d.is_wicket);
+    const balls = thisOver
+        .map((d) => `<span class="mx-ball mx-ball-lg mx-ball-${outcomeKind(d)}">${escapeHtml(d.outcome_label)}</span>`)
+        .join('');
+
+    const lastBall = fill(I18N.bowlerToStriker, { bowler: latest.bowler, striker: latest.striker });
+    const wicketLine = lastWicket
+        ? `<li><span>${escapeHtml(I18N.lastWicket)}</span> ${escapeHtml(lastWicket.dismissed_player ?? lastWicket.striker)} (${escapeHtml(lastWicket.ball_label)})</li>`
+        : '';
+
+    return `
+        <p class="mx-over-label">${escapeHtml(fill(I18N.overN, { n: Number(overKey) + 1 }))}</p>
+        <div class="mx-over-balls">${balls}</div>
+        <ul class="mx-over-facts">
+            <li><span>${escapeHtml(I18N.lastBall)}</span> ${escapeHtml(lastBall)}</li>
+            ${wicketLine}
+        </ul>
+    `;
 }
 
 function renderDeliveries(deliveries) {
     if (deliveries.length === 0) {
-        return '<p class="pub-empty">No deliveries recorded yet.</p>';
+        return `<p class="pub-empty">${escapeHtml(I18N.noDeliveries)}</p>`;
     }
 
     return deliveries
-        .map(
-            (d) => `
-                <div class="flex items-start gap-3 border-b border-line px-4 py-3 text-[13px] last:border-b-0">
-                    <span class="ball-badge ${outcomeClasses(d)}">${escapeHtml(d.outcome_label)}</span>
+        .map((d) => {
+            const kind = outcomeKind(d);
+
+            return `
+                <div class="mx-feed-row" data-kind="${kind}">
+                    <span class="mx-ball mx-ball-${kind}">${escapeHtml(d.outcome_label)}</span>
                     <p class="min-w-0 pt-0.5 leading-snug text-slate-700"><span class="mr-1.5 font-semibold tabular-nums text-slate-900">${escapeHtml(d.ball_label)}</span>${escapeHtml(d.commentary)}</p>
                 </div>
-            `
-        )
+            `;
+        })
         .join('');
 }
 
@@ -163,7 +234,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const matchId = root.dataset.matchId ? Number(root.dataset.matchId) : null;
     let shouldPoll = root.dataset.shouldPoll === '1';
 
-    const inningsEl = document.getElementById('live-innings');
+    try {
+        I18N = JSON.parse(root.dataset.i18n || '{}');
+    } catch {
+        I18N = {};
+    }
+
+    // The score header sits above the root; everything is found by id / hook.
+    const heroEl = document.querySelector('.mx-hero');
+    const thisOverEl = document.getElementById('live-this-over');
     const deliveriesEl = document.getElementById('live-deliveries');
     const resultEl = document.getElementById('live-match-result');
     const chaseEl = document.getElementById('live-chase');
@@ -174,8 +253,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let stopRealtime = () => {};
 
     function applyUpdate(data) {
-        if (inningsEl) {
-            inningsEl.innerHTML = renderInnings(data.innings);
+        applyInnings(data.innings);
+
+        if (thisOverEl) {
+            thisOverEl.innerHTML = renderThisOver(data.recent_deliveries);
         }
 
         if (deliveriesEl) {
@@ -195,6 +276,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (statusBadgeEl && data.match_status) {
             statusBadgeEl.innerHTML = renderStatusBadge(data.match_status);
+        }
+
+        if (heroEl && data.match_status) {
+            heroEl.classList.toggle('mx-hero-live', data.match_status === 'live');
         }
 
         shouldPoll = data.should_poll;

@@ -2,149 +2,106 @@
 
 @section('title', 'Players')
 
-@section('subtitle', 'Master player directory, separate from any edition.')
+@section('subtitle', number_format($players->total()).' '.\Illuminate\Support\Str::plural('player', $players->total()).(array_filter($filters) ? ' match your filters.' : ' in the master directory, separate from any edition.'))
 
 @section('actions')
     <x-admin.button :href="route('admin.players.export', $filters)" variant="secondary" icon="document-chart">Export</x-admin.button>
-    <x-admin.button href="{{ route('admin.players.create') }}" variant="primary">+ New player</x-admin.button>
+    <span class="max-sm:hidden"><x-admin.button :href="route('admin.players.create')" variant="primary">+ New player</x-admin.button></span>
 @endsection
 
 @section('content')
-    <div class="mb-4">
+    @php
+        $label = fn (string $value) => ucwords(str_replace('_', ' ', $value));
+        $roleOptions = collect(\App\Models\Player::PRIMARY_ROLES)->mapWithKeys(fn ($v) => [$v => $label($v)])->all();
+        $battingOptions = collect(\App\Models\Player::BATTING_STYLES)->mapWithKeys(fn ($v) => [$v => $label($v)])->all();
+        $bowlingOptions = collect(\App\Models\Player::BOWLING_STYLES)->mapWithKeys(fn ($v) => [$v => $label($v)])->all();
+        $moreOpen = ($filters['batting_style'] ?? '') !== '' || ($filters['bowling_style'] ?? '') !== '';
+    @endphp
+
+    <div class="crud-toolbar">
         <x-table-filters :action="route('admin.players.index')" :filters="$filters" :per-page="$perPage">
-            <input
-                type="text"
-                name="search"
-                value="{{ $filters['search'] ?? '' }}"
-                placeholder="Search name, phone, email&hellip;"
-                class="w-full max-w-[220px] rounded-md border border-slate-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100"
-            />
+            <x-crud.search :value="$filters['search'] ?? ''" placeholder="Search name, phone, email&hellip;" />
+            <x-crud.select name="primary_role" all="All roles" :value="$filters['primary_role'] ?? ''" :options="$roleOptions" />
+            <x-crud.select name="status" all="All statuses" :value="$filters['status'] ?? ''" :options="['active' => 'Active', 'inactive' => 'Inactive']" />
 
-            <select name="primary_role" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100">
-                <option value="">All roles</option>
-                @foreach(\App\Models\Player::PRIMARY_ROLES as $role)
-                    <option value="{{ $role }}" @selected(($filters['primary_role'] ?? '') === $role)>
-                        {{ ucwords(str_replace('_', ' ', $role)) }}
-                    </option>
-                @endforeach
-            </select>
-
-            <select name="batting_style" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100">
-                <option value="">All batting styles</option>
-                @foreach(\App\Models\Player::BATTING_STYLES as $style)
-                    <option value="{{ $style }}" @selected(($filters['batting_style'] ?? '') === $style)>
-                        {{ ucwords(str_replace('_', ' ', $style)) }}
-                    </option>
-                @endforeach
-            </select>
-
-            <select name="bowling_style" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100">
-                <option value="">All bowling styles</option>
-                @foreach(\App\Models\Player::BOWLING_STYLES as $style)
-                    <option value="{{ $style }}" @selected(($filters['bowling_style'] ?? '') === $style)>
-                        {{ ucwords(str_replace('_', ' ', $style)) }}
-                    </option>
-                @endforeach
-            </select>
-
-            <select name="status" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100">
-                <option value="">All statuses</option>
-                <option value="active" @selected(($filters['status'] ?? '') === 'active')>Active</option>
-                <option value="inactive" @selected(($filters['status'] ?? '') === 'inactive')>Inactive</option>
-            </select>
-
+            <details class="crud-more order-last" @if($moreOpen) open @endif>
+                <summary><x-crud.glyph name="filter" /> Batting and bowling style</summary>
+                <div class="crud-more-grid">
+                    <x-crud.select name="batting_style" all="All batting styles" :value="$filters['batting_style'] ?? ''" :options="$battingOptions" />
+                    <x-crud.select name="bowling_style" all="All bowling styles" :value="$filters['bowling_style'] ?? ''" :options="$bowlingOptions" />
+                </div>
+            </details>
         </x-table-filters>
     </div>
 
-    <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table class="w-full min-w-[720px] text-left text-[13px]">
-            <thead class="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-400">
-                <tr>
-                    <th class="px-4 py-2 font-medium">Photo</th>
-                    <th class="px-4 py-2 font-medium"><x-sortable-header column="name" :sort="$sort" :direction="$direction">Name</x-sortable-header></th>
-                    <th class="px-4 py-2 font-medium">Status</th>
-                    <th class="px-4 py-2 font-medium"><x-sortable-header column="primary_role" :sort="$sort" :direction="$direction">Role</x-sortable-header></th>
-                    <th class="hidden px-4 py-2 font-medium md:table-cell">Batting</th>
-                    <th class="hidden px-4 py-2 font-medium md:table-cell">Bowling</th>
-                    <th class="hidden px-4 py-2 font-medium lg:table-cell"><x-sortable-header column="player_registrations_count" :sort="$sort" :direction="$direction">Registrations</x-sortable-header></th>
-                    <th class="px-4 py-2 text-right font-medium">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                @forelse($players as $player)
-                    <tr class="hover:bg-slate-50">
-                        <td class="px-4 py-2">
-                            <div class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-slate-300">
-                                <x-media-image :path="$player->photo_path" kind="user" alt="" class="h-full w-full object-cover" />
-                            </div>
-                        </td>
-                        <td class="px-4 py-2 font-medium text-slate-800">
-                            <a href="{{ route('admin.players.show', $player) }}" class="hover:underline">
-                                {{ $player->name }}
-                            </a>
-                        </td>
-                        <td class="px-4 py-2">
-                            <x-status-badge :status="$player->is_active ? 'active' : 'inactive'" />
-                        </td>
-                        <td class="px-4 py-2 capitalize text-slate-600">
-                            {{ $player->primary_role ? str_replace('_', ' ', $player->primary_role) : '—' }}
-                        </td>
-                        <td class="hidden px-4 py-2 capitalize text-slate-600 md:table-cell">
-                            {{ $player->batting_style ? str_replace('_', ' ', $player->batting_style) : '—' }}
-                        </td>
-                        <td class="hidden px-4 py-2 capitalize text-slate-600 md:table-cell">
-                            {{ $player->bowling_style ? str_replace('_', ' ', $player->bowling_style) : '—' }}
-                        </td>
-                        <td class="hidden px-4 py-2 text-slate-600 lg:table-cell">
-                            {{ $player->player_registrations_count }}
-                        </td>
-                        <td class="px-4 py-2">
-                            <div class="flex items-center justify-end gap-1">
-                                <a
-                                    href="{{ route('admin.players.show', $player) }}"
-                                    title="View"
-                                    aria-label="View {{ $player->name }}"
-                                    class="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                                >
-                                    <x-icon name="eye" class="h-4 w-4" />
-                                </a>
-                                <a
-                                    href="{{ route('admin.players.edit', $player) }}"
-                                    title="Edit"
-                                    aria-label="Edit {{ $player->name }}"
-                                    class="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-green-700"
-                                >
-                                    <x-icon name="pencil" class="h-4 w-4" />
-                                </a>
-                                <form
-                                    method="POST"
-                                    action="{{ route('admin.players.destroy', $player) }}"
-                                    data-confirm-delete
-                                    data-confirm-title="Delete {{ $player->name }}?"
-                                    data-confirm-text="This cannot be undone. Players with tournament history cannot be deleted."
-                                >
-                                    @csrf
-                                    @method('DELETE')
-                                    <button
-                                        type="submit"
-                                        title="Delete"
-                                        aria-label="Delete {{ $player->name }}"
-                                        class="rounded p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600"
-                                    >
-                                        <x-icon name="trash" class="h-4 w-4" />
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
+    <div class="crud-table-wrap">
+        <div class="crud-table-scroll">
+            <table class="crud-table crud-stack">
+                <thead>
+                    <tr>
+                        <th class="w-16">Photo</th>
+                        <th><x-sortable-header column="name" :sort="$sort" :direction="$direction">Name</x-sortable-header></th>
+                        <th>Status</th>
+                        <th><x-sortable-header column="primary_role" :sort="$sort" :direction="$direction">Role</x-sortable-header></th>
+                        <th class="hidden md:table-cell">Batting</th>
+                        <th class="hidden md:table-cell">Bowling</th>
+                        <th class="hidden lg:table-cell"><x-sortable-header column="player_registrations_count" :sort="$sort" :direction="$direction">Registrations</x-sortable-header></th>
+                        <th class="text-right">Actions</th>
                     </tr>
-                @empty
-                    <x-admin.empty table colspan="8">No players found.</x-admin.empty>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @forelse($players as $player)
+                        <tr class="crud-row">
+                            <td class="c-media w-16">
+                                <x-crud.thumb :path="$player->photo_path" kind="user" size="sm" />
+                            </td>
+                            <td class="c-title">
+                                <a href="{{ route('admin.players.show', $player) }}" class="crud-row-link">{{ $player->name }}</a>
+                                <span class="crud-meta md:hidden">
+                                    {{ $player->primary_role ? $label($player->primary_role) : 'No role' }}
+                                    @if($player->batting_style) &middot; {{ $label($player->batting_style) }} @endif
+                                </span>
+                                @if($player->phone || $player->email)
+                                    <span class="crud-meta max-md:hidden">{{ $player->phone ?: $player->email }}</span>
+                                @endif
+                            </td>
+                            <td class="c-sub">
+                                <x-status-badge :status="$player->is_active ? 'active' : 'inactive'" />
+                            </td>
+                            <td class="capitalize">{{ $player->primary_role ? str_replace('_', ' ', $player->primary_role) : '—' }}</td>
+                            <td class="hidden capitalize md:table-cell">{{ $player->batting_style ? str_replace('_', ' ', $player->batting_style) : '—' }}</td>
+                            <td class="hidden capitalize md:table-cell">{{ $player->bowling_style ? str_replace('_', ' ', $player->bowling_style) : '—' }}</td>
+                            <td class="hidden tabular-nums lg:table-cell">{{ $player->player_registrations_count }}</td>
+                            <td class="c-actions">
+                                <x-crud.row-actions
+                                    :view="route('admin.players.show', $player)"
+                                    :edit="route('admin.players.edit', $player)"
+                                    :delete="route('admin.players.destroy', $player)"
+                                    :name="$player->name"
+                                    confirm-text="This cannot be undone. Players with tournament history cannot be deleted."
+                                />
+                            </td>
+                        </tr>
+                    @empty
+                        <x-admin.empty table colspan="8" icon="user">
+                            {{ array_filter($filters) ? 'No players match these filters.' : 'No players yet.' }}
+                            <x-slot:action>
+                                @if(array_filter($filters))
+                                    <x-admin.button :href="route('admin.players.index')" variant="secondary" size="sm">Clear filters</x-admin.button>
+                                @else
+                                    <x-admin.button :href="route('admin.players.create')" size="sm">+ New player</x-admin.button>
+                                @endif
+                            </x-slot:action>
+                        </x-admin.empty>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <div class="mt-3">
+    <div class="mt-4">
         {{ $players->links() }}
     </div>
+
+    <x-crud.fab :href="route('admin.players.create')" label="New player" />
 @endsection

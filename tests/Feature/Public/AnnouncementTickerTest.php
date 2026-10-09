@@ -193,7 +193,7 @@ class AnnouncementTickerTest extends TestCase
         $response = $this->get(route('public.home'));
 
         $response->assertOk();
-        $response->assertSee('--rppl-announcement-bg: #2563eb;', false);
+        $response->assertSee('--rppl-announcement-bg: #15803d;', false);
         $response->assertDontSee('not-a-color', false);
     }
 
@@ -218,7 +218,7 @@ class AnnouncementTickerTest extends TestCase
 
     public function test_changing_announcement_colors_is_reflected_on_the_next_request_without_a_build(): void
     {
-        $this->get(route('public.home'))->assertSee('--rppl-announcement-bg: #2563eb;', false);
+        $this->get(route('public.home'))->assertSee('--rppl-announcement-bg: #15803d;', false);
 
         app(SettingsService::class)->set('general.announcement_background_color', '#abcdef');
 

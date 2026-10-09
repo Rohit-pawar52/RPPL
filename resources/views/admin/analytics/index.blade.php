@@ -6,23 +6,42 @@
 @section('content')
     @php
         $typeLabels = ['all' => 'All content', 'match' => 'Matches', 'edition' => 'Editions', 'player' => 'Players'];
+        $presets = ['today' => 'Today', 'yesterday' => 'Yesterday', 'last7' => 'Last 7 days', 'last30' => 'Last 30 days'];
         $maxDaily = max(1, collect($daily)->max('views'));
         $maxHourly = max(1, collect($hourly)->max('views'));
+        $peakHour = collect($hourly)->sortByDesc('views')->first();
         $filtered = $filters['type'] !== 'all';
     @endphp
 
-    {{-- Filters --}}
-    <x-admin.card class="mb-4">
+    {{-- Filters: one tap on a preset, or set a custom range below --}}
+    <x-admin.card class="mb-6">
         @if($errors->any())
-            <div class="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700" role="alert">
-                <p class="font-medium">Those filters could not be applied, so the last 7 days are shown instead:</p>
-                <ul class="mt-1 list-disc pl-4">
-                    @foreach($errors->all() as $message)
-                        <li>{{ $message }}</li>
-                    @endforeach
-                </ul>
+            <div class="mb-4 flex gap-2.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-xs text-red-700" role="alert">
+                <x-admin.icon name="alert" class="mt-0.5 h-4 w-4 shrink-0" />
+                <div>
+                    <p class="font-semibold">Those filters could not be applied, so the last 7 days are shown instead:</p>
+                    <ul class="mt-1 list-disc pl-4">
+                        @foreach($errors->all() as $message)
+                            <li>{{ $message }}</li>
+                        @endforeach
+                    </ul>
+                </div>
             </div>
         @endif
+
+        <div class="mb-4 flex flex-wrap gap-2" role="group" aria-label="Quick date ranges">
+            @foreach($presets as $key => $label)
+                <a
+                    href="{{ route('admin.analytics.index', ['range' => $key, 'type' => $filters['type']]) }}"
+                    @class([
+                        'btn btn-sm',
+                        'btn-primary' => $filters['range'] === $key && $form['range'] === $key,
+                        'btn-secondary' => ! ($filters['range'] === $key && $form['range'] === $key),
+                    ])
+                    @if($filters['range'] === $key && $form['range'] === $key) aria-current="true" @endif
+                >{{ $label }}</a>
+            @endforeach
+        </div>
 
         <form method="GET" action="{{ route('admin.analytics.index') }}" id="analytics-filter">
             <div class="grid grid-cols-1 gap-x-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -42,13 +61,13 @@
 
                 <x-form.select name="type" label="Content type" :options="$typeLabels" :value="$form['type']" />
 
-                <div class="mb-3.5 flex items-end">
+                <div class="fld flex items-end">
                     <x-admin.button type="submit" class="h-10 w-full">Apply</x-admin.button>
                 </div>
             </div>
         </form>
 
-        <p class="text-[11px] text-slate-400">
+        <p class="text-[11px] leading-4 text-slate-500">
             Showing {{ $dates['from'] }} to {{ $dates['to'] }}. Dates and hours are in the display timezone ({{ $timezone }}).
             The content type narrows the totals, daily and hourly tables and the top lists; the three type cards always show the full breakdown.
         </p>
@@ -60,35 +79,35 @@
         <x-stat-card label="Unique visitors" :value="number_format($summary['visitors'])" icon="users" :subtext="$filtered ? $typeLabels[$filters['type']].' only' : null" />
         <x-stat-card label="Match views" :value="number_format($breakdown['match_view']['views'])" icon="trophy" :subtext="number_format($breakdown['match_view']['visitors']).' visitors'" />
         <x-stat-card label="Edition views" :value="number_format($breakdown['edition_view']['views'])" icon="calendar" :subtext="number_format($breakdown['edition_view']['visitors']).' visitors'" />
-        <x-stat-card label="Player views" :value="number_format($breakdown['player_view']['views'])" icon="user" :subtext="number_format($breakdown['player_view']['visitors']).' visitors'" />
+        <x-stat-card class="col-span-2 lg:col-span-1" label="Player views" :value="number_format($breakdown['player_view']['views'])" icon="user" :subtext="number_format($breakdown['player_view']['visitors']).' visitors'" />
     </div>
 
     @if($summary['total'] === 0)
-        <x-admin.card class="mt-4">
+        <x-admin.card class="mt-6">
             <x-admin.empty icon="chart-bar">No page views recorded for this period.</x-admin.empty>
         </x-admin.card>
     @else
-        <div class="mt-4 grid gap-4 lg:grid-cols-2 lg:items-start">
+        <div class="mt-6 grid gap-6 lg:grid-cols-2 lg:items-start">
             {{-- Daily --}}
-            <x-admin.card title="Daily views" flush>
+            <x-admin.card title="Daily views" subtitle="Bars are relative to the busiest day." flush>
                 <div class="max-h-96 overflow-y-auto">
-                    <table class="w-full text-left text-[13px]">
-                        <thead class="sticky top-0 border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-400">
+                    <table class="adm-table">
+                        <thead class="sticky top-0">
                             <tr>
-                                <th class="px-4 py-2 font-medium">Date</th>
-                                <th class="px-4 py-2 text-right font-medium">Views</th>
-                                <th class="px-4 py-2 text-right font-medium">Unique visitors</th>
-                                <th class="hidden w-1/4 px-4 py-2 sm:table-cell"><span class="sr-only">Share of busiest day</span></th>
+                                <th>Date</th>
+                                <th class="text-right">Views</th>
+                                <th class="text-right">Unique visitors</th>
+                                <th class="hidden w-1/4 sm:table-cell"><span class="sr-only">Share of busiest day</span></th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100">
+                        <tbody>
                             @foreach($daily as $day)
                                 <tr>
-                                    <td class="whitespace-nowrap px-4 py-1.5 text-slate-700">{{ \Illuminate\Support\Carbon::parse($day['date'])->format('D, d M Y') }}</td>
-                                    <td class="px-4 py-1.5 text-right font-medium text-slate-800">{{ number_format($day['views']) }}</td>
-                                    <td class="px-4 py-1.5 text-right text-slate-600">{{ number_format($day['visitors']) }}</td>
-                                    <td class="hidden px-4 py-1.5 sm:table-cell">
-                                        <div class="h-2 rounded bg-green-500" style="width: {{ (int) round($day['views'] / $maxDaily * 100) }}%"></div>
+                                    <td class="whitespace-nowrap">{{ \Illuminate\Support\Carbon::parse($day['date'])->format('D, d M Y') }}</td>
+                                    <td class="num font-semibold text-slate-900">{{ number_format($day['views']) }}</td>
+                                    <td class="num text-slate-600">{{ number_format($day['visitors']) }}</td>
+                                    <td class="hidden sm:table-cell">
+                                        <div class="h-2 rounded-full bg-brand" style="width: {{ max(2, (int) round($day['views'] / $maxDaily * 100)) }}%"></div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -98,34 +117,36 @@
             </x-admin.card>
 
             {{-- Hourly --}}
-            <x-admin.card title="Views by hour of day" flush>
-                <div>
-                    <table class="w-full text-left text-[13px]">
-                        <thead class="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-400">
-                            <tr>
-                                <th class="px-4 py-2 font-medium">Hour</th>
-                                <th class="px-4 py-2 text-right font-medium">Views</th>
-                                <th class="hidden w-1/2 px-4 py-2 sm:table-cell"><span class="sr-only">Share of busiest hour</span></th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            @foreach($hourly as $hour)
-                                <tr>
-                                    <td class="whitespace-nowrap px-4 py-1.5 text-slate-700">{{ sprintf('%02d:00', $hour['hour']) }}</td>
-                                    <td class="px-4 py-1.5 text-right font-medium text-slate-800">{{ number_format($hour['views']) }}</td>
-                                    <td class="hidden px-4 py-1.5 sm:table-cell">
-                                        <div class="h-2 rounded bg-green-500" style="width: {{ (int) round($hour['views'] / $maxHourly * 100) }}%"></div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+            <x-admin.card title="Views by hour of day" :subtitle="$peakHour && $peakHour['views'] > 0 ? 'Busiest hour: '.sprintf('%02d:00', $peakHour['hour']).' with '.number_format($peakHour['views']).' views.' : null">
+                <div class="flex h-52 items-end gap-[3px] sm:gap-1" role="img" aria-label="Views for each hour of the day">
+                    @foreach($hourly as $hour)
+                        <div class="group relative flex h-full min-w-0 flex-1 items-end" title="{{ sprintf('%02d:00', $hour['hour']) }} &middot; {{ number_format($hour['views']) }} views">
+                            <div
+                                class="w-full rounded-t-[3px] {{ $hour['views'] > 0 ? 'bg-brand group-hover:bg-brand-hover' : 'bg-slate-200' }}"
+                                style="height: {{ $hour['views'] > 0 ? max(4, (int) round($hour['views'] / $maxHourly * 100)) : 2 }}%"
+                            ></div>
+                        </div>
+                    @endforeach
                 </div>
+                <div class="mt-2 flex justify-between text-[10px] font-medium tabular-nums text-slate-400" aria-hidden="true">
+                    <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:00</span>
+                </div>
+                <details class="mt-4 text-xs">
+                    <summary class="cursor-pointer font-semibold text-link hover:text-link-hover">Show the numbers</summary>
+                    <div class="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 tabular-nums sm:grid-cols-3">
+                        @foreach($hourly as $hour)
+                            <p class="flex justify-between border-b border-line py-1 text-slate-600">
+                                <span>{{ sprintf('%02d:00', $hour['hour']) }}</span>
+                                <span class="font-semibold text-slate-900">{{ number_format($hour['views']) }}</span>
+                            </p>
+                        @endforeach
+                    </div>
+                </details>
             </x-admin.card>
         </div>
 
         {{-- Most viewed --}}
-        <div class="mt-4 space-y-4">
+        <div class="mt-6 space-y-6">
             @if($topMatches)
                 @include('admin.analytics._top', ['title' => 'Top matches', 'rows' => $topMatches, 'noun' => 'match'])
             @endif

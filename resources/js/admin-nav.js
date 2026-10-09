@@ -4,7 +4,8 @@
  *    close, focus moved in and returned, page scroll locked while open).
  *  - From lg up it can collapse to an icon rail; the choice is remembered
  *    in localStorage and mirrored on <html data-sidebar="collapsed"> (an
- *    inline script in the layout applies it before first paint).
+ *    inline script in the layout applies it before first paint). In the
+ *    rail every link shows its name in a floating label on hover/focus.
  *  - Account dropdowns (<details data-dropdown>) close on an outside click.
  * All storage access is wrapped: private windows/blocked storage just mean
  * the preference isn't remembered.
@@ -27,17 +28,10 @@ export function initAdminSidebar() {
 
     // ----- Collapsed rail (desktop) -----
     const isCollapsed = () => root.dataset.sidebar === 'collapsed';
+    const isRail = () => isCollapsed() && DESKTOP.matches;
+    const tips = initRailTips(sidebar, isRail);
 
-    const applyTooltips = () => {
-        // Labels are hidden in the rail, so show them as native tooltips.
-        sidebar.querySelectorAll('[data-tip]').forEach((element) => {
-            if (isCollapsed() && DESKTOP.matches) {
-                element.setAttribute('title', element.dataset.tip);
-            } else {
-                element.removeAttribute('title');
-            }
-        });
-
+    const syncCollapseButton = () => {
         if (collapseButton) {
             collapseButton.setAttribute('aria-pressed', isCollapsed() ? 'true' : 'false');
             collapseButton.dataset.tip = isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar';
@@ -62,7 +56,8 @@ export function initAdminSidebar() {
             // Preference just isn't remembered.
         }
 
-        applyTooltips();
+        syncCollapseButton();
+        tips.hide();
     };
 
     collapseButton?.addEventListener('click', () => setCollapsed(!isCollapsed()));
@@ -72,14 +67,17 @@ export function initAdminSidebar() {
     // <details> toggle).
     sidebar.querySelectorAll('.adm-group > summary').forEach((summary) => {
         summary.addEventListener('click', () => {
-            if (isCollapsed() && DESKTOP.matches) {
+            if (isRail()) {
                 setCollapsed(false);
             }
         });
     });
 
-    applyTooltips();
-    DESKTOP.addEventListener('change', applyTooltips);
+    syncCollapseButton();
+    DESKTOP.addEventListener('change', () => {
+        syncCollapseButton();
+        tips.hide();
+    });
 
     // ----- Drawer (below lg) -----
     if (!toggle) {
@@ -124,6 +122,50 @@ export function initAdminSidebar() {
     });
 }
 
+/**
+ * One floating label (position: fixed, so the sidebar's own scrolling and
+ * clipping never cuts it off) shared by every sidebar link while the
+ * sidebar is an icon rail.
+ */
+function initRailTips(sidebar, isRail) {
+    const tip = document.createElement('div');
+    tip.className = 'sb-tip';
+    tip.setAttribute('role', 'tooltip');
+    document.body.appendChild(tip);
+
+    const hide = () => tip.removeAttribute('data-show');
+
+    const show = (element) => {
+        const text = element.dataset.tip;
+
+        if (!text || !isRail()) {
+            return;
+        }
+
+        const box = element.getBoundingClientRect();
+        tip.textContent = text;
+        tip.style.left = `${Math.round(box.right + 10)}px`;
+        tip.style.top = `${Math.round(box.top + (box.height - tip.offsetHeight) / 2)}px`;
+        tip.setAttribute('data-show', '');
+    };
+
+    const target = (event) => (event.target instanceof Element ? event.target.closest('[data-tip]') : null);
+
+    sidebar.addEventListener('mouseover', (event) => {
+        const element = target(event);
+        element ? show(element) : hide();
+    });
+    sidebar.addEventListener('mouseleave', hide);
+    sidebar.addEventListener('focusin', (event) => {
+        const element = target(event);
+        element ? show(element) : hide();
+    });
+    sidebar.addEventListener('focusout', hide);
+    sidebar.querySelector('.sb-nav')?.addEventListener('scroll', hide, { passive: true });
+
+    return { hide };
+}
+
 function initDropdowns() {
     const dropdowns = document.querySelectorAll('details[data-dropdown]');
 
@@ -136,6 +178,21 @@ function initDropdowns() {
             if (dropdown.open && !dropdown.contains(event.target)) {
                 dropdown.open = false;
             }
+        });
+    });
+
+    // Opening one menu closes any other.
+    dropdowns.forEach((dropdown) => {
+        dropdown.addEventListener('toggle', () => {
+            if (!dropdown.open) {
+                return;
+            }
+
+            dropdowns.forEach((other) => {
+                if (other !== dropdown) {
+                    other.open = false;
+                }
+            });
         });
     });
 

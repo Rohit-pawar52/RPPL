@@ -3,23 +3,9 @@
 @section('title', 'Edit Squad Player')
 
 @section('content')
-    <div class="mb-4">
-        <a href="{{ route('admin.team-players.index') }}" class="text-xs text-slate-500 hover:text-slate-700">
-            &larr; Back to squads
-        </a>
-    </div>
+    <x-crud.back :href="route('admin.team-players.index')">Squads</x-crud.back>
 
-    <div class="max-w-lg rounded-lg border border-slate-200 bg-white p-4">
-        <form method="POST" action="{{ route('admin.team-players.update', $teamPlayer) }}" novalidate>
-            @csrf
-            @method('PUT')
-
-            @include('admin.team-players._form')
-
-            <div class="mt-2 flex items-center gap-2">
-                <x-admin.button>Save changes</x-admin.button>
-                <x-admin.button href="{{ route('admin.team-players.index') }}" variant="secondary">Cancel</x-admin.button>
-            </div>
-        </form>
-    </div>
+    <x-crud.form :action="route('admin.team-players.update', $teamPlayer)" method="PUT" :cancel="route('admin.team-players.index')" submit="Save changes">
+        @include('admin.team-players._form')
+    </x-crud.form>
 @endsection

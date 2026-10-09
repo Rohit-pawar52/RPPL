@@ -44,13 +44,16 @@ export function initFlashMessages() {
 }
 
 /**
- * Reusable confirmation dialog for future destructive actions (delete
- * flows, etc). Exposed globally as window.confirmAction so any Blade
- * view can use it without importing/duplicating SweetAlert setup.
+ * Reusable confirmation dialog for destructive or consequential actions.
+ * Exposed globally as window.confirmAction so any Blade view can use it
+ * without importing/duplicating SweetAlert setup. Its buttons are the
+ * regular .btn family, so they follow the admin-set button colour and
+ * shape; `danger: true` (used by the delete forms) makes the confirm
+ * button red.
  *
  * @returns {Promise<import('sweetalert2').SweetAlertResult>}
  */
-export function confirmAction({ title, text, confirmButtonText = 'Yes, continue' } = {}) {
+export function confirmAction({ title, text, confirmButtonText = 'Yes, continue', danger = false } = {}) {
     return Swal.fire({
         title: title ?? 'Are you sure?',
         text: text ?? 'This action cannot be undone.',
@@ -60,7 +63,11 @@ export function confirmAction({ title, text, confirmButtonText = 'Yes, continue'
         cancelButtonText: 'Cancel',
         reverseButtons: true,
         focusCancel: true,
-        confirmButtonColor: '#16a34a',
-        cancelButtonColor: '#64748b',
+        buttonsStyling: false,
+        customClass: {
+            popup: 'rppl-dialog',
+            confirmButton: danger ? 'btn btn-danger' : 'btn btn-primary',
+            cancelButton: 'btn btn-secondary',
+        },
     });
 }

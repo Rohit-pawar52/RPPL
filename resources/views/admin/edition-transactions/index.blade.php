@@ -2,169 +2,145 @@
 
 @section('title', 'Finance — Ledger')
 
+@section('subtitle', number_format($transactions->total()).' '.\Illuminate\Support\Str::plural('entry', $transactions->total()).(array_filter($filters) ? ' match your filters.' : ' of money coming in and going out.'))
+
+@section('actions')
+    <a href="{{ route('admin.edition-transactions.export', $filters) }}" class="btn btn-secondary btn-sm max-sm:hidden">
+        <x-icon name="document-chart" class="h-4 w-4" /> Export
+    </a>
+    @can('create', \App\Models\EditionTransaction::class)
+        <x-admin.button :href="route('admin.edition-transactions.create', array_filter(['type' => 'expense', 'edition_id' => $filters['edition_id'] ?? null]))" variant="secondary" size="sm">
+            <x-crud.glyph name="expense" class="h-4 w-4 text-red-600" /> Add expense
+        </x-admin.button>
+        <x-admin.button :href="route('admin.edition-transactions.create', array_filter(['type' => 'income', 'edition_id' => $filters['edition_id'] ?? null]))" variant="primary" size="sm">
+            <x-crud.glyph name="income" class="h-4 w-4" /> Add income
+        </x-admin.button>
+    @endcan
+@endsection
+
 @section('content')
     @include('admin.finance._tabs')
 
-    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <div class="crud-kpis sm:grid-cols-3! max-sm:[&>:last-child]:col-span-2">
+        <x-crud.kpi label="Total Income" :value="money($summary['income'])" tone="in" icon="income" />
+        <x-crud.kpi label="Total Expense" :value="money($summary['expense'])" tone="out" icon="expense" />
+        <x-crud.kpi label="Balance" :value="money($summary['balance'])" :tone="$summary['balance'] < 0 ? 'out' : 'brand'" icon="currency" :sub="isset($filters['edition_id']) ? 'For the chosen edition' : 'All editions'" />
+    </div>
+
+    {{-- Quick filter: money in, money out, or both. --}}
+    <div class="crud-chips">
+        <x-crud.chip :href="request()->fullUrlWithQuery(['type' => null, 'page' => null])" :active="empty($filters['type'])">All</x-crud.chip>
+        <x-crud.chip :href="request()->fullUrlWithQuery(['type' => 'income', 'page' => null])" :active="($filters['type'] ?? '') === 'income'">
+            <x-crud.glyph name="income" class="h-4 w-4 text-green-600" /> Income
+        </x-crud.chip>
+        <x-crud.chip :href="request()->fullUrlWithQuery(['type' => 'expense', 'page' => null])" :active="($filters['type'] ?? '') === 'expense'">
+            <x-crud.glyph name="expense" class="h-4 w-4 text-red-600" /> Expense
+        </x-crud.chip>
+    </div>
+
+    <div class="crud-toolbar">
         <x-table-filters :action="route('admin.edition-transactions.index')" :filters="$filters" :date-range="true" :per-page="$perPage">
-            <input
-                type="text"
-                name="search"
-                value="{{ $filters['search'] ?? '' }}"
-                placeholder="Search category, description&hellip;"
-                class="w-full max-w-[220px] rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
-            />
-
-            <select name="edition_id" class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring">
-                <option value="">All editions</option>
-                @foreach($editions as $edition)
-                    <option value="{{ $edition->id }}" @selected(($filters['edition_id'] ?? '') == $edition->id)>
-                        {{ $edition->name }}
-                    </option>
-                @endforeach
-            </select>
-
-            <select name="type" class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring">
-                <option value="">All types</option>
-                @foreach(\App\Models\EditionTransaction::TYPES as $type)
-                    <option value="{{ $type }}" @selected(($filters['type'] ?? '') === $type)>
-                        {{ ucfirst($type) }}
-                    </option>
-                @endforeach
-            </select>
+            <x-crud.search :value="$filters['search'] ?? ''" placeholder="Search category, description&hellip;" />
+            <x-crud.select name="edition_id" all="All editions" :value="$filters['edition_id'] ?? ''" :options="$editions->pluck('name', 'id')->all()" />
+            @if(! empty($filters['type']))
+                <input type="hidden" name="type" value="{{ $filters['type'] }}" />
+            @endif
         </x-table-filters>
+    </div>
 
-        <div class="flex items-center gap-2">
-            <x-selected-report-action
-                id="transactions-selected-export"
-                :action="route('admin.edition-transactions.export-selected')"
-                label="Export Selected ({count})"
-            />
-            <a
-                href="{{ route('admin.edition-transactions.export', $filters) }}"
-                class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50"
-            >
-                <x-icon name="document-chart" class="h-4 w-4" />
-                Export
-            </a>
-            <a
-                href="{{ route('admin.edition-transactions.create') }}"
-                class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
-            >
-                + New transaction
-            </a>
+    <div class="mb-3 flex items-center justify-end gap-2">
+        <x-selected-report-action
+            id="transactions-selected-export"
+            :action="route('admin.edition-transactions.export-selected')"
+            label="Export Selected ({count})"
+        />
+    </div>
+
+    <div class="crud-table-wrap" data-row-selection="#transactions-selected-export-button">
+        <div class="crud-table-scroll">
+            <table class="crud-table crud-stack">
+                <thead>
+                    <tr>
+                        <th class="w-10">
+                            <input type="checkbox" data-select-all aria-label="Select all transactions on this page" class="rounded border-slate-300" />
+                        </th>
+                        <th><x-sortable-header column="transaction_date" :sort="$sort" :direction="$direction">Date</x-sortable-header></th>
+                        <th>Edition</th>
+                        <th><x-sortable-header column="type" :sort="$sort" :direction="$direction">Type</x-sortable-header></th>
+                        <th class="hidden md:table-cell">Category</th>
+                        <th class="hidden xl:table-cell">Description</th>
+                        <th class="text-right"><x-sortable-header column="amount" :sort="$sort" :direction="$direction">Amount</x-sortable-header></th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($transactions as $transaction)
+                        @php $isIncome = $transaction->type === 'income'; @endphp
+                        <tr class="crud-row">
+                            <td class="c-check w-10">
+                                <input
+                                    type="checkbox"
+                                    data-row-checkbox
+                                    form="transactions-selected-export"
+                                    name="selected_ids[]"
+                                    value="{{ $transaction->id }}"
+                                    aria-label="Select transaction {{ $transaction->id }}"
+                                    class="rounded border-slate-300"
+                                />
+                            </td>
+                            <td class="whitespace-nowrap text-slate-600 max-md:hidden">{{ $transaction->transaction_date->format('d M Y') }}</td>
+                            <td class="whitespace-nowrap max-md:hidden">
+                                <a href="{{ route('admin.edition-transactions.show', $transaction) }}" class="crud-row-link font-medium">{{ $transaction->edition->name }}</a>
+                            </td>
+                            <td class="c-media">
+                                <span class="flex h-9 w-9 items-center justify-center rounded-full md:hidden {{ $isIncome ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600' }}"><x-crud.glyph :name="$isIncome ? 'income' : 'expense'" class="h-5 w-5" /></span>
+                                <span class="inline-flex items-center gap-1.5 max-md:hidden">
+                                    <x-status-badge :status="$transaction->type" />
+                                    @if($transaction->contribution_exists)
+                                        <span class="text-slate-400" title="Managed by a committee contribution"><x-crud.glyph name="lock" class="h-3.5 w-3.5" /></span>
+                                    @endif
+                                </span>
+                            </td>
+                            <td class="c-title md:hidden!">
+                                <a href="{{ route('admin.edition-transactions.show', $transaction) }}" class="crud-row-link">{{ $transaction->category ?: ($transaction->description ?: ucfirst($transaction->type)) }}</a>
+                                <span class="crud-meta">
+                                    {{ $transaction->transaction_date->format('d M Y') }} &middot; {{ $transaction->edition->name }}
+                                    @if($transaction->contribution_exists) &middot; <x-crud.glyph name="lock" class="inline h-3 w-3" /> contribution @endif
+                                </span>
+                            </td>
+                            <td class="hidden md:table-cell">{{ $transaction->category ?? '—' }}</td>
+                            <td class="hidden max-w-xs truncate xl:table-cell">{{ $transaction->description ?? '—' }}</td>
+                            <td class="c-amount c-num whitespace-nowrap">
+                                <span class="crud-money {{ $isIncome ? 'crud-money-in' : 'crud-money-out' }}">{{ $isIncome ? '+' : '−' }}{{ money($transaction->amount) }}</span>
+                            </td>
+                            <td class="c-actions">
+                                <x-crud.row-actions
+                                    :view="route('admin.edition-transactions.show', $transaction)"
+                                    :edit="$transaction->contribution_exists ? null : route('admin.edition-transactions.edit', $transaction)"
+                                    :delete="$transaction->contribution_exists ? null : route('admin.edition-transactions.destroy', $transaction)"
+                                    name="transaction"
+                                    confirm-title="Delete this transaction?"
+                                />
+                            </td>
+                        </tr>
+                    @empty
+                        <x-admin.empty table colspan="8" icon="currency">
+                            {{ array_filter($filters) ? 'No transactions match these filters.' : 'No transactions found.' }}
+                            <x-slot:action>
+                                @if(array_filter($filters))
+                                    <x-admin.button :href="route('admin.edition-transactions.index')" variant="secondary" size="sm">Clear filters</x-admin.button>
+                                @else
+                                    <x-admin.button :href="route('admin.edition-transactions.create')" size="sm">+ New transaction</x-admin.button>
+                                @endif
+                            </x-slot:action>
+                        </x-admin.empty>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <x-stat-card label="Total Income" :value="money($summary['income'])" icon="currency" />
-        <x-stat-card label="Total Expense" :value="money($summary['expense'])" icon="currency" />
-        <x-stat-card label="Balance" :value="money($summary['balance'])" icon="currency" />
-    </div>
-
-    <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white" data-row-selection="#transactions-selected-export-button">
-        <table class="w-full min-w-[720px] text-left text-[13px]">
-            <thead class="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-400">
-                <tr>
-                    <th class="w-8 px-4 py-2">
-                        <input type="checkbox" data-select-all aria-label="Select all transactions on this page" />
-                    </th>
-                    <th class="px-4 py-2 font-medium"><x-sortable-header column="transaction_date" :sort="$sort" :direction="$direction">Date</x-sortable-header></th>
-                    <th class="px-4 py-2 font-medium">Edition</th>
-                    <th class="px-4 py-2 font-medium"><x-sortable-header column="type" :sort="$sort" :direction="$direction">Type</x-sortable-header></th>
-                    <th class="hidden px-4 py-2 font-medium md:table-cell">Category</th>
-                    <th class="hidden px-4 py-2 font-medium md:table-cell">Description</th>
-                    <th class="px-4 py-2 text-right font-medium"><x-sortable-header column="amount" :sort="$sort" :direction="$direction">Amount</x-sortable-header></th>
-                    <th class="px-4 py-2 text-right font-medium">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-neutral-100">
-                @forelse($transactions as $transaction)
-                    <tr class="hover:bg-neutral-50">
-                        <td class="px-4 py-2">
-                            <input
-                                type="checkbox"
-                                data-row-checkbox
-                                form="transactions-selected-export"
-                                name="selected_ids[]"
-                                value="{{ $transaction->id }}"
-                                aria-label="Select transaction {{ $transaction->id }}"
-                            />
-                        </td>
-                        <td class="whitespace-nowrap px-4 py-2 text-neutral-600">
-                            {{ $transaction->transaction_date->format('d M Y') }}
-                        </td>
-                        <td class="px-4 py-2 font-medium text-neutral-800">
-                            <a href="{{ route('admin.edition-transactions.show', $transaction) }}" class="hover:underline">
-                                {{ $transaction->edition->name }}
-                            </a>
-                        </td>
-                        <td class="px-4 py-2">
-                            <div class="flex items-center gap-1.5">
-                                <x-status-badge :status="$transaction->type" />
-                                @if($transaction->contribution_exists)
-                                    <span class="text-[10px] text-neutral-400" title="Managed by a committee contribution">&#128274;</span>
-                                @endif
-                            </div>
-                        </td>
-                        <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">{{ $transaction->category ?? '—' }}</td>
-                        <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">{{ $transaction->description ?? '—' }}</td>
-                        <td class="px-4 py-2 text-right font-medium text-neutral-800">
-                            {{ money($transaction->amount) }}
-                        </td>
-                        <td class="px-4 py-2">
-                            <div class="flex items-center justify-end gap-1">
-                                <a
-                                    href="{{ route('admin.edition-transactions.show', $transaction) }}"
-                                    title="View"
-                                    aria-label="View transaction"
-                                    class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
-                                >
-                                    <x-icon name="eye" class="h-4 w-4" />
-                                </a>
-                                @unless($transaction->contribution_exists)
-                                    <a
-                                        href="{{ route('admin.edition-transactions.edit', $transaction) }}"
-                                        title="Edit"
-                                        aria-label="Edit transaction"
-                                        class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 theme-hover-primary"
-                                    >
-                                        <x-icon name="pencil" class="h-4 w-4" />
-                                    </a>
-                                    <form
-                                        method="POST"
-                                        action="{{ route('admin.edition-transactions.destroy', $transaction) }}"
-                                        data-confirm-delete
-                                        data-confirm-title="Delete this transaction?"
-                                        data-confirm-text="This cannot be undone."
-                                    >
-                                        @csrf
-                                        @method('DELETE')
-                                        <button
-                                            type="submit"
-                                            title="Delete"
-                                            aria-label="Delete transaction"
-                                            class="rounded p-1.5 text-neutral-500 hover:bg-red-50 hover:text-red-600"
-                                        >
-                                            <x-icon name="trash" class="h-4 w-4" />
-                                        </button>
-                                    </form>
-                                @endunless
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="8" class="px-4 py-8 text-center text-neutral-400">
-                            No transactions found.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    <div class="mt-3">
+    <div class="mt-4">
         {{ $transactions->links() }}
     </div>
 @endsection

@@ -9,16 +9,20 @@ import Pusher from 'pusher-js';
  * when the auction hides live bids, no bid at all). All words come from the
  * server in the visitor's language.
  *
- * Two layouts: the normal page (the numbers, the player on the block, tabs
- * for sold / upcoming / on hold / unsold players with the bidding detail of
- * every sale, and the teams) and, with data-big="1", the dark projector
- * layout that fills the screen and scales with it.
+ * Two layouts: the normal page (the player on the block in a dark hero card,
+ * the numbers, tabs for sold / upcoming / on hold / unsold players with the
+ * bidding detail of every sale, and the teams) and, with data-big="1", the
+ * dark projector layout that fills the screen and scales with it.
  *
  * Freshness: when Reverb is running, a "something changed" signal on the
  * public-auction channel makes the page fetch the new picture at once (the
  * signal carries no data). Polling is always there as the safety net — every
  * few seconds if the signal is not available, and only now and then while it
  * is connected.
+ *
+ * Colours: the brand colour comes from the admin-editable theme (bg-brand,
+ * text-accent-dark, ...); green / red / amber stay only for their meaning
+ * (SOLD, LIVE, paused).
  */
 const REALTIME_POLL_MS = 20000;
 
@@ -71,40 +75,52 @@ if (dataEl && root) {
         );
     }
 
+    /** The address of the projector layout (the same page with ?display=big). */
+    function bigUrl() {
+        const url = new URL(window.location.href);
+        url.searchParams.set('display', 'big');
+
+        return url.pathname + url.search;
+    }
+
     /** Light page vs. dark projector: one class set each. */
     const k = big
         ? {
-            panel: 'rounded-2xl bg-slate-900 ring-1 ring-white/10',
-            tile: 'rounded-xl bg-slate-900 px-[clamp(0.6rem,1.1vw,1.4rem)] py-[clamp(0.25rem,0.5vw,0.7rem)] ring-1 ring-white/10',
+            panel: 'rounded-2xl bg-white/5 ring-1 ring-white/10',
+            tile: 'rounded-xl bg-white/5 px-[clamp(0.6rem,1.1vw,1.4rem)] py-[clamp(0.25rem,0.5vw,0.7rem)] ring-1 ring-white/10',
             title: 'text-white',
             muted: 'text-slate-400',
             soft: 'text-slate-300',
-            tag: 'rounded-full bg-white/10 px-[0.9em] py-[0.25em] text-slate-200',
+            tag: 'rounded-full bg-white/10 px-[0.9em] py-[0.25em] text-slate-100 ring-1 ring-white/10',
             rule: 'divide-white/10',
             bar: 'bg-white/10',
-            bid: 'bg-emerald-500/15 ring-1 ring-emerald-400/40 text-emerald-300',
-            bidNumber: 'text-emerald-300',
+            fill: 'bg-accent-dark',
+            bid: 'bg-brand/20 ring-1 ring-accent-dark/50 text-accent-dark',
+            bidNumber: 'text-accent-dark',
             plain: 'bg-white/5 ring-1 ring-white/10 text-slate-300',
-            sold: 'bg-emerald-600 text-white',
+            sold: 'bg-green-600 text-white',
         }
         : {
             panel: 'pub-card',
-            tile: 'pub-card px-3.5 py-3',
+            tile: 'rounded-xl border border-line bg-white px-3.5 py-3 shadow-card',
             title: 'text-slate-900',
             muted: 'text-slate-500',
             soft: 'text-slate-600',
-            tag: 'rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] text-slate-600',
+            tag: 'rounded-full bg-white/10 px-2.5 py-0.5 text-xs text-slate-100 ring-1 ring-white/15',
             rule: 'divide-line',
             bar: 'bg-slate-100',
-            bid: 'bg-green-50 ring-1 ring-green-200 text-green-700',
-            bidNumber: 'text-green-800',
-            plain: 'bg-slate-50 ring-1 ring-slate-200 text-slate-600',
+            fill: 'bg-brand',
+            bid: 'bg-brand/25 ring-1 ring-accent-dark/50 text-accent-dark',
+            bidNumber: 'text-accent-dark',
+            plain: 'bg-white/10 ring-1 ring-white/15 text-slate-200',
             sold: 'bg-green-600 text-white',
         };
 
     /** Caption-sized and body-sized text for each layout (the projector one scales with the screen). */
     const caption = big ? 'text-[clamp(0.7rem,0.95vw,1.2rem)]' : 'text-[11px]';
     const body = big ? 'text-[clamp(0.95rem,1.45vw,1.9rem)]' : 'text-[13px]';
+
+    const monitorIcon = '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg>';
 
     // ----- The numbers -----------------------------------------------------------
 
@@ -122,15 +138,19 @@ if (dataEl && root) {
 
         const title = `
             <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-3">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                     ${status}
-                    <h1 class="${big ? 'text-[clamp(1.5rem,3vw,3.75rem)]' : 'text-xl'} font-bold tracking-tight ${k.title}">${esc(auction.edition)} · ${esc(t.title)}</h1>
+                    <h1 class="${big ? 'text-[clamp(1.5rem,3vw,3.75rem)]' : 'text-2xl sm:text-3xl'} font-bold tracking-tight ${k.title}">${esc(auction.edition)} · ${esc(t.title)}</h1>
                 </div>
-                <p class="mt-1 ${big ? 'text-[clamp(0.9rem,1.35vw,1.75rem)]' : 'text-xs'} ${k.muted}">${esc(tr('round', { number: auction.round }))}${left > 0 ? ` · ${esc(toCome)}` : ''}${big ? ` · ${esc(done)}` : ''}${offline ? ` · <span class="text-amber-500">${esc(t.connection_lost)}</span>` : ''}</p>
+                <p class="mt-1 ${big ? 'text-[clamp(0.9rem,1.35vw,1.75rem)]' : 'text-xs'} ${k.muted}">${esc(tr('round', { number: auction.round }))}${left > 0 ? ` · ${esc(toCome)}` : ''}${big ? ` · ${esc(done)}` : ''}${offline ? ` · <span class="font-semibold text-amber-500">${esc(t.connection_lost)}</span>` : ''}</p>
             </div>`;
 
         if (!big) {
-            return `<div class="mb-4">${title}</div>`;
+            return `
+                <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+                    ${title}
+                    <a href="${esc(bigUrl())}" class="btn btn-secondary btn-sm shrink-0">${monitorIcon}${esc(t.big_screen)}</a>
+                </div>`;
         }
 
         const pct = counts.total > 0 ? Math.round(((counts.sold + counts.unsold) / counts.total) * 100) : 0;
@@ -139,9 +159,9 @@ if (dataEl && root) {
             <div class="mb-[clamp(0.5rem,1vw,1.25rem)]">
                 <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
                     ${title}
-                    <div class="flex flex-wrap gap-[clamp(0.4rem,0.7vw,0.9rem)]">${overviewItems().slice(0, 6).map(tile).join('')}</div>
+                    <div class="flex flex-wrap gap-[clamp(0.4rem,0.7vw,0.9rem)]">${overviewItems().slice(0, 6).map((item) => tile(item)).join('')}</div>
                 </div>
-                <div class="mt-[clamp(0.4rem,0.7vw,0.9rem)] h-[0.35vw] min-h-1 overflow-hidden rounded-full ${k.bar}" aria-hidden="true"><div class="h-full rounded-full bg-emerald-500" style="width: ${pct}%"></div></div>
+                <div class="mt-[clamp(0.4rem,0.7vw,0.9rem)] h-[0.35vw] min-h-1 overflow-hidden rounded-full ${k.bar}" aria-hidden="true"><div class="h-full rounded-full ${k.fill}" style="width: ${pct}%"></div></div>
             </div>`;
     }
 
@@ -153,8 +173,8 @@ if (dataEl && root) {
 
         return `
             <div class="${spacing}">
-                <div class="h-1.5 overflow-hidden rounded-full ${k.bar}" aria-hidden="true"><div class="h-full rounded-full bg-emerald-500" style="width: ${pct}%"></div></div>
-                <p class="mt-1 ${caption} ${k.muted}">${esc(tr('progress', { done, total: counts.total }))}</p>
+                <div class="h-1.5 overflow-hidden rounded-full ${k.bar}" aria-hidden="true"><div class="h-full rounded-full ${k.fill} transition-all duration-500" style="width: ${pct}%"></div></div>
+                <p class="mt-1.5 ${caption} ${k.muted}">${esc(tr('progress', { done, total: counts.total }))}</p>
             </div>`;
     }
 
@@ -174,19 +194,23 @@ if (dataEl && root) {
         ];
     }
 
-    function tile([label, value, sub = '']) {
+    function tile([label, value, sub = ''], extra = '') {
         return `
-            <div class="${k.tile} min-w-0">
+            <div class="${k.tile} ${extra} min-w-0">
                 <p class="${caption} font-semibold uppercase tracking-wide ${k.muted}">${esc(label)}</p>
-                <p class="${big ? 'text-[clamp(1.2rem,2.2vw,2.9rem)]' : 'text-xl'} font-bold leading-tight tabular-nums ${k.title}">${esc(value)}</p>
-                ${sub ? `<p class="max-w-[16rem] truncate ${caption} ${k.muted}">${esc(sub)}</p>` : ''}
+                <p class="${big ? 'text-[clamp(1.2rem,2.2vw,2.9rem)]' : 'text-xl sm:text-2xl'} font-bold leading-tight tabular-nums ${k.title}">${esc(value)}</p>
+                ${sub ? `<p class="truncate ${caption} ${k.muted}">${esc(sub)}</p>` : ''}
             </div>`;
     }
 
     function overview() {
+        // The widest tile (highest sale: it carries a name and a team) goes last and takes two columns.
+        const items = overviewItems();
+        const ordered = [items[0], items[1], items[2], items[3], items[4], items[6], items[5]];
+
         return `
-            <section class="mb-4" aria-label="${esc(t.title)}">
-                <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-7">${overviewItems().map(tile).join('')}</div>
+            <section class="mt-4" aria-label="${esc(t.title)}">
+                <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4">${ordered.map((item, index) => tile(item, index === 6 ? 'col-span-2' : '')).join('')}</div>
                 ${progress('mt-3')}
             </section>`;
     }
@@ -207,30 +231,30 @@ if (dataEl && root) {
         const size = big ? 'text-[clamp(0.9rem,1.35vw,1.75rem)]' : 'text-xs';
 
         if (!lot.stats) {
-            return `<p class="mt-2 ${size} ${k.muted}">${esc(t.first_time)}</p>`;
+            return `<p class="mt-2 ${size} ${big ? k.muted : 'text-slate-400'}">${esc(t.first_time)}</p>`;
         }
 
         const s = lot.stats;
         const line = tr('before', { matches: s.matches, runs: s.runs, wickets: s.wickets });
         const best = s.highest !== null ? ` (${tr('best_score', { value: s.highest })})` : '';
 
-        return `<p class="mt-2 ${size} ${k.soft}">${esc(line)}${esc(best)}</p>`;
+        return `<p class="mt-2 ${size} ${big ? k.soft : 'text-slate-300'}">${esc(line)}${esc(best)}</p>`;
     }
 
     function photoBox(lot, sizeClass) {
         // The player's photo, or the default picture when there is none (or it fails to load).
-        return `<div class="relative ${sizeClass} shrink-0 overflow-hidden rounded-xl ${big ? 'bg-white/10' : 'bg-slate-100'}"><img src="${esc(lot.photo || '')}" alt="" data-fallback="user" class="h-full w-full object-cover" /></div>`;
+        return `<div class="relative ${sizeClass} shrink-0 overflow-hidden rounded-2xl bg-white/10 ring-2 ring-white/15"><img src="${esc(lot.photo || '')}" alt="" data-fallback="user" class="h-full w-full object-cover object-top" /></div>`;
     }
 
-    /** The standing bid, in the normal page. */
+    /** The standing bid, in the normal page (inside the dark hero card). */
     function bidBox(lot) {
         const hasBid = lot.current_bid !== null;
 
         if (lot.bids_hidden) {
-            return `<div class="min-w-[12rem] rounded-xl ${k.plain} px-5 py-4 text-right"><p class="text-[11px] font-semibold uppercase tracking-wide opacity-70">${esc(t.base_price)}</p><p class="text-3xl font-bold tabular-nums">${pts(lot.base_price)}</p><p class="text-xs opacity-70">${esc(t.bidding)}</p></div>`;
+            return `<div class="w-full rounded-2xl ${k.plain} px-5 py-4 text-left md:w-auto md:min-w-[14rem] md:text-right"><p class="text-[11px] font-semibold uppercase tracking-wide opacity-70">${esc(t.base_price)}</p><p class="text-4xl font-bold tabular-nums text-white">${pts(lot.base_price)}</p><p class="text-xs opacity-70">${esc(t.bidding)}</p></div>`;
         }
 
-        return `<div class="min-w-[12rem] rounded-xl ${hasBid ? k.bid : k.plain} px-5 py-4 text-right"><p class="text-[11px] font-semibold uppercase tracking-wide opacity-80">${esc(hasBid ? t.current_bid : t.base_price)}</p><p class="text-4xl font-bold tabular-nums ${hasBid ? k.bidNumber : ''}">${pts(hasBid ? lot.current_bid : lot.base_price)}</p><p class="text-sm ${hasBid ? 'font-semibold' : 'opacity-70'}">${esc(hasBid ? lot.leading_team : t.no_bid_yet)}</p></div>`;
+        return `<div class="w-full rounded-2xl ${hasBid ? k.bid : k.plain} px-5 py-4 text-left md:w-auto md:min-w-[14rem] md:text-right"><p class="text-[11px] font-semibold uppercase tracking-wide opacity-80">${esc(hasBid ? t.current_bid : t.base_price)}</p><p class="text-5xl font-extrabold leading-tight tabular-nums ${hasBid ? k.bidNumber : 'text-white'}">${pts(hasBid ? lot.current_bid : lot.base_price)}</p><p class="mt-0.5 text-sm ${hasBid ? 'font-semibold text-white' : 'opacity-70'}">${esc(hasBid ? lot.leading_team : t.no_bid_yet)}</p></div>`;
     }
 
     function justSoldBanner() {
@@ -240,7 +264,7 @@ if (dataEl && root) {
             return '';
         }
 
-        return `<div class="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg ${k.sold} px-4 py-2 ${big ? 'text-[clamp(1.1rem,2vw,2.5rem)]' : 'text-sm'} font-semibold"><span class="rounded bg-white/20 px-2 py-0.5 text-xs font-bold tracking-wide">${esc(t.sold)}</span>${esc(sale.name)} → ${esc(sale.team || '')} · ${pts(sale.amount)} ${esc(t.pts)}</div>`;
+        return `<div class="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl ${k.sold} px-4 py-2.5 ${big ? 'text-[clamp(1.1rem,2vw,2.5rem)]' : 'text-sm'} font-semibold shadow-raised"><span class="rounded bg-white/20 px-2 py-0.5 text-xs font-bold tracking-wide">${esc(t.sold)}</span>${esc(sale.name)} → ${esc(sale.team || '')} · ${pts(sale.amount)} ${esc(t.pts)}</div>`;
     }
 
     /** The player on the block on the projector: name across the full width, the bid beneath. */
@@ -255,7 +279,7 @@ if (dataEl && root) {
                <p class="mt-2 text-[clamp(1.1rem,2.2vw,2.8rem)] font-semibold opacity-70">${esc(t.bidding)}</p>`
             : `<p class="${label} opacity-80">${esc(hasBid ? t.current_bid : t.base_price)}</p>
                <p class="text-[clamp(3.5rem,9vw,12rem)] font-extrabold leading-none tabular-nums ${hasBid ? k.bidNumber : ''}">${pts(hasBid ? lot.current_bid : lot.base_price)}</p>
-               <p class="mt-2 truncate text-[clamp(1.1rem,2.2vw,2.8rem)] font-semibold ${hasBid ? '' : 'opacity-70'}">${esc(hasBid ? lot.leading_team : t.no_bid_yet)}</p>`;
+               <p class="mt-2 truncate text-[clamp(1.1rem,2.2vw,2.8rem)] font-semibold ${hasBid ? 'text-white' : 'opacity-70'}">${esc(hasBid ? lot.leading_team : t.no_bid_yet)}</p>`;
 
         const ladderBox = ladder.length
             ? `<div class="min-w-0 self-stretch border-l border-white/10 pl-[clamp(0.75rem,1.5vw,2rem)]"><p class="${label} opacity-60">${esc(t.bids)}</p><ol class="mt-2 space-y-1.5 ${body}">${ladder.map((bid, index) => `<li class="flex justify-between gap-3 ${index === 0 ? 'font-semibold text-white' : 'text-slate-400'}"><span class="truncate">${esc(bid.team)}</span><span class="tabular-nums">${pts(bid.amount)}</span></li>`).join('')}</ol></div>`
@@ -285,23 +309,29 @@ if (dataEl && root) {
             </div>`;
     }
 
+    /** The player on the block on the normal page: a dark hero card, the bid on its right. */
     function normalLot(lot) {
-        const where = lot.village ? `<p class="mt-1.5 text-xs ${k.muted}">${esc(lot.village)}</p>` : '';
+        const where = lot.village ? `<p class="mt-1.5 flex items-center gap-1 text-xs text-slate-400"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.5 7-11.5A7 7 0 0 0 5 9.5C5 14.5 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.5" /></svg>${esc(lot.village)}</p>` : '';
 
         const bids = !lot.bids_hidden && lot.bids.length
-            ? `<ol class="mt-4 space-y-1 text-[13px]">${lot.bids.map((bid, index) => `<li class="flex justify-between gap-3 ${index === 0 ? `font-semibold ${k.title}` : k.muted}"><span class="truncate">${esc(bid.team)}</span><span class="tabular-nums">${pts(bid.amount)}</span></li>`).join('')}</ol>`
+            ? `<div class="mt-5 border-t border-white/10 pt-4"><p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">${esc(t.bids)}</p><ol class="flex flex-wrap gap-2">${lot.bids.map((bid, index) => `<li class="flex items-center gap-2 rounded-full px-3 py-1 text-xs ${index === 0 ? 'bg-brand/30 font-semibold text-white ring-1 ring-accent-dark/50' : 'bg-white/5 text-slate-300 ring-1 ring-white/10'}"><span class="max-w-[10rem] truncate">${esc(bid.team)}</span><span class="font-bold tabular-nums ${index === 0 ? 'text-accent-dark' : ''}">${pts(bid.amount)}</span></li>`).join('')}</ol></div>`
             : '';
 
         return `
-            <div class="${k.panel} p-5">
-                <p class="text-[11px] font-semibold uppercase tracking-wide ${k.muted}">${esc(t.on_the_block)}</p>
-                <div class="mt-2 flex flex-wrap items-start gap-5">
-                    ${photoBox(lot, 'h-28 w-28 text-3xl')}
-                    <div class="min-w-0 flex-1">
-                        <h2 class="break-words text-3xl font-bold tracking-tight ${k.title}">${esc(lot.name)}</h2>
-                        <div class="mt-2 flex flex-wrap items-center gap-2">${tags(lot)}</div>
-                        ${where}
-                        ${pastLine(lot)}
+            <div class="pc-hero p-5 sm:p-6">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="pc-eyebrow">${esc(t.on_the_block)}</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">${esc(tr('round_short', { number: lot.round }))}</p>
+                </div>
+                <div class="mt-4 grid items-center gap-5 md:grid-cols-[minmax(0,1fr)_auto]">
+                    <div class="flex items-center gap-4 sm:gap-5">
+                        ${photoBox(lot, 'h-24 w-24 sm:h-32 sm:w-32')}
+                        <div class="min-w-0 flex-1">
+                            <h2 class="break-words text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl">${esc(lot.name)}</h2>
+                            <div class="mt-2 flex flex-wrap items-center gap-1.5">${tags(lot)}</div>
+                            ${where}
+                            ${pastLine(lot)}
+                        </div>
                     </div>
                     ${bidBox(lot)}
                 </div>
@@ -315,7 +345,7 @@ if (dataEl && root) {
         const fill = big ? 'flex flex-1 flex-col items-center justify-center' : '';
 
         if (paused) {
-            return `${justSoldBanner()}<div class="${k.panel} ${fill} ${big ? 'p-12' : 'p-8'} text-center"><p class="${big ? 'text-[clamp(2.5rem,5vw,6rem)]' : 'text-2xl'} font-bold ${k.title}">${esc(t.paused)}</p><p class="mt-3 ${big ? 'text-[clamp(1.1rem,2vw,2.5rem)]' : 'text-sm'} ${k.muted}">${esc(t.paused_hint)}</p></div>`;
+            return `${justSoldBanner()}<div class="${big ? `${k.panel} ${fill} p-12` : 'rounded-2xl border border-amber-200 bg-amber-50 p-8'} text-center"><p class="${big ? 'text-[clamp(2.5rem,5vw,6rem)]' : 'text-2xl'} font-bold ${big ? k.title : 'text-amber-900'}">${esc(t.paused)}</p><p class="mt-3 ${big ? 'text-[clamp(1.1rem,2vw,2.5rem)]' : 'text-sm'} ${big ? k.muted : 'text-amber-800'}">${esc(t.paused_hint)}</p></div>`;
         }
 
         if (lot) {
@@ -323,15 +353,17 @@ if (dataEl && root) {
         }
 
         if (sale) {
-            return `<div class="rounded-2xl ${k.sold} ${fill} ${big ? 'p-12' : 'p-8'} text-center">
+            return `<div class="rounded-2xl ${k.sold} ${fill} ${big ? 'p-12' : 'p-8'} text-center shadow-raised">
                 <p class="${big ? 'text-[clamp(1.5rem,2.6vw,3.5rem)]' : 'text-lg'} font-bold tracking-[0.3em]">${esc(t.sold)}</p>
-                <p class="mt-3 ${big ? 'text-[clamp(3rem,6.5vw,8rem)]' : 'text-4xl'} font-bold">${esc(sale.name)}</p>
+                <p class="mt-3 ${big ? 'text-[clamp(3rem,6.5vw,8rem)]' : 'text-3xl sm:text-4xl'} font-bold">${esc(sale.name)}</p>
                 <p class="mt-3 ${big ? 'text-[clamp(1.5rem,3.4vw,4.5rem)]' : 'text-xl'} font-semibold">${esc(tr('sold_to', { team: sale.team || '' }))}</p>
                 <p class="mt-1 ${big ? 'text-[clamp(2.5rem,5.5vw,7rem)]' : 'text-3xl'} font-bold tabular-nums">${esc(tr('for_points', { points: pts(sale.amount) }))}</p>
             </div>`;
         }
 
-        return `<div class="${k.panel} ${fill} ${big ? 'p-12' : 'p-8'} text-center"><p class="${big ? 'text-[clamp(2rem,4.2vw,5.5rem)]' : 'text-2xl'} font-bold ${k.title}">${esc(t.waiting_next)}</p></div>`;
+        const hourglass = '<svg class="mx-auto mb-3 h-9 w-9 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12M6 21h12M7 3c0 5 5 5 5 9s-5 4-5 9M17 3c0 5-5 5-5 9s5 4 5 9" /></svg>';
+
+        return `<div class="${k.panel} ${fill} ${big ? 'p-12' : 'p-10'} text-center">${big ? '' : hourglass}<p class="${big ? 'text-[clamp(2rem,4.2vw,5.5rem)]' : 'text-xl sm:text-2xl'} font-bold ${k.title}">${esc(t.waiting_next)}</p></div>`;
     }
 
     // ----- The teams ---------------------------------------------------------------------
@@ -344,23 +376,27 @@ if (dataEl && root) {
             const leading = state.lot && state.lot.leading_team === team.name;
             const top = team.players.find((p) => p.amount !== null);
             const squad = team.players.length
-                ? `<details data-squad="${esc(team.name)}" class="mt-1.5" ${openSquads.has(team.name) ? 'open' : ''}><summary class="cursor-pointer text-[11px] ${k.muted}">${esc(t.squad)} (${team.players.length})</summary><ul class="mt-1 space-y-0.5 text-[11px] ${k.soft}">${team.players.map((p) => `<li class="flex justify-between gap-2"><span class="truncate">${esc(p.name)}</span><span class="tabular-nums">${p.amount === null ? '—' : pts(p.amount)}</span></li>`).join('')}</ul></details>`
+                ? `<details data-squad="${esc(team.name)}" class="mt-2 border-t border-line pt-2" ${openSquads.has(team.name) ? 'open' : ''}><summary class="cursor-pointer text-[11px] font-semibold ${k.muted} hover:text-slate-800">${esc(t.squad)} (${team.players.length})</summary><ul class="mt-1.5 space-y-1 text-[11px] ${k.soft}">${team.players.map((p) => `<li class="flex justify-between gap-2"><span class="truncate">${esc(p.name)}</span><span class="tabular-nums">${p.amount === null ? '—' : pts(p.amount)}</span></li>`).join('')}</ul></details>`
                 : '';
 
             return `
-                <div class="rounded-lg border bg-white p-3 ${leading ? 'border-green-400 ring-1 ring-green-300' : 'border-line'}">
-                    <p class="truncate text-[13px] font-semibold ${k.title}" title="${esc(team.name)}">${esc(team.name)}</p>
-                    <p class="mt-0.5 text-xl font-bold tabular-nums ${k.title}">${pts(team.left)} <span class="text-[11px] font-medium ${k.muted}">${esc(t.left)}</span></p>
-                    <div class="mt-1 h-1.5 overflow-hidden rounded-full ${k.bar}" aria-hidden="true"><div class="h-full rounded-full bg-emerald-500" style="width: ${usedPct}%"></div></div>
-                    <p class="mt-1.5 text-[11px] ${k.muted}">${esc(tr('players_count', { count: team.count, max }))}${team.still_needed > 0 ? ` · ${esc(tr('needs_more', { count: team.still_needed }))}` : ''}</p>
+                <div class="rounded-xl border bg-white p-3.5 shadow-card transition ${leading ? 'border-brand ring-2 ring-brand/30' : 'border-line'}">
+                    <div class="flex items-center gap-2.5">
+                        <span class="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border border-line bg-slate-100"><img src="${esc(team.logo || '')}" alt="" data-fallback="image" class="h-full w-full object-cover" /></span>
+                        <p class="min-w-0 flex-1 truncate text-[13px] font-semibold ${k.title}" title="${esc(team.name)}">${esc(team.name)}</p>
+                        ${leading ? `<span class="shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand">${esc(t.current_bid)}</span>` : ''}
+                    </div>
+                    <p class="mt-2.5 text-2xl font-bold leading-none tabular-nums ${k.title}">${pts(team.left)} <span class="text-[11px] font-medium ${k.muted}">${esc(t.left)}</span></p>
+                    <div class="mt-2 h-1.5 overflow-hidden rounded-full ${k.bar}" aria-hidden="true"><div class="h-full rounded-full ${k.fill} transition-all duration-500" style="width: ${usedPct}%"></div></div>
+                    <p class="mt-2 text-[11px] ${k.muted}"><span class="font-semibold tabular-nums ${team.still_needed > 0 ? 'text-amber-600' : k.soft}">${esc(tr('players_count', { count: team.count, max }))}</span>${team.still_needed > 0 ? ` · ${esc(tr('needs_more', { count: team.still_needed }))}` : ''}</p>
                     <p class="mt-0.5 truncate text-[11px] ${k.muted}">${esc(t.spent)} ${pts(team.spent)}${top ? ` · ${esc(t.top_buy)}: ${esc(top.name)} (${pts(top.amount)})` : ''}</p>
                     ${squad}
                 </div>`;
         });
 
         return `
-            <section aria-label="${esc(t.teams)}">
-                <h2 class="mb-2 text-sm font-semibold ${k.title}">${esc(t.teams)}</h2>
+            <section aria-label="${esc(t.teams)}" class="lg:sticky lg:top-20">
+                <h2 class="mb-2 text-base font-semibold tracking-tight ${k.title}">${esc(t.teams)}</h2>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">${cards.join('')}</div>
             </section>`;
     }
@@ -375,10 +411,10 @@ if (dataEl && root) {
             const usedPct = team.purse > 0 ? Math.min(100, Math.round(((team.purse - team.left) / team.purse) * 100)) : 0;
             const leading = state.lot && state.lot.leading_team === team.name;
 
-            const frame = `flex min-h-0 min-w-0 flex-col justify-between overflow-hidden rounded-xl bg-slate-900 px-[clamp(0.6rem,1vw,1.3rem)] py-[clamp(0.35rem,0.7vw,0.9rem)] ring-1 ${leading ? 'ring-2 ring-emerald-400' : 'ring-white/10'}`;
+            const frame = `flex min-h-0 min-w-0 flex-col justify-between overflow-hidden rounded-xl bg-white/5 px-[clamp(0.6rem,1vw,1.3rem)] py-[clamp(0.35rem,0.7vw,0.9rem)] ring-1 ${leading ? 'ring-2 ring-accent-dark' : 'ring-white/10'}`;
             const squad = `${team.count}/${max}`;
             const squadColour = team.still_needed > 0 ? 'text-amber-300' : 'text-slate-400';
-            const bar = `<div class="h-[0.4vw] min-h-1 flex-1 overflow-hidden rounded-full bg-white/10" aria-hidden="true"><div class="h-full rounded-full bg-emerald-500" style="width: ${usedPct}%"></div></div>`;
+            const bar = `<div class="h-[0.4vw] min-h-1 flex-1 overflow-hidden rounded-full bg-white/10" aria-hidden="true"><div class="h-full rounded-full ${k.fill}" style="width: ${usedPct}%"></div></div>`;
 
             // Many teams: narrower cards, so the name gets the whole first line.
             if (compact) {
@@ -443,8 +479,8 @@ if (dataEl && root) {
         const bidsLabel = hasBids ? (sale.bids === 1 ? t.bids_one : tr('bids_count', { count: sale.bids })) : '';
         const summary = `
             <span class="w-6 shrink-0 text-center text-xs tabular-nums text-slate-400">${number}</span>
-            <span class="min-w-0 flex-1"><span class="block truncate text-[13px] font-medium text-slate-900">${esc(sale.name)}</span><span class="block truncate text-[11px] text-slate-500">${esc([sale.team, sale.role].filter(Boolean).join(' · '))}</span></span>
-            <span class="shrink-0 text-right"><span class="block text-[13px] font-bold tabular-nums text-slate-900">${pts(sale.amount)} <span class="text-[11px] font-normal text-slate-400">${esc(t.pts)}</span></span>${hasBids ? `<span class="block text-[11px] text-slate-500">${esc(bidsLabel)}</span>` : ''}</span>`;
+            <span class="min-w-0 flex-1"><span class="block truncate text-[13px] font-semibold text-slate-900">${esc(sale.name)}</span><span class="block truncate text-[11px] text-slate-500">${esc([sale.team, sale.role].filter(Boolean).join(' · '))}</span></span>
+            <span class="shrink-0 text-right"><span class="block text-sm font-bold tabular-nums text-slate-900">${pts(sale.amount)} <span class="text-[11px] font-normal text-slate-400">${esc(t.pts)}</span></span>${hasBids ? `<span class="block text-[11px] text-slate-500">${esc(bidsLabel)}</span>` : ''}</span>`;
 
         if (!hasBids) {
             return `<li class="flex items-center gap-3 px-4 py-2.5">${summary}</li>`;
@@ -455,7 +491,7 @@ if (dataEl && root) {
         return `
             <li>
                 <details class="group" data-sale="${sale.key}" data-sig="${esc(sig)}" ${openSales.has(String(sale.key)) ? 'open' : ''}>
-                    <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-2.5 hover:bg-slate-50 [&::-webkit-details-marker]:hidden">${summary}<span class="shrink-0 text-slate-400 transition group-open:rotate-180" aria-hidden="true">▾</span></summary>
+                    <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-2.5 transition hover:bg-hover [&::-webkit-details-marker]:hidden">${summary}<span class="shrink-0 text-slate-400 transition group-open:rotate-180" aria-hidden="true">▾</span></summary>
                     ${ladderHtml(sig)}
                 </details>
             </li>`;
@@ -470,7 +506,7 @@ if (dataEl && root) {
             const name = typeof player === 'string' ? player : player.name;
             const role = typeof player === 'string' ? null : player.role;
 
-            return `<li class="flex items-baseline justify-between gap-2 border-b border-line py-1.5 text-[13px]"><span class="truncate text-slate-900">${esc(name)}</span>${role ? `<span class="shrink-0 text-[11px] text-slate-400">${esc(role)}</span>` : ''}</li>`;
+            return `<li class="flex items-baseline justify-between gap-2 border-b border-line py-2 text-[13px]"><span class="truncate text-slate-900">${esc(name)}</span>${role ? `<span class="shrink-0 text-[11px] text-slate-400">${esc(role)}</span>` : ''}</li>`;
         }).join('')}</ul>`;
     }
 
@@ -483,7 +519,7 @@ if (dataEl && root) {
             ['unsold', t.unsold, counts.unsold],
         ];
 
-        const buttons = definitions.map(([id, label, count]) => `<button type="button" role="tab" aria-selected="${tab === id}" data-tab="${id}" class="whitespace-nowrap border-b-2 px-3 py-2.5 text-[13px] font-semibold ${tab === id ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'}">${esc(label)} <span class="tabular-nums ${tab === id ? '' : 'text-slate-400'}">${count}</span></button>`).join('');
+        const buttons = definitions.map(([id, label, count]) => `<button type="button" role="tab" aria-selected="${tab === id}" data-tab="${id}" class="-mb-px whitespace-nowrap border-b-2 px-3.5 py-3 text-[13px] font-semibold transition focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand ${tab === id ? 'border-brand text-brand' : 'border-transparent text-slate-500 hover:text-slate-900'}">${esc(label)} <span class="ml-0.5 rounded-full px-1.5 text-[11px] tabular-nums ${tab === id ? 'bg-brand-soft text-brand' : 'bg-slate-100 text-slate-500'}">${count}</span></button>`).join('');
 
         let content;
         if (tab === 'upcoming') {
@@ -519,10 +555,10 @@ if (dataEl && root) {
 
         root.innerHTML = `
             ${header()}
-            ${overview()}
             <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
                 <div class="min-w-0 space-y-4">
                     ${stage()}
+                    ${overview()}
                     ${lists()}
                 </div>
                 ${teams()}

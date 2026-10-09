@@ -17,8 +17,12 @@ namespace App\Support;
  * announcementTextColor are always a genuine #RRGGBB string —
  * sanitized against a malformed persisted value by BrandingComposer
  * before this object is even constructed, never raw user input.
- * buttonForegroundColor is derived (ForegroundContrast), never
- * independently configurable.
+ * buttonForegroundColor is the configured button text color or, when
+ * none is set, a black/white derived for contrast (ForegroundContrast).
+ * buttonHoverColor / linkHoverColor / hoverColor are null when the admin
+ * left them empty - the stylesheet then derives them from the main
+ * colors. buttonRadius is a CSS length chosen from three fixed shapes,
+ * never free text.
  */
 final class Branding
 {
@@ -39,6 +43,11 @@ final class Branding
         public readonly string $secondaryColor,
         public readonly string $buttonColor,
         public readonly string $buttonForegroundColor,
+        public readonly ?string $buttonHoverColor,
+        public readonly ?string $linkHoverColor,
+        public readonly ?string $hoverColor,
+        public readonly string $headerColor,
+        public readonly string $buttonRadius,
         public readonly string $announcementBackgroundColor,
         public readonly string $announcementTextColor,
     ) {}

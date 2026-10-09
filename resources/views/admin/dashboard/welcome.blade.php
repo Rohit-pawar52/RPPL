@@ -1,19 +1,31 @@
 @extends('layouts.admin')
 
 @section('title', 'Dashboard')
+@section('bare', '1')
 
 {{-- Shown to a role that may enter the panel but has no dashboard of its own
      (no tournament dashboard, no auction). Deliberately static: no figures,
      no queries — the sidebar lists whatever the role is allowed to open. --}}
 @section('content')
-    <p class="mb-4 text-xs text-neutral-500">
-        Welcome back, {{ auth()->user()->name }}. You are signed in as
-        <span class="font-medium text-neutral-700">{{ auth()->user()->role?->name }}</span>.
-    </p>
+    @php
+        $hour = (int) display_datetime(now(), 'G');
+        $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening');
+        $firstName = \Illuminate\Support\Str::before(trim(auth()->user()->name), ' ');
+    @endphp
 
-    <x-admin.card title="Welcome" class="max-w-xl">
-        <p class="text-[13px] text-slate-600">
-            Use the sections in the sidebar to get to the pages your role can open.
+    <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-navy-900 to-navy-800 p-5 text-white shadow-raised sm:p-7">
+        <div class="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full bg-brand opacity-30 blur-3xl" aria-hidden="true"></div>
+        <div class="relative">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-dark">{{ display_datetime(now(), 'l, j F') }}</p>
+            <h1 class="mt-1.5 break-words text-2xl font-bold tracking-tight sm:text-3xl">{{ $greeting }}, {{ $firstName }}</h1>
+            <p class="mt-2 text-[13px] text-white/70">You are signed in as {{ auth()->user()->role?->name }}.</p>
+        </div>
+    </section>
+
+    <x-admin.card title="Welcome" class="mt-6 max-w-2xl">
+        <p class="text-[13px] leading-5 text-slate-600">
+            Use the sections in the sidebar, or press <kbd class="adm-kbd">Ctrl K</kbd> and type a few letters,
+            to get to the pages your role can open.
         </p>
     </x-admin.card>
 @endsection

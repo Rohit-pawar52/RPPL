@@ -11,16 +11,7 @@
     $preselectIds = $hasSavedXi ? $selectedIds : $autoSelectIds;
 @endphp
 
-<div class="rounded-lg border border-neutral-200 bg-white p-4">
-    <div class="mb-3 flex items-center justify-between">
-        <h3 class="text-sm font-semibold text-neutral-900">{{ $team->name }}</h3>
-        @if($canModify)
-            <span data-xi-counter class="text-xs font-medium text-neutral-500">{{ count($preselectIds) }} / 11 selected</span>
-        @else
-            <span class="text-xs text-neutral-500">{{ $selected->count() }} / 11 selected</span>
-        @endif
-    </div>
-
+<section class="ops-card" id="{{ $panelId }}">
     @if($canModify)
         <form
             method="POST"
@@ -31,91 +22,108 @@
             @csrf
             <input type="hidden" name="edition_team_id" value="{{ $editionTeamId }}" />
 
-            <input
-                type="search"
-                data-xi-search
-                placeholder="Search squad by name&hellip;"
-                class="mb-2 w-full rounded-md border border-neutral-300 px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
-            />
+            <div class="ops-card-head">
+                <h3 class="ops-title">{{ $team->name }}</h3>
+                <span data-xi-counter class="ops-pill ops-pill-slate text-xs tabular-nums">{{ count($preselectIds) }} / 11 selected</span>
+            </div>
 
-            <ul class="max-h-80 divide-y divide-neutral-100 overflow-y-auto rounded-md border border-neutral-100">
-                @forelse($squad as $teamPlayer)
-                    @php
-                        $player = $teamPlayer->playerRegistration->player;
-                        $existingSelection = $selectedByTeamPlayerId->get($teamPlayer->id);
-                        $checked = in_array($teamPlayer->id, $preselectIds, true);
-                    @endphp
-                    <li data-xi-row data-player-name="{{ $player->name }}">
-                        <label class="flex min-h-11 cursor-pointer items-center gap-2.5 px-2 py-1.5 hover:bg-neutral-50">
-                            <input
-                                type="checkbox"
-                                name="team_player_ids[]"
-                                value="{{ $teamPlayer->id }}"
-                                class="xi-checkbox h-4 w-4 shrink-0 rounded border-neutral-300"
-                                @checked($checked)
-                            />
-                            <span class="min-w-0 flex-1">
-                                <span class="flex items-center gap-1 truncate text-[13px] font-medium text-neutral-800">
-                                    {{ $player->name }}
-                                    @if($teamPlayer->jersey_number)
-                                        <span class="text-neutral-400">#{{ $teamPlayer->jersey_number }}</span>
-                                    @endif
-                                    @if($existingSelection?->is_captain)
-                                        <x-icon name="star" class="h-3 w-3 text-amber-500" />
-                                    @endif
-                                    @if($existingSelection?->is_wicket_keeper)
-                                        <x-icon name="glove" class="h-3 w-3 text-blue-500" />
-                                    @endif
-                                    @unless($player->is_active)
-                                        <span class="rounded bg-neutral-100 px-1 text-[10px] font-medium text-neutral-500">Inactive</span>
-                                    @endunless
-                                </span>
-                                <span class="block text-[11px] capitalize text-neutral-400">
-                                    {{ $teamPlayer->role ? str_replace('_', ' ', $teamPlayer->role) : 'No squad role' }}
-                                </span>
-                            </span>
-                        </label>
-                    </li>
-                @empty
-                    <li class="py-4 text-center text-xs text-neutral-400">This team has no squad players yet.</li>
-                @endforelse
-            </ul>
+            <div class="p-3 sm:p-4">
+                <div class="relative">
+                    <x-ops.icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                        type="search"
+                        data-xi-search
+                        placeholder="Search squad by name&hellip;"
+                        aria-label="Search {{ $team->name }} squad"
+                        class="ops-input pl-9"
+                    />
+                </div>
 
-            <div class="mt-3 flex flex-wrap items-center gap-2">
-                <button type="button" data-xi-auto-select class="rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50">
-                    Auto Select 11
-                </button>
-                <button type="button" data-xi-clear class="rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50">
-                    Clear
-                </button>
-                <button
-                    type="submit"
-                    data-xi-save
-                    class="ml-auto rounded-md theme-button px-3 py-1.5 text-[13px] font-medium disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                    Save Playing XI
-                </button>
+                <ul class="mt-3 max-h-96 divide-y divide-line overflow-y-auto rounded-xl border border-line">
+                    @forelse($squad as $teamPlayer)
+                        @php
+                            $player = $teamPlayer->playerRegistration->player;
+                            $existingSelection = $selectedByTeamPlayerId->get($teamPlayer->id);
+                            $checked = in_array($teamPlayer->id, $preselectIds, true);
+                        @endphp
+                        <li data-xi-row data-player-name="{{ $player->name }}">
+                            <label class="flex min-h-14 cursor-pointer items-center gap-3 px-3 py-2 transition hover:bg-hover has-[:checked]:bg-brand-soft">
+                                <input
+                                    type="checkbox"
+                                    name="team_player_ids[]"
+                                    value="{{ $teamPlayer->id }}"
+                                    class="xi-checkbox h-5 w-5 shrink-0 rounded border-slate-300"
+                                    @checked($checked)
+                                />
+                                <x-media-image :path="$player->photo_path" kind="user" alt="" loading="lazy" class="h-9 w-9 shrink-0 rounded-full bg-slate-100 object-cover" />
+                                <span class="min-w-0 flex-1">
+                                    <span class="flex items-center gap-1.5 truncate text-[13px] font-semibold text-slate-800">
+                                        {{ $player->name }}
+                                        @if($teamPlayer->jersey_number)
+                                            <span class="font-medium tabular-nums text-slate-400">#{{ $teamPlayer->jersey_number }}</span>
+                                        @endif
+                                        @if($existingSelection?->is_captain)
+                                            <x-icon name="star" class="h-3.5 w-3.5 text-amber-500" />
+                                        @endif
+                                        @if($existingSelection?->is_wicket_keeper)
+                                            <x-icon name="glove" class="h-3.5 w-3.5 text-sky-600" />
+                                        @endif
+                                        @unless($player->is_active)
+                                            <span class="rounded bg-slate-100 px-1 text-[10px] font-medium text-slate-500">Inactive</span>
+                                        @endunless
+                                    </span>
+                                    <span class="block text-[11px] capitalize text-slate-400">
+                                        {{ $teamPlayer->role ? str_replace('_', ' ', $teamPlayer->role) : 'No squad role' }}
+                                    </span>
+                                </span>
+                            </label>
+                        </li>
+                    @empty
+                        <li class="py-6 text-center text-xs text-slate-400">This team has no squad players yet.</li>
+                    @endforelse
+                </ul>
+
+                <div class="mt-3 flex flex-wrap items-center gap-2">
+                    <button type="button" data-xi-auto-select class="btn btn-secondary btn-sm min-h-10">
+                        Auto Select 11
+                    </button>
+                    <button type="button" data-xi-clear class="btn btn-ghost btn-sm min-h-10">
+                        Clear
+                    </button>
+                    <button
+                        type="submit"
+                        data-xi-save
+                        class="btn btn-primary ml-auto min-h-10"
+                    >
+                        Save Playing XI
+                    </button>
+                </div>
             </div>
         </form>
+    @else
+        <div class="ops-card-head">
+            <h3 class="ops-title">{{ $team->name }}</h3>
+            <span class="ops-pill ops-pill-slate text-xs tabular-nums">{{ $selected->count() }} / 11 selected</span>
+        </div>
     @endif
 
     @if($hasSavedXi)
-        <div class="mt-4 border-t border-neutral-100 pt-3">
-            <h4 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Current Playing XI</h4>
-            <ul class="divide-y divide-neutral-100">
+        <div class="border-t border-line px-3 py-3 sm:px-4">
+            <h4 class="ops-kicker mb-1">Current Playing XI</h4>
+            <ul class="divide-y divide-line">
                 @foreach($selected as $matchPlayer)
                     @php $player = $matchPlayer->teamPlayer->playerRegistration->player; @endphp
                     <li class="flex items-center justify-between gap-2 py-1.5">
-                        <p class="truncate text-[13px] text-neutral-700">
+                        <p class="truncate text-[13px] text-slate-700">
                             {{ $player->name }}
                             @if($matchPlayer->teamPlayer->jersey_number)
-                                <span class="text-neutral-400">#{{ $matchPlayer->teamPlayer->jersey_number }}</span>
+                                <span class="text-slate-400">#{{ $matchPlayer->teamPlayer->jersey_number }}</span>
                             @endif
                         </p>
 
                         <div class="flex shrink-0 items-center gap-1">
                             @if($matchPlayer->is_captain)
-                                <span title="Captain" class="rounded p-1 text-amber-500">
+                                <span title="Captain" class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-500">
                                     <x-icon name="star" class="h-4 w-4" />
                                 </span>
                             @elseif($canModify)
@@ -123,14 +131,14 @@
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="designation" value="captain" />
-                                    <button type="submit" title="Make captain" aria-label="Make captain" class="rounded p-1 text-neutral-300 hover:bg-neutral-100 hover:text-amber-500">
+                                    <button type="submit" title="Make captain" aria-label="Make captain" class="flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-amber-50 hover:text-amber-500">
                                         <x-icon name="star" class="h-4 w-4" />
                                     </button>
                                 </form>
                             @endif
 
                             @if($matchPlayer->is_wicket_keeper)
-                                <span title="Wicketkeeper" class="rounded p-1 text-blue-500">
+                                <span title="Wicketkeeper" class="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
                                     <x-icon name="glove" class="h-4 w-4" />
                                 </span>
                             @elseif($canModify)
@@ -138,7 +146,7 @@
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="designation" value="wicket_keeper" />
-                                    <button type="submit" title="Make wicketkeeper" aria-label="Make wicketkeeper" class="rounded p-1 text-neutral-300 hover:bg-neutral-100 hover:text-blue-500">
+                                    <button type="submit" title="Make wicketkeeper" aria-label="Make wicketkeeper" class="flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-sky-50 hover:text-sky-600">
                                         <x-icon name="glove" class="h-4 w-4" />
                                     </button>
                                 </form>
@@ -149,6 +157,6 @@
             </ul>
         </div>
     @elseif(! $canModify)
-        <p class="py-4 text-center text-xs text-neutral-400">No players were selected for this team.</p>
+        <p class="py-6 text-center text-xs text-slate-400">No players were selected for this team.</p>
     @endif
-</div>
+</section>
