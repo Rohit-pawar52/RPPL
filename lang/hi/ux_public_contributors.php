@@ -7,6 +7,7 @@ return [
 
     'title' => 'हमारे सहयोगी',
     'thanks' => 'जिनके सहयोग से :name चलता है। आप सबका धन्यवाद!',
+    'total_this_season' => ':season में कुल योगदान',
     'view_more' => 'और देखें',
     'more_count' => '+:count और',
     'back' => 'होम',
