@@ -55,6 +55,8 @@
             {{-- "+ New": the common create pages, only those this user may use --}}
             <x-admin.quick-links layout="menu" />
 
+            <x-admin.language-switch class="hidden sm:inline-flex" />
+
             <a
                 href="{{ route('public.home') }}"
                 target="_blank"
@@ -89,6 +91,10 @@
                         <x-admin.icon name="external" class="adm-menu-ico" />
                         View site
                     </a>
+                    <div class="flex items-center justify-between gap-3 px-3.5 py-2 sm:hidden">
+                        <span class="text-xs font-medium text-slate-500">{{ __('Language') }}</span>
+                        <x-admin.language-switch />
+                    </div>
                     <a href="{{ route('admin.account.password.edit') }}" class="adm-menu-item">
                         <x-icon name="key" class="adm-menu-ico" />
                         Change password

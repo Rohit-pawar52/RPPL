@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-navy-950">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-navy-950">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,6 +10,7 @@
     @endif
     @include('layouts.partials.theme-vars')
     @include('layouts.partials.image-fallback')
+    @include('layouts.partials.admin-js-strings')
 
     @php
         $flash = [
@@ -45,6 +46,10 @@
 
             <div class="rounded-2xl bg-white p-6 shadow-pop sm:p-7">
                 @yield('content')
+            </div>
+
+            <div class="mt-4 flex justify-center">
+                <x-admin.language-switch dark />
             </div>
 
             <p class="mt-5 text-center">

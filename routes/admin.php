@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\EditionTransactionController;
 use App\Http\Controllers\Admin\FinanceController;
 use App\Http\Controllers\Admin\GameMatchController;
 use App\Http\Controllers\Admin\InningsController;
+use App\Http\Controllers\Admin\LanguageController;
 use App\Http\Controllers\Admin\MatchFlowController;
 use App\Http\Controllers\Admin\MatchPlayerController;
 use App\Http\Controllers\Admin\NewsController;
@@ -46,6 +47,11 @@ use App\Models\CommitteeMember;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->name('admin.')->group(function () {
+    // English / Hindi for the admin panel. Open to guests too, so the sign-in page can switch language.
+    Route::post('language/{locale}', [LanguageController::class, 'switch'])
+        ->whereIn('locale', LanguageController::LOCALES)
+        ->name('language.switch');
+
     Route::middleware('guest')->group(function () {
         Route::get('login', [LoginController::class, 'create'])->name('login');
         Route::post('login', [LoginController::class, 'store'])

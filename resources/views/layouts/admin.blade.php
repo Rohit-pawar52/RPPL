@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-surface">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-surface">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,6 +9,7 @@
     @endif
     @include('layouts.partials.theme-vars')
     @include('layouts.partials.image-fallback')
+    @include('layouts.partials.admin-js-strings')
 
     {{-- Applies the remembered desktop sidebar state before first paint so
          the sidebar never flashes open and then collapses. --}}

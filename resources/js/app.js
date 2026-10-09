@@ -1,4 +1,5 @@
 import './bootstrap';
+import './i18n';
 
 import Swal from 'sweetalert2';
 import { initFlashMessages, confirmAction } from './flash';

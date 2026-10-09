@@ -7,6 +7,7 @@ use App\Console\Commands\DispatchScheduledAnnouncements;
 use App\Console\Commands\DispatchTournamentDayReminders;
 use App\Http\Middleware\EnsurePasswordIsPrivate;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\SetAdminLocale;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -22,8 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
         then: function () {
             // Admin routes are kept in their own file (separate from the
             // public web routes) but share the standard "web" middleware
-            // group (session, CSRF, cookies).
-            Route::middleware('web')->group(base_path('routes/admin.php'));
+            // group (session, CSRF, cookies), then pick the signed-in user's
+            // language (English / Hindi) for the whole panel.
+            Route::middleware(['web', SetAdminLocale::class])->group(base_path('routes/admin.php'));
         },
     )
     /*

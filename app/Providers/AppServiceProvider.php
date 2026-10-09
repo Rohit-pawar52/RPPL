@@ -46,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureRateLimiting();
+        $this->configureAdminTranslations();
         $this->configureAuthorization();
         $this->configureFirebaseCredentialsFallback();
         $this->configureBranding();
@@ -91,6 +92,38 @@ class AppServiceProvider extends ServiceProvider
         });
 
         TeamPlayer::deleted(fn (TeamPlayer $teamPlayer) => $sync($teamPlayer->playerRegistration));
+    }
+
+    /**
+     * The admin panel's Hindi text. English is the source language: a view
+     * writes __('Save changes') and lang/admin/<area>/hi.json holds
+     * "Save changes": "<Hindi>". A phrase without a Hindi entry simply shows
+     * in English (never a raw key), so adding a screen can never break it.
+     * Each area keeps its own folder so parallel work never edits one file:
+     *   hi.json         the translations (English text => Hindi)
+     *   attributes.php  field names used in validation messages (field => Hindi)
+     *   js.php          English phrases the area's JavaScript needs (see resources/js/i18n.js)
+     */
+    private function configureAdminTranslations(): void
+    {
+        $translator = $this->app->make('translator');
+
+        foreach (glob(lang_path('admin/*'), GLOB_ONLYDIR) ?: [] as $folder) {
+            $translator->addJsonPath($folder);
+        }
+
+        $attributes = [];
+        foreach (glob(lang_path('admin/*/attributes.php')) ?: [] as $file) {
+            foreach ((require $file) as $field => $label) {
+                $attributes['validation.attributes.'.$field] = $label;
+            }
+        }
+
+        if ($attributes !== []) {
+            // addLines() marks the group as loaded, so load Hindi validation.php first or it would never be read.
+            $translator->load('*', 'validation', 'hi');
+            $translator->addLines($attributes, 'hi');
+        }
     }
 
     /**
