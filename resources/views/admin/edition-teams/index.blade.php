@@ -1,18 +1,26 @@
 @extends('layouts.admin')
 
-@section('title', 'Edition Teams')
+@section('title', __('Edition Teams'))
 
-@section('subtitle', number_format($editionTeams->total()).' team '.\Illuminate\Support\Str::plural('entry', $editionTeams->total()).' taking part in the editions.')
+@php
+    $total = $editionTeams->total();
+    $count = number_format($total);
+    $subtitle = $total === 1
+        ? __(':count team entry taking part in the editions.', ['count' => $count])
+        : __(':count team entries taking part in the editions.', ['count' => $count]);
+@endphp
+
+@section('subtitle', $subtitle)
 
 @section('actions')
-    <span class="max-sm:hidden"><x-admin.button :href="route('admin.edition-teams.create')" variant="primary">+ Add team to edition</x-admin.button></span>
+    <span class="max-sm:hidden"><x-admin.button :href="route('admin.edition-teams.create')" variant="primary">{{ __('+ Add team to edition') }}</x-admin.button></span>
 @endsection
 
 @section('content')
     <div class="crud-toolbar">
         <x-table-filters :action="route('admin.edition-teams.index')" :filters="$filters">
-            <x-crud.search :value="$filters['search'] ?? ''" placeholder="Search team name&hellip;" />
-            <x-crud.select name="edition_id" all="All editions" :value="$filters['edition_id'] ?? ''" :options="$editions->pluck('name', 'id')->all()" />
+            <x-crud.search :value="$filters['search'] ?? ''" :placeholder="__('Search team name&hellip;')" />
+            <x-crud.select name="edition_id" :all="__('All editions')" :value="$filters['edition_id'] ?? ''" :options="$editions->pluck('name', 'id')->all()" />
         </x-table-filters>
     </div>
 
@@ -21,13 +29,13 @@
             <table class="crud-table crud-stack">
                 <thead>
                     <tr>
-                        <th class="w-16">Logo</th>
-                        <th>Team</th>
-                        <th>Edition</th>
-                        <th class="hidden md:table-cell">Team Status</th>
-                        <th class="hidden md:table-cell">Squad</th>
-                        <th class="hidden lg:table-cell">Added</th>
-                        <th class="text-right">Actions</th>
+                        <th class="w-16">{{ __('Logo') }}</th>
+                        <th>{{ __('Team') }}</th>
+                        <th>{{ __('Edition') }}</th>
+                        <th class="hidden md:table-cell">{{ __('Team Status') }}</th>
+                        <th class="hidden md:table-cell">{{ __('Squad') }}</th>
+                        <th class="hidden lg:table-cell">{{ __('Added') }}</th>
+                        <th class="text-right">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -38,7 +46,7 @@
                             </td>
                             <td class="c-title">
                                 <a href="{{ route('admin.edition-teams.show', $editionTeam) }}" class="crud-row-link">{{ $editionTeam->team->name }}</a>
-                                <span class="crud-meta md:hidden">{{ $editionTeam->edition->name }} &middot; {{ $editionTeam->team_players_count }} in squad</span>
+                                <span class="crud-meta md:hidden">{{ $editionTeam->edition->name }} &middot; {{ __(':count in squad', ['count' => $editionTeam->team_players_count]) }}</span>
                             </td>
                             <td class="c-sub max-md:hidden">
                                 <span class="crud-pill crud-pill-brand">{{ $editionTeam->edition->name }}</span>
@@ -51,23 +59,23 @@
                             <td class="c-actions">
                                 <x-crud.row-actions
                                     :view="route('admin.edition-teams.show', $editionTeam)"
-                                    :view-label="'View'"
+                                    :view-label="__('View')"
                                     :delete="route('admin.edition-teams.destroy', $editionTeam)"
-                                    delete-label="Remove"
-                                    :name="$editionTeam->team->name.' in '.$editionTeam->edition->name"
-                                    :confirm-title="'Remove '.$editionTeam->team->name.' from '.$editionTeam->edition->name.'?'"
-                                    confirm-text="This cannot be undone. Teams with existing squad or match data cannot be removed."
+                                    :delete-label="__('Remove')"
+                                    :name="__(':team in :edition', ['team' => $editionTeam->team->name, 'edition' => $editionTeam->edition->name])"
+                                    :confirm-title="__('Remove :team from :edition?', ['team' => $editionTeam->team->name, 'edition' => $editionTeam->edition->name])"
+                                    :confirm-text="__('This cannot be undone. Teams with existing squad or match data cannot be removed.')"
                                 />
                             </td>
                         </tr>
                     @empty
                         <x-admin.empty table colspan="7" icon="shield">
-                            {{ array_filter($filters) ? 'No teams match these filters.' : 'No teams have been added to any edition yet.' }}
+                            {{ array_filter($filters) ? __('No teams match these filters.') : __('No teams have been added to any edition yet.') }}
                             <x-slot:action>
                                 @if(array_filter($filters))
-                                    <x-admin.button :href="route('admin.edition-teams.index')" variant="secondary" size="sm">Clear filters</x-admin.button>
+                                    <x-admin.button :href="route('admin.edition-teams.index')" variant="secondary" size="sm">{{ __('Clear filters') }}</x-admin.button>
                                 @else
-                                    <x-admin.button :href="route('admin.edition-teams.create')" size="sm">+ Add team to edition</x-admin.button>
+                                    <x-admin.button :href="route('admin.edition-teams.create')" size="sm">{{ __('+ Add team to edition') }}</x-admin.button>
                                 @endif
                             </x-slot:action>
                         </x-admin.empty>
@@ -81,5 +89,5 @@
         {{ $editionTeams->links() }}
     </div>
 
-    <x-crud.fab :href="route('admin.edition-teams.create')" label="Add team" />
+    <x-crud.fab :href="route('admin.edition-teams.create')" :label="__('Add team')" />
 @endsection

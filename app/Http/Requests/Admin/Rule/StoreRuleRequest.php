@@ -64,9 +64,9 @@ class StoreRuleRequest extends FormRequest
     public static function sharedMessages(): array
     {
         return [
-            'rule_type_id.required' => 'Please choose a rule type.',
-            'rule_type_id.exists' => 'The selected rule type does not exist.',
-            'image.max' => 'The image must not be larger than 2 MB.',
+            'rule_type_id.required' => __('Please choose a rule type.'),
+            'rule_type_id.exists' => __('The selected rule type does not exist.'),
+            'image.max' => __('The image must not be larger than 2 MB.'),
         ];
     }
 }

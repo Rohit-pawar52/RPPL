@@ -53,7 +53,7 @@ class VideoController extends Controller
 
         return redirect()
             ->route('admin.videos.index')
-            ->with('success', 'Video uploaded successfully.');
+            ->with('success', __('Video uploaded successfully.'));
     }
 
     public function edit(Video $video): View
@@ -82,7 +82,7 @@ class VideoController extends Controller
 
         return redirect()
             ->route('admin.videos.index')
-            ->with('success', 'Video updated successfully.');
+            ->with('success', __('Video updated successfully.'));
     }
 
     /**
@@ -97,7 +97,7 @@ class VideoController extends Controller
 
         return redirect()
             ->back(fallback: route('admin.videos.index'))
-            ->with('success', $video->status === 'active' ? 'Video activated successfully.' : 'Video deactivated successfully.');
+            ->with('success', $video->status === 'active' ? __('Video activated successfully.') : __('Video deactivated successfully.'));
     }
 
     public function destroy(Video $video): RedirectResponse
@@ -108,6 +108,6 @@ class VideoController extends Controller
 
         return redirect()
             ->route('admin.videos.index')
-            ->with('success', 'Video deleted successfully.');
+            ->with('success', __('Video deleted successfully.'));
     }
 }

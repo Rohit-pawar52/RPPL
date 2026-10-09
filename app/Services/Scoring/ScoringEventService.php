@@ -49,13 +49,13 @@ class ScoringEventService
 
             if ($state['first_ball']) {
                 throw ValidationException::withMessages([
-                    'striker_match_player_id' => 'There is no recorded strike to correct before the first delivery of this innings.',
+                    'striker_match_player_id' => __('There is no recorded strike to correct before the first delivery of this innings.'),
                 ]);
             }
 
             if ($strikerId === $nonStrikerId) {
                 throw ValidationException::withMessages([
-                    'non_striker_match_player_id' => 'The striker and non-striker must be different players.',
+                    'non_striker_match_player_id' => __('The striker and non-striker must be different players.'),
                 ]);
             }
 
@@ -63,11 +63,11 @@ class ScoringEventService
 
             foreach ([$strikerId, $nonStrikerId] as $matchPlayerId) {
                 if (! $this->deliveries->matchPlayerBelongsToTeam($matchPlayerId, $match, $lockedInnings->batting_team_id)) {
-                    throw ValidationException::withMessages(['striker_match_player_id' => 'Both players must be selected members of the batting team.']);
+                    throw ValidationException::withMessages(['striker_match_player_id' => __('Both players must be selected members of the batting team.')]);
                 }
 
                 if (in_array($matchPlayerId, $dismissed, true)) {
-                    throw ValidationException::withMessages(['striker_match_player_id' => 'A player already dismissed or retired out cannot be at the crease.']);
+                    throw ValidationException::withMessages(['striker_match_player_id' => __('A player already dismissed or retired out cannot be at the crease.')]);
                 }
             }
 
@@ -118,7 +118,7 @@ class ScoringEventService
     public function retireBatter(GameMatch $match, Innings $innings, MatchPlayer $batter, string $type, string $reason, User $performedBy): void
     {
         if (! in_array($type, ['hurt', 'out'], true)) {
-            throw ValidationException::withMessages(['type' => 'Invalid retirement type.']);
+            throw ValidationException::withMessages(['type' => __('Invalid retirement type.')]);
         }
 
         DB::transaction(function () use ($match, $innings, $batter, $type, $reason, $performedBy) {
@@ -128,7 +128,7 @@ class ScoringEventService
 
             if ($state['first_ball'] || $state['requires_replacement']) {
                 throw ValidationException::withMessages([
-                    'match_player_id' => 'There is no batter currently at the crease to retire.',
+                    'match_player_id' => __('There is no batter currently at the crease to retire.'),
                 ]);
             }
 
@@ -136,7 +136,7 @@ class ScoringEventService
 
             if ($batterId !== $state['striker_id'] && $batterId !== $state['non_striker_id']) {
                 throw ValidationException::withMessages([
-                    'match_player_id' => 'The selected player is not currently batting in this innings.',
+                    'match_player_id' => __('The selected player is not currently batting in this innings.'),
                 ]);
             }
 
@@ -196,22 +196,22 @@ class ScoringEventService
 
             if (! $state['requires_replacement']) {
                 throw ValidationException::withMessages([
-                    'match_player_id' => 'No new batter is currently required for this innings.',
+                    'match_player_id' => __('No new batter is currently required for this innings.'),
                 ]);
             }
 
             if (! $this->deliveries->matchPlayerBelongsToTeam($newBatterId, $match, $lockedInnings->batting_team_id)) {
-                throw ValidationException::withMessages(['match_player_id' => 'The new batter must be a selected player from the batting team.']);
+                throw ValidationException::withMessages(['match_player_id' => __('The new batter must be a selected player from the batting team.')]);
             }
 
             if ($newBatterId === $state['survivor_id']) {
-                throw ValidationException::withMessages(['match_player_id' => 'The new batter must be a different player from the surviving batter.']);
+                throw ValidationException::withMessages(['match_player_id' => __('The new batter must be a different player from the surviving batter.')]);
             }
 
             $dismissed = $this->deliveries->dismissedMatchPlayerIds($lockedInnings);
 
             if (in_array($newBatterId, $dismissed, true)) {
-                throw ValidationException::withMessages(['match_player_id' => 'A player already dismissed or retired out in this innings cannot return to the crease.']);
+                throw ValidationException::withMessages(['match_player_id' => __('A player already dismissed or retired out in this innings cannot return to the crease.')]);
             }
 
             // Frozen rule 42: Select New Batter previously never left an
@@ -266,18 +266,18 @@ class ScoringEventService
 
             if (! $state['awaiting_new_over_bowler']) {
                 throw ValidationException::withMessages([
-                    'bowler_match_player_id' => 'A new over bowler is not currently required for this innings.',
+                    'bowler_match_player_id' => __('A new over bowler is not currently required for this innings.'),
                 ]);
             }
 
             if (! $this->deliveries->matchPlayerBelongsToTeam($bowlerId, $match, $lockedInnings->bowling_team_id)) {
-                throw ValidationException::withMessages(['bowler_match_player_id' => 'The bowler must be a selected player from the bowling team.']);
+                throw ValidationException::withMessages(['bowler_match_player_id' => __('The bowler must be a selected player from the bowling team.')]);
             }
 
             $previousBowlerId = $this->deliveries->bowlerOfPreviousOver($lockedInnings);
 
             if ($previousBowlerId !== null && $previousBowlerId === $bowlerId) {
-                throw ValidationException::withMessages(['bowler_match_player_id' => 'The same bowler cannot bowl two overs in a row.']);
+                throw ValidationException::withMessages(['bowler_match_player_id' => __('The same bowler cannot bowl two overs in a row.')]);
             }
 
             // Frozen rule 42: same rationale as Select New Batter above —
@@ -324,16 +324,16 @@ class ScoringEventService
 
             if ($state['awaiting_new_over_bowler'] || empty($state['bowler_id'])) {
                 throw ValidationException::withMessages([
-                    'bowler_match_player_id' => 'There is no current-over bowler to change — select an over bowler first.',
+                    'bowler_match_player_id' => __('There is no current-over bowler to change — select an over bowler first.'),
                 ]);
             }
 
             if (! $this->deliveries->matchPlayerBelongsToTeam($newBowlerId, $match, $lockedInnings->bowling_team_id)) {
-                throw ValidationException::withMessages(['bowler_match_player_id' => 'The replacement bowler must be a selected player from the bowling team.']);
+                throw ValidationException::withMessages(['bowler_match_player_id' => __('The replacement bowler must be a selected player from the bowling team.')]);
             }
 
             if ($newBowlerId === (int) $state['bowler_id']) {
-                throw ValidationException::withMessages(['bowler_match_player_id' => 'The replacement bowler must be a different player from the current bowler.']);
+                throw ValidationException::withMessages(['bowler_match_player_id' => __('The replacement bowler must be a different player from the current bowler.')]);
             }
 
             ScoringEvent::create([
@@ -371,7 +371,7 @@ class ScoringEventService
     {
         if ($match->match_status !== 'live' || $innings->status !== 'live') {
             throw ValidationException::withMessages([
-                'delivery' => 'This innings can no longer be scored.',
+                'delivery' => __('This innings can no longer be scored.'),
             ]);
         }
     }
@@ -424,12 +424,12 @@ class ScoringEventService
         $participatingTeamIds = [(int) $match->edition_team_a_id, (int) $match->edition_team_b_id];
 
         if (! in_array((int) $awardedTeam->id, $participatingTeamIds, true)) {
-            throw ValidationException::withMessages(['awarded_team_id' => 'The awarded team must be one of the two teams in this match.']);
+            throw ValidationException::withMessages(['awarded_team_id' => __('The awarded team must be one of the two teams in this match.')]);
         }
 
         if ($match->match_status === 'completed') {
             throw ValidationException::withMessages([
-                'awarded_team_id' => 'This match has already been finalized. Reopen it before awarding penalty runs, so the corrected result can be recalculated.',
+                'awarded_team_id' => __('This match has already been finalized. Reopen it before awarding penalty runs, so the corrected result can be recalculated.'),
             ]);
         }
 

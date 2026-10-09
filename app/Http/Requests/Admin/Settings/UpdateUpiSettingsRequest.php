@@ -39,7 +39,7 @@ class UpdateUpiSettingsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'upi_id.regex' => 'Enter a valid UPI ID, like name@bank.',
+            'upi_id.regex' => __('Enter a valid UPI ID, like name@bank.'),
         ];
     }
 }

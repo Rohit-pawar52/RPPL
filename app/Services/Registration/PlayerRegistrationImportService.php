@@ -72,15 +72,15 @@ class PlayerRegistrationImportService
         }
 
         if ($sheet === null) {
-            return $this->failure(['The file must include a "name" column.']);
+            return $this->failure([__('The file must include a "name" column.')]);
         }
 
         if (count($sheet['rows']) === 0) {
-            return $this->failure(['No registration rows were found.']);
+            return $this->failure([__('No registration rows were found.')]);
         }
 
         if (count($sheet['rows']) > self::MAX_ROWS) {
-            return $this->failure(['The file contains more than '.self::MAX_ROWS.' rows. Split the file and import in smaller batches.']);
+            return $this->failure([__('The file contains more than :max rows. Split the file and import in smaller batches.', ['max' => self::MAX_ROWS])]);
         }
 
         $plan = $this->buildPlan($edition, $sheet, $parser);
@@ -257,17 +257,18 @@ class PlayerRegistrationImportService
         }
 
         if ($google) {
-            $info[] = 'Google Form response sheet detected. Its Email Address is the account that submitted the form, so people are matched by mobile number, not by email.';
+            $info[] = __('Google Form response sheet detected. Its Email Address is the account that submitted the form, so people are matched by mobile number, not by email.');
         }
 
         if ($parser->hasSlashDates($timestamps)) {
-            $info[] = 'Timestamp dates were read as '
-                .($dateOrder === 'mdy' ? 'month/day/year (MM/DD/YYYY)' : 'day/month/year (DD/MM/YYYY)')
-                .', in '.$this->settings->get('system.display_timezone').' time.';
+            $info[] = __('Timestamp dates were read as :order, in :zone time.', [
+                'order' => $dateOrder === 'mdy' ? __('month/day/year (MM/DD/YYYY)') : __('day/month/year (DD/MM/YYYY)'),
+                'zone' => $this->settings->get('system.display_timezone'),
+            ]);
         }
 
         if ($sheet['ignored'] !== []) {
-            $info[] = 'Columns not imported: '.implode(', ', $sheet['ignored']).'.';
+            $info[] = __('Columns not imported: :columns.', ['columns' => implode(', ', $sheet['ignored'])]);
         }
 
         foreach ($sheet['rows'] as $entry) {
@@ -277,12 +278,12 @@ class PlayerRegistrationImportService
             $name = $parser->name($values['name'] ?? null);
 
             if ($name === null) {
-                $errors[] = "Row {$rowNumber}: name is required.";
+                $errors[] = __('Row :number: name is required.', ['number' => $rowNumber]);
 
                 continue;
             }
 
-            $label = "Row {$rowNumber} ({$name})";
+            $label = __('Row :number (:name)', ['number' => $rowNumber, 'name' => $name]);
 
             // Same default the database column itself uses for a
             // manually-created registration with no status chosen.
@@ -290,7 +291,7 @@ class PlayerRegistrationImportService
             $paymentStatus = $statusRaw ?? 'pending';
 
             if (! in_array($paymentStatus, PlayerRegistration::PAYMENT_STATUSES, true)) {
-                $errors[] = "Row {$rowNumber}: invalid payment status \"{$statusRaw}\".";
+                $errors[] = __('Row :number: invalid payment status ":status".', ['number' => $rowNumber, 'status' => $statusRaw]);
 
                 continue;
             }
@@ -300,7 +301,7 @@ class PlayerRegistrationImportService
 
             if ($feeRaw !== null) {
                 if (! is_numeric($feeRaw) || (float) $feeRaw < 0 || (float) $feeRaw > 99999999.99) {
-                    $errors[] = "Row {$rowNumber}: invalid registration fee.";
+                    $errors[] = __('Row :number: invalid registration fee.', ['number' => $rowNumber]);
 
                     continue;
                 }
@@ -319,7 +320,7 @@ class PlayerRegistrationImportService
                 $registeredAt = $parser->timestamp($registeredAtRaw, $dateOrder);
 
                 if ($registeredAt === null) {
-                    $errors[] = "Row {$rowNumber}: invalid registered_at date.";
+                    $errors[] = __('Row :number: invalid registered_at date.', ['number' => $rowNumber]);
 
                     continue;
                 }
@@ -337,8 +338,8 @@ class PlayerRegistrationImportService
                 'tehsil' => $parser->text($values['tehsil'] ?? null, 100, 'tehsil'),
                 'district' => $parser->text($values['district'] ?? null, 100, 'district'),
                 'submitted_utr' => $parser->text($values['submitted_utr'] ?? null, 100, 'UTR'),
-                'photo_url' => $parser->link($values['photo_url'] ?? null, 'photo link'),
-                'payment_proof_url' => $parser->link($values['payment_proof_url'] ?? null, 'payment screenshot link'),
+                'photo_url' => $parser->link($values['photo_url'] ?? null, __('photo link')),
+                'payment_proof_url' => $parser->link($values['payment_proof_url'] ?? null, __('payment screenshot link')),
             ];
 
             $fields = [];
@@ -363,7 +364,7 @@ class PlayerRegistrationImportService
                 $resolved = $this->identity->resolve($phone, $email);
 
                 if ($resolved['conflict']) {
-                    $errors[] = "Row {$rowNumber}: email and phone belong to different players.";
+                    $errors[] = __('Row :number: email and phone belong to different players.', ['number' => $rowNumber]);
 
                     continue;
                 }
@@ -372,13 +373,13 @@ class PlayerRegistrationImportService
             }
 
             if ($existingPlayer && ! $existingPlayer->is_active) {
-                $errors[] = "Row {$rowNumber}: matched player is inactive and cannot be registered.";
+                $errors[] = __('Row :number: matched player is inactive and cannot be registered.', ['number' => $rowNumber]);
 
                 continue;
             }
 
             if ($existingPlayer && PlayerRegistration::where('edition_id', $edition->id)->where('player_id', $existingPlayer->id)->exists()) {
-                $skipped[] = "{$label}: already registered for this edition — left as it is.";
+                $skipped[] = __(':label: already registered for this edition — left as it is.', ['label' => $label]);
 
                 continue;
             }
@@ -397,7 +398,7 @@ class PlayerRegistrationImportService
 
             if (isset($seenIdentities[$identityKey])) {
                 $first = $seenIdentities[$identityKey];
-                $skipped[] = "{$label}: skipped — same person as row {$first['row']} ({$first['name']}), which is imported instead.";
+                $skipped[] = __(':label: skipped — same person as row :row (:name), which is imported instead.', ['label' => $label, 'row' => $first['row'], 'name' => $first['name']]);
 
                 continue;
             }
@@ -406,8 +407,8 @@ class PlayerRegistrationImportService
 
             if ($existingPlayer) {
                 $rowNotes[] = mb_strtolower($existingPlayer->name) === mb_strtolower($name)
-                    ? 'matched the existing player by mobile number/email, so the registration is added to that player and their profile is left unchanged'
-                    : "matched the existing player '{$existingPlayer->name}' by mobile number/email, so the registration is added to that player and their profile (including the name) is left unchanged";
+                    ? __('matched the existing player by mobile number/email, so the registration is added to that player and their profile is left unchanged')
+                    : __("matched the existing player ':player' by mobile number/email, so the registration is added to that player and their profile (including the name) is left unchanged", ['player' => $existingPlayer->name]);
             }
 
             // players.email is unique: a new player only gets the email if
@@ -417,14 +418,14 @@ class PlayerRegistrationImportService
             if ($existingPlayer === null && $email !== null) {
                 if (isset($claimedEmails[$email]) || Player::where('email', $email)->exists()) {
                     $storedEmail = null;
-                    $rowNotes[] = "email {$email} already belongs to another player — not saved on this player";
+                    $rowNotes[] = __('email :email already belongs to another player — not saved on this player', ['email' => $email]);
                 } else {
                     $claimedEmails[$email] = true;
                 }
             }
 
             foreach ($rowNotes as $note) {
-                $adjustments[] = "{$label}: {$note}.";
+                $adjustments[] = __(':label: :note.', ['label' => $label, 'note' => $note]);
             }
 
             $actions[] = [
@@ -501,7 +502,7 @@ class PlayerRegistrationImportService
                 }
             });
         } catch (QueryException) {
-            return $this->failure(['The import could not be completed because of a data conflict. Please retry.']);
+            return $this->failure([__('The import could not be completed because of a data conflict. Please retry.')]);
         }
 
         // After the commit, off the request: copy each registration's

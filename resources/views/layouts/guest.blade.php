@@ -1,15 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-navy-950">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-navy-950">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="{{ $branding->headerColor }}">
-    <title>@yield('title', 'Admin') &middot; {{ $branding->shortName }} Admin</title>
+    <title>@yield('title', __('Admin')) &middot; {{ $branding->shortName }} {{ __('Admin') }}</title>
     @if($branding->faviconUrl)
         <link rel="icon" href="{{ $branding->faviconUrl }}">
     @endif
     @include('layouts.partials.theme-vars')
     @include('layouts.partials.image-fallback')
+    @include('layouts.partials.admin-js-strings')
 
     @php
         $flash = [
@@ -38,7 +39,7 @@
                     </span>
                 @endif
                 <div>
-                    <p class="text-lg font-bold tracking-tight text-white">{{ $branding->shortName }} Admin</p>
+                    <p class="text-lg font-bold tracking-tight text-white">{{ $branding->shortName }} {{ __('Admin') }}</p>
                     <p class="mt-0.5 text-xs text-white/60">{{ $branding->applicationName }}</p>
                 </div>
             </div>
@@ -47,10 +48,14 @@
                 @yield('content')
             </div>
 
+            <div class="mt-4 flex justify-center">
+                <x-admin.language-switch dark />
+            </div>
+
             <p class="mt-5 text-center">
                 <a href="{{ route('public.home') }}" class="inline-flex items-center gap-1.5 text-xs font-medium text-white/60 transition-colors hover:text-white">
                     <x-icon name="arrow-left" class="h-3.5 w-3.5" />
-                    Back to the website
+                    {{ __('Back to the website') }}
                 </a>
             </p>
         </div>

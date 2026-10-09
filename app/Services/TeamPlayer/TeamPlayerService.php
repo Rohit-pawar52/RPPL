@@ -32,7 +32,7 @@ class TeamPlayerService
 
         if ($registration->edition_id !== $editionTeam->edition_id) {
             throw ValidationException::withMessages([
-                'player_registration_id' => 'The selected player is not registered for the same edition as the selected team.',
+                'player_registration_id' => __('The selected player is not registered for the same edition as the selected team.'),
             ]);
         }
 
@@ -41,7 +41,7 @@ class TeamPlayerService
         } catch (QueryException $e) {
             if ((int) $e->getCode() === 23000) {
                 throw ValidationException::withMessages([
-                    'player_registration_id' => 'This player is already assigned to a squad, or the jersey number is already taken on this team.',
+                    'player_registration_id' => __('This player is already assigned to a squad, or the jersey number is already taken on this team.'),
                 ]);
             }
 
@@ -133,12 +133,12 @@ class TeamPlayerService
             $player = Player::where('phone', $phone)->first();
 
             if ($player && ! $player->is_active) {
-                throw ValidationException::withMessages(['phone' => 'This player is inactive and cannot be added.']);
+                throw ValidationException::withMessages(['phone' => __('This player is inactive and cannot be added.')]);
             }
 
             if ($player && PlayerRegistration::where('edition_id', $edition->id)->where('player_id', $player->id)->exists()) {
                 throw ValidationException::withMessages([
-                    'phone' => $player->name.' is already registered for this season — tick them in the list above instead.',
+                    'phone' => __(':name is already registered for this season — tick them in the list above instead.', ['name' => $player->name]),
                 ]);
             }
 

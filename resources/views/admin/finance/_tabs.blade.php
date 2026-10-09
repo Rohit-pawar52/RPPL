@@ -14,17 +14,17 @@
 @php
     $editionQuery = isset($edition) && $edition ? ['edition_id' => $edition->id] : [];
     $tabs = [
-        'overview' => ['label' => 'Overview', 'route' => 'admin.finance.overview', 'active' => 'admin.finance.overview', 'ability' => ['finance.view']],
-        'contributions' => ['label' => 'Contributions', 'route' => 'admin.edition-contributions.index', 'active' => 'admin.edition-contributions.*', 'ability' => ['viewAny', \App\Models\EditionContribution::class]],
-        'ledger' => ['label' => 'Ledger', 'route' => 'admin.edition-transactions.index', 'active' => 'admin.edition-transactions.*', 'ability' => ['viewAny', \App\Models\EditionTransaction::class]],
-        'contributors' => ['label' => 'Contributors', 'route' => 'admin.contributors.index', 'active' => 'admin.contributors.*', 'ability' => ['viewAny', \App\Models\Contributor::class]],
-        'committee' => ['label' => 'Committee', 'route' => 'admin.finance.committee', 'active' => 'admin.finance.committee', 'ability' => ['viewAny', \App\Models\EditionCommitteeMember::class]],
+        'overview' => ['label' => __('Overview'), 'route' => 'admin.finance.overview', 'active' => 'admin.finance.overview', 'ability' => ['finance.view']],
+        'contributions' => ['label' => __('Contributions'), 'route' => 'admin.edition-contributions.index', 'active' => 'admin.edition-contributions.*', 'ability' => ['viewAny', \App\Models\EditionContribution::class]],
+        'ledger' => ['label' => __('Ledger'), 'route' => 'admin.edition-transactions.index', 'active' => 'admin.edition-transactions.*', 'ability' => ['viewAny', \App\Models\EditionTransaction::class]],
+        'contributors' => ['label' => __('Contributors'), 'route' => 'admin.contributors.index', 'active' => 'admin.contributors.*', 'ability' => ['viewAny', \App\Models\Contributor::class]],
+        'committee' => ['label' => __('Committee'), 'route' => 'admin.finance.committee', 'active' => 'admin.finance.committee', 'ability' => ['viewAny', \App\Models\EditionCommitteeMember::class]],
     ];
     $tabs = array_filter($tabs, fn (array $tab) => auth()->user()->can(...$tab['ability']));
 @endphp
 
 @if($tabs !== [])
-    <x-crud.tabs aria-label="Finance sections">
+    <x-crud.tabs :aria-label="__('Finance sections')">
         @foreach($tabs as $tab)
             <x-crud.tab :href="route($tab['route'], $editionQuery)" :active="request()->routeIs($tab['active'])">{{ $tab['label'] }}</x-crud.tab>
         @endforeach

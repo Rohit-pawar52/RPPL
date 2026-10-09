@@ -1,12 +1,12 @@
 @extends('layouts.admin')
 
-@section('title', 'Roles')
+@section('title', __('Roles'))
 
-@section('subtitle', 'What each kind of login is allowed to do. Administrators always have every permission.')
+@section('subtitle', __('What each kind of login is allowed to do. Administrators always have every permission.'))
 
 @section('actions')
     @can('create', \App\Models\Role::class)
-        <x-admin.button href="{{ route('admin.roles.create') }}" variant="primary" icon="plus">New role</x-admin.button>
+        <x-admin.button href="{{ route('admin.roles.create') }}" variant="primary" icon="plus">{{ __('New role') }}</x-admin.button>
     @endcan
 @endsection
 
@@ -15,11 +15,11 @@
         <table class="adm-table">
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th class="hidden md:table-cell">Code</th>
-                    <th class="text-right">Users</th>
-                    <th class="text-right">Permissions</th>
-                    <th class="text-right"><span class="sr-only">Actions</span></th>
+                    <th>{{ __('Name') }}</th>
+                    <th class="hidden md:table-cell">{{ __('Code') }}</th>
+                    <th class="text-right">{{ __('Users') }}</th>
+                    <th class="text-right">{{ __('Permissions') }}</th>
+                    <th class="text-right"><span class="sr-only">{{ __('Actions') }}</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -46,14 +46,14 @@
                             @endif
                         </td>
                         <td class="num">
-                            {{ $role->isAdmin() ? 'All' : ($permissionCounts[$role->id] ?? 0) }}
+                            {{ $role->isAdmin() ? __('All') : ($permissionCounts[$role->id] ?? 0) }}
                         </td>
                         <td>
                             <div class="flex items-center justify-end gap-1">
                                 <a
                                     href="{{ route('admin.roles.show', $role) }}"
-                                    title="View"
-                                    aria-label="View {{ $role->name }}"
+                                    title="{{ __('View') }}"
+                                    aria-label="{{ __('View :name', ['name' => $role->name]) }}"
                                     class="btn btn-ghost btn-icon btn-sm max-sm:hidden"
                                 >
                                     <x-icon name="eye" class="h-4 w-4" />
@@ -61,8 +61,8 @@
                                 @can('update', $role)
                                     <a
                                         href="{{ route('admin.roles.edit', $role) }}"
-                                        title="Edit"
-                                        aria-label="Edit {{ $role->name }}"
+                                        title="{{ __('Edit') }}"
+                                        aria-label="{{ __('Edit :name', ['name' => $role->name]) }}"
                                         class="btn btn-ghost btn-icon btn-sm max-sm:min-h-10 max-sm:w-10"
                                     >
                                         <x-icon name="pencil" class="h-4 w-4" />
@@ -73,15 +73,15 @@
                                         method="POST"
                                         action="{{ route('admin.roles.destroy', $role) }}"
                                         data-confirm-delete
-                                        data-confirm-title="Delete this role?"
-                                        data-confirm-text="Only a role that no login uses can be deleted. This cannot be undone."
+                                        data-confirm-title="{{ __('Delete this role?') }}"
+                                        data-confirm-text="{{ __('Only a role that no login uses can be deleted. This cannot be undone.') }}"
                                     >
                                         @csrf
                                         @method('DELETE')
                                         <button
                                             type="submit"
-                                            title="Delete"
-                                            aria-label="Delete {{ $role->name }}"
+                                            title="{{ __('Delete') }}"
+                                            aria-label="{{ __('Delete :name', ['name' => $role->name]) }}"
                                             class="btn btn-ghost btn-icon btn-sm text-slate-500 hover:bg-red-50 hover:text-red-600 max-sm:min-h-10 max-sm:w-10"
                                         >
                                             <x-icon name="trash" class="h-4 w-4" />
@@ -93,10 +93,10 @@
                     </tr>
                 @empty
                     <x-admin.empty table colspan="5" icon="shield">
-                        No roles yet.
+                        {{ __('No roles yet.') }}
                         @can('create', \App\Models\Role::class)
                             <x-slot:action>
-                                <x-admin.button :href="route('admin.roles.create')" icon="plus" size="sm">Add the first role</x-admin.button>
+                                <x-admin.button :href="route('admin.roles.create')" icon="plus" size="sm">{{ __('Add the first role') }}</x-admin.button>
                             </x-slot:action>
                         @endcan
                     </x-admin.empty>
@@ -107,6 +107,6 @@
 
     <p class="mt-4 flex gap-2 text-xs leading-5 text-slate-500">
         <x-admin.icon name="info" class="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-        <span>Built-in roles can&rsquo;t be deleted, and the administrator role can&rsquo;t be changed. A role can only be deleted when no login uses it.</span>
+        <span>{{ __('Built-in roles can’t be deleted, and the administrator role can’t be changed. A role can only be deleted when no login uses it.') }}</span>
     </p>
 @endsection

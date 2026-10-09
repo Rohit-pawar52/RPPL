@@ -1,6 +1,6 @@
 {{-- The search box of a list toolbar (put it inside <x-table-filters>). Enter
      applies it. --}}
-@props(['name' => 'search', 'value' => '', 'placeholder' => 'Search&hellip;'])
+@props(['name' => 'search', 'value' => '', 'placeholder' => __('Search…')])
 
 <div class="crud-search">
     <x-crud.glyph name="search" />

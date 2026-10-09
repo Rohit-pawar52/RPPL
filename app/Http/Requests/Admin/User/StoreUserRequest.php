@@ -34,4 +34,13 @@ class StoreUserRequest extends FormRequest
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'email.unique' => __('The :attribute has already been taken.'),
+            'password.confirmed' => __('The :attribute field confirmation does not match.'),
+            'password.min' => __('The :attribute field must be at least :min characters.'),
+        ];
+    }
 }

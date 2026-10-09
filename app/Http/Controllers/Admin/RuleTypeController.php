@@ -51,7 +51,7 @@ class RuleTypeController extends Controller
 
         return redirect()
             ->route('admin.rule-types.index')
-            ->with('success', 'Rule type created successfully.');
+            ->with('success', __('Rule type created successfully.'));
     }
 
     public function edit(RuleType $ruleType): View
@@ -71,7 +71,7 @@ class RuleTypeController extends Controller
 
         return redirect()
             ->route('admin.rule-types.index')
-            ->with('success', 'Rule type updated successfully.');
+            ->with('success', __('Rule type updated successfully.'));
     }
 
     public function destroy(RuleType $ruleType): RedirectResponse
@@ -81,11 +81,11 @@ class RuleTypeController extends Controller
         if (! $this->ruleTypes->deleteType($ruleType)) {
             return redirect()
                 ->route('admin.rule-types.index')
-                ->with('error', 'This rule type cannot be deleted because it still has rules. Move or delete its rules first, or deactivate the rule type instead if it should no longer be shown.');
+                ->with('error', __('This rule type cannot be deleted because it still has rules. Move or delete its rules first, or deactivate the rule type instead if it should no longer be shown.'));
         }
 
         return redirect()
             ->route('admin.rule-types.index')
-            ->with('success', 'Rule type deleted successfully.');
+            ->with('success', __('Rule type deleted successfully.'));
     }
 }

@@ -65,7 +65,7 @@ class SyncMatchPlayersRequest extends FormRequest
                     // inactive" rule) — only a NEWLY added player must
                     // currently be active.
                     if (! $alreadySelected && ! $teamPlayer->playerRegistration->player->is_active) {
-                        $fail('One or more newly selected players are not available for match selection.');
+                        $fail(__('One or more newly selected players are not available for match selection.'));
                     }
                 },
             ],
@@ -78,9 +78,9 @@ class SyncMatchPlayersRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'team_player_ids.size' => 'Exactly 11 players must be selected.',
-            'team_player_ids.*.exists' => 'One or more selected players do not belong to this team\'s squad.',
-            'team_player_ids.*.distinct' => 'The same player cannot be selected twice.',
+            'team_player_ids.size' => __('Exactly 11 players must be selected.'),
+            'team_player_ids.*.exists' => __('One or more selected players do not belong to this team\'s squad.'),
+            'team_player_ids.*.distinct' => __('The same player cannot be selected twice.'),
         ];
     }
 }

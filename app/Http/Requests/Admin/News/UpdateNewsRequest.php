@@ -47,7 +47,7 @@ class UpdateNewsRequest extends FormRequest
             $added = count((array) $this->file('images', []));
 
             if ($existing - $removed + $added > News::MAX_IMAGES) {
-                $validator->errors()->add('images', 'You can attach at most '.News::MAX_IMAGES.' images to a news item.');
+                $validator->errors()->add('images', __('You can attach at most :max images to a news item.', ['max' => News::MAX_IMAGES]));
             }
         });
     }

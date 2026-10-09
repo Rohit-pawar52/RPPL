@@ -1,18 +1,18 @@
 @extends('layouts.admin')
 
-@section('title', 'Matches')
+@section('title', __('Matches'))
 
-@section('subtitle', 'Schedule, start, score and finish every match from here.')
+@section('subtitle', __('Schedule, start, score and finish every match from here.'))
 
 @section('actions')
     <x-selected-report-action
         id="matches-selected-export"
         :action="route('admin.matches.export-selected')"
-        label="Export Selected ({count})"
+        :label="__('Export Selected ({count})')"
     />
-    <x-admin.button :href="route('admin.matches.export', $filters)" variant="secondary" icon="document-chart">Export</x-admin.button>
+    <x-admin.button :href="route('admin.matches.export', $filters)" variant="secondary" icon="document-chart">{{ __('Export') }}</x-admin.button>
     @can('create', \App\Models\GameMatch::class)
-        <x-admin.button href="{{ route('admin.matches.create') }}" variant="primary">+ Schedule match</x-admin.button>
+        <x-admin.button href="{{ route('admin.matches.create') }}" variant="primary">{{ __('+ Schedule match') }}</x-admin.button>
     @endcan
 @endsection
 
@@ -24,7 +24,7 @@
             ->groupBy('match_status')
             ->pluck('total', 'match_status');
         $activeStatus = $filters['match_status'] ?? '';
-        $statusTabs = ['' => 'All'] + collect(\App\Models\GameMatch::STATUSES)->mapWithKeys(fn ($s) => [$s => ucfirst($s)])->all();
+        $statusTabs = ['' => __('All')] + collect(\App\Models\GameMatch::STATUSES)->mapWithKeys(fn ($s) => [$s => ucfirst(__($s))])->all();
         $liveCount = (int) ($statusCounts['live'] ?? 0);
     @endphp
 
@@ -32,12 +32,12 @@
         @if($liveCount > 0 && $activeStatus !== 'live')
             <a href="{{ request()->fullUrlWithQuery(['match_status' => 'live', 'page' => null]) }}" class="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-[13px] font-medium text-green-800 transition hover:bg-green-100">
                 <span class="relative flex h-2.5 w-2.5"><span class="absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-60 motion-safe:animate-ping"></span><span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-600"></span></span>
-                {{ $liveCount }} {{ \Illuminate\Support\Str::plural('match', $liveCount) }} live right now &mdash; tap to open
+                {{ $liveCount === 1 ? __(':count match live right now — tap to open', ['count' => $liveCount]) : __(':count matches live right now — tap to open', ['count' => $liveCount]) }}
                 <x-ops.icon name="arrow-right" class="ml-auto" />
             </a>
         @endif
 
-        <nav class="ops-chips" aria-label="Match status">
+        <nav class="ops-chips" aria-label="{{ __('Match status') }}">
             @foreach($statusTabs as $value => $label)
                 @php $count = $value === '' ? $statusCounts->sum() : (int) ($statusCounts[$value] ?? 0); @endphp
                 <a
@@ -63,62 +63,62 @@
                         name="search"
                         value="{{ $filters['search'] ?? '' }}"
                         enterkeyhint="search"
-                        placeholder="Search team or venue"
-                        aria-label="Search matches"
+                        placeholder="{{ __('Search team or venue') }}"
+                        aria-label="{{ __('Search matches') }}"
                         class="ops-input pl-9"
                     />
                 </div>
-                <select name="edition_id" onchange="this.form.submit()" aria-label="Season" class="ops-input w-auto max-w-44 sm:max-w-none">
-                    <option value="">All editions</option>
+                <select name="edition_id" onchange="this.form.submit()" aria-label="{{ __('Season') }}" class="ops-input w-auto max-w-44 sm:max-w-none">
+                    <option value="">{{ __('All editions') }}</option>
                     @foreach($editions as $edition)
                         <option value="{{ $edition->id }}" @selected(($filters['edition_id'] ?? '') == $edition->id)>{{ $edition->name }}</option>
                     @endforeach
                 </select>
-                <button type="submit" class="btn btn-secondary min-h-10">Search</button>
+                <button type="submit" class="btn btn-secondary min-h-10">{{ __('Search') }}</button>
                 @if(array_filter($filters))
-                    <a href="{{ route('admin.matches.index') }}" class="ops-link text-[13px]">Clear all</a>
+                    <a href="{{ route('admin.matches.index') }}" class="ops-link text-[13px]">{{ __('Clear all') }}</a>
                 @endif
             </div>
             <details class="group text-xs" @if(! empty($filters['from_date']) || ! empty($filters['to_date'])) open @endif>
                 <summary class="inline-flex min-h-9 cursor-pointer list-none items-center gap-1 font-medium text-slate-500 hover:text-slate-800">
                     <x-ops.icon name="chevron-right" class="h-3.5 w-3.5 transition group-open:rotate-90" />
-                    Dates and rows per page
+                    {{ __('Dates and rows per page') }}
                 </summary>
                 <div class="mt-2 flex flex-wrap items-end gap-3">
                     <div>
-                        <label class="ops-label" for="mi-from">Played from</label>
+                        <label class="ops-label" for="mi-from">{{ __('Played from') }}</label>
                         <input id="mi-from" type="date" name="from_date" value="{{ $filters['from_date'] ?? '' }}" class="ops-input w-40" />
                     </div>
                     <div>
-                        <label class="ops-label" for="mi-to">to</label>
+                        <label class="ops-label" for="mi-to">{{-- see the note on rq-to in player-registrations/index: "to " needs "तक" --}}{{ __('to ') }}</label>
                         <input id="mi-to" type="date" name="to_date" value="{{ $filters['to_date'] ?? '' }}" class="ops-input w-40" />
                     </div>
                     <div>
-                        <label class="ops-label" for="mi-per">Rows</label>
+                        <label class="ops-label" for="mi-per">{{ __('Rows') }}</label>
                         <select id="mi-per" name="per_page" onchange="this.form.submit()" class="ops-input w-auto">
                             @foreach([10, 20, 50, 100, 200] as $option)
-                                <option value="{{ $option }}" @selected((int) $perPage === $option)>{{ $option }} / page</option>
+                                <option value="{{ $option }}" @selected((int) $perPage === $option)>{{ __(':count / page', ['count' => $option]) }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-secondary min-h-10">Apply</button>
+                    <button type="submit" class="btn btn-secondary min-h-10">{{ __('Apply') }}</button>
                 </div>
             </details>
         </form>
 
         <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-            <span class="ops-kicker">Sort</span>
-            <x-sortable-header column="scheduled_at" :sort="$sort" :direction="$direction">Scheduled</x-sortable-header>
-            <x-sortable-header column="match_status" :sort="$sort" :direction="$direction">Status</x-sortable-header>
+            <span class="ops-kicker">{{ __('Sort') }}</span>
+            <x-sortable-header column="scheduled_at" :sort="$sort" :direction="$direction">{{ __('Scheduled') }}</x-sortable-header>
+            <x-sortable-header column="match_status" :sort="$sort" :direction="$direction">{{ __('Status') }}</x-sortable-header>
         </div>
 
         <div class="ops-card" data-row-selection="#matches-selected-export-button">
             <div class="flex items-center gap-3 border-b border-line px-3 py-2 sm:px-4">
                 <label class="flex min-h-9 cursor-pointer items-center gap-2 text-xs font-medium text-slate-500">
-                    <input type="checkbox" data-select-all class="h-4 w-4 rounded border-slate-300" aria-label="Select all matches on this page" />
-                    Select all on this page
+                    <input type="checkbox" data-select-all class="h-4 w-4 rounded border-slate-300" aria-label="{{ __('Select all matches on this page') }}" />
+                    {{ __('Select all on this page') }}
                 </label>
-                <span class="ml-auto text-xs tabular-nums text-slate-400">{{ $matches->total() }} {{ \Illuminate\Support\Str::plural('match', $matches->total()) }}</span>
+                <span class="ml-auto text-xs tabular-nums text-slate-400">{{ $matches->total() == 1 ? __(':count match', ['count' => 1]) : __(':count matches', ['count' => $matches->total()]) }}</span>
             </div>
 
             <div class="divide-y divide-line">
@@ -137,7 +137,7 @@
                                 name="selected_ids[]"
                                 value="{{ $match->id }}"
                                 class="h-4 w-4 rounded border-slate-300"
-                                aria-label="Select match {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}"
+                                aria-label="{{ __('Select match :a vs :b', ['a' => $match->teamA->team->name, 'b' => $match->teamB->team->name]) }}"
                             />
                         </div>
 
@@ -151,12 +151,12 @@
                         {{-- Who plays --}}
                         <div class="min-w-0 flex-1 basis-40">
                             <a href="{{ route('admin.matches.show', $match) }}" class="block break-words text-[15px] font-semibold leading-5 text-slate-900 after:absolute after:inset-0 after:content-[''] hover:underline">
-                                {{ $match->teamA->team->name }} <span class="font-normal text-slate-400">vs</span> {{ $match->teamB->team->name }}
+                                {{ $match->teamA->team->name }} <span class="font-normal text-slate-400">{{ __('vs') }}</span> {{ $match->teamB->team->name }}
                             </a>
                             <p class="mt-1 truncate text-xs text-slate-500">
-                                @if($match->match_number) Match {{ $match->match_number }} &middot; @endif
+                                @if($match->match_number) {{ __('Match :number', ['number' => $match->match_number]) }} &middot; @endif
                                 @if(empty($filters['edition_id'])) {{ $match->edition->name }} &middot; @endif
-                                {{ $match->venue->name ?? 'Venue to be decided' }}
+                                {{ $match->venue->name ?? __('Venue to be decided') }}
                             </p>
                             @if($status === 'completed' && $match->match_result)
                                 <p class="mt-1 line-clamp-2 text-xs font-medium text-slate-700">{{ $match->match_result }}</p>
@@ -169,37 +169,37 @@
                         {{-- The one thing to do next --}}
                         <div class="relative z-10 flex items-center gap-2 max-lg:w-full max-lg:pl-[calc(1rem+0.75rem)] lg:justify-end">
                             @if($canScore)
-                                <a href="{{ route('admin.matches.innings.score', [$match, $liveInnings]) }}" class="btn btn-primary min-h-10 max-lg:flex-1 lg:min-h-9"><x-ops.icon name="bolt" /> Score</a>
+                                <a href="{{ route('admin.matches.innings.score', [$match, $liveInnings]) }}" class="btn btn-primary min-h-10 max-lg:flex-1 lg:min-h-9"><x-ops.icon name="bolt" /> {{ __('Score') }}</a>
                             @elseif($status === 'scheduled' || $status === 'toss')
                                 <a href="{{ route('admin.matches.show', $match) }}" class="btn btn-primary min-h-10 max-lg:flex-1 lg:min-h-9">
-                                    {{ $status === 'toss' ? 'Continue' : 'Start' }} <x-ops.icon name="arrow-right" />
+                                    {{ $status === 'toss' ? __('Continue') : __('Start') }} <x-ops.icon name="arrow-right" />
                                 </a>
                             @elseif($status === 'live')
-                                <a href="{{ route('admin.matches.show', $match) }}" class="btn btn-primary min-h-10 max-lg:flex-1 lg:min-h-9">Open match</a>
+                                <a href="{{ route('admin.matches.show', $match) }}" class="btn btn-primary min-h-10 max-lg:flex-1 lg:min-h-9">{{ __('Open match') }}</a>
                             @else
-                                <a href="{{ route('admin.matches.show', $match) }}" class="btn btn-secondary min-h-10 max-lg:flex-1 lg:min-h-9">Result</a>
+                                <a href="{{ route('admin.matches.show', $match) }}" class="btn btn-secondary min-h-10 max-lg:flex-1 lg:min-h-9">{{ __('Result') }}</a>
                             @endif
 
                             <details class="relative" data-more>
-                                <summary class="btn btn-ghost btn-icon btn-sm min-h-10 w-10 cursor-pointer list-none lg:min-h-9 lg:w-9" aria-label="More actions">
+                                <summary class="btn btn-ghost btn-icon btn-sm min-h-10 w-10 cursor-pointer list-none lg:min-h-9 lg:w-9" aria-label="{{ __('More actions') }}">
                                     <x-ops.icon name="dots" class="h-5 w-5" />
                                 </summary>
                                 <div class="ops-menu">
-                                    <a href="{{ route('admin.matches.show', $match) }}" class="ops-menu-item"><x-icon name="eye" class="h-4 w-4" /> Open</a>
+                                    <a href="{{ route('admin.matches.show', $match) }}" class="ops-menu-item"><x-icon name="eye" class="h-4 w-4" /> {{ __('Open') }}</a>
                                     @can('update', $match)
-                                        <a href="{{ route('admin.matches.edit', $match) }}" class="ops-menu-item"><x-icon name="pencil" class="h-4 w-4" /> Edit</a>
+                                        <a href="{{ route('admin.matches.edit', $match) }}" class="ops-menu-item"><x-icon name="pencil" class="h-4 w-4" /> {{ __('Edit') }}</a>
                                     @endcan
                                     @can('delete', $match)
                                         <form
                                             method="POST"
                                             action="{{ route('admin.matches.destroy', $match) }}"
                                             data-confirm-delete
-                                            data-confirm-title="Delete this match?"
-                                            data-confirm-text="This cannot be undone. Matches with existing squad or scoring data cannot be deleted."
+                                            data-confirm-title="{{ __('Delete this match?') }}"
+                                            data-confirm-text="{{ __('This cannot be undone. Matches with existing squad or scoring data cannot be deleted.') }}"
                                         >
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="ops-menu-item w-full text-red-600 hover:!bg-red-50"><x-icon name="trash" class="h-4 w-4" /> Delete</button>
+                                            <button type="submit" class="ops-menu-item w-full text-red-600 hover:!bg-red-50"><x-icon name="trash" class="h-4 w-4" /> {{ __('Delete') }}</button>
                                         </form>
                                     @endcan
                                 </div>
@@ -209,16 +209,16 @@
                 @empty
                     <x-admin.empty icon="trophy" class="py-14">
                         @if(array_filter($filters))
-                            No matches match these filters.
+                            {{ __('No matches match these filters.') }}
                         @else
-                            No matches scheduled yet.
+                            {{ __('No matches scheduled yet.') }}
                         @endif
                         <x-slot:action>
                             @if(array_filter($filters))
-                                <a href="{{ route('admin.matches.index') }}" class="btn btn-secondary btn-sm">Clear filters</a>
+                                <a href="{{ route('admin.matches.index') }}" class="btn btn-secondary btn-sm">{{ __('Clear filters') }}</a>
                             @else
                                 @can('create', \App\Models\GameMatch::class)
-                                    <a href="{{ route('admin.matches.create') }}" class="btn btn-primary btn-sm">+ Schedule the first match</a>
+                                    <a href="{{ route('admin.matches.create') }}" class="btn btn-primary btn-sm">{{ __('+ Schedule the first match') }}</a>
                                 @endcan
                             @endif
                         </x-slot:action>

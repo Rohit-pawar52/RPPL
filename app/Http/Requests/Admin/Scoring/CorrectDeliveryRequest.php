@@ -90,8 +90,8 @@ class CorrectDeliveryRequest extends FormRequest
 
                     if (! in_array($value, $deliveries->validWicketTypesForDelivery($isWide, $isNoBall, $isFreeHit), true)) {
                         $fail($isFreeHit
-                            ? 'Only Run Out or Obstructing the Field may dismiss the batter on a Free Hit.'
-                            : 'This dismissal type is not valid for this kind of delivery.');
+                            ? __('Only Run Out or Obstructing the Field may dismiss the batter on a Free Hit.')
+                            : __('This dismissal type is not valid for this kind of delivery.'));
                     }
                 },
             ],
@@ -105,7 +105,7 @@ class CorrectDeliveryRequest extends FormRequest
                     }
 
                     if (! in_array((int) $value, [(int) $delivery->striker_match_player_id, (int) $delivery->non_striker_match_player_id], true)) {
-                        $fail('The dismissed player must be the striker or non-striker on this delivery.');
+                        $fail(__('The dismissed player must be the striker or non-striker on this delivery.'));
                     }
                 },
             ],
@@ -120,19 +120,19 @@ class CorrectDeliveryRequest extends FormRequest
                     }
 
                     if ($deliveries->dismissalRequiresFielder($wicketType) && ! $value) {
-                        $fail('A fielder is required for this dismissal type.');
+                        $fail(__('A fielder is required for this dismissal type.'));
 
                         return;
                     }
 
                     if ($deliveries->dismissalForbidsFielder($wicketType) && $value) {
-                        $fail('A fielder must not be recorded for this dismissal type.');
+                        $fail(__('A fielder must not be recorded for this dismissal type.'));
 
                         return;
                     }
 
                     if ($value && ! $deliveries->matchPlayerBelongsToTeam((int) $value, $match, $innings->bowling_team_id)) {
-                        $fail('The fielder must be a selected player from the bowling team.');
+                        $fail(__('The fielder must be a selected player from the bowling team.'));
                     }
                 },
             ],
@@ -142,7 +142,7 @@ class CorrectDeliveryRequest extends FormRequest
                 Rule::in(['striker', 'non_striker']),
                 function ($attribute, $value, $fail) {
                     if ($value && ! in_array($this->input('wicket_type'), ['run_out', 'obstructing_field'], true)) {
-                        $fail('The survivor\'s end can only be confirmed for a run out or obstructing the field.');
+                        $fail(__('The survivor\'s end can only be confirmed for a run out or obstructing the field.'));
                     }
                 },
             ],

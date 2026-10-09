@@ -7,7 +7,10 @@
  *    what the navigation and permissions already allow.
  *  - a long form's first invalid field is scrolled into view with the error.
  * Nothing here is required for the pages to work.
+ * Its texts go through t() (resources/js/i18n.js) so they follow the signed-in user's language.
  */
+import { t } from './i18n';
+
 export function initAdminUi() {
     initPalette();
     focusFirstError();
@@ -41,9 +44,11 @@ function initPalette() {
     let shown = [];
     let active = 0;
 
+    const kindLabel = (item) => (item.kind === 'Create' ? t('Create') : t('Go to'));
+
     const score = (item, query) => {
         const label = item.label.toLowerCase();
-        const haystack = `${label} ${(item.meta || '').toLowerCase()} ${item.kind.toLowerCase()}`;
+        const haystack = `${label} ${(item.meta || '').toLowerCase()} ${item.kind.toLowerCase()} ${kindLabel(item).toLowerCase()}`;
 
         if (label.startsWith(query)) {
             return 3;
@@ -70,7 +75,7 @@ function initPalette() {
         if (shown.length === 0) {
             const empty = document.createElement('p');
             empty.className = 'px-3 py-8 text-center text-[13px] text-slate-500';
-            empty.textContent = 'Nothing matches that. Try another word.';
+            empty.textContent = t('Nothing matches that. Try another word.');
             list.appendChild(empty);
             return;
         }
@@ -81,7 +86,7 @@ function initPalette() {
             if (!query && item.kind !== lastKind) {
                 const heading = document.createElement('p');
                 heading.className = 'adm-menu-label';
-                heading.textContent = item.kind === 'Create' ? 'Start something new' : 'Go to a page';
+                heading.textContent = item.kind === 'Create' ? t('Start something new') : t('Go to a page');
                 list.appendChild(heading);
                 lastKind = item.kind;
             }
@@ -96,7 +101,7 @@ function initPalette() {
 
             const kind = document.createElement('span');
             kind.className = 'w-14 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-slate-400';
-            kind.textContent = item.kind;
+            kind.textContent = kindLabel(item);
 
             const label = document.createElement('span');
             label.className = 'min-w-0 flex-1 truncate font-medium';

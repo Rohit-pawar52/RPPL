@@ -51,8 +51,8 @@ class RecordTossRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'toss_winner_team_id.in' => 'The toss winner must be one of the two teams playing this match.',
-            'toss_decision.in' => 'The toss decision must be either bat or bowl.',
+            'toss_winner_team_id.in' => __('The toss winner must be one of the two teams playing this match.'),
+            'toss_decision.in' => __('The toss decision must be either bat or bowl.'),
         ];
     }
 }

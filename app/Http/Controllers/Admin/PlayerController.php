@@ -118,7 +118,7 @@ class PlayerController extends Controller
 
         return redirect()
             ->route('admin.players.index')
-            ->with('success', 'Player created successfully.');
+            ->with('success', __('Player created successfully.'));
     }
 
     public function show(Request $request, Player $player): View
@@ -167,7 +167,7 @@ class PlayerController extends Controller
 
         return redirect()
             ->route('admin.players.index')
-            ->with('success', 'Player updated successfully.');
+            ->with('success', __('Player updated successfully.'));
     }
 
     public function destroy(Player $player): RedirectResponse
@@ -177,12 +177,12 @@ class PlayerController extends Controller
         if (! $this->players->deletePlayer($player)) {
             return redirect()
                 ->route('admin.players.index')
-                ->with('error', 'This player cannot be deleted because tournament history exists. Deactivate the player instead if they should no longer be available.');
+                ->with('error', __('This player cannot be deleted because tournament history exists. Deactivate the player instead if they should no longer be available.'));
         }
 
         return redirect()
             ->route('admin.players.index')
-            ->with('success', 'Player deleted successfully.');
+            ->with('success', __('Player deleted successfully.'));
     }
 
     /**

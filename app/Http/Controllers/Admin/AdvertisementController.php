@@ -54,7 +54,7 @@ class AdvertisementController extends Controller
 
         return redirect()
             ->route('admin.advertisements.index')
-            ->with('success', 'Advertisement added.');
+            ->with('success', __('Advertisement added.'));
     }
 
     public function edit(Advertisement $advertisement): View
@@ -77,7 +77,7 @@ class AdvertisementController extends Controller
 
         return redirect()
             ->route('admin.advertisements.index')
-            ->with('success', 'Advertisement updated.');
+            ->with('success', __('Advertisement updated.'));
     }
 
     /**
@@ -99,7 +99,7 @@ class AdvertisementController extends Controller
 
         return redirect()
             ->back(fallback: route('admin.advertisements.index'))
-            ->with('success', $advertisement->status === 'active' ? 'Advertisement activated.' : 'Advertisement deactivated.');
+            ->with('success', $advertisement->status === 'active' ? __('Advertisement activated.') : __('Advertisement deactivated.'));
     }
 
     public function destroy(Advertisement $advertisement): RedirectResponse
@@ -110,7 +110,7 @@ class AdvertisementController extends Controller
 
         return redirect()
             ->route('admin.advertisements.index')
-            ->with('success', 'Advertisement deleted.');
+            ->with('success', __('Advertisement deleted.'));
     }
 
     /**

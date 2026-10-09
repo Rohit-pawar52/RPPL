@@ -7,21 +7,21 @@
 
 <div class="space-y-4">
     <section class="ops-card">
-        <div class="ops-card-head"><h3 class="ops-title">Who and for which season</h3></div>
+        <div class="ops-card-head"><h3 class="ops-title">{{ __('Who and for which season') }}</h3></div>
         <div class="ops-card-body">
             @if($registration)
                 <div class="grid gap-3 sm:grid-cols-2">
                     <div>
-                        <p class="ops-kicker mb-1">Player</p>
+                        <p class="ops-kicker mb-1">{{ __('Player') }}</p>
                         <p class="rounded-lg border border-line bg-slate-50 px-3 py-2.5 text-[13px] font-medium text-slate-700">
                             {{ $registration->player->name }}
                             @unless($registration->player->is_active)
-                                <span class="text-slate-400">(inactive)</span>
+                                <span class="text-slate-400">{{ __('(inactive)') }}</span>
                             @endunless
                         </p>
                     </div>
                     <div>
-                        <p class="ops-kicker mb-1">Edition</p>
+                        <p class="ops-kicker mb-1">{{ __('Edition') }}</p>
                         <p class="rounded-lg border border-line bg-slate-50 px-3 py-2.5 text-[13px] font-medium text-slate-700">
                             {{ $registration->edition->name }}
                         </p>
@@ -31,15 +31,15 @@
                 <div class="grid gap-x-4 sm:grid-cols-2">
                     <x-form.select
                         name="player_id"
-                        label="Player"
-                        placeholder="Select a player"
+                        :label="__('Player')"
+                        :placeholder="__('Select a player')"
                         :options="$players->pluck('name', 'id')"
                         required
                     />
                     <x-form.select
                         name="edition_id"
-                        label="Edition"
-                        placeholder="Select an edition"
+                        :label="__('Edition')"
+                        :placeholder="__('Select an edition')"
                         :options="$editions->pluck('name', 'id')"
                         required
                     />
@@ -49,19 +49,19 @@
     </section>
 
     <section class="ops-card">
-        <div class="ops-card-head"><h3 class="ops-title">Payment</h3></div>
+        <div class="ops-card-head"><h3 class="ops-title">{{ __('Payment') }}</h3></div>
         <div class="ops-card-body">
             <div class="grid gap-x-4 sm:grid-cols-3">
                 <x-form.select
                     name="payment_status"
-                    label="Payment status"
-                    :options="collect($paymentStatuses)->mapWithKeys(fn ($status) => [$status => ucfirst($status)])"
+                    :label="__('Payment status')"
+                    :options="collect($paymentStatuses)->mapWithKeys(fn ($status) => [$status => ucfirst(__($status))])"
                     :value="$registration->payment_status ?? 'pending'"
                     required
                 />
                 <x-form.input
                     name="registration_fee"
-                    label="Registration fee"
+                    :label="__('Registration fee')"
                     type="number"
                     step="0.01"
                     min="0"
@@ -69,10 +69,10 @@
                 />
                 <x-form.input
                     name="registered_at"
-                    label="Registered at"
+                    :label="__('Registered at')"
                     type="datetime-local"
                     :value="$registration ? display_datetime($registration->registered_at, 'Y-m-d\TH:i') : display_datetime(now(), 'Y-m-d\TH:i')"
-                    :help="'Time in '.app(\App\Services\Settings\SettingsService::class)->get('system.display_timezone').'.'"
+                    :help="__('Time in :zone.', ['zone' => app(\App\Services\Settings\SettingsService::class)->get('system.display_timezone')])"
                 />
             </div>
 
@@ -84,17 +84,17 @@
                 <div class="grid gap-x-4 sm:grid-cols-2">
                     <x-form.input
                         name="payment_failure_reason"
-                        label="Failure reason"
+                        :label="__('Failure reason')"
                         maxlength="255"
                         :value="$registration->payment_failure_reason"
-                        placeholder="Reason shown to the player"
-                        help="Only kept while the payment status is Failed; cleared on save otherwise."
+                        :placeholder="__('Reason shown to the player')"
+                        :help="__('Only kept while the payment status is Failed; cleared on save otherwise.')"
                     />
                     <x-form.input
                         name="payment_reference"
-                        label="Payment reference / UTR (optional)"
+                        :label="__('Payment reference / UTR (optional)')"
                         :value="old('payment_reference', $registration->payment_reference)"
-                        placeholder="e.g. UTR or transaction ID"
+                        :placeholder="__('e.g. UTR or transaction ID')"
                     />
                 </div>
             @endif
@@ -109,10 +109,9 @@
         <section class="ops-card">
             <div class="ops-card-head">
                 <div>
-                    <h3 class="ops-title">Details from the registration form (optional)</h3>
+                    <h3 class="ops-title">{{ __('Details from the registration form (optional)') }}</h3>
                     <p class="mt-0.5 text-[11px] text-slate-400">
-                        Filled in automatically on the public form and when a sheet is imported. Role and batting hand are on the player
-                        (Players &rarr; Edit).
+                        {{ __('Filled in automatically on the public form and when a sheet is imported. Role and batting hand are on the player (Players → Edit).') }}
                     </p>
                 </div>
             </div>
@@ -120,18 +119,18 @@
                 <div class="grid gap-x-4 sm:grid-cols-3">
                     <x-form.input
                         name="age"
-                        label="Age"
+                        :label="__('Age')"
                         type="number"
                         :min="\App\Models\PlayerRegistration::AGE_MIN"
                         :max="\App\Models\PlayerRegistration::AGE_MAX"
                         :value="$registration->age"
                     />
-                    <x-form.input name="village" label="Village (Gram)" maxlength="100" :value="$registration->village" />
-                    <x-form.input name="tehsil" label="Tehsil" maxlength="100" :value="$registration->tehsil" />
-                    <x-form.input name="district" label="District" maxlength="100" :value="$registration->district" />
+                    <x-form.input name="village" :label="__('Village (Gram)')" maxlength="100" :value="$registration->village" />
+                    <x-form.input name="tehsil" :label="__('Tehsil')" maxlength="100" :value="$registration->tehsil" />
+                    <x-form.input name="district" :label="__('District')" maxlength="100" :value="$registration->district" />
                     <x-form.input
                         name="submitted_utr"
-                        label="UTR typed by the player"
+                        :label="__('UTR typed by the player')"
                         maxlength="100"
                         :value="$registration->submitted_utr"
                     />
@@ -143,18 +142,18 @@
                 <div class="grid gap-x-4 sm:grid-cols-2">
                     <x-form.input
                         name="photo_url"
-                        label="Photo (Google Drive link)"
+                        :label="__('Photo (Google Drive link)')"
                         type="url"
                         maxlength="512"
-                        placeholder="https://drive.google.com/…"
+                        :placeholder="__('https://drive.google.com/…')"
                         :value="$registration->photo_url"
                     />
                     <x-form.input
                         name="payment_proof_url"
-                        label="Payment screenshot (Google Drive link)"
+                        :label="__('Payment screenshot (Google Drive link)')"
                         type="url"
                         maxlength="512"
-                        placeholder="https://drive.google.com/…"
+                        :placeholder="__('https://drive.google.com/…')"
                         :value="$registration->payment_proof_url"
                     />
                 </div>

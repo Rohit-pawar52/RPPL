@@ -25,7 +25,7 @@ class EditionService
 
         if ($edition->status === 'completed' && $newStatus !== 'completed') {
             throw ValidationException::withMessages([
-                'status' => 'A completed edition cannot be moved back to another status.',
+                'status' => __('A completed edition cannot be moved back to another status.'),
             ]);
         }
 

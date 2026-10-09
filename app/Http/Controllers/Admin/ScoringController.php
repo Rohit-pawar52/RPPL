@@ -129,7 +129,7 @@ class ScoringController extends Controller
 
         return redirect()
             ->route('admin.matches.innings.score', [$match, $innings])
-            ->with('success', 'Strike corrected successfully.');
+            ->with('success', __('Strike corrected successfully.'));
     }
 
     /**
@@ -187,7 +187,7 @@ class ScoringController extends Controller
 
         return redirect()
             ->route('admin.matches.innings.score', [$match, $innings])
-            ->with('success', 'Penalty runs recorded.');
+            ->with('success', __('Penalty runs recorded.'));
     }
 
     /**
@@ -210,7 +210,7 @@ class ScoringController extends Controller
 
         return redirect()
             ->route('admin.matches.innings.score', [$match, $innings])
-            ->with('success', 'New batter selected.');
+            ->with('success', __('New batter selected.'));
     }
 
     /**
@@ -233,7 +233,7 @@ class ScoringController extends Controller
 
         return redirect()
             ->route('admin.matches.innings.score', [$match, $innings])
-            ->with('success', 'Bowler selected for the new over.');
+            ->with('success', __('Bowler selected for the new over.'));
     }
 
     /**
@@ -257,7 +257,7 @@ class ScoringController extends Controller
 
         return redirect()
             ->route('admin.matches.innings.score', [$match, $innings])
-            ->with('success', 'Bowler changed mid-over.');
+            ->with('success', __('Bowler changed mid-over.'));
     }
 
     /**

@@ -48,6 +48,6 @@ class PasswordController extends Controller
 
         return redirect()
             ->route('admin.account.password.edit')
-            ->with('success', 'Your password has been changed.');
+            ->with('success', __('Your password has been changed.'));
     }
 }

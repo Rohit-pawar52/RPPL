@@ -8,19 +8,19 @@
     method="POST"
     action="{{ route('admin.matches.innings.deliveries.undo-latest', [$match, $innings]) }}"
     @class(['contents' => $inPad])
-    onsubmit="event.preventDefault(); window.confirmAction({title: 'Undo the last action?', confirmButtonText: 'Yes, undo'}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
+    onsubmit="event.preventDefault(); window.confirmAction({title: {{ Js::from(__('Undo the last action?')) }}, confirmButtonText: {{ Js::from(__('Yes, undo')) }}}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
 >
     @csrf
     @method('DELETE')
     <button
         id="scorer-undo-button"
         type="submit"
-        aria-label="Undo Last Action"
-        title="Undo Last Action"
+        aria-label="{{ __('Undo Last Action') }}"
+        title="{{ __('Undo Last Action') }}"
         @class(['sc-key sc-key-undo' => $inPad, 'btn btn-secondary btn-sm' => ! $inPad])
         @disabled(! $liveState['can_undo'])
     >
         <x-icon name="undo" class="h-5 w-5" />
-        <span>Undo</span>
+        <span>{{ __('Undo') }}</span>
     </button>
 </form>

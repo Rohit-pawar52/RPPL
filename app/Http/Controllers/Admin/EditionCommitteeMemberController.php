@@ -65,7 +65,7 @@ class EditionCommitteeMemberController extends Controller
 
         return redirect()
             ->route('admin.finance.committee', ['edition_id' => $edition->id])
-            ->with('success', 'Committee member added.');
+            ->with('success', __('Committee member added.'));
     }
 
     public function destroy(EditionCommitteeMember $editionCommitteeMember): RedirectResponse
@@ -77,12 +77,12 @@ class EditionCommitteeMemberController extends Controller
         if (! $this->memberships->removeMember($editionCommitteeMember->edition, $editionCommitteeMember->contributor_id)) {
             return redirect()
                 ->route('admin.finance.committee', ['edition_id' => $editionId])
-                ->with('error', 'This contributor has recorded contribution history for this edition and cannot be removed from its committee. Historical membership must stay consistent with financial history.');
+                ->with('error', __('This contributor has recorded contribution history for this edition and cannot be removed from its committee. Historical membership must stay consistent with financial history.'));
         }
 
         return redirect()
             ->route('admin.finance.committee', ['edition_id' => $editionId])
-            ->with('success', 'Committee member removed.');
+            ->with('success', __('Committee member removed.'));
     }
 
     public function copyPrevious(Request $request): RedirectResponse
@@ -100,12 +100,12 @@ class EditionCommitteeMemberController extends Controller
         if (! $result['previous_edition']) {
             return redirect()
                 ->route('admin.finance.committee', ['edition_id' => $edition->id])
-                ->with('error', 'There is no earlier edition to copy a committee from.');
+                ->with('error', __('There is no earlier edition to copy a committee from.'));
         }
 
         return redirect()
             ->route('admin.finance.committee', ['edition_id' => $edition->id])
-            ->with('success', "{$result['added']} committee member(s) added, {$result['already_existed']} already existed.");
+            ->with('success', __(':added committee member(s) added, :existing already existed.', ['added' => $result['added'], 'existing' => $result['already_existed']]));
     }
 
     /**

@@ -176,8 +176,11 @@ class AdvertisementService
 
     public function clashMessage(Advertisement $clash): string
     {
-        return 'There is only one '.$clash->tierLabel().' slot, and "'.$clash->title.'" already holds it ('
-            .$clash->scheduleLabel().'). Deactivate it first or choose dates that do not overlap.';
+        return __('There is only one :tier slot, and ":title" already holds it (:schedule). Deactivate it first or choose dates that do not overlap.', [
+            'tier' => $clash->tierLabel(),
+            'title' => $clash->title,
+            'schedule' => $clash->scheduleLabel(),
+        ]);
     }
 
     private function datesOverlap(?string $startA, ?string $endA, ?string $startB, ?string $endB): bool

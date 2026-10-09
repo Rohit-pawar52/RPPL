@@ -51,7 +51,7 @@ class StoreAnnouncementRequest extends FormRequest
                     $parsed = app(DisplayTimezoneFormatter::class)->parseFromDisplayTimezone($value);
 
                     if ($parsed !== null && $parsed->isPast()) {
-                        $fail('The scheduled date/time must be in the future.');
+                        $fail(__('The scheduled date/time must be in the future.'));
                     }
                 },
             ],
@@ -64,8 +64,8 @@ class StoreAnnouncementRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'ends_at.after' => 'The end date/time must be after the start date/time.',
-            'notification_scheduled_at.required_if' => 'Choose a date and time for the scheduled push notification.',
+            'ends_at.after' => __('The end date/time must be after the start date/time.'),
+            'notification_scheduled_at.required_if' => __('Choose a date and time for the scheduled push notification.'),
         ];
     }
 }

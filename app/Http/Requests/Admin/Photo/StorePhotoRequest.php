@@ -38,9 +38,9 @@ class StorePhotoRequest extends FormRequest
     public static function photoMessages(): array
     {
         return [
-            'photo.max' => 'The photo must not be larger than 5 MB.',
-            'photo.image' => 'The photo must be a JPG, PNG or WebP image.',
-            'photo.mimes' => 'The photo must be a JPG, PNG or WebP image.',
+            'photo.max' => __('The photo must not be larger than 5 MB.'),
+            'photo.image' => __('The photo must be a JPG, PNG or WebP image.'),
+            'photo.mimes' => __('The photo must be a JPG, PNG or WebP image.'),
         ];
     }
 

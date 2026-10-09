@@ -1,5 +1,6 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { t } from './i18n';
 
 /**
  * Venue map (Leaflet + OpenStreetMap, no API key).
@@ -120,7 +121,7 @@ function initPickerMap(root) {
             marker = L.marker(latlng, { icon: pinIcon(), draggable: true }).addTo(map);
             marker.on('dragend', () => {
                 writeInputs(marker.getLatLng());
-                setStatus('Location set.');
+                setStatus(t('Location set.'));
             });
         }
     };
@@ -142,7 +143,7 @@ function initPickerMap(root) {
     map.on('click', (event) => {
         placeMarker(event.latlng);
         writeInputs(event.latlng);
-        setStatus('Location set. Drag the pin to adjust it.');
+        setStatus(t('Location set. Drag the pin to adjust it.'));
     });
 
     // Typing coordinates by hand also moves the pin.
@@ -163,7 +164,7 @@ function initPickerMap(root) {
         }
         latInput.value = '';
         lngInput.value = '';
-        setStatus('Location cleared.');
+        setStatus(t('Location cleared.'));
     });
 
     // Search runs only when the admin asks for it (button or Enter).
@@ -173,7 +174,7 @@ function initPickerMap(root) {
             return;
         }
 
-        setStatus('Searching...');
+        setStatus(t('Searching...'));
         try {
             const response = await fetch(
                 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query),
@@ -182,15 +183,15 @@ function initPickerMap(root) {
             const results = await response.json();
 
             if (!Array.isArray(results) || results.length === 0) {
-                setStatus('No place found. Try a different search.');
+                setStatus(t('No place found. Try a different search.'));
                 return;
             }
 
             const target = L.latLng(Number(results[0].lat), Number(results[0].lon));
             map.setView(target, 15);
-            setStatus('Found. Click the map to drop the pin on the exact spot.');
+            setStatus(t('Found. Click the map to drop the pin on the exact spot.'));
         } catch (error) {
-            setStatus('Search is unavailable right now. You can still click the map or type the coordinates.');
+            setStatus(t('Search is unavailable right now. You can still click the map or type the coordinates.'));
         }
     };
 

@@ -95,7 +95,7 @@ class SeasonMatchController extends Controller
 
         return redirect()
             ->route('admin.editions.matches.index', $edition)
-            ->with('success', 'Match created successfully.');
+            ->with('success', __('Match created successfully.'));
     }
 
     /**
@@ -119,6 +119,6 @@ class SeasonMatchController extends Controller
 
         return redirect()
             ->route('admin.editions.matches.index', $edition)
-            ->with('error', 'This season is completed, so new matches cannot be scheduled.');
+            ->with('error', __('This season is completed, so new matches cannot be scheduled.'));
     }
 }

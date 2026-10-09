@@ -40,10 +40,10 @@ class AddSquadPlayersRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'add.required' => 'Tick at least one player to add.',
-            'add.min' => 'Tick at least one player to add.',
-            'amount.*.numeric' => 'A sold amount must be a number.',
-            'amount.*.min' => 'A sold amount cannot be negative.',
+            'add.required' => __('Tick at least one player to add.'),
+            'add.min' => __('Tick at least one player to add.'),
+            'amount.*.numeric' => __('A sold amount must be a number.'),
+            'amount.*.min' => __('A sold amount cannot be negative.'),
         ];
     }
 

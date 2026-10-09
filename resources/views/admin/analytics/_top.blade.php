@@ -1,14 +1,15 @@
 {{-- A "most viewed" table. Expects $title, $noun and $rows (a paginator of
-     rows built by AdminAnalyticsService::top()). A row whose subject has been
+     rows built by AdminAnalyticsService::top()), plus $heading (the first column's title) and $empty (the
+     "nothing recorded" line), both already translated. A row whose subject has been
      deleted is still listed, as "Deleted …", because its views were real. --}}
 <x-admin.card :title="$title" flush>
     <table class="adm-table">
         <thead>
             <tr>
                 <th class="w-12">#</th>
-                <th>{{ ucfirst($noun) }}</th>
-                <th class="text-right">Views</th>
-                <th class="text-right">Unique visitors</th>
+                <th>{{ $heading }}</th>
+                <th class="text-right">{{ __('Views') }}</th>
+                <th class="text-right">{{ __('Unique visitors') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -29,7 +30,7 @@
                     <td class="num text-slate-600">{{ number_format($row['visitors']) }}</td>
                 </tr>
             @empty
-                <x-admin.empty table :colspan="4">No {{ $noun }} views recorded for this period.</x-admin.empty>
+                <x-admin.empty table :colspan="4">{{ $empty }}</x-admin.empty>
             @endforelse
         </tbody>
     </table>

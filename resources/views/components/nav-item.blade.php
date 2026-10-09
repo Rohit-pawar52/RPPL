@@ -10,7 +10,7 @@
             {{ $slot }}
         </span>
         <span class="rounded border border-slate-200 px-1 text-[10px] font-medium uppercase tracking-wide text-slate-300">
-            Soon
+            {{ __('Soon') }}
         </span>
     </span>
 @else

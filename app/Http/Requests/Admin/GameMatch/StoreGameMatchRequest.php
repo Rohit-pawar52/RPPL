@@ -72,10 +72,10 @@ class StoreGameMatchRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'edition_id.exists' => 'The selected edition is not currently accepting new fixtures.',
-            'edition_team_a_id.different' => 'Team A and Team B must be different teams.',
-            'venue_id.exists' => 'The selected venue is not available for scheduling.',
-            'match_number.unique' => 'This match number is already used in the selected edition.',
+            'edition_id.exists' => __('The selected edition is not currently accepting new fixtures.'),
+            'edition_team_a_id.different' => __('Team A and Team B must be different teams.'),
+            'venue_id.exists' => __('The selected venue is not available for scheduling.'),
+            'match_number.unique' => __('This match number is already used in the selected edition.'),
         ];
     }
 
@@ -93,13 +93,13 @@ class StoreGameMatchRequest extends FormRequest
         }
 
         if ((int) $editionTeam->edition_id !== (int) $this->input('edition_id')) {
-            $fail('The selected team does not belong to the chosen edition.');
+            $fail(__('The selected team does not belong to the chosen edition.'));
 
             return;
         }
 
         if (! $editionTeam->team->is_active) {
-            $fail('The selected team is not available for scheduling.');
+            $fail(__('The selected team is not available for scheduling.'));
         }
     }
 }

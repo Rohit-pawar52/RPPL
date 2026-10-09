@@ -47,13 +47,13 @@ class StoreMatchPlayerRequest extends FormRequest
                     // belong to one of the two edition_teams actually
                     // participating in this match.
                     if (! in_array($teamPlayer->edition_team_id, [$match->edition_team_a_id, $match->edition_team_b_id], true)) {
-                        $fail('The selected player does not belong to either team in this match.');
+                        $fail(__('The selected player does not belong to either team in this match.'));
 
                         return;
                     }
 
                     if (! $teamPlayer->playerRegistration->player->is_active) {
-                        $fail('The selected player is not available for match selection.');
+                        $fail(__('The selected player is not available for match selection.'));
                     }
                 },
             ],
@@ -66,8 +66,8 @@ class StoreMatchPlayerRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'team_player_id.exists' => 'The selected squad player does not exist.',
-            'team_player_id.unique' => 'This player is already selected for this match.',
+            'team_player_id.exists' => __('The selected squad player does not exist.'),
+            'team_player_id.unique' => __('This player is already selected for this match.'),
         ];
     }
 }

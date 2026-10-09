@@ -35,10 +35,10 @@
     'accept' => 'image/png,image/jpeg,image/webp',
     'required' => false,
     'help' => null,
-    'emptyText' => 'Click the picture to choose one',
-    'changeText' => 'Click the picture to change it',
+    'emptyText' => __('Click the picture to choose one'),
+    'changeText' => __('Click the picture to change it'),
     'removeName' => null,
-    'removeLabel' => 'Remove',
+    'removeLabel' => __('Remove'),
     'multiple' => false,
     'maxBytes' => null,
     'tooLarge' => null,
@@ -94,7 +94,7 @@
                         @if($hasError) aria-invalid="true" @endif
                     />
                     <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                    <span class="text-[10px] font-semibold uppercase tracking-wide">Add</span>
+                    <span class="text-[10px] font-semibold uppercase tracking-wide">{{ __('Add') }}</span>
                 </label>
             </div>
         @else
@@ -252,8 +252,9 @@
                         var item = document.createElement('div');
                         item.setAttribute('data-thumb', '');
                         item.className = 'relative h-20 w-20 overflow-hidden rounded-xl border border-slate-200 bg-slate-50';
-                        item.innerHTML = '<img alt="" class="h-full w-full object-cover" /><button type="button" class="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/70 text-xs leading-none text-white hover:bg-red-600" aria-label="Remove this picture">&times;</button>';
+                        item.innerHTML = '<img alt="" class="h-full w-full object-cover" /><button type="button" class="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/70 text-xs leading-none text-white hover:bg-red-600">&times;</button>';
                         item.querySelector('img').src = url;
+                        item.querySelector('button').setAttribute('aria-label', @js(__('Remove this picture')));
                         item.querySelector('button').addEventListener('click', function () {
                             var next = new DataTransfer();
                             Array.prototype.forEach.call(store.files, function (kept, i) { if (i !== index) { next.items.add(kept); } });
@@ -264,7 +265,7 @@
                         thumbs.insertBefore(item, addBox);
                     });
 
-                    fileName.textContent = store.files.length ? store.files.length + (store.files.length === 1 ? ' picture' : ' pictures') + ' chosen' : '';
+                    fileName.textContent = store.files.length ? (store.files.length === 1 ? @js(__('1 picture chosen')) : @js(__(':count pictures chosen')).replace(':count', store.files.length)) : '';
                 };
 
                 input.addEventListener('change', function () {

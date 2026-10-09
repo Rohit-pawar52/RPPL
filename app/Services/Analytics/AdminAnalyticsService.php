@@ -184,7 +184,7 @@ class AdminAnalyticsService
         return $paginator->through(function ($row) use ($eventType, $subjects) {
             $id = (int) $row->subject_id;
             $described = $subjects[$id] ?? [
-                'label' => 'Deleted '.$this->subjectNoun($eventType).' #'.$id,
+                'label' => __('Deleted :type #:id', ['type' => $this->subjectNoun($eventType), 'id' => $id]),
                 'detail' => null,
                 'url' => null,
                 'deleted' => true,
@@ -223,7 +223,7 @@ class AdminAnalyticsService
 
                     $described[$match->id] = [
                         'label' => "{$teamA} vs {$teamB}",
-                        'detail' => 'Match '.$match->match_number.' · '.$match->edition->name,
+                        'detail' => __('Match :number', ['number' => $match->match_number]).' · '.$match->edition->name,
                         'url' => route('admin.matches.show', $match),
                         'deleted' => false,
                     ];
@@ -259,9 +259,9 @@ class AdminAnalyticsService
     private function subjectNoun(string $eventType): string
     {
         return match ($eventType) {
-            PageView::MATCH_VIEW => 'Match',
-            PageView::EDITION_VIEW => 'Edition',
-            default => 'Player',
+            PageView::MATCH_VIEW => __('Match'),
+            PageView::EDITION_VIEW => __('Edition'),
+            default => __('Player'),
         };
     }
 }

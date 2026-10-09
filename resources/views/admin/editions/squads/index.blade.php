@@ -1,13 +1,13 @@
 @extends('layouts.admin')
 
-@section('title', 'Squads')
+@section('title', __('Squads'))
 
 @section('content')
-    @include('admin.editions._crumbs', ['edition' => $edition, 'section' => 'Squads'])
+    @include('admin.editions._crumbs', ['edition' => $edition, 'section' => __('Squads')])
 
     <section class="ops-card">
         <div class="ops-card-head">
-            <h3 class="ops-title">Squads in {{ $edition->name }}</h3>
+            <h3 class="ops-title">{{ __('Squads in :name', ['name' => $edition->name]) }}</h3>
         </div>
 
         <div class="divide-y divide-line">
@@ -19,20 +19,20 @@
                     <div class="min-w-0 flex-1 basis-40">
                         <a href="{{ route('admin.editions.squads.show', [$edition, $editionTeam]) }}" class="block truncate text-[15px] font-semibold text-slate-900 after:absolute after:inset-0 after:content-[''] hover:underline">{{ $editionTeam->team->name }}</a>
                         <p class="text-xs text-slate-500">
-                            <span class="font-semibold tabular-nums text-slate-700">{{ $editionTeam->team_players_count }}</span> {{ \Illuminate\Support\Str::plural('player', $editionTeam->team_players_count) }}
+                            <span class="font-semibold tabular-nums text-slate-700">{{ $editionTeam->team_players_count }}</span> {{ $editionTeam->team_players_count == 1 ? __('player') : __('players') }}
                         </p>
                     </div>
                     <div class="text-right">
-                        <p class="ops-kicker">Bought for (points)</p>
+                        <p class="ops-kicker">{{ __('Bought for (points)') }}</p>
                         <p class="text-[15px] font-bold tabular-nums text-slate-900">{{ $editionTeam->sold_total !== null ? points($editionTeam->sold_total, true) : '—' }}</p>
                     </div>
-                    <span class="btn btn-secondary btn-sm relative max-sm:w-full">Open squad <x-ops.icon name="arrow-right" class="h-3.5 w-3.5" /></span>
+                    <span class="btn btn-secondary btn-sm relative max-sm:w-full">{{ __('Open squad') }} <x-ops.icon name="arrow-right" class="h-3.5 w-3.5" /></span>
                 </div>
             @empty
                 <x-admin.empty icon="users" class="py-12">
-                    No teams in this season yet.
+                    {{ __('No teams in this season yet.') }}
                     @can('viewAny', \App\Models\EditionTeam::class)
-                        <a href="{{ route('admin.editions.teams.index', $edition) }}" class="font-medium text-link hover:underline">Add teams first</a>.
+                        <a href="{{ route('admin.editions.teams.index', $edition) }}" class="font-medium text-link hover:underline">{{ __('Add teams first') }}</a>.
                     @endcan
                 </x-admin.empty>
             @endforelse
@@ -40,6 +40,8 @@
     </section>
 
     <p class="mt-3 text-xs text-slate-500">
-        <span class="font-medium text-slate-700">{{ $withoutTeam }}</span> {{ \Illuminate\Support\Str::plural('player', $withoutTeam) }} of this season not in any team yet.
+        {!! $withoutTeam == 1
+            ? __(':count player of this season not in any team yet.', ['count' => '<span class="font-medium text-slate-700">'.e($withoutTeam).'</span>'])
+            : __(':count players of this season not in any team yet.', ['count' => '<span class="font-medium text-slate-700">'.e($withoutTeam).'</span>']) !!}
     </p>
 @endsection

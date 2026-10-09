@@ -196,7 +196,7 @@ class DataCleanupController extends Controller
 
         return redirect()
             ->route('admin.data-cleanup.index', ['tab' => 'notifications'])
-            ->with('success', "Deleted {$deleted} notification(s) and their send history.");
+            ->with('success', __('Deleted :count notification(s) and their send history.', ['count' => $deleted]));
     }
 
     public function destroyNotificationSends(DeleteNotificationSendsRequest $request): RedirectResponse
@@ -218,7 +218,7 @@ class DataCleanupController extends Controller
 
         return redirect()
             ->route('admin.data-cleanup.index', ['tab' => 'notifications'])
-            ->with('success', "Deleted {$deleted} notification send record(s).");
+            ->with('success', __('Deleted :count notification send record(s).', ['count' => $deleted]));
     }
 
     public function destroyInactiveFcmTokens(Request $request): RedirectResponse
@@ -231,7 +231,7 @@ class DataCleanupController extends Controller
 
         return redirect()
             ->route('admin.data-cleanup.index', ['tab' => 'notifications'])
-            ->with('success', "Deleted {$deleted} inactive FCM token(s).");
+            ->with('success', __('Deleted :count inactive FCM token(s).', ['count' => $deleted]));
     }
 
     public function destroyStaleFcmTokens(DeleteStaleFcmTokensRequest $request): RedirectResponse
@@ -247,7 +247,7 @@ class DataCleanupController extends Controller
 
         return redirect()
             ->route('admin.data-cleanup.index', ['tab' => 'notifications'])
-            ->with('success', "Deleted {$deleted} FCM token(s) not seen in the last {$days} days.");
+            ->with('success', __('Deleted :count FCM token(s) not seen in the last :days days.', ['count' => $deleted, 'days' => $days]));
     }
 
     public function destroyRegistrationDocuments(DeleteRegistrationDocumentsRequest $request): RedirectResponse
@@ -268,15 +268,14 @@ class DataCleanupController extends Controller
             $result['files_deleted'],
         );
 
-        $message = "{$result['registrations_updated']} registration(s) updated, {$result['files_deleted']} file(s) deleted";
-
-        if ($result['files_missing'] > 0) {
-            $message .= " ({$result['files_missing']} database reference(s) already pointed to missing files)";
-        }
+        $counts = ['updated' => $result['registrations_updated'], 'deleted' => $result['files_deleted']];
+        $message = $result['files_missing'] > 0
+            ? __(':updated registration(s) updated, :deleted file(s) deleted (:missing database reference(s) already pointed to missing files).', $counts + ['missing' => $result['files_missing']])
+            : __(':updated registration(s) updated, :deleted file(s) deleted.', $counts);
 
         return redirect()
             ->route('admin.data-cleanup.index', ['tab' => 'registration-documents'])
-            ->with('success', $message.'.');
+            ->with('success', $message);
     }
 
     /**
@@ -311,16 +310,14 @@ class DataCleanupController extends Controller
             $result['deleted'],
         );
 
-        $label = MediaFileCleanupService::CATEGORIES[$category]['label'];
-        $message = "{$label}: {$result['deleted']} orphaned file(s) deleted";
-
-        if ($result['failed'] > 0) {
-            $message .= ", {$result['failed']} could not be deleted";
-        }
+        $counts = ['label' => __(MediaFileCleanupService::CATEGORIES[$category]['label']), 'deleted' => $result['deleted'], 'failed' => $result['failed']];
+        $message = $result['failed'] > 0
+            ? __(':label: :deleted orphaned file(s) deleted, :failed could not be deleted.', $counts)
+            : __(':label: :deleted orphaned file(s) deleted.', $counts);
 
         return redirect()
             ->route('admin.data-cleanup.index', ['tab' => 'media-files'])
-            ->with($result['failed'] > 0 ? 'error' : 'success', $message.'.');
+            ->with($result['failed'] > 0 ? 'error' : 'success', $message);
     }
 
     public function destroyFailedJobs(DeleteFailedJobsRequest $request): RedirectResponse
@@ -342,7 +339,7 @@ class DataCleanupController extends Controller
 
         return redirect()
             ->route('admin.data-cleanup.index', ['tab' => 'system'])
-            ->with('success', "Deleted {$deleted} failed job record(s).");
+            ->with('success', __('Deleted :count failed job record(s).', ['count' => $deleted]));
     }
 
     private function authorizeCleanup(): void

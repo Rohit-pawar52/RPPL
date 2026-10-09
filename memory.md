@@ -34,6 +34,10 @@ Everywhere a picture is shown — on the public website AND in the admin panel �
 
 Every page (public + admin) follows one premium, mobile-first design, and every task should take as few clicks as possible: if a flow needs two or four pointless clicks, redesign the flow (inline actions, whole-row links, sticky action bars, pre-filled forms). Colours that belong to the brand or to actions come from the database through CSS variables, never hardcoded: use the `.btn` family and the utilities `bg-action text-action-fg hover:bg-action-hover text-brand bg-brand-soft text-link hover:bg-hover bg-navy-*` (Settings > General > Theme: primary / secondary / header colours, button colour + hover + text colour, link hover, hover highlight, button shape; optional ones are Auto). Green / red / amber are for meaning only (paid, failed, pending). A new page must be checked at 390 / 820 / 1280 px with no sideways scroll, and use `<x-media-image>` / `<x-form.image-upload>` for pictures.
 
+### 2026-10-09 — Admin panel in Hindi
+
+Every new admin screen, flash message, validation message or JavaScript text must go through `__()` (or `t()` in JS) with a Hindi entry in `lang/admin/<area>/hi.json`; `AdminTranslationCoverageTest` enforces it (scanner: `php tests/Support/admin-i18n-report.php`). The language is per user (`users.locale`), separate from the public site's cookie language. Keep Hindi on buttons and keypads short. PDF / CSV exports stay English.
+
 ## Project setup log
 
 ### 2026-09-17 — GitHub repository and workflow set up

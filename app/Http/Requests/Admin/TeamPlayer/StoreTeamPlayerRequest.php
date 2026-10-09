@@ -37,11 +37,11 @@ class StoreTeamPlayerRequest extends FormRequest
                     }
 
                     if ($editionTeam->edition->status === 'completed') {
-                        $fail('The selected edition is not currently accepting new squad assignments.');
+                        $fail(__('The selected edition is not currently accepting new squad assignments.'));
                     }
 
                     if (! $editionTeam->team->is_active) {
-                        $fail('The selected team is not available for squad assignment.');
+                        $fail(__('The selected team is not available for squad assignment.'));
                     }
                 },
             ],
@@ -61,7 +61,7 @@ class StoreTeamPlayerRequest extends FormRequest
                     }
 
                     if (! $registration->player->is_active) {
-                        $fail('The selected player is not available for squad assignment.');
+                        $fail(__('The selected player is not available for squad assignment.'));
                     }
 
                     // THE core rule of this phase: the registration's
@@ -69,7 +69,7 @@ class StoreTeamPlayerRequest extends FormRequest
                     $editionTeam = EditionTeam::find($this->input('edition_team_id'));
 
                     if ($editionTeam && $registration->edition_id !== $editionTeam->edition_id) {
-                        $fail('The selected player is not registered for the same edition as the selected team.');
+                        $fail(__('The selected player is not registered for the same edition as the selected team.'));
                     }
                 },
             ],
@@ -90,10 +90,10 @@ class StoreTeamPlayerRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'edition_team_id.exists' => 'The selected team participation record does not exist.',
-            'player_registration_id.exists' => 'The selected player registration does not exist.',
-            'player_registration_id.unique' => 'This player is already assigned to a squad.',
-            'jersey_number.unique' => 'This jersey number is already taken on the selected team.',
+            'edition_team_id.exists' => __('The selected team participation record does not exist.'),
+            'player_registration_id.exists' => __('The selected player registration does not exist.'),
+            'player_registration_id.unique' => __('This player is already assigned to a squad.'),
+            'jersey_number.unique' => __('This jersey number is already taken on the selected team.'),
         ];
     }
 }

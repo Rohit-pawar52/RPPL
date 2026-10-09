@@ -73,11 +73,11 @@ abstract class SaveAdvertisementRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'media_type.prohibited' => 'Mini sponsors are small logos shown together at the bottom of the page, so they must be an image.',
-            'media.max' => 'The file must not be larger than '.($this->input('media_type') === Advertisement::MEDIA_VIDEO ? (int) config('ads.max_video_mb') : (int) config('ads.max_image_mb')).' MB.',
-            'media.mimetypes' => 'The video must be an MP4 or WebM file.',
-            'poster.max' => 'The preview image must not be larger than 2 MB.',
-            'ends_on.after_or_equal' => 'The end date cannot be before the start date.',
+            'media_type.prohibited' => __('Mini sponsors are small logos shown together at the bottom of the page, so they must be an image.'),
+            'media.max' => __('The file must not be larger than :size MB.', ['size' => $this->input('media_type') === Advertisement::MEDIA_VIDEO ? (int) config('ads.max_video_mb') : (int) config('ads.max_image_mb')]),
+            'media.mimetypes' => __('The video must be an MP4 or WebM file.'),
+            'poster.max' => __('The preview image must not be larger than 2 MB.'),
+            'ends_on.after_or_equal' => __('The end date cannot be before the start date.'),
         ];
     }
 
@@ -96,7 +96,7 @@ abstract class SaveAdvertisementRequest extends FormRequest
                 // new file; the old one is the wrong kind.
                 $current = $this->current();
                 if ($current && ! $this->hasFile('media') && $current->media_type !== $this->input('media_type')) {
-                    $validator->errors()->add('media', 'Upload a new '.$this->input('media_type').' file — the current file is a '.$current->media_type.'.');
+                    $validator->errors()->add('media', __('Upload a new :type file — the current file is a :current.', ['type' => __($this->input('media_type')), 'current' => __($current->media_type)]));
 
                     return;
                 }

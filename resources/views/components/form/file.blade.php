@@ -10,7 +10,11 @@
       prompt   the call to action (default "Choose file")
     Any other attribute (accept, required, ...) is passed to the <input type="file">.
 --}}
-@props(['label' => null, 'name', 'help' => null, 'current' => null, 'prompt' => 'Choose file'])
+@props(['label' => null, 'name', 'help' => null, 'current' => null, 'prompt' => null])
+
+@php
+    $prompt ??= __('Choose file');
+@endphp
 
 <div class="fld">
     @if($label)
@@ -23,7 +27,7 @@
         </span>
         <span class="min-w-0 flex-1">
             @if($current)
-                <span class="block truncate text-slate-500">Current: {{ $current }}</span>
+                <span class="block truncate text-slate-500">{{ __('Current: :name', ['name' => $current]) }}</span>
             @endif
             <span class="block font-semibold text-brand">{{ $prompt }}</span>
             <span data-file-name class="block truncate text-[11px] text-slate-500"></span>

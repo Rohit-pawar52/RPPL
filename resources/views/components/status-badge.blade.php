@@ -43,15 +43,19 @@
     ];
     $style = $styles[$status] ?? 'bg-slate-100 text-slate-600 ring-slate-200';
 
-    // Shared by Admin and Public — Admin never runs with locale 'hi'
-    // (SetPublicLocale is only ever registered on the public route
-    // group), so this is a no-op there regardless. On a public Hindi
-    // request, translate only when a key actually exists for $status;
-    // otherwise fall back to the exact original (English) value rather
-    // than ever printing a missing-translation key literal.
-    $displayStatus = app()->getLocale() !== 'en' && \Illuminate\Support\Facades\Lang::has('public.status.'.$status)
-        ? __('public.status.'.$status)
-        : $status;
+    // Shared by Admin and Public. In the admin panel the status text comes from the admin
+    // vocabulary (lang/admin/*/hi.json, English is the key: "paid" => "भुगतान हुआ"); a status
+    // without Hindi stays English. On the public site, translate only when a key actually exists
+    // for $status in lang/<locale>/public.php; otherwise fall back to the exact original (English)
+    // value rather than ever printing a missing-translation key literal.
+    $displayStatus = $status;
+    if (app()->getLocale() !== 'en') {
+        if (request()->routeIs('admin.*')) {
+            $displayStatus = __($status);
+        } elseif (\Illuminate\Support\Facades\Lang::has('public.status.'.$status)) {
+            $displayStatus = \Illuminate\Support\Facades\Lang::get('public.status.'.$status);
+        }
+    }
     $isLive = $status === 'live';
 @endphp
 

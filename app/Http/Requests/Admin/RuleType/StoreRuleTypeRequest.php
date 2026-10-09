@@ -66,7 +66,7 @@ class StoreRuleTypeRequest extends FormRequest
     public static function sharedMessages(): array
     {
         return [
-            'slug.regex' => 'The slug may only contain lowercase letters, numbers and single hyphens (e.g. cricket-rules).',
+            'slug.regex' => __('The slug may only contain lowercase letters, numbers and single hyphens (e.g. cricket-rules).'),
         ];
     }
 }

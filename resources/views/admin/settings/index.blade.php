@@ -1,21 +1,21 @@
 @extends('layouts.admin')
 
-@section('title', 'Settings')
+@section('title', __('Settings'))
 
 @php
     $tabs = [
-        'general' => 'General',
-        'contact' => 'Contact',
-        'system' => 'System',
-        'payments' => 'Payments',
-        'public-website' => 'Public Website',
+        'general' => __('General'),
+        'contact' => __('Contact'),
+        'system' => __('System'),
+        'payments' => __('Payments'),
+        'public-website' => __('Public Website'),
     ];
 @endphp
 
 @section('content')
     <div class="mb-4">
         <p class="text-[13px] text-neutral-500">
-            Site-wide configuration: branding, contact details, system options, payment details and public-website text.
+            {{ __('Site-wide configuration: branding, contact details, system options, payment details and public-website text.') }}
         </p>
     </div>
 

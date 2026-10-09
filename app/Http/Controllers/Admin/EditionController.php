@@ -78,7 +78,7 @@ class EditionController extends Controller
 
         return redirect()
             ->route('admin.editions.index')
-            ->with('success', 'Edition created successfully.');
+            ->with('success', __('Edition created successfully.'));
     }
 
     public function show(Request $request, Edition $edition): View
@@ -228,7 +228,7 @@ class EditionController extends Controller
 
         return redirect()
             ->route('admin.editions.index')
-            ->with('success', 'Edition updated successfully.');
+            ->with('success', __('Edition updated successfully.'));
     }
 
     public function destroy(Edition $edition): RedirectResponse
@@ -238,12 +238,12 @@ class EditionController extends Controller
         if (! $this->editions->deleteEdition($edition)) {
             return redirect()
                 ->route('admin.editions.index')
-                ->with('error', 'This edition cannot be deleted because tournament data already exists.');
+                ->with('error', __('This edition cannot be deleted because tournament data already exists.'));
         }
 
         return redirect()
             ->route('admin.editions.index')
-            ->with('success', 'Edition deleted successfully.');
+            ->with('success', __('Edition deleted successfully.'));
     }
 
     /**

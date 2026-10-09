@@ -65,7 +65,7 @@ class MatchPlayerController extends Controller
         if (! $this->matchPlayers->canModifyPlayingXI($match)) {
             return redirect()
                 ->route('admin.matches.players.index', $match)
-                ->with('error', 'The Playing XI for this match can no longer be modified.');
+                ->with('error', __('The Playing XI for this match can no longer be modified.'));
         }
 
         $editionTeam = EditionTeam::findOrFail($request->validated('edition_team_id'));
@@ -86,7 +86,7 @@ class MatchPlayerController extends Controller
         if (! $this->matchPlayers->canModifyPlayingXI($match)) {
             return redirect()
                 ->route('admin.matches.players.index', $match)
-                ->with('error', 'The Playing XI for this match can no longer be modified.');
+                ->with('error', __('The Playing XI for this match can no longer be modified.'));
         }
 
         if ($request->validated('designation') === 'captain') {
@@ -97,7 +97,7 @@ class MatchPlayerController extends Controller
 
         return redirect()
             ->route('admin.matches.players.index', $match)
-            ->with('success', 'Playing XI updated.');
+            ->with('success', __('Playing XI updated.'));
     }
 
     /**

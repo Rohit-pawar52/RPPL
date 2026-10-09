@@ -1,9 +1,9 @@
 @extends('layouts.admin')
 
-@section('title', 'Matches')
+@section('title', __('Matches'))
 
 @section('content')
-    @include('admin.editions._crumbs', ['edition' => $edition, 'section' => 'Matches'])
+    @include('admin.editions._crumbs', ['edition' => $edition, 'section' => __('Matches')])
 
     @php
         $statusCounts = \App\Models\GameMatch::query()
@@ -11,11 +11,11 @@
             ->selectRaw('match_status, count(*) as total')
             ->groupBy('match_status')
             ->pluck('total', 'match_status');
-        $statusTabs = ['' => 'All'] + collect(\App\Models\GameMatch::STATUSES)->mapWithKeys(fn ($s) => [$s => ucfirst($s)])->all();
+        $statusTabs = ['' => __('All')] + collect(\App\Models\GameMatch::STATUSES)->mapWithKeys(fn ($s) => [$s => ucfirst(__($s))])->all();
     @endphp
 
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <nav class="ops-chips min-w-0 flex-1" aria-label="Match status" id="season-match-filter">
+        <nav class="ops-chips min-w-0 flex-1" aria-label="{{ __('Match status') }}" id="season-match-filter">
             @foreach($statusTabs as $value => $label)
                 @php $count = $value === '' ? $statusCounts->sum() : (int) ($statusCounts[$value] ?? 0); @endphp
                 <a
@@ -30,10 +30,10 @@
 
         @can('create', \App\Models\GameMatch::class)
             @if($canAdd)
-                <x-admin.button :href="route('admin.editions.matches.create', $edition)">+ Add match</x-admin.button>
+                <x-admin.button :href="route('admin.editions.matches.create', $edition)">{{ __('+ Add match') }}</x-admin.button>
             @else
                 <span class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                    This season is completed, so new matches cannot be scheduled.
+                    {{ __('This season is completed, so new matches cannot be scheduled.') }}
                 </span>
             @endif
         @endcan
@@ -41,7 +41,7 @@
 
     <section class="ops-card">
         <div class="ops-card-head">
-            <h3 class="ops-title">Matches in {{ $edition->name }} ({{ $matches->total() }})</h3>
+            <h3 class="ops-title">{{ __('Matches in :name (:count)', ['name' => $edition->name, 'count' => $matches->total()]) }}</h3>
         </div>
 
         <div class="divide-y divide-line">
@@ -58,27 +58,27 @@
                     </div>
                     <div class="min-w-0 flex-1 basis-48">
                         <a href="{{ route('admin.matches.show', $match) }}" class="block break-words text-[15px] font-semibold leading-5 text-slate-900 after:absolute after:inset-0 after:content-[''] hover:underline">
-                            {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
+                            {{ $match->teamA->team->name }} {{ __('vs') }} {{ $match->teamB->team->name }}
                         </a>
                         <p class="mt-1 text-xs text-slate-500">
-                            @if($match->match_number) Match {{ $match->match_number }} &middot; @endif
+                            @if($match->match_number) {{ __('Match :number', ['number' => $match->match_number]) }} &middot; @endif
                             {{ display_datetime($match->scheduled_at, 'd M Y, h:i A') }}
-                            &middot; {{ $match->venue->name ?? 'TBD' }}
-                            @if($match->match_stage) &middot; {{ ucwords(str_replace('_', ' ', $match->match_stage)) }} @endif
-                            @if($match->overs_per_innings) &middot; {{ $match->overs_per_innings }} overs @endif
+                            &middot; {{ $match->venue->name ?? __('TBD') }}
+                            @if($match->match_stage) &middot; {{ __(ucwords(str_replace('_', ' ', $match->match_stage))) }} @endif
+                            @if($match->overs_per_innings) &middot; {{ __(':count overs', ['count' => $match->overs_per_innings]) }} @endif
                         </p>
                     </div>
                     <x-status-badge :status="$matchStatus" />
                     <div class="relative z-10 flex items-center gap-2 max-sm:w-full">
                         @if($canScore)
-                            <a href="{{ route('admin.matches.innings.score', [$match, $liveInnings]) }}" class="btn btn-primary max-sm:flex-1"><x-ops.icon name="bolt" /> Score</a>
+                            <a href="{{ route('admin.matches.innings.score', [$match, $liveInnings]) }}" class="btn btn-primary max-sm:flex-1"><x-ops.icon name="bolt" /> {{ __('Score') }}</a>
                         @elseif(in_array($matchStatus, ['scheduled', 'toss'], true))
-                            <a href="{{ route('admin.matches.show', $match) }}" class="btn btn-secondary max-sm:flex-1">{{ $matchStatus === 'toss' ? 'Continue' : 'Start' }} <x-ops.icon name="arrow-right" /></a>
+                            <a href="{{ route('admin.matches.show', $match) }}" class="btn btn-secondary max-sm:flex-1">{{ $matchStatus === 'toss' ? __('Continue') : __('Start') }} <x-ops.icon name="arrow-right" /></a>
                         @else
-                            <a href="{{ route('admin.matches.show', $match) }}" class="btn btn-secondary max-sm:flex-1">{{ $matchStatus === 'live' ? 'Open match' : 'Result' }}</a>
+                            <a href="{{ route('admin.matches.show', $match) }}" class="btn btn-secondary max-sm:flex-1">{{ $matchStatus === 'live' ? __('Open match') : __('Result') }}</a>
                         @endif
                         @can('update', $match)
-                            <a href="{{ route('admin.matches.edit', $match) }}" class="btn btn-ghost btn-icon" title="Edit" aria-label="Edit match">
+                            <a href="{{ route('admin.matches.edit', $match) }}" class="btn btn-ghost btn-icon" title="{{ __('Edit') }}" aria-label="{{ __('Edit match') }}">
                                 <x-icon name="pencil" class="h-4 w-4" />
                             </a>
                         @endcan
@@ -87,16 +87,16 @@
             @empty
                 <x-admin.empty icon="trophy" class="py-12">
                     @if($status)
-                        No {{ $status }} matches in this season.
+                        {{ __('No :status matches in this season.', ['status' => __($status)]) }}
                     @else
-                        No matches in this season yet.
+                        {{ __('No matches in this season yet.') }}
                     @endif
                     <x-slot:action>
                         @if($status)
-                            <a href="{{ route('admin.editions.matches.index', $edition) }}" class="btn btn-secondary btn-sm">Show all matches</a>
+                            <a href="{{ route('admin.editions.matches.index', $edition) }}" class="btn btn-secondary btn-sm">{{ __('Show all matches') }}</a>
                         @elseif($canAdd)
                             @can('create', \App\Models\GameMatch::class)
-                                <a href="{{ route('admin.editions.matches.create', $edition) }}" class="btn btn-primary btn-sm">+ Schedule the first match</a>
+                                <a href="{{ route('admin.editions.matches.create', $edition) }}" class="btn btn-primary btn-sm">{{ __('+ Schedule the first match') }}</a>
                             @endcan
                         @endif
                     </x-slot:action>

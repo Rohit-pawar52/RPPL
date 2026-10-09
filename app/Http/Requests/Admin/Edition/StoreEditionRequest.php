@@ -68,7 +68,7 @@ class StoreEditionRequest extends FormRequest
             if (Edition::where('registration_open', true)->exists()) {
                 $validator->errors()->add(
                     'registration_open',
-                    'Another edition already has public registration open. Close it first before opening a new one.'
+                    __('Another edition already has public registration open. Close it first before opening a new one.')
                 );
             }
         });

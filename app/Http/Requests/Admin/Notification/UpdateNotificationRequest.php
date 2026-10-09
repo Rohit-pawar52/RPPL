@@ -52,7 +52,7 @@ class UpdateNotificationRequest extends FormRequest
                 'max:255',
                 function (string $attribute, $value, \Closure $fail) {
                     if (! Notification::isValidActionUrl($value)) {
-                        $fail('The action URL must be an internal RPPL path starting with a single "/" (e.g. /matches/12) — external links are not allowed.');
+                        $fail(__('The action URL must be an internal RPPL path starting with a single "/" (e.g. /matches/12) — external links are not allowed.'));
                     }
                 },
             ],

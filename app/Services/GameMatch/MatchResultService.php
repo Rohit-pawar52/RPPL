@@ -228,7 +228,7 @@ class MatchResultService
 
             if (! in_array((int) $winner->id, $participatingTeamIds, true)) {
                 throw ValidationException::withMessages([
-                    'winner_team_id' => 'The Super Over winner must be one of the two teams in this match.',
+                    'winner_team_id' => __('The Super Over winner must be one of the two teams in this match.'),
                 ]);
             }
 

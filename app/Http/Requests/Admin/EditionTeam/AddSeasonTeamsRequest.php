@@ -36,8 +36,8 @@ class AddSeasonTeamsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'team_ids.required' => 'Tick at least one team to add.',
-            'team_ids.min' => 'Tick at least one team to add.',
+            'team_ids.required' => __('Tick at least one team to add.'),
+            'team_ids.min' => __('Tick at least one team to add.'),
         ];
     }
 }

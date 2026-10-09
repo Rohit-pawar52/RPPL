@@ -57,9 +57,9 @@ class StoreVideoRequest extends FormRequest
     public static function videoMessages(): array
     {
         return [
-            'video.max' => 'The video must not be larger than '.(int) config('videos.max_upload_mb').' MB.',
-            'video.mimetypes' => 'The video must be an MP4 or WebM file.',
-            'thumbnail.max' => 'The thumbnail must not be larger than 2 MB.',
+            'video.max' => __('The video must not be larger than :max MB.', ['max' => (int) config('videos.max_upload_mb')]),
+            'video.mimetypes' => __('The video must be an MP4 or WebM file.'),
+            'thumbnail.max' => __('The thumbnail must not be larger than 2 MB.'),
         ];
     }
 }
