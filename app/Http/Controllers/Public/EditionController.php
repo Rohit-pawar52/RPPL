@@ -78,6 +78,7 @@ class EditionController extends Controller
 
         return view('public.editions.show', [
             'edition' => $edition,
+            'editions' => Edition::query()->orderByDesc('year')->get(['id', 'name']),
             'teams' => $teams,
             'matches' => $matches,
             'standings' => $this->standings->getEditionStandings($edition)['standings'],

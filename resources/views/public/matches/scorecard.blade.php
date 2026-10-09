@@ -4,7 +4,7 @@
 
 {{--
     Public PDF download is intentionally hidden for now (per the
-    cricket-first redesign pass) — the CTA is removed from this page
+    cricket-first redesign pass) - the CTA is removed from this page
     only. The route, MatchController::scorecardPdf(), and admin PDF
     functionality are all untouched; nothing was deleted, so exposing
     it again later is a one-line change back.
@@ -12,30 +12,23 @@
 @section('content')
     @include('public.matches._header', ['match' => $match, 'active' => 'scorecard'])
 
-    @if($match->match_status === 'completed' && $match->match_result)
-        <div class="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
-            {{ $match->match_result }}
-        </div>
-    @endif
-
-    {{-- shared.scorecard._innings is also used by the admin scorecard, so
-         it is deliberately left untouched here (Admin is out of scope);
-         only the outer page chrome around it was flattened for this pass. --}}
+    {{-- shared.scorecard._innings is also used by the admin scorecard, so it
+         keeps its inputs; the result line now lives in the score header. --}}
     @if(count($inningsScorecards) > 1)
-        {{-- Real innings switcher — only one innings visible at a time,
-             like the reference. Pure CSS/HTML (radio inputs + :has()),
-             no JS: each pill is a <label> wrapping its own radio, and
-             each innings panel shows only while its matching radio is
-             checked, via Tailwind's group-has-[] variant. innings_number
-             is always 1 or 2 in this data model (GameMatch only ever has
-             a first/second innings), so both cases are written out
-             literally — a dynamically interpolated arbitrary-variant
-             class name would not be picked up by Tailwind's static scan. --}}
-        <div class="group/innings">
-            <div class="mb-4 flex flex-wrap gap-2">
+        {{-- Real innings switcher - only one innings visible at a time. Pure
+             CSS/HTML (radio inputs + :has()), no JS: each pill is a <label>
+             wrapping its own radio, and each innings panel shows only while
+             its matching radio is checked, via Tailwind's group-has-[]
+             variant. innings_number is always 1 or 2 in this data model
+             (GameMatch only ever has a first/second innings), so both cases
+             are written out literally - a dynamically interpolated
+             arbitrary-variant class name would not be picked up by
+             Tailwind's static scan. --}}
+        <div class="group/innings mt-4">
+            <div class="mx-seg" role="radiogroup" aria-label="{{ __('ux_public_matches.scorecard.choose_innings') }}">
                 @foreach($inningsScorecards as $card)
                     @php $inn = $card['innings']; @endphp
-                    <label class="inline-flex min-h-10 cursor-pointer items-center rounded-full border border-slate-300 bg-white px-4 text-[13px] font-medium text-slate-600 transition hover:border-slate-400 has-checked:border-green-600 has-checked:bg-green-600 has-checked:text-white has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-green-600">
+                    <label class="mx-seg-item">
                         <input
                             type="radio"
                             name="innings-tab"
@@ -43,8 +36,9 @@
                             class="sr-only"
                             {{ $loop->first ? 'checked' : '' }}
                         >
-                        {{ $inn->battingTeam->team->short_name ?: $inn->battingTeam->team->name }}
-                        &mdash; {{ $inn->total_runs }}/{{ $inn->total_wickets }}
+                        <x-mx.team-logo :team="$inn->battingTeam->team" size="xs" class="hidden sm:inline-flex" />
+                        <span class="truncate">{{ $inn->battingTeam->team->short_name ?: $inn->battingTeam->team->name }}</span>
+                        <span class="tabular-nums text-slate-500">{{ $inn->total_runs }}/{{ $inn->total_wickets }}</span>
                     </label>
                 @endforeach
             </div>
@@ -60,12 +54,14 @@
             @endforeach
         </div>
     @else
-        @forelse($inningsScorecards as $card)
-            @include('shared.scorecard._innings', ['card' => $card])
-        @empty
-            <div class="pub-card pub-empty">
-                {{ __('matches.scorecard.not_available') }}
-            </div>
-        @endforelse
+        <div>
+            @forelse($inningsScorecards as $card)
+                @include('shared.scorecard._innings', ['card' => $card])
+            @empty
+                <div class="pub-card">
+                    <p class="pub-empty">{{ __('matches.scorecard.not_available') }}</p>
+                </div>
+            @endforelse
+        </div>
     @endif
 @endsection

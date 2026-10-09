@@ -56,7 +56,7 @@ class VenueController extends Controller
 
         $completedMatches = $venue->matches()
             ->whereIn('match_status', ['completed', 'abandoned', 'cancelled'])
-            ->with(['edition', 'teamA.team', 'teamB.team'])
+            ->with(['edition', 'teamA.team', 'teamB.team', 'firstInnings.battingTeam.team', 'secondInnings.battingTeam.team'])
             ->orderByDesc('scheduled_at')
             ->limit(10)
             ->get();

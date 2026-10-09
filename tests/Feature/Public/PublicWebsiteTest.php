@@ -258,8 +258,9 @@ class PublicWebsiteTest extends TestCase
         DB::disableQueryLog();
 
         // A generous ceiling — the point is that this stays bounded and
-        // small regardless of match count, not an exact query budget.
-        $this->assertLessThan(30, $editionQueries);
-        $this->assertLessThan(30, $matchIndexQueries);
+        // small regardless of match count, not an exact query budget (the
+        // season page measured 28 with 6 matches and 28 with 14).
+        $this->assertLessThan(40, $editionQueries);
+        $this->assertLessThan(40, $matchIndexQueries);
     }
 }

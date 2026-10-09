@@ -1,0 +1,690 @@
+/*
+ * Public matches, scorecards, points table, season stats, editions, venues.
+ * One prefix (mx-) for everything the cricket pages share, so the matches
+ * list, the match page, the scorecard and the season page look like one
+ * product. Colours come from the theme utilities (brand / navy / accent);
+ * green, red, amber and indigo are kept for meaning only (live, wicket,
+ * extra, four).
+ */
+@layer components {
+    /* ---- Team crest ------------------------------------------------- */
+    .mx-logo {
+        @apply inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-line bg-white;
+    }
+    .mx-logo-dark {
+        @apply border-white/20 bg-white shadow-md shadow-black/20;
+    }
+    .mx-logo-mono {
+        @apply bg-brand-soft text-brand;
+    }
+
+    /* ---- Match score header (dark hero) ------------------------------ */
+    .mx-hero {
+        @apply relative overflow-hidden rounded-2xl bg-gradient-to-br from-navy-900 to-navy-800 text-white shadow-raised;
+    }
+    .mx-hero-glow {
+        @apply pointer-events-none absolute -right-16 -top-24 size-72 rounded-full bg-brand/30 blur-3xl;
+    }
+    .mx-hero-live {
+        @apply ring-1 ring-green-400/40;
+    }
+    .mx-hero-live .mx-hero-glow {
+        @apply bg-green-500/25;
+    }
+    .mx-hero-back {
+        @apply inline-flex min-h-8 items-center gap-1.5 rounded-lg text-xs font-semibold text-slate-300 transition-colors hover:text-white;
+    }
+    .mx-hero-icon-btn {
+        @apply grid size-8 place-items-center rounded-full bg-white/10 text-slate-200 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-dark;
+    }
+    .mx-hero-icon-btn.is-done {
+        @apply bg-green-500/30 text-green-200;
+    }
+    .mx-hero-context {
+        @apply mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400;
+    }
+    .mx-hero-context > span + span::before {
+        content: '\00b7';
+        @apply mr-2 text-slate-500;
+    }
+
+    .mx-team {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        @apply items-center gap-x-3;
+    }
+    .mx-team-name {
+        @apply line-clamp-2 text-base font-semibold leading-tight text-white sm:text-lg;
+    }
+    .mx-team-meta {
+        @apply mt-1 flex min-h-5 items-center gap-2 text-xs text-slate-400;
+    }
+    .mx-batting-tag {
+        @apply rounded-full bg-green-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-300;
+    }
+    .mx-team-score {
+        @apply text-right;
+    }
+    .mx-score {
+        @apply text-3xl font-bold leading-none tracking-tight tabular-nums text-white sm:text-4xl;
+    }
+    .mx-overs {
+        @apply mt-1 text-xs tabular-nums text-slate-400;
+    }
+    .mx-crr {
+        @apply mt-0.5 text-[11px] font-semibold tabular-nums text-green-300;
+    }
+    .mx-team[data-batting] .mx-score {
+        @apply text-accent-dark;
+    }
+    .mx-team[data-outcome='lost'] .mx-score,
+    .mx-team[data-outcome='lost'] .mx-team-name {
+        @apply text-slate-400;
+    }
+    .mx-team[data-outcome='won'] .mx-team-name::after {
+        content: '\2713';
+        @apply ml-1.5 text-sm text-green-300;
+    }
+
+    .mx-vs {
+        @apply flex items-center gap-3 text-[11px] font-semibold uppercase tracking-widest text-slate-500;
+    }
+    .mx-vs::before,
+    .mx-vs::after {
+        content: '';
+        @apply h-px flex-1 bg-white/10;
+    }
+
+    .mx-result {
+        @apply rounded-lg bg-white/10 px-3 py-2 text-center text-sm font-semibold text-white;
+    }
+    .mx-hero-meta {
+        @apply flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-slate-300;
+    }
+    .mx-hero-meta li {
+        @apply flex min-w-0 items-center gap-1.5;
+    }
+    .mx-hero-meta svg {
+        @apply text-slate-400;
+    }
+
+    @media (min-width: 640px) {
+        .mx-team {
+            grid-template-columns: auto minmax(0, 1fr);
+            grid-template-rows: auto auto;
+            @apply gap-x-4 gap-y-1;
+        }
+        .mx-team .mx-logo {
+            grid-row: 1 / span 2;
+        }
+        .mx-team-score {
+            grid-column: 2;
+            @apply text-left;
+        }
+        .mx-team-b {
+            grid-template-columns: minmax(0, 1fr) auto;
+            @apply text-right;
+        }
+        .mx-team-b .mx-logo {
+            grid-column: 2;
+        }
+        .mx-team-b .mx-team-name,
+        .mx-team-b .mx-team-meta,
+        .mx-team-b .mx-team-score {
+            grid-column: 1;
+        }
+        .mx-team-b .mx-team-score {
+            @apply text-right;
+        }
+        .mx-team-b .mx-team-meta {
+            @apply justify-end;
+        }
+        .mx-vs {
+            @apply flex-col;
+        }
+        .mx-vs::before,
+        .mx-vs::after {
+            @apply h-8 w-px flex-none;
+        }
+        .mx-result {
+            @apply text-left;
+        }
+    }
+
+    /* ---- Live chase panel (inside the hero) -------------------------- */
+    .mx-chase-headline {
+        @apply text-sm font-semibold text-green-300;
+    }
+    .mx-chase-bar {
+        @apply mt-2 h-1.5 overflow-hidden rounded-full bg-white/10;
+    }
+    .mx-chase-bar > span {
+        @apply block h-full rounded-full bg-green-400 transition-[width] duration-500;
+    }
+    .mx-chase-grid {
+        @apply mt-3 grid grid-cols-4 gap-2 text-center;
+    }
+    .mx-chase-grid > div {
+        @apply rounded-lg bg-white/5 px-1 py-2 ring-1 ring-inset ring-white/10;
+    }
+    .mx-chase-grid dt {
+        @apply text-[10px] font-semibold uppercase tracking-wider text-slate-400;
+    }
+    .mx-chase-grid dd {
+        @apply mt-0.5 text-base font-bold tabular-nums text-white;
+    }
+
+    /* ---- Sticky tabs of a match -------------------------------------- */
+    .mx-tabs {
+        @apply sticky top-[3.75rem] z-30 mt-3 rounded-xl border border-line bg-white/95 shadow-card backdrop-blur lg:top-[4.5rem];
+    }
+    .mx-tabs-inner {
+        @apply flex gap-1 overflow-x-auto px-2;
+        scrollbar-width: none;
+    }
+    .mx-tabs-inner::-webkit-scrollbar {
+        display: none;
+    }
+    .mx-tab {
+        @apply -mb-px inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-4 text-[13px] font-semibold text-slate-500 transition-colors hover:text-slate-900 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand;
+    }
+    .mx-tab.is-active {
+        @apply border-brand text-brand hover:text-brand;
+    }
+
+    /* ---- Facts / quick tiles ----------------------------------------- */
+    .mx-section-title {
+        @apply text-[11px] font-semibold uppercase tracking-wider text-slate-400;
+    }
+    .mx-facts {
+        @apply space-y-3.5;
+    }
+    .mx-fact {
+        @apply flex items-start gap-3;
+    }
+    .mx-fact-icon {
+        @apply grid size-8 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand;
+    }
+    .mx-fact dt {
+        @apply text-[11px] font-semibold uppercase tracking-wider text-slate-400;
+    }
+    .mx-fact dd {
+        @apply mt-0.5 text-sm font-medium text-slate-800;
+    }
+    .mx-fact dd.mx-fact-sub {
+        @apply mt-0.5 text-xs font-normal text-slate-500;
+    }
+    .mx-tile {
+        @apply flex items-center gap-3 rounded-xl border border-line bg-white p-3.5 shadow-card transition duration-150 hover:-translate-y-px hover:shadow-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+    .mx-tile-icon {
+        @apply grid size-10 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand;
+    }
+    .mx-tile-live {
+        @apply border-green-200 bg-green-50/60;
+    }
+    .mx-tile-live .mx-tile-icon {
+        @apply bg-green-600 text-white;
+    }
+
+    /* ---- Ball badges, this over, commentary -------------------------- */
+    .mx-ball {
+        @apply grid size-7 min-w-7 shrink-0 place-items-center rounded-full bg-slate-100 px-1.5 text-[11px] font-bold tabular-nums text-slate-600;
+    }
+    .mx-ball-lg {
+        @apply size-10 min-w-10 text-sm;
+    }
+    .mx-ball-four {
+        @apply bg-indigo-600 text-white;
+    }
+    .mx-ball-six {
+        @apply bg-green-600 text-white;
+    }
+    .mx-ball-wicket {
+        @apply bg-red-600 text-white;
+    }
+    .mx-ball-extra {
+        @apply bg-amber-100 text-amber-800;
+    }
+    .mx-over-label {
+        @apply text-[11px] font-semibold uppercase tracking-wider text-slate-400;
+    }
+    .mx-over-balls {
+        @apply mt-2 flex flex-wrap gap-2;
+    }
+    .mx-over-facts {
+        @apply mt-4 space-y-1.5 border-t border-line pt-3 text-[13px] text-slate-700;
+    }
+    .mx-over-facts li > span {
+        @apply mr-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+    .mx-feed-row {
+        @apply flex items-start gap-3 border-b border-line px-4 py-3 text-[13px] last:border-b-0 sm:px-5;
+    }
+    .mx-feed-row[data-kind='wicket'] {
+        @apply bg-red-50/60;
+    }
+    .mx-feed-row[data-kind='six'],
+    .mx-feed-row[data-kind='four'] {
+        @apply bg-hover;
+    }
+
+    /* ---- Segmented control (innings switch, squads, list tabs) ------- */
+    .mx-seg {
+        @apply flex w-full gap-1 rounded-xl bg-slate-200 p-1;
+    }
+    .mx-seg-item {
+        @apply inline-flex min-h-10 min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-[13px] font-semibold text-slate-600 transition-colors duration-150 hover:text-slate-900;
+    }
+    .mx-seg-item:has(input:checked),
+    .mx-seg-item[aria-selected='true'] {
+        @apply bg-white text-slate-900 shadow-card;
+    }
+    .mx-seg-item:has(input:focus-visible),
+    .mx-seg-item:focus-visible {
+        @apply outline-2 outline-offset-2 outline-brand;
+    }
+    .mx-seg-count {
+        @apply rounded-full bg-slate-300/60 px-1.5 py-px text-[11px] font-bold tabular-nums text-slate-600;
+    }
+    .mx-seg-item[aria-selected='true'] .mx-seg-count {
+        @apply bg-brand-soft text-brand;
+    }
+
+    /* ---- Scorecard ---------------------------------------------------- */
+    .mx-innings {
+        @apply mt-4 overflow-hidden rounded-xl border border-line bg-white shadow-card;
+        scroll-margin-top: 8rem;
+    }
+    .mx-innings-head {
+        @apply flex items-center justify-between gap-3 border-b border-line p-4 sm:px-5;
+    }
+    .mx-innings-note {
+        @apply border-b border-line bg-slate-50 px-4 py-2 text-xs text-slate-500 sm:px-5;
+    }
+    .mx-scroll {
+        @apply overflow-x-auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .mx-table {
+        @apply w-full min-w-88 border-collapse text-left text-[13px];
+    }
+    .mx-table thead th {
+        @apply whitespace-nowrap bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+    .mx-table tbody td {
+        @apply border-t border-line px-3 py-2.5 align-top text-slate-600;
+    }
+    .mx-table tbody tr:first-child td {
+        @apply border-t-0;
+    }
+    .mx-table tbody tr:hover td {
+        @apply bg-hover;
+    }
+    .mx-table .mx-num {
+        @apply text-right tabular-nums;
+    }
+    .mx-table .mx-quiet {
+        @apply text-slate-400;
+    }
+    .mx-table td.mx-strong {
+        @apply text-sm font-bold text-slate-900;
+    }
+    .mx-table .mx-sticky {
+        @apply sticky left-0 z-10 min-w-36;
+        box-shadow: 1px 0 0 var(--color-line);
+    }
+    .mx-table thead th.mx-sticky {
+        @apply bg-slate-50;
+    }
+    .mx-table tbody td.mx-sticky {
+        @apply bg-white;
+    }
+    .mx-table tbody tr:hover td.mx-sticky {
+        @apply bg-hover;
+    }
+    .mx-dismissal {
+        @apply mt-0.5 block text-xs leading-snug text-slate-500;
+    }
+    .mx-dismissal.is-notout {
+        @apply font-medium text-green-700;
+    }
+    td.mx-dismissal {
+        @apply align-top;
+    }
+    .mx-empty-cell {
+        @apply py-6 text-center text-slate-400;
+    }
+    .mx-innings-line {
+        @apply border-t border-line px-4 py-3 text-xs leading-relaxed text-slate-600 sm:px-5;
+    }
+    .mx-innings-label {
+        @apply font-semibold text-slate-500;
+    }
+    .mx-innings-total {
+        @apply flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-line bg-slate-50 px-4 py-3 text-xs text-slate-600 sm:px-5;
+    }
+    .mx-fow {
+        @apply flex flex-wrap gap-2;
+    }
+    .mx-fow li {
+        @apply flex items-baseline gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 ring-1 ring-inset ring-line;
+    }
+    .mx-fow b {
+        @apply font-bold tabular-nums text-slate-900;
+    }
+    .mx-fow i {
+        @apply not-italic text-slate-400;
+    }
+
+    /* ---- Match cards (list) ------------------------------------------ */
+    .mx-card {
+        @apply relative flex flex-col gap-3 rounded-xl border border-line bg-white p-4 shadow-card transition duration-150 hover:-translate-y-px hover:shadow-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+    .mx-card-live {
+        @apply border-green-200 bg-gradient-to-br from-green-50/70 to-white;
+    }
+    .mx-card-live::before {
+        content: '';
+        @apply absolute inset-y-0 left-0 w-1 rounded-l-xl bg-green-500;
+    }
+    .mx-card-meta {
+        @apply min-w-0 truncate text-xs text-slate-500;
+    }
+    .mx-card-team {
+        @apply flex items-center gap-3;
+    }
+    .mx-card-team + .mx-card-team {
+        @apply mt-2.5;
+    }
+    .mx-card-name {
+        @apply min-w-0 flex-1 truncate text-[15px] font-semibold text-slate-900;
+    }
+    .mx-card-score {
+        @apply shrink-0 whitespace-nowrap text-right text-lg font-bold tabular-nums text-slate-900;
+    }
+    .mx-card-score small {
+        @apply ml-1 text-[11px] font-medium text-slate-500;
+    }
+    .mx-card-live .mx-card-score {
+        @apply text-xl;
+    }
+    .mx-card-team.is-loser .mx-card-name,
+    .mx-card-team.is-loser .mx-card-score {
+        @apply font-medium text-slate-400;
+    }
+    .mx-card-foot {
+        @apply mt-auto space-y-1.5 border-t border-line pt-3;
+    }
+    .mx-card-result {
+        @apply text-[13px] font-semibold text-slate-800;
+    }
+    .mx-card-when {
+        @apply flex items-center gap-1.5 text-[13px] font-semibold text-slate-800;
+    }
+    .mx-card-live .mx-card-when {
+        @apply text-green-700;
+    }
+    .mx-card-venue {
+        @apply flex items-center justify-between gap-2 text-xs text-slate-500;
+    }
+    .mx-card-go {
+        @apply shrink-0 text-xs font-semibold text-brand;
+    }
+    .mx-day {
+        @apply mb-2.5 mt-6 flex items-baseline gap-2 first:mt-0;
+    }
+    .mx-day b {
+        @apply text-sm font-semibold tracking-tight text-slate-900;
+    }
+    .mx-day i {
+        @apply text-xs not-italic text-slate-400;
+    }
+    .mx-day.is-today b {
+        @apply text-brand;
+    }
+
+    /* The list's tab panels: all shown without JS, one at a time with it. */
+    .mx-panels.is-enhanced .mx-panel:not(.is-active) {
+        display: none;
+    }
+    .mx-panels.is-enhanced .mx-panel-title {
+        @apply sr-only;
+    }
+
+    /* ---- Chips (season switcher, quick links, boards) ----------------- */
+    .mx-chips {
+        @apply -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0;
+        scrollbar-width: none;
+    }
+    .mx-chips::-webkit-scrollbar {
+        display: none;
+    }
+    .mx-chip {
+        @apply inline-flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-white px-3.5 text-[13px] font-semibold text-slate-600 transition-colors hover:border-brand hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+    .mx-chip.is-active {
+        @apply border-brand bg-brand-soft text-brand;
+    }
+    .mx-chip-dark {
+        @apply inline-flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white/10 px-3.5 text-[13px] font-semibold text-slate-100 transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-dark;
+    }
+    .mx-chip-dark.is-active {
+        @apply bg-white text-navy-900;
+    }
+
+    /* ---- Season / venue hero ------------------------------------------ */
+    .mx-hero-title {
+        @apply break-words text-2xl font-bold tracking-tight text-white sm:text-3xl;
+    }
+    .mx-stats {
+        @apply grid grid-cols-3 gap-2.5;
+    }
+    .mx-stat {
+        @apply rounded-xl bg-white/10 px-3.5 py-3 ring-1 ring-inset ring-white/10;
+    }
+    .mx-stat b {
+        @apply block text-2xl font-bold leading-none tabular-nums text-white;
+    }
+    .mx-stat span {
+        @apply mt-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-400;
+    }
+
+    /* ---- Compact match row (season + venue lists) ---------------------- */
+    .mx-row {
+        @apply flex items-center gap-3 border-b border-line px-4 py-3 transition-colors last:border-b-0 hover:bg-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand sm:px-5;
+    }
+    .mx-row-live {
+        @apply bg-green-50/60;
+        box-shadow: inset 3px 0 0 var(--color-green-500);
+    }
+    .mx-row-date {
+        @apply grid w-11 shrink-0 place-items-center rounded-lg bg-slate-100 py-1.5 text-center;
+    }
+    .mx-row-date b {
+        @apply block text-base font-bold leading-none tabular-nums text-slate-900;
+    }
+    .mx-row-date i {
+        @apply mt-0.5 block text-[10px] font-semibold uppercase not-italic tracking-wide text-slate-500;
+    }
+    .mx-row-live .mx-row-date {
+        @apply bg-green-600;
+    }
+    .mx-row-live .mx-row-date b,
+    .mx-row-live .mx-row-date i {
+        @apply text-white;
+    }
+    .mx-row-teams {
+        @apply flex min-w-0 items-center gap-1.5 text-sm font-semibold text-slate-900;
+    }
+    .mx-row-teams .mx-vs-text {
+        @apply shrink-0 text-xs font-medium text-slate-400;
+    }
+    .mx-row-sub {
+        @apply mt-0.5 block truncate text-xs text-slate-500;
+    }
+    .mx-row-sub .is-result {
+        @apply font-semibold text-slate-700;
+    }
+
+    /* ---- Ranked boards (points table is a table, these are lists) ------ */
+    /* The layout follows the width of the BOARD itself (a container query), so
+       the same board is a card list in a half-width column, on a phone and in
+       the admin page, and a table when it has the room. */
+    .mx-board {
+        container-type: inline-size;
+    }
+    .mx-board-head {
+        @apply hidden;
+    }
+    .mx-board-row {
+        @apply grid items-center gap-x-3 px-4 py-3 transition-colors hover:bg-hover;
+        grid-template-columns: 2rem minmax(0, 1fr) auto;
+    }
+    .mx-board-player {
+        @apply flex min-w-0 items-center gap-3;
+    }
+    .mx-board-name {
+        @apply block truncate text-sm font-semibold text-slate-900;
+    }
+    .mx-board-sub {
+        @apply mt-0.5 flex flex-wrap gap-x-3 text-[11px] text-slate-500;
+    }
+    .mx-board-sub b {
+        @apply font-semibold tabular-nums text-slate-700;
+    }
+    .mx-board-main {
+        @apply text-right text-xl font-bold leading-none tabular-nums text-slate-900;
+    }
+    .mx-board-main small {
+        @apply mt-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+    .mx-board-extra {
+        @apply hidden text-right text-[13px] tabular-nums text-slate-600;
+    }
+    @container (min-width: 34rem) {
+        .mx-board-head {
+            @apply grid items-center gap-x-3 bg-slate-50 px-5 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+        }
+        .mx-board-head,
+        .mx-board-row {
+            grid-template-columns: 2rem minmax(0, 1fr) 4.5rem repeat(var(--extras, 0), 4rem);
+        }
+        .mx-board-row {
+            @apply px-5;
+        }
+        .mx-board-head > span:nth-child(n + 3) {
+            @apply text-right;
+        }
+        .mx-board-sub,
+        .mx-board-main small {
+            @apply hidden;
+        }
+        .mx-board-extra {
+            @apply block;
+        }
+    }
+    .mx-rank {
+        @apply grid size-7 place-items-center rounded-full text-xs font-bold tabular-nums text-slate-500;
+    }
+    .mx-rank-1 {
+        @apply bg-amber-400 text-amber-950;
+    }
+    .mx-rank-2 {
+        @apply bg-slate-300 text-slate-800;
+    }
+    .mx-rank-3 {
+        @apply bg-orange-300 text-orange-950;
+    }
+    .mx-avatar {
+        @apply size-8 sm:size-9 shrink-0 overflow-hidden rounded-full border border-line bg-slate-50;
+    }
+
+    /* ---- Points table ------------------------------------------------- */
+    .mx-standings {
+        @apply w-full min-w-88 border-collapse text-left text-[13px];
+    }
+    .mx-standings thead th {
+        @apply whitespace-nowrap bg-slate-50 px-2 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+    .mx-standings tbody td {
+        @apply border-t border-line px-2 py-3 tabular-nums text-slate-600;
+    }
+    .mx-standings tbody tr:first-child td {
+        @apply border-t-0;
+    }
+    .mx-standings tbody tr:hover td {
+        @apply bg-hover;
+    }
+    .mx-standings .mx-team-cell {
+        @apply sticky left-0 z-10 bg-white pl-3 sm:pl-5;
+        box-shadow: 1px 0 0 var(--color-line);
+    }
+    .mx-standings thead .mx-team-cell {
+        @apply bg-slate-50;
+    }
+    .mx-standings tbody tr:hover .mx-team-cell {
+        @apply bg-hover;
+    }
+    .mx-standings .is-qualifying td,
+    .mx-standings .is-qualifying td.mx-team-cell {
+        background-color: color-mix(in srgb, var(--rppl-primary-soft) 55%, white);
+    }
+    .mx-standings td.is-points {
+        @apply text-base font-bold text-slate-900;
+    }
+    .mx-standings td.is-wins {
+        @apply font-semibold text-slate-800;
+    }
+    .mx-rankchip {
+        @apply grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold tabular-nums text-slate-500;
+    }
+    .is-qualifying .mx-rankchip {
+        @apply bg-brand text-brand-fg;
+    }
+
+    /* ---- Squads ------------------------------------------------------- */
+    .mx-player {
+        @apply flex min-h-14 items-center gap-3 border-b border-line px-4 py-2.5 last:border-b-0 sm:px-5;
+    }
+    .mx-badge {
+        @apply inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide;
+    }
+    .mx-badge-c {
+        @apply bg-brand-soft text-brand;
+    }
+    .mx-badge-wk {
+        @apply bg-sky-50 text-sky-700;
+    }
+    .mx-jersey {
+        @apply shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-slate-500;
+    }
+
+    /* ---- Venues / editions index cards -------------------------------- */
+    .mx-place {
+        @apply flex items-center gap-3 rounded-xl border border-line bg-white p-3.5 shadow-card transition duration-150 hover:-translate-y-px hover:shadow-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+    .mx-place-icon {
+        @apply grid size-12 shrink-0 place-items-center rounded-full bg-brand-soft text-brand;
+    }
+    .mx-season {
+        @apply relative flex flex-col gap-4 overflow-hidden rounded-xl border border-line bg-white p-5 shadow-card transition duration-150 hover:-translate-y-px hover:shadow-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+    .mx-season-active {
+        @apply border-brand/40;
+    }
+    .mx-season-active::before {
+        content: '';
+        @apply absolute inset-x-0 top-0 h-1 bg-brand;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mx-card,
+    .mx-tile,
+    .mx-place,
+    .mx-season,
+    .mx-chase-bar > span {
+        transition: none;
+    }
+}
