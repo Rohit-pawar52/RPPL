@@ -159,6 +159,27 @@ class NewContributorFromContributionTest extends TestCase
         $this->assertSame(0, EditionContribution::count());
     }
 
+    public function test_saving_without_choosing_anybody_is_refused_and_the_form_never_pre_picks_a_person(): void
+    {
+        $edition = Edition::factory()->create();
+        Contributor::factory()->create(['name' => 'Aaa First']);
+        $admin = $this->admin();
+
+        // The empty first choice is what stops a browser from selecting the first person by itself.
+        $this->actingAs($admin)->get(route('admin.edition-contributions.create'))
+            ->assertOk()
+            ->assertSee('<option value="" selected>Select a contributor</option>', false);
+
+        $this->post(route('admin.edition-contributions.store'), [
+            'edition_id' => $edition->id,
+            'contributor_id' => '',
+            'amount' => '100',
+            'contributed_at' => '2026-03-01',
+        ])->assertSessionHasErrors('contributor_id');
+
+        $this->assertSame(0, EditionContribution::count());
+    }
+
     public function test_a_village_is_needed_for_somebody_new(): void
     {
         $edition = Edition::factory()->create();

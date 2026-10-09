@@ -38,6 +38,11 @@
                             autocomplete="off"
                             aria-controls="contributor_id"
                         />
+                        {{-- Shown by the script once somebody is chosen; the list itself stays hidden until typing starts. --}}
+                        <p id="contributor-chosen" class="mb-2 hidden items-center gap-2 text-[13px] text-slate-700">
+                            <span>Chosen: <strong class="font-semibold text-slate-900" data-chosen-name></strong></span>
+                            <button type="button" id="contributor-change" class="crud-link">Change</button>
+                        </p>
                         <select
                             id="contributor_id"
                             name="contributor_id"
@@ -45,6 +50,8 @@
                             aria-describedby="contributor-empty"
                             @if($errors->has('contributor_id')) aria-invalid="true" @endif
                         >
+                            {{-- An empty first choice, so the browser never picks the first person by itself. --}}
+                            <option value="" @selected(! $selectedContributor)>Select a contributor</option>
                             @foreach($contributors as $contributor)
                                 <option value="{{ $contributor->id }}" @selected((string) $selectedContributor === (string) $contributor->id)>{{ $contributor->label() }}</option>
                             @endforeach
@@ -195,11 +202,43 @@
             contributorSelect.addEventListener('change', refresh);
 
             // ---- Type-to-find in the contributor list ---------------------------------------------------------
-            const everyone = Array.from(contributorSelect.options).map((option) => ({
+            const everyone = Array.from(contributorSelect.options).filter((option) => option.value !== '').map((option) => ({
                 value: option.value,
                 label: option.textContent.trim(),
                 haystack: option.textContent.trim().toLowerCase(),
             }));
+
+            // With the script on, nothing but the find box shows until somebody types (without it the plain
+            // dropdown below stays). Who is chosen is shown as one line with a Change button.
+            const chosenLine = document.getElementById('contributor-chosen');
+            const chosenName = chosenLine.querySelector('[data-chosen-name]');
+
+            const syncChosen = () => {
+                const option = contributorSelect.options[contributorSelect.selectedIndex];
+
+                if (contributorSelect.value !== '' && option) {
+                    chosenName.textContent = option.textContent.trim();
+                    chosenLine.classList.remove('hidden');
+                    chosenLine.classList.add('flex');
+                } else {
+                    chosenLine.classList.add('hidden');
+                    chosenLine.classList.remove('flex');
+                }
+            };
+
+            const clearChoice = () => {
+                contributorSelect.value = '';
+                syncChosen();
+            };
+
+            contributorSelect.classList.add('hidden');
+            syncChosen();
+
+            document.getElementById('contributor-change').addEventListener('click', () => {
+                clearChoice();
+                refresh();
+                filterInput.focus();
+            });
 
             const details = document.getElementById('new-contributor');
             const newName = document.getElementById('new_name');
@@ -212,6 +251,12 @@
                 let shown = 0;
 
                 contributorSelect.innerHTML = '';
+
+                // The empty choice stays (so nobody is picked by accident) but is never shown as a row.
+                const none = new Option('Select a contributor', '', false, keep === '');
+                none.hidden = true;
+                contributorSelect.add(none);
+
                 everyone.forEach((person) => {
                     if (words.every((word) => person.haystack.includes(word))) {
                         contributorSelect.add(new Option(person.label, person.value, false, person.value === keep));
@@ -219,11 +264,13 @@
                     }
                 });
 
-                // A closed dropdown until somebody types: then the matches open as a short list under the box.
+                // Nothing shows until somebody types; then the matches appear as a six-row list.
                 if (query.trim() !== '' && shown > 0) {
-                    contributorSelect.size = Math.min(6, Math.max(2, shown));
+                    contributorSelect.size = 6;
+                    contributorSelect.classList.remove('hidden');
                 } else {
                     contributorSelect.removeAttribute('size');
+                    contributorSelect.classList.add('hidden');
                 }
 
                 emptyNote.textContent = '';
@@ -254,12 +301,14 @@
 
             filterInput.addEventListener('input', () => showList(filterInput.value));
 
-            // Choosing somebody closes the list again.
-            contributorSelect.addEventListener('change', () => contributorSelect.removeAttribute('size'));
-
-            // Reaching the chosen person (e.g. from "Record contribution" on a contributor's page) without scrolling.
-            const chosen = contributorSelect.options[contributorSelect.selectedIndex];
-            if (chosen && chosen.scrollIntoView) chosen.scrollIntoView({ block: 'nearest' });
+            // Choosing somebody closes the list again and shows them as "Chosen: ...".
+            contributorSelect.addEventListener('change', () => {
+                contributorSelect.removeAttribute('size');
+                contributorSelect.classList.add('hidden');
+                filterInput.value = '';
+                emptyNote.classList.add('hidden');
+                syncChosen();
+            });
 
             // Both may already be pre-filled (old() after a validation failure, or ?edition_id=&contributor_id=
             // from the Committee tab's "Record contribution" link) - show the preview immediately.
@@ -290,7 +339,7 @@
 
             details.addEventListener('toggle', () => {
                 if (details.open) {
-                    contributorSelect.selectedIndex = -1;
+                    clearChoice();
                     refresh();
                 }
             });
@@ -363,7 +412,7 @@
             newFields.forEach((field) => {
                 field.addEventListener('input', () => {
                     if (field.value.trim() !== '') {
-                        contributorSelect.selectedIndex = -1;
+                        clearChoice();
                         refresh();
                     }
                 });
