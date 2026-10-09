@@ -42,7 +42,7 @@ class PhotoController extends Controller
 
         return redirect()
             ->route('admin.photos.index')
-            ->with('success', 'Photo uploaded successfully.');
+            ->with('success', __('Photo uploaded successfully.'));
     }
 
     public function edit(Photo $photo): View
@@ -60,7 +60,7 @@ class PhotoController extends Controller
 
         return redirect()
             ->route('admin.photos.index')
-            ->with('success', 'Photo updated successfully.');
+            ->with('success', __('Photo updated successfully.'));
     }
 
     /**
@@ -75,7 +75,7 @@ class PhotoController extends Controller
 
         return redirect()
             ->back(fallback: route('admin.photos.index'))
-            ->with('success', $photo->status === 'active' ? 'Photo activated successfully.' : 'Photo deactivated successfully.');
+            ->with('success', $photo->status === 'active' ? __('Photo activated successfully.') : __('Photo deactivated successfully.'));
     }
 
     public function destroy(Photo $photo): RedirectResponse
@@ -86,6 +86,6 @@ class PhotoController extends Controller
 
         return redirect()
             ->route('admin.photos.index')
-            ->with('success', 'Photo deleted successfully.');
+            ->with('success', __('Photo deleted successfully.'));
     }
 }

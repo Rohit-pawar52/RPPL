@@ -1,11 +1,11 @@
 @extends('layouts.admin')
 
-@section('title', 'Add Venue')
+@section('title', __('Add Venue'))
 
 @section('content')
-    <x-crud.back :href="route('admin.venues.index')">Venues</x-crud.back>
+    <x-crud.back :href="route('admin.venues.index')">{{ __('Venues') }}</x-crud.back>
 
-    <x-crud.form :action="route('admin.venues.store')" :cancel="route('admin.venues.index')" submit="Save venue">
+    <x-crud.form :action="route('admin.venues.store')" :cancel="route('admin.venues.index')" :submit="__('Save venue')">
         @include('admin.venues._form')
     </x-crud.form>
 @endsection

@@ -76,7 +76,7 @@ class RuleController extends Controller
 
         return redirect()
             ->route('admin.rules.index')
-            ->with('success', 'Rule created successfully.');
+            ->with('success', __('Rule created successfully.'));
     }
 
     public function edit(Rule $rule): View
@@ -106,7 +106,7 @@ class RuleController extends Controller
 
         return redirect()
             ->route('admin.rules.index')
-            ->with('success', 'Rule updated successfully.');
+            ->with('success', __('Rule updated successfully.'));
     }
 
     public function destroy(Rule $rule): RedirectResponse
@@ -117,7 +117,7 @@ class RuleController extends Controller
 
         return redirect()
             ->route('admin.rules.index')
-            ->with('success', 'Rule deleted successfully.');
+            ->with('success', __('Rule deleted successfully.'));
     }
 
     /**

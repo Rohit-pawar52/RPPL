@@ -160,7 +160,7 @@ class EditionTransactionController extends Controller
 
         return redirect()
             ->route('admin.edition-transactions.index')
-            ->with('success', 'Transaction recorded successfully.');
+            ->with('success', __('Transaction recorded successfully.'));
     }
 
     public function show(EditionTransaction $editionTransaction): View
@@ -205,7 +205,7 @@ class EditionTransactionController extends Controller
 
         return redirect()
             ->route('admin.edition-transactions.index')
-            ->with('success', 'Transaction updated successfully.');
+            ->with('success', __('Transaction updated successfully.'));
     }
 
     public function destroy(EditionTransaction $editionTransaction): RedirectResponse
@@ -220,7 +220,7 @@ class EditionTransactionController extends Controller
 
         return redirect()
             ->route('admin.edition-transactions.index')
-            ->with('success', 'Transaction deleted successfully.');
+            ->with('success', __('Transaction deleted successfully.'));
     }
 
     /**
@@ -238,7 +238,7 @@ class EditionTransactionController extends Controller
 
         return redirect()
             ->route('admin.edition-transactions.index')
-            ->with('error', 'This transaction is managed by a committee contribution and cannot be modified directly.');
+            ->with('error', __('This transaction is managed by a committee contribution and cannot be modified directly.'));
     }
 
     /**

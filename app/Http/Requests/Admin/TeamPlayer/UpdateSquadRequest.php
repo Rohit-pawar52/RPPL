@@ -57,7 +57,7 @@ class UpdateSquadRequest extends FormRequest
             $duplicates = $numbers->duplicates()->unique();
 
             if ($duplicates->isNotEmpty()) {
-                $validator->errors()->add('players', 'Jersey number '.$duplicates->implode(', ').' is used by more than one player of this team.');
+                $validator->errors()->add('players', __('Jersey number :numbers is used by more than one player of this team.', ['numbers' => $duplicates->implode(', ')]));
             }
         });
     }
@@ -68,8 +68,8 @@ class UpdateSquadRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'players.*.jersey_number.integer' => 'A jersey number must be a whole number.',
-            'players.*.sold_amount.numeric' => 'A sold amount must be a number.',
+            'players.*.jersey_number.integer' => __('A jersey number must be a whole number.'),
+            'players.*.sold_amount.numeric' => __('A sold amount must be a number.'),
         ];
     }
 }

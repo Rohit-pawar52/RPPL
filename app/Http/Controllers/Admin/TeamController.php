@@ -64,7 +64,7 @@ class TeamController extends Controller
 
         return redirect()
             ->route('admin.teams.index')
-            ->with('success', 'Team created successfully.');
+            ->with('success', __('Team created successfully.'));
     }
 
     public function show(Team $team): View
@@ -98,7 +98,7 @@ class TeamController extends Controller
 
         return redirect()
             ->route('admin.teams.index')
-            ->with('success', 'Team updated successfully.');
+            ->with('success', __('Team updated successfully.'));
     }
 
     public function destroy(Team $team): RedirectResponse
@@ -108,11 +108,11 @@ class TeamController extends Controller
         if (! $this->teams->deleteTeam($team)) {
             return redirect()
                 ->route('admin.teams.index')
-                ->with('error', 'This team cannot be deleted because tournament history exists. Deactivate the team instead if it should no longer be available.');
+                ->with('error', __('This team cannot be deleted because tournament history exists. Deactivate the team instead if it should no longer be available.'));
         }
 
         return redirect()
             ->route('admin.teams.index')
-            ->with('success', 'Team deleted successfully.');
+            ->with('success', __('Team deleted successfully.'));
     }
 }

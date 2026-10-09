@@ -1,27 +1,27 @@
 @extends('layouts.admin')
 
-@section('title', 'Rule Types')
+@section('title', __('Rule Types'))
 
-@section('subtitle', "Categories that rules are grouped under. A type that still has rules can't be deleted.")
+@section('subtitle', __("Categories that rules are grouped under. A type that still has rules can't be deleted."))
 
 @section('actions')
-    <span class="max-sm:hidden"><x-admin.button :href="route('admin.rule-types.create')" variant="primary">+ New rule type</x-admin.button></span>
+    <span class="max-sm:hidden"><x-admin.button :href="route('admin.rule-types.create')" variant="primary">{{ __('+ New rule type') }}</x-admin.button></span>
 @endsection
 
 @section('content')
-    <x-crud.back :href="route('admin.rules.index')">Rules</x-crud.back>
+    <x-crud.back :href="route('admin.rules.index')">{{ __('Rules') }}</x-crud.back>
 
     <div class="crud-table-wrap">
         <div class="crud-table-scroll">
             <table class="crud-table crud-stack">
                 <thead>
                     <tr>
-                        <th class="w-16 text-right">Order</th>
-                        <th>Name</th>
-                        <th class="hidden md:table-cell">Slug</th>
-                        <th>Status</th>
-                        <th class="hidden text-right sm:table-cell">Rules</th>
-                        <th class="text-right">Actions</th>
+                        <th class="w-16 text-right">{{ __('Order') }}</th>
+                        <th>{{ __('Name') }}</th>
+                        <th class="hidden md:table-cell">{{ __('Slug') }}</th>
+                        <th>{{ __('Status') }}</th>
+                        <th class="hidden text-right sm:table-cell">{{ __('Rules') }}</th>
+                        <th class="text-right">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -29,8 +29,8 @@
                         <tr class="crud-row">
                             <td class="c-media w-16 text-right tabular-nums text-slate-400">{{ $ruleType->sort_order }}</td>
                             <td class="c-title max-w-xs">
-                                <a href="{{ route('admin.rule-types.edit', $ruleType) }}" class="crud-row-link" aria-label="Edit rule type">{{ $ruleType->name }}</a>
-                                <span class="crud-meta sm:hidden">{{ $ruleType->rules_count }} {{ \Illuminate\Support\Str::plural('rule', $ruleType->rules_count) }}</span>
+                                <a href="{{ route('admin.rule-types.edit', $ruleType) }}" class="crud-row-link" aria-label="{{ __('Edit rule type') }}">{{ $ruleType->name }}</a>
+                                <span class="crud-meta sm:hidden">{{ $ruleType->rules_count }} {{ (int) $ruleType->rules_count === 1 ? __('rule') : __('rules') }}</span>
                             </td>
                             <td class="hidden font-mono text-[12px] text-slate-500 md:table-cell">{{ $ruleType->slug }}</td>
                             <td class="c-sub">
@@ -43,17 +43,17 @@
                                 <x-crud.row-actions
                                     :edit="route('admin.rule-types.edit', $ruleType)"
                                     :delete="route('admin.rule-types.destroy', $ruleType)"
-                                    name="rule type"
-                                    confirm-title="Delete this rule type?"
-                                    confirm-text="Only a rule type with no rules can be deleted. This cannot be undone."
+                                    :name="__('rule type')"
+                                    :confirm-title="__('Delete this rule type?')"
+                                    :confirm-text="__('Only a rule type with no rules can be deleted. This cannot be undone.')"
                                 />
                             </td>
                         </tr>
                     @empty
                         <x-admin.empty table colspan="6" icon="book">
-                            No rule types yet.
+                            {{ __('No rule types yet.') }}
                             <x-slot:action>
-                                <x-admin.button :href="route('admin.rule-types.create')" size="sm">+ New rule type</x-admin.button>
+                                <x-admin.button :href="route('admin.rule-types.create')" size="sm">{{ __('+ New rule type') }}</x-admin.button>
                             </x-slot:action>
                         </x-admin.empty>
                     @endforelse
@@ -66,5 +66,5 @@
         {{ $ruleTypes->links() }}
     </div>
 
-    <x-crud.fab :href="route('admin.rule-types.create')" label="New rule type" />
+    <x-crud.fab :href="route('admin.rule-types.create')" :label="__('New rule type')" />
 @endsection

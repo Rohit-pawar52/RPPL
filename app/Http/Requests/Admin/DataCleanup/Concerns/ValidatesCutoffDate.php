@@ -24,7 +24,7 @@ trait ValidatesCutoffDate
         $todayInDisplayTimezone = Carbon::now(app(SettingsService::class)->get('system.display_timezone'))->toDateString();
 
         if ((string) $value > $todayInDisplayTimezone) {
-            $fail('The date may not be in the future.');
+            $fail(__('The date may not be in the future.'));
         }
     }
 }

@@ -91,7 +91,7 @@ class ContributorController extends Controller
 
         return redirect()
             ->route('admin.contributors.index')
-            ->with('success', 'Contributor added successfully.');
+            ->with('success', __('Contributor added successfully.'));
     }
 
     public function show(Contributor $contributor): View
@@ -126,7 +126,7 @@ class ContributorController extends Controller
 
         return redirect()
             ->route('admin.contributors.index')
-            ->with('success', 'Contributor updated successfully.');
+            ->with('success', __('Contributor updated successfully.'));
     }
 
     public function destroy(Contributor $contributor): RedirectResponse
@@ -142,12 +142,12 @@ class ContributorController extends Controller
         if (! $this->contributors->deleteContributor($contributor)) {
             return redirect()
                 ->route('admin.contributors.index')
-                ->with('error', 'This contributor cannot be deleted because contribution history exists. Deactivate the contributor instead.');
+                ->with('error', __('This contributor cannot be deleted because contribution history exists. Deactivate the contributor instead.'));
         }
 
         return redirect()
             ->route('admin.contributors.index')
-            ->with('success', 'Contributor deleted successfully.');
+            ->with('success', __('Contributor deleted successfully.'));
     }
 
     /**

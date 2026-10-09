@@ -186,8 +186,8 @@ class EditionContributionController extends Controller
         return redirect()
             ->route('admin.edition-contributions.index')
             ->with('success', $request->isNewContributor()
-                ? 'Contribution recorded, and '.$contribution->contributor->name.' was added to the contributors.'
-                : 'Contribution recorded successfully.');
+                ? __('Contribution recorded, and :name was added to the contributors.', ['name' => $contribution->contributor->name])
+                : __('Contribution recorded successfully.'));
     }
 
     /**
@@ -279,7 +279,7 @@ class EditionContributionController extends Controller
 
         return redirect()
             ->route('admin.edition-contributions.index')
-            ->with('success', 'Contribution deleted successfully.');
+            ->with('success', __('Contribution deleted successfully.'));
     }
 
     /**
