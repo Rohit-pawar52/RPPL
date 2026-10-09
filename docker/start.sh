@@ -18,6 +18,13 @@ export QUEUE_CONNECTION="${QUEUE_CONNECTION:-sync}"
 export BROADCAST_CONNECTION="${BROADCAST_CONNECTION:-log}"
 export LOG_CHANNEL="${LOG_CHANNEL:-stderr}"
 
+# A login that still has a PUBLISHED password (admin@gmail.com / 12345678, the demo logins) can open only the
+# Change password page. Always on in a container, whatever APP_ENV says: a copy of .env.example's
+# APP_ENV=local would otherwise switch the protection off without any sign of it. Only an explicit
+# ADMIN_FORCE_PRIVATE_PASSWORD=false turns it off (an empty value counts as unset).
+export ADMIN_FORCE_PRIVATE_PASSWORD="${ADMIN_FORCE_PRIVATE_PASSWORD:-true}"
+echo "Published-password protection: ${ADMIN_FORCE_PRIVATE_PASSWORD} (APP_ENV=${APP_ENV})"
+
 if [ -z "$APP_KEY" ]; then
   echo "APP_KEY is not set. Add it in the Render dashboard (php artisan key:generate --show --no-ansi)." >&2
   exit 1
