@@ -7,7 +7,6 @@ return [
 
     'title' => 'Our contributors',
     'thanks' => 'People whose support keeps :name going. Thank you!',
-    'total_this_season' => 'Total contributed in :season',
     'view_more' => 'View more',
     'more_count' => '+:count more',
     'back' => 'Home',
