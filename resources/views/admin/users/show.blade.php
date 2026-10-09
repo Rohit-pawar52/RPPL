@@ -1,10 +1,10 @@
 @extends('layouts.admin')
 
-@section('title', 'User Details')
+@section('title', __('User Details'))
 
 @section('actions')
-    <x-admin.button href="{{ route('admin.users.index') }}" variant="secondary" icon="arrow-left">Back to users</x-admin.button>
-    <x-admin.button href="{{ route('admin.users.edit', $targetUser) }}" icon="pencil">Edit</x-admin.button>
+    <x-admin.button href="{{ route('admin.users.index') }}" variant="secondary" icon="arrow-left">{{ __('Back to users') }}</x-admin.button>
+    <x-admin.button href="{{ route('admin.users.edit', $targetUser) }}" icon="pencil">{{ __('Edit') }}</x-admin.button>
 @endsection
 
 @section('content')
@@ -15,7 +15,7 @@
                 <h2 class="truncate text-lg font-bold tracking-tight text-slate-900">
                     {{ $targetUser->name }}
                     @if($targetUser->id === auth()->id())
-                        <span class="text-xs font-medium text-slate-400">(you)</span>
+                        <span class="text-xs font-medium text-slate-400">{{ __('(you)') }}</span>
                     @endif
                 </h2>
                 <p class="truncate text-[13px] text-slate-500">{{ $targetUser->email }}</p>
@@ -25,15 +25,15 @@
 
         <dl class="mt-5 grid grid-cols-2 gap-4 border-t border-line pt-5 sm:grid-cols-3">
             <div class="col-span-2 sm:col-span-1">
-                <dt class="text-xs text-slate-500">Email</dt>
+                <dt class="text-xs text-slate-500">{{ __('Email') }}</dt>
                 <dd class="mt-0.5 break-all text-[13px] font-semibold text-slate-900">{{ $targetUser->email }}</dd>
             </div>
             <div>
-                <dt class="text-xs text-slate-500">Role</dt>
+                <dt class="text-xs text-slate-500">{{ __('Role') }}</dt>
                 <dd class="mt-0.5 text-[13px] font-semibold text-slate-900">{{ $targetUser->role->name }}</dd>
             </div>
             <div>
-                <dt class="text-xs text-slate-500">Created</dt>
+                <dt class="text-xs text-slate-500">{{ __('Created') }}</dt>
                 <dd class="mt-0.5 text-[13px] font-semibold text-slate-900">{{ display_datetime($targetUser->created_at, 'd M Y') }}</dd>
             </div>
         </dl>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Dashboard') &middot; {{ $branding->shortName }} Admin</title>
+    <title>@yield('title', __('Dashboard')) &middot; {{ $branding->shortName }} {{ __('Admin') }}</title>
     @if($branding->faviconUrl)
         <link rel="icon" href="{{ $branding->faviconUrl }}">
     @endif
@@ -38,7 +38,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="admin-app h-full text-[13px] text-slate-800 antialiased">
-    <a href="#admin-main" class="sr-only z-[100] rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-pop focus:not-sr-only focus:fixed focus:left-3 focus:top-3">Skip to content</a>
+    <a href="#admin-main" class="sr-only z-[100] rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-pop focus:not-sr-only focus:fixed focus:left-3 focus:top-3">{{ __('Skip to content') }}</a>
 
     <div class="flex min-h-full">
         @include('layouts.partials.admin-sidebar')
@@ -55,7 +55,7 @@
                     @if(! $__env->hasSection('bare'))
                         <div class="adm-page-head">
                             <div class="min-w-0">
-                                <h1 class="adm-page-title">@yield('title', 'Dashboard')</h1>
+                                <h1 class="adm-page-title">@yield('title', __('Dashboard'))</h1>
                                 @hasSection('subtitle')
                                     <p class="adm-page-sub">@yield('subtitle')</p>
                                 @endif

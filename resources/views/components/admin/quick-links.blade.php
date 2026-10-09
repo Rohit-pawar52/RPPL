@@ -13,22 +13,22 @@
 --}}
 @php
     $catalog = [
-        'Tournament' => [
-            ['label' => 'New match', 'hint' => 'Schedule a fixture', 'route' => 'admin.matches.create', 'can' => 'matches.manage', 'icon' => 'trophy'],
-            ['label' => 'New registration', 'hint' => 'Add a player entry by hand', 'route' => 'admin.player-registrations.create', 'can' => 'registrations.manage', 'icon' => 'clipboard'],
-            ['label' => 'Import players', 'hint' => 'Upload a sheet of entries', 'route' => 'admin.player-registrations.import', 'can' => 'registrations.manage', 'icon' => 'upload'],
-            ['label' => 'New player', 'hint' => 'Add to the player pool', 'route' => 'admin.players.create', 'can' => 'players.manage', 'icon' => 'user'],
-            ['label' => 'New team', 'hint' => 'Create a team', 'route' => 'admin.teams.create', 'can' => 'teams.manage', 'icon' => 'shield'],
+        __('Tournament') => [
+            ['label' => __('New match'), 'hint' => __('Schedule a fixture'), 'route' => 'admin.matches.create', 'can' => 'matches.manage', 'icon' => 'trophy'],
+            ['label' => __('New registration'), 'hint' => __('Add a player entry by hand'), 'route' => 'admin.player-registrations.create', 'can' => 'registrations.manage', 'icon' => 'clipboard'],
+            ['label' => __('Import players'), 'hint' => __('Upload a sheet of entries'), 'route' => 'admin.player-registrations.import', 'can' => 'registrations.manage', 'icon' => 'upload'],
+            ['label' => __('New player'), 'hint' => __('Add to the player pool'), 'route' => 'admin.players.create', 'can' => 'players.manage', 'icon' => 'user'],
+            ['label' => __('New team'), 'hint' => __('Create a team'), 'route' => 'admin.teams.create', 'can' => 'teams.manage', 'icon' => 'shield'],
         ],
-        'Finance' => [
-            ['label' => 'Record transaction', 'hint' => 'Income or expense', 'route' => 'admin.edition-transactions.create', 'can' => 'finance.manage', 'icon' => 'currency'],
-            ['label' => 'Add contribution', 'hint' => 'A contributor\'s donation', 'route' => 'admin.edition-contributions.create', 'can' => 'finance.manage', 'icon' => 'star'],
+        __('Finance') => [
+            ['label' => __('Record transaction'), 'hint' => __('Income or expense'), 'route' => 'admin.edition-transactions.create', 'can' => 'finance.manage', 'icon' => 'currency'],
+            ['label' => __('Add contribution'), 'hint' => __('A contributor\'s donation'), 'route' => 'admin.edition-contributions.create', 'can' => 'finance.manage', 'icon' => 'star'],
         ],
-        'Website' => [
-            ['label' => 'New news post', 'hint' => 'Publish an update', 'route' => 'admin.news.create', 'can' => 'news.manage', 'icon' => 'newspaper'],
-            ['label' => 'New announcement', 'hint' => 'Show a notice on the site', 'route' => 'admin.announcements.create', 'can' => 'announcements.manage', 'icon' => 'megaphone'],
-            ['label' => 'Upload photos', 'hint' => 'Add to the gallery', 'route' => 'admin.photos.create', 'can' => 'photos.manage', 'icon' => 'camera'],
-            ['label' => 'Send notification', 'hint' => 'Push to followers', 'route' => 'admin.notifications.create', 'can' => 'notifications.manage', 'icon' => 'bell'],
+        __('Website') => [
+            ['label' => __('New news post'), 'hint' => __('Publish an update'), 'route' => 'admin.news.create', 'can' => 'news.manage', 'icon' => 'newspaper'],
+            ['label' => __('New announcement'), 'hint' => __('Show a notice on the site'), 'route' => 'admin.announcements.create', 'can' => 'announcements.manage', 'icon' => 'megaphone'],
+            ['label' => __('Upload photos'), 'hint' => __('Add to the gallery'), 'route' => 'admin.photos.create', 'can' => 'photos.manage', 'icon' => 'camera'],
+            ['label' => __('Send notification'), 'hint' => __('Push to followers'), 'route' => 'admin.notifications.create', 'can' => 'notifications.manage', 'icon' => 'bell'],
         ],
     ];
 
@@ -63,9 +63,9 @@
         </div>
     @else
         <details class="relative" data-dropdown>
-            <summary class="btn btn-primary btn-sm cursor-pointer max-sm:min-h-10 max-sm:w-10 max-sm:px-0" aria-label="Create new">
+            <summary class="btn btn-primary btn-sm cursor-pointer max-sm:min-h-10 max-sm:w-10 max-sm:px-0" aria-label="{{ __('Create new') }}">
                 <x-admin.icon name="plus" class="h-4 w-4" />
-                <span class="max-sm:hidden">New</span>
+                <span class="max-sm:hidden">{{ __('New') }}</span>
             </summary>
             <div class="adm-menu right-0 w-64 max-w-[calc(100vw-1.5rem)]">
                 @foreach($groups as $group => $items)

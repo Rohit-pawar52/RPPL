@@ -41,9 +41,9 @@
             <button
                 type="button"
                 class="fld-reveal"
-                aria-label="Show password"
+                aria-label="{{ __('Show password') }}"
                 aria-pressed="false"
-                onclick="var i=this.previousElementSibling,s=i.type==='password';i.type=s?'text':'password';this.setAttribute('aria-pressed',s);this.setAttribute('aria-label',s?'Hide password':'Show password');this.querySelector('[data-eye]').classList.toggle('hidden',s);this.querySelector('[data-eye-off]').classList.toggle('hidden',!s);"
+                onclick="var i=this.previousElementSibling,s=i.type==='password';i.type=s?'text':'password';this.setAttribute('aria-pressed',s);this.setAttribute('aria-label',s?@js(__('Hide password')):@js(__('Show password')));this.querySelector('[data-eye]').classList.toggle('hidden',s);this.querySelector('[data-eye-off]').classList.toggle('hidden',!s);"
             >
                 <x-admin.icon name="eye" data-eye class="h-[18px] w-[18px]" />
                 <x-admin.icon name="eye-off" data-eye-off class="hidden h-[18px] w-[18px]" />

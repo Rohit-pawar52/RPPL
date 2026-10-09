@@ -9,41 +9,41 @@
 --}}
 @php
     $shape = old('button_shape', $settings->get('general.button_shape')) ?: 'rounded';
-    $shapes = ['square' => 'Square', 'rounded' => 'Rounded', 'pill' => 'Pill'];
+    $shapes = ['square' => __('Square'), 'rounded' => __('Rounded'), 'pill' => __('Pill')];
 @endphp
 
 <fieldset class="rounded-xl border border-line bg-white" id="theme-form">
-    <legend class="sr-only">Theme</legend>
+    <legend class="sr-only">{{ __('Theme') }}</legend>
 
     <div class="border-b border-line px-4 py-3">
-        <h2 class="text-sm font-semibold text-slate-900">Theme: colours, buttons and hover</h2>
+        <h2 class="text-sm font-semibold text-slate-900">{{ __('Theme: colours, buttons and hover') }}</h2>
         <p class="mt-0.5 text-[12px] text-slate-500">
-            Change how the whole site looks without touching code. Anything left <b>Auto</b> is worked out from the main colours.
+            {!! __('Change how the whole site looks without touching code. Anything left :auto is worked out from the main colours.', ['auto' => '<b>'.e(__('Auto')).'</b>']) !!}
         </p>
     </div>
 
     <div class="grid gap-6 p-4 xl:grid-cols-[minmax(0,1fr)_19rem]">
         <div class="space-y-5">
             <div>
-                <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Brand</p>
+                <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{{ __('Brand') }}</p>
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <x-settings.color name="primary_color" label="Primary colour" :value="$settings->get('general.primary_color')" hint="Links, active tabs and menu items." />
-                    <x-settings.color name="secondary_color" label="Secondary colour" :value="$settings->get('general.secondary_color')" hint="Quiet accents." />
-                    <x-settings.color name="header_color" label="Header colour" :value="$settings->get('general.header_color')" hint="Site header, footer and admin sidebar." />
+                    <x-settings.color name="primary_color" :label="__('Primary colour')" :value="$settings->get('general.primary_color')" :hint="__('Links, active tabs and menu items.')" />
+                    <x-settings.color name="secondary_color" :label="__('Secondary colour')" :value="$settings->get('general.secondary_color')" :hint="__('Quiet accents.')" />
+                    <x-settings.color name="header_color" :label="__('Header colour')" :value="$settings->get('general.header_color')" :hint="__('Site header, footer and admin sidebar.')" />
                 </div>
             </div>
 
             <div>
-                <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Buttons</p>
+                <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{{ __('Buttons') }}</p>
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <x-settings.color name="button_color" label="Button colour" :value="$settings->get('general.button_color')" />
-                    <x-settings.color name="button_hover_color" label="Button hover colour" :value="$settings->get('general.button_hover_color')" optional fallback="{{ $settings->get('general.button_color') }}" hint="Auto = a darker shade." />
-                    <x-settings.color name="button_text_color" label="Button text colour" :value="$settings->get('general.button_text_color')" optional fallback="#ffffff" hint="Auto = black or white, whichever reads better." />
+                    <x-settings.color name="button_color" :label="__('Button colour')" :value="$settings->get('general.button_color')" />
+                    <x-settings.color name="button_hover_color" :label="__('Button hover colour')" :value="$settings->get('general.button_hover_color')" optional fallback="{{ $settings->get('general.button_color') }}" :hint="__('Auto = a darker shade.')" />
+                    <x-settings.color name="button_text_color" :label="__('Button text colour')" :value="$settings->get('general.button_text_color')" optional fallback="#ffffff" :hint="__('Auto = black or white, whichever reads better.')" />
                 </div>
 
                 <div class="mt-3">
-                    <p class="mb-1 text-xs font-medium text-slate-700">Button shape</p>
-                    <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Button shape">
+                    <p class="mb-1 text-xs font-medium text-slate-700">{{ __('Button shape') }}</p>
+                    <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="{{ __('Button shape') }}">
                         @foreach($shapes as $value => $label)
                             <label class="relative">
                                 <input type="radio" name="button_shape" value="{{ $value }}" class="peer sr-only" data-theme-shape @checked($shape === $value) />
@@ -61,47 +61,47 @@
             </div>
 
             <div>
-                <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Links and hover</p>
+                <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{{ __('Links and hover') }}</p>
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <x-settings.color name="link_hover_color" label="Link hover colour" :value="$settings->get('general.link_hover_color')" optional fallback="{{ $settings->get('general.primary_color') }}" hint="Auto = a darker primary." />
-                    <x-settings.color name="hover_color" label="Hover highlight" :value="$settings->get('general.hover_color')" optional fallback="#f0f7f2" hint="Rows, menu items and outline buttons when hovered. Auto = a light tint of the primary colour." />
+                    <x-settings.color name="link_hover_color" :label="__('Link hover colour')" :value="$settings->get('general.link_hover_color')" optional fallback="{{ $settings->get('general.primary_color') }}" :hint="__('Auto = a darker primary.')" />
+                    <x-settings.color name="hover_color" :label="__('Hover highlight')" :value="$settings->get('general.hover_color')" optional fallback="#f0f7f2" :hint="__('Rows, menu items and outline buttons when hovered. Auto = a light tint of the primary colour.')" />
                 </div>
             </div>
 
             <div>
-                <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Announcement ticker (public website)</p>
+                <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{{ __('Announcement ticker (public website)') }}</p>
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <x-settings.color name="announcement_background_color" label="Ticker background" :value="$settings->get('general.announcement_background_color')" />
-                    <x-settings.color name="announcement_text_color" label="Ticker text" :value="$settings->get('general.announcement_text_color')" />
+                    <x-settings.color name="announcement_background_color" :label="__('Ticker background')" :value="$settings->get('general.announcement_background_color')" />
+                    <x-settings.color name="announcement_text_color" :label="__('Ticker text')" :value="$settings->get('general.announcement_text_color')" />
                 </div>
             </div>
         </div>
 
         {{-- Live preview: the real classes, with the form's values written onto this box as CSS variables. --}}
-        <aside class="order-first xl:order-none xl:sticky xl:top-20 xl:self-start" aria-label="Preview">
-            <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Preview</p>
+        <aside class="order-first xl:order-none xl:sticky xl:top-20 xl:self-start" aria-label="{{ __('Preview') }}">
+            <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{{ __('Preview') }}</p>
 
             <div id="theme-preview" class="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
-                <div class="px-3 py-2 text-[11px] font-medium" data-preview-ticker>Announcement ticker</div>
+                <div class="px-3 py-2 text-[11px] font-medium" data-preview-ticker>{{ __('Announcement ticker') }}</div>
                 <div class="flex items-center justify-between gap-2 bg-navy-900 px-3 py-2.5 text-white">
                     <span class="text-[13px] font-semibold">{{ $settings->get('general.short_name') }}</span>
-                    <span class="flex gap-3 text-[12px] text-slate-300"><span class="text-accent-dark">Matches</span><span>Teams</span><span>Players</span></span>
+                    <span class="flex gap-3 text-[12px] text-slate-300"><span class="text-accent-dark">{{ __('Matches') }}</span><span>{{ __('Teams') }}</span><span>{{ __('Players') }}</span></span>
                 </div>
 
                 <div class="space-y-3 p-3">
                     <div class="flex flex-wrap gap-2">
-                        <button type="button" class="btn btn-primary btn-sm" tabindex="-1">Primary</button>
-                        <button type="button" class="btn btn-secondary btn-sm" tabindex="-1">Secondary</button>
-                        <button type="button" class="btn btn-soft btn-sm" tabindex="-1">Soft</button>
+                        <button type="button" class="btn btn-primary btn-sm" tabindex="-1">{{ __('Primary') }}</button>
+                        <button type="button" class="btn btn-secondary btn-sm" tabindex="-1">{{ __('Secondary') }}</button>
+                        <button type="button" class="btn btn-soft btn-sm" tabindex="-1">{{ __('Soft') }}</button>
                     </div>
                     <p class="text-[13px] text-slate-600">
-                        A paragraph with a <a href="#theme-form" class="font-medium text-link hover:text-link-hover hover:underline" tabindex="-1">link you can hover</a>.
+                        {!! __('A paragraph with a :link.', ['link' => '<a href="#theme-form" class="font-medium text-link hover:text-link-hover hover:underline" tabindex="-1">'.e(__('link you can hover')).'</a>']) !!}
                     </p>
                     <ul class="overflow-hidden rounded-lg border border-line bg-white text-[13px]">
-                        <li class="border-b border-line px-3 py-2 text-slate-700">A table row</li>
-                        <li class="bg-hover px-3 py-2 text-slate-700">The same row, hovered</li>
+                        <li class="border-b border-line px-3 py-2 text-slate-700">{{ __('A table row') }}</li>
+                        <li class="bg-hover px-3 py-2 text-slate-700">{{ __('The same row, hovered') }}</li>
                     </ul>
-                    <p class="text-[11px] text-slate-400">Hover the buttons and the link to see their hover colours.</p>
+                    <p class="text-[11px] text-slate-400">{{ __('Hover the buttons and the link to see their hover colours.') }}</p>
                 </div>
             </div>
         </aside>

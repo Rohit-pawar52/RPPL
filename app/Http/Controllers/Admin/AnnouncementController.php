@@ -77,18 +77,18 @@ class AnnouncementController extends Controller
                 : null,
         ]);
 
-        $message = 'Announcement created successfully.';
+        $message = __('Announcement created successfully.');
 
         if ($choice === 'now') {
             // Best-effort: a null scheduled_at is always "due", so even
             // if this attempt fails (e.g. a transient queue-connection
             // issue), the next scheduler pass (within a minute) retries
             // it automatically — see AnnouncementNotificationService.
-            $message .= $this->notifications->dispatchIfDue($announcement->id)
-                ? ' Push notification queued.'
-                : ' Push notification will be sent shortly.';
+            $message .= ' '.($this->notifications->dispatchIfDue($announcement->id)
+                ? __('Push notification queued.')
+                : __('Push notification will be sent shortly.'));
         } elseif ($choice === 'later') {
-            $message .= ' Push notification scheduled.';
+            $message .= ' '.__('Push notification scheduled.');
         }
 
         return redirect()
@@ -145,12 +145,12 @@ class AnnouncementController extends Controller
 
         $announcement->update($updates);
 
-        $message = 'Announcement updated successfully.';
+        $message = __('Announcement updated successfully.');
 
         if (! $alreadyDispatched && $choice === 'now') {
-            $message .= $this->notifications->dispatchIfDue($announcement->id)
-                ? ' Push notification queued.'
-                : ' Push notification will be sent shortly.';
+            $message .= ' '.($this->notifications->dispatchIfDue($announcement->id)
+                ? __('Push notification queued.')
+                : __('Push notification will be sent shortly.'));
         }
 
         return redirect()
@@ -166,6 +166,6 @@ class AnnouncementController extends Controller
 
         return redirect()
             ->route('admin.announcements.index')
-            ->with('success', 'Announcement deleted successfully.');
+            ->with('success', __('Announcement deleted successfully.'));
     }
 }

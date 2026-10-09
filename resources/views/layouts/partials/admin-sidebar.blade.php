@@ -13,7 +13,7 @@
     <a
         href="{{ route('admin.dashboard') }}"
         class="sb-brand"
-        aria-label="{{ $branding->shortName }} Admin"
+        aria-label="{{ $branding->shortName }} {{ __('Admin') }}"
     >
         @if($branding->logoUrl)
             <span class="sb-logo"><img src="{{ $branding->logoUrl }}" alt="" class="h-full w-full object-contain p-0.5" /></span>
@@ -22,11 +22,11 @@
         @endif
         <span class="sb-label min-w-0 leading-tight">
             <span class="block truncate text-sm font-bold tracking-tight">{{ $branding->shortName }}</span>
-            <span class="block truncate text-[11px] font-medium text-slate-400">Admin console</span>
+            <span class="block truncate text-[11px] font-medium text-slate-400">{{ __('Admin console') }}</span>
         </span>
     </a>
 
-    <nav class="sb-nav" aria-label="Admin navigation">
+    <nav class="sb-nav" aria-label="{{ __('Admin navigation') }}">
         @foreach($navigation['top'] as $item)
             <a
                 href="{{ $item['url'] }}"
@@ -40,7 +40,7 @@
         @endforeach
 
         @if($navigation['groups'] !== [])
-            <p class="sb-section">Manage</p>
+            <p class="sb-section">{{ __('Manage') }}</p>
         @endif
 
         {{-- Each "Management" group is a native <details>: no JS needed to
@@ -79,11 +79,11 @@
             type="button"
             id="admin-sidebar-collapse"
             class="sb-link"
-            data-tip="Collapse sidebar"
+            data-tip="{{ __('Collapse sidebar') }}"
             aria-pressed="false"
         >
             <x-icon name="panel-left" class="sb-ico" />
-            <span class="sb-label">Collapse</span>
+            <span class="sb-label">{{ __('Collapse') }}</span>
         </button>
     </div>
 </aside>

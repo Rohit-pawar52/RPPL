@@ -33,7 +33,11 @@ class UpdatePasswordRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'password.different' => 'The new password must be different from your current password.',
+            'current_password.current_password' => __('The password is incorrect.'),
+            'password.different' => __('The new password must be different from your current password.'),
+            // The same sentences as Laravel's English ones, so the Hindi panel reads in Hindi too.
+            'password.confirmed' => __('The :attribute field confirmation does not match.'),
+            'password.min' => __('The :attribute field must be at least :min characters.'),
         ];
     }
 }

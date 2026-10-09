@@ -62,6 +62,6 @@ class ContentPageController extends Controller
 
         return redirect()
             ->route('admin.content-pages.index', ['tab' => $contentPage->type])
-            ->with('success', $contentPage->title.' updated successfully.');
+            ->with('success', __(':title updated successfully.', ['title' => $contentPage->title]));
     }
 }

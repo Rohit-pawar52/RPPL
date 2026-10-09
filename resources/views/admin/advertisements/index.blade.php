@@ -1,17 +1,19 @@
 @extends('layouts.admin')
 
-@section('title', 'Advertisements')
+@section('title', __('Advertisements'))
 
-@section('subtitle', number_format($advertisements->total()).' '.\Illuminate\Support\Str::plural('advertisement', $advertisements->total()).'. The sponsor level decides where each one appears. Click a status to switch it.')
+@section('subtitle', ($advertisements->total() === 1
+    ? __('1 advertisement.')
+    : __(':count advertisements.', ['count' => number_format($advertisements->total())])).' '.__('The sponsor level decides where each one appears. Click a status to switch it.'))
 
 @section('actions')
-    <span class="max-sm:hidden"><x-admin.button :href="route('admin.advertisements.create')" variant="primary">+ New advertisement</x-admin.button></span>
+    <span class="max-sm:hidden"><x-admin.button :href="route('admin.advertisements.create')" variant="primary">+ {{ __('New advertisement') }}</x-admin.button></span>
 @endsection
 
 @section('content')
     <details class="crud-card mb-4">
         <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 text-[13px] font-semibold text-brand [&::-webkit-details-marker]:hidden sm:px-5">
-            <span class="inline-flex items-center gap-2"><x-crud.glyph name="image" /> Picture size for each spot</span>
+            <span class="inline-flex items-center gap-2"><x-crud.glyph name="image" /> {{ __('Picture size for each spot') }}</span>
             <x-icon name="chevron-down" class="h-4 w-4 text-slate-400" />
         </summary>
         <div class="border-t border-line p-3 sm:p-4">
@@ -24,13 +26,13 @@
             <table class="crud-table crud-stack">
                 <thead>
                     <tr>
-                        <th class="w-28">Preview</th>
-                        <th>Title</th>
-                        <th>Spot</th>
-                        <th>Status</th>
-                        <th class="hidden sm:table-cell">Dates</th>
-                        <th class="hidden text-right md:table-cell">How often</th>
-                        <th class="text-right">Actions</th>
+                        <th class="w-28">{{ __('Preview') }}</th>
+                        <th>{{ __('Title') }}</th>
+                        <th>{{ __('Spot') }}</th>
+                        <th>{{ __('Status') }}</th>
+                        <th class="hidden sm:table-cell">{{ __('Dates') }}</th>
+                        <th class="hidden text-right md:table-cell">{{ __('How often') }}</th>
+                        <th class="text-right">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -41,9 +43,9 @@
                                 <x-crud.thumb :path="$advertisement->isVideo() ? $advertisement->poster_path : $advertisement->media_path" kind="image" shape="wide" size="md" fit="contain" />
                             </td>
                             <td class="c-title max-w-sm">
-                                <a href="{{ route('admin.advertisements.edit', $advertisement) }}" class="crud-row-link" aria-label="Edit advertisement">{{ Illuminate\Support\Str::limit($advertisement->title, 60) }}</a>
+                                <a href="{{ route('admin.advertisements.edit', $advertisement) }}" class="crud-row-link" aria-label="{{ __('Edit advertisement') }}">{{ Illuminate\Support\Str::limit($advertisement->title, 60) }}</a>
                                 @if($advertisement->isVideo())
-                                    <span class="crud-pill ml-1">video</span>
+                                    <span class="crud-pill ml-1">{{ __('video') }}</span>
                                 @endif
                                 <span class="crud-meta md:hidden">{{ $advertisement->spotLabel() }}</span>
                             </td>
@@ -51,7 +53,7 @@
                                 <span class="crud-pill crud-pill-brand">{{ $advertisement->spotLabel() }}</span>
                             </td>
                             <td class="c-sub">
-                                <x-status-toggle :action="route('admin.advertisements.toggle-status', $advertisement)" :status="$advertisement->status" noun="advertisement" />
+                                <x-status-toggle :action="route('admin.advertisements.toggle-status', $advertisement)" :status="$advertisement->status" :noun="__('advertisement')" />
                             </td>
                             <td class="hidden text-slate-500 sm:table-cell">{{ $advertisement->scheduleLabel() }}</td>
                             <td class="hidden text-right tabular-nums md:table-cell">
@@ -61,16 +63,16 @@
                                 <x-crud.row-actions
                                     :edit="route('admin.advertisements.edit', $advertisement)"
                                     :delete="route('admin.advertisements.destroy', $advertisement)"
-                                    name="advertisement"
-                                    confirm-title="Delete this advertisement?"
+                                    :name="__('advertisement')"
+                                    :confirm-title="__('Delete this advertisement?')"
                                 />
                             </td>
                         </tr>
                     @empty
                         <x-admin.empty table colspan="7" icon="megaphone">
-                            No advertisements yet.
+                            {{ __('No advertisements yet.') }}
                             <x-slot:action>
-                                <x-admin.button :href="route('admin.advertisements.create')" size="sm">+ Add the first sponsor</x-admin.button>
+                                <x-admin.button :href="route('admin.advertisements.create')" size="sm">+ {{ __('Add the first sponsor') }}</x-admin.button>
                             </x-slot:action>
                         </x-admin.empty>
                     @endforelse
@@ -83,5 +85,5 @@
         {{ $advertisements->links() }}
     </div>
 
-    <x-crud.fab :href="route('admin.advertisements.create')" label="New advertisement" />
+    <x-crud.fab :href="route('admin.advertisements.create')" :label="__('New advertisement')" />
 @endsection

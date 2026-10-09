@@ -93,7 +93,7 @@ class SettingsController extends Controller
         ]);
 
         return redirect()->route('admin.settings.index', ['tab' => 'general'])
-            ->with('success', 'General settings updated.');
+            ->with('success', __('General settings updated.'));
     }
 
     public function updateContact(UpdateContactSettingsRequest $request): RedirectResponse
@@ -110,7 +110,7 @@ class SettingsController extends Controller
         ]);
 
         return redirect()->route('admin.settings.index', ['tab' => 'contact'])
-            ->with('success', 'Contact settings updated.');
+            ->with('success', __('Contact settings updated.'));
     }
 
     public function updateSystem(UpdateSystemSettingsRequest $request): RedirectResponse
@@ -151,7 +151,7 @@ class SettingsController extends Controller
         $this->settings->setMany($values);
 
         return redirect()->route('admin.settings.index', ['tab' => 'system'])
-            ->with('success', 'System settings updated.');
+            ->with('success', __('System settings updated.'));
     }
 
     public function updatePayments(UpdatePaymentSettingsRequest $request): RedirectResponse
@@ -181,7 +181,7 @@ class SettingsController extends Controller
         $this->settings->setMany($values);
 
         return redirect()->route('admin.settings.index', ['tab' => 'payments'])
-            ->with('success', 'Payment settings updated.');
+            ->with('success', __('Payment settings updated.'));
     }
 
     /**
@@ -208,7 +208,7 @@ class SettingsController extends Controller
         ]);
 
         return redirect()->route('admin.settings.index', ['tab' => 'payments'])
-            ->with('success', 'UPI payment details updated.');
+            ->with('success', __('UPI payment details updated.'));
     }
 
     public function updatePublicWebsite(UpdatePublicWebsiteSettingsRequest $request): RedirectResponse
@@ -222,7 +222,7 @@ class SettingsController extends Controller
         ]);
 
         return redirect()->route('admin.settings.index', ['tab' => 'public-website'])
-            ->with('success', 'Public website settings updated.');
+            ->with('success', __('Public website settings updated.'));
     }
 
     private function authorizeSettings(): void

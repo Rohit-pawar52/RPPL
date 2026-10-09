@@ -6,28 +6,28 @@
 
 <div class="crud-grid" data-push-compose>
     <div class="crud-main">
-        <x-admin.card title="Message">
-            <x-form.input name="title" label="Title" :value="$notification->title ?? ''" required autofocus maxlength="150" data-count="150" />
+        <x-admin.card :title="__('Message')">
+            <x-form.input name="title" :label="__('Title')" :value="$notification->title ?? ''" required autofocus maxlength="150" data-count="150" />
 
-            <x-form.textarea name="message" label="Message" :value="$notification->message ?? ''" rows="4" maxlength="500" data-count="500" help="Keep it short: most phones show only the first two lines." />
+            <x-form.textarea name="message" :label="__('Message')" :value="$notification->message ?? ''" rows="4" maxlength="500" data-count="500" :help="__('Keep it short: most phones show only the first two lines.')" />
 
-            <x-form.input name="action_url" label="Action URL" :value="$notification->action_url ?? ''" maxlength="255" placeholder="/matches/12" help="Optional internal RPPL path, e.g. /matches/12 or /player-registration. External links are not allowed." />
+            <x-form.input name="action_url" :label="__('Action URL')" :value="$notification->action_url ?? ''" maxlength="255" placeholder="/matches/12" :help="__('Optional internal RPPL path, e.g. /matches/12 or /player-registration. External links are not allowed.')" />
         </x-admin.card>
     </div>
 
     <div class="crud-aside">
-        <x-admin.card title="How it will look">
+        <x-admin.card :title="__('How it will look')">
             {{-- A rough picture of the phone notification, updated as you type. --}}
             <div class="crud-push" aria-live="polite">
                 <div class="flex items-center gap-2 text-[11px] text-slate-500">
                     <span class="flex h-5 w-5 items-center justify-center rounded-md bg-navy-900 text-[10px] font-bold text-white">{{ \Illuminate\Support\Str::substr($appName, 0, 1) }}</span>
                     <span class="font-medium uppercase tracking-wide">{{ $appName }}</span>
-                    <span>&middot; now</span>
+                    <span>&middot; {{ __('now') }}</span>
                 </div>
-                <p class="mt-2 break-words text-[13px] font-semibold text-slate-900" data-preview-title>{{ $notification->title ?? 'Notification title' }}</p>
-                <p class="mt-0.5 line-clamp-3 break-words text-xs text-slate-600" data-preview-message>{{ $notification->message ?? 'Your message appears here.' }}</p>
+                <p class="mt-2 break-words text-[13px] font-semibold text-slate-900" data-preview-title>{{ $notification->title ?? __('Notification title') }}</p>
+                <p class="mt-0.5 line-clamp-3 break-words text-xs text-slate-600" data-preview-message>{{ $notification->message ?? __('Your message appears here.') }}</p>
             </div>
-            <p class="crud-note mt-3">Saving does not send it. Send it from the Notifications list or its page, to everyone subscribed at that moment.</p>
+            <p class="crud-note mt-3">{{ __('Saving does not send it. Send it from the Notifications list or its page, to everyone subscribed at that moment.') }}</p>
         </x-admin.card>
     </div>
 </div>
@@ -60,8 +60,8 @@
         });
 
         var sync = function () {
-            pTitle.textContent = title.value.trim() || 'Notification title';
-            pMessage.textContent = message.value.trim() || 'Your message appears here.';
+            pTitle.textContent = title.value.trim() || @js(__('Notification title'));
+            pMessage.textContent = message.value.trim() || @js(__('Your message appears here.'));
         };
         title.addEventListener('input', sync);
         message.addEventListener('input', sync);

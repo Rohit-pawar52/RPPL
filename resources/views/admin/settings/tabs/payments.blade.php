@@ -10,28 +10,28 @@
     @csrf
     @method('PUT')
 
-    <p class="text-[13px] font-semibold text-neutral-800">UPI payment details</p>
+    <p class="text-[13px] font-semibold text-neutral-800">{{ __('UPI payment details') }}</p>
     <p class="mb-3.5 mt-0.5 text-[11px] text-neutral-400">
-        Shown on the public player registration form so players know where to pay the registration fee.
-        Leave both empty to show only the general payment instructions.
+        {{ __('Shown on the public player registration form so players know where to pay the registration fee.') }}
+        {{ __('Leave both empty to show only the general payment instructions.') }}
     </p>
 
-    <x-form.input name="upi_id" label="UPI ID" :value="$settings->get('payment.upi_id')" maxlength="100" placeholder="name@bank" help="Also used for the “Pay with a UPI app” button on phones." />
+    <x-form.input name="upi_id" label="UPI ID" :value="$settings->get('payment.upi_id')" maxlength="100" placeholder="name@bank" :help="__('Also used for the “Pay with a UPI app” button on phones.')" />
 
     <x-form.image-upload
         name="upi_qr"
-        label="UPI QR code"
+        :label="__('UPI QR code')"
         :current="$upiQrPath"
         kind="image"
         box-class="h-28 w-28 rounded-xl"
-        empty-text="Click the picture to add the QR code"
+        :empty-text="__('Click the picture to add the QR code')"
         remove-name="remove_upi_qr"
-        remove-label="Remove QR code"
-        help="Shown on the public registration form."
+        :remove-label="__('Remove QR code')"
+        :help="__('Shown on the public registration form.')"
     />
 
     <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
-        Save UPI details
+        {{ __('Save UPI details') }}
     </button>
 </form>
 
@@ -45,41 +45,41 @@
         <x-form.select
             name="razorpay_enabled"
             label="Razorpay"
-            :options="['0' => 'Disabled', '1' => 'Enabled']"
+            :options="['0' => __('Disabled'), '1' => __('Enabled')]"
             :value="$settings->boolean('payment.razorpay_enabled') ? '1' : '0'"
         />
 
         <x-form.select
             name="razorpay_mode"
-            label="Mode"
-            :options="['test' => 'Test', 'live' => 'Live']"
+            :label="__('Mode')"
+            :options="['test' => __('Test'), 'live' => __('Live')]"
             :value="$settings->get('payment.razorpay_mode')"
         />
     </div>
 
-    <x-form.input name="razorpay_key_id" label="Key ID" :value="$settings->get('payment.razorpay_key_id')" maxlength="255" />
+    <x-form.input name="razorpay_key_id" :label="__('Key ID')" :value="$settings->get('payment.razorpay_key_id')" maxlength="255" />
 
     {{-- Secrets are never decrypted here — x-form.input never writes a
          `value` attribute for type="password", so this input always
          renders blank regardless of what's stored. The status line
          below is driven only by SettingsService::hasEncryptedValue(),
          which reports presence without ever touching the plaintext. --}}
-    <x-form.input name="razorpay_key_secret" label="Key Secret" type="password" maxlength="255" autocomplete="off" />
+    <x-form.input name="razorpay_key_secret" :label="__('Key Secret')" type="password" maxlength="255" autocomplete="off" />
     <p class="-mt-2.5 mb-3.5 text-[11px] {{ $settings->hasEncryptedValue('payment.razorpay_key_secret') ? 'text-green-600' : 'text-neutral-400' }}">
-        {{ $settings->hasEncryptedValue('payment.razorpay_key_secret') ? 'Configured — leave blank to keep the existing value.' : 'Not configured.' }}
+        {{ $settings->hasEncryptedValue('payment.razorpay_key_secret') ? __('Configured — leave blank to keep the existing value.') : __('Not configured.') }}
     </p>
 
-    <x-form.input name="razorpay_webhook_secret" label="Webhook Secret" type="password" maxlength="255" autocomplete="off" />
+    <x-form.input name="razorpay_webhook_secret" :label="__('Webhook Secret')" type="password" maxlength="255" autocomplete="off" />
     <p class="-mt-2.5 mb-3.5 text-[11px] {{ $settings->hasEncryptedValue('payment.razorpay_webhook_secret') ? 'text-green-600' : 'text-neutral-400' }}">
-        {{ $settings->hasEncryptedValue('payment.razorpay_webhook_secret') ? 'Configured — leave blank to keep the existing value.' : 'Not configured.' }}
+        {{ $settings->hasEncryptedValue('payment.razorpay_webhook_secret') ? __('Configured — leave blank to keep the existing value.') : __('Not configured.') }}
     </p>
 
     <p class="mb-3.5 text-[11px] text-neutral-400">
-        These are stored preferences only — no Razorpay integration exists yet.
+        {{ __('These are stored preferences only — no Razorpay integration exists yet.') }}
     </p>
 
     <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
-        Save changes
+        {{ __('Save changes') }}
     </button>
 </form>
 </div>

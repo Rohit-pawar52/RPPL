@@ -3,7 +3,7 @@
     @method('PUT')
 
     <div class="mb-3.5">
-        <label for="footer_text" class="mb-1 block text-xs font-medium text-neutral-700">Footer Text</label>
+        <label for="footer_text" class="mb-1 block text-xs font-medium text-neutral-700">{{ __('Footer Text') }}</label>
         <textarea
             id="footer_text"
             name="footer_text"
@@ -17,10 +17,10 @@
     </div>
 
     <p class="mb-3.5 text-[11px] text-neutral-400">
-        Stored only — no public page currently renders this footer text yet.
+        {{ __('Stored only — no public page currently renders this footer text yet.') }}
     </p>
 
     <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
-        Save changes
+        {{ __('Save changes') }}
     </button>
 </form>

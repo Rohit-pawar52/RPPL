@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Notification Details')
+@section('title', __('Notification Details'))
 
 @section('content')
     @php
@@ -8,15 +8,15 @@
         $appName = app(\App\Services\Settings\SettingsService::class)->get('general.short_name');
     @endphp
 
-    <x-crud.back :href="route('admin.notifications.index')">Notifications</x-crud.back>
+    <x-crud.back :href="route('admin.notifications.index')">{{ __('Notifications') }}</x-crud.back>
 
     <div class="space-y-4 lg:space-y-5">
-        <x-crud.profile :title="$notification->title" icon="bell" :subtitle="'Created '.display_datetime($notification->created_at, 'd M Y, h:i A').' by '.($notification->creator?->name ?? '—')">
-            <span class="crud-pill {{ $hasSent ? 'crud-pill-brand' : '' }}">{{ $hasSent ? 'Sent '.$notification->sends->count().' '.\Illuminate\Support\Str::plural('time', $notification->sends->count()) : 'Never sent' }}</span>
-            <span>{{ $activeSubscriberCount }} active {{ \Illuminate\Support\Str::plural('subscriber', $activeSubscriberCount) }}</span>
+        <x-crud.profile :title="$notification->title" icon="bell" :subtitle="__('Created :time by :name', ['time' => display_datetime($notification->created_at, 'd M Y, h:i A'), 'name' => $notification->creator?->name ?? '—'])">
+            <span class="crud-pill {{ $hasSent ? 'crud-pill-brand' : '' }}">{{ $hasSent ? ($notification->sends->count() === 1 ? __('Sent 1 time') : __('Sent :count times', ['count' => $notification->sends->count()])) : __('Never sent') }}</span>
+            <span>{{ $activeSubscriberCount === 1 ? __('1 active subscriber') : __(':count active subscribers', ['count' => $activeSubscriberCount]) }}</span>
 
             <x-slot:actions>
-                <x-admin.button :href="route('admin.notifications.edit', $notification)" variant="secondary" icon="pencil">Edit</x-admin.button>
+                <x-admin.button :href="route('admin.notifications.edit', $notification)" variant="secondary" icon="pencil">{{ __('Edit') }}</x-admin.button>
                 {{-- Send and Resend are the SAME backend action (see
                      NotificationController::send()) — only the label
                      changes, based on whether this notification has ever
@@ -27,34 +27,34 @@
                     method="POST"
                     action="{{ route('admin.notifications.send', $notification) }}"
                     data-confirm-action
-                    data-confirm-title="{{ $hasSent ? 'Resend' : 'Send' }} this notification?"
-                    data-confirm-text="This will send to ALL currently active notification subscribers ({{ $activeSubscriberCount }})."
-                    data-confirm-button-text="Yes, {{ $hasSent ? 'resend' : 'send' }}"
+                    data-confirm-title="{{ $hasSent ? __('Resend this notification?') : __('Send this notification?') }}"
+                    data-confirm-text="{{ __('This will send to ALL currently active notification subscribers (:count).', ['count' => $activeSubscriberCount]) }}"
+                    data-confirm-button-text="{{ $hasSent ? __('Yes, resend') : __('Yes, send') }}"
                 >
                     @csrf
-                    <x-admin.button icon="bell">{{ $hasSent ? 'Resend Notification' : 'Send Notification' }}</x-admin.button>
+                    <x-admin.button icon="bell">{{ $hasSent ? __('Resend Notification') : __('Send Notification') }}</x-admin.button>
                 </form>
             </x-slot:actions>
         </x-crud.profile>
 
         <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-5">
-            <x-admin.card title="Message">
-                <p class="whitespace-pre-line text-[13px] text-slate-700">{{ $notification->message ?: 'No message text.' }}</p>
+            <x-admin.card :title="__('Message')">
+                <p class="whitespace-pre-line text-[13px] text-slate-700">{{ $notification->message ?: __('No message text.') }}</p>
 
                 <dl class="crud-facts mt-5 border-t border-line pt-4">
-                    <x-crud.fact label="Action URL" class="col-span-2">{{ $notification->action_url ?: '—' }}</x-crud.fact>
-                    <x-crud.fact label="Created By">{{ $notification->creator?->name ?? '—' }}</x-crud.fact>
-                    <x-crud.fact label="Created At">{{ display_datetime($notification->created_at, 'd M Y, h:i A') }}</x-crud.fact>
-                    <x-crud.fact label="Last Updated">{{ display_datetime($notification->updated_at, 'd M Y, h:i A') }}</x-crud.fact>
+                    <x-crud.fact :label="__('Action URL')" class="col-span-2">{{ $notification->action_url ?: '—' }}</x-crud.fact>
+                    <x-crud.fact :label="__('Created By')">{{ $notification->creator?->name ?? '—' }}</x-crud.fact>
+                    <x-crud.fact :label="__('Created At')">{{ display_datetime($notification->created_at, 'd M Y, h:i A') }}</x-crud.fact>
+                    <x-crud.fact :label="__('Last Updated')">{{ display_datetime($notification->updated_at, 'd M Y, h:i A') }}</x-crud.fact>
                 </dl>
             </x-admin.card>
 
-            <x-admin.card title="How it looks">
+            <x-admin.card :title="__('How it looks')">
                 <div class="crud-push">
                     <div class="flex items-center gap-2 text-[11px] text-slate-500">
                         <span class="flex h-5 w-5 items-center justify-center rounded-md bg-navy-900 text-[10px] font-bold text-white">{{ \Illuminate\Support\Str::substr($appName, 0, 1) }}</span>
                         <span class="font-medium uppercase tracking-wide">{{ $appName }}</span>
-                        <span>&middot; now</span>
+                        <span>&middot; {{ __('now') }}</span>
                     </div>
                     <p class="mt-2 break-words text-[13px] font-semibold text-slate-900">{{ $notification->title }}</p>
                     @if($notification->message)
@@ -64,9 +64,9 @@
             </x-admin.card>
         </div>
 
-        <x-admin.card title="Send History">
+        <x-admin.card :title="__('Send History')">
             <p class="mb-3 text-xs text-slate-500">
-                Accepted means Firebase accepted the message for delivery; it does not confirm that the visitor saw it.
+                {{ __('Accepted means Firebase accepted the message for delivery; it does not confirm that the visitor saw it.') }}
             </p>
 
             {{-- Read-only, always — a NotificationSend row is never edited,
@@ -83,9 +83,9 @@
                     </div>
 
                     <p class="mt-1 text-xs text-slate-500">
-                        Sent by {{ $send->sender?->name ?? '—' }}
+                        {{ __('Sent by :name', ['name' => $send->sender?->name ?? '—']) }}
                         @if($send->completed_at)
-                            &middot; Completed {{ display_datetime($send->completed_at, 'd M Y, h:i A') }}
+                            &middot; {{ __('Completed :time', ['time' => display_datetime($send->completed_at, 'd M Y, h:i A')]) }}
                         @endif
                     </p>
 
@@ -102,21 +102,21 @@
                          having seen it. Never labelled "Delivered". --}}
                     <dl class="mt-3 grid grid-cols-3 gap-3 sm:max-w-md">
                         <div class="rounded-lg border border-line px-3 py-2">
-                            <dt class="crud-fact-label">Attempted</dt>
+                            <dt class="crud-fact-label">{{ __('Attempted') }}</dt>
                             <dd class="text-lg font-bold tabular-nums text-slate-900">{{ $send->attempted_count }}</dd>
                         </div>
                         <div class="rounded-lg border border-line px-3 py-2">
-                            <dt class="crud-fact-label">Accepted</dt>
+                            <dt class="crud-fact-label">{{ __('Accepted') }}</dt>
                             <dd class="text-lg font-bold tabular-nums text-green-600">{{ $send->success_count }}</dd>
                         </div>
                         <div class="rounded-lg border border-line px-3 py-2">
-                            <dt class="crud-fact-label">Failed</dt>
+                            <dt class="crud-fact-label">{{ __('Failed') }}</dt>
                             <dd class="text-lg font-bold tabular-nums {{ $send->failure_count > 0 ? 'text-red-600' : 'text-slate-900' }}">{{ $send->failure_count }}</dd>
                         </div>
                     </dl>
                 </div>
             @empty
-                <x-admin.empty icon="send" class="py-6!">This notification has never been sent.</x-admin.empty>
+                <x-admin.empty icon="send" class="py-6!">{{ __('This notification has never been sent.') }}</x-admin.empty>
             @endforelse
         </x-admin.card>
     </div>

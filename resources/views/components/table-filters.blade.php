@@ -27,15 +27,15 @@
 
         @if($perPage !== null)
             <div class="flex flex-col gap-0.5">
-                <label for="tf-per-page" class="text-[11px] font-semibold text-slate-500">Rows</label>
+                <label for="tf-per-page" class="text-[11px] font-semibold text-slate-500">{{ __('Rows') }}</label>
                 <select
                     id="tf-per-page"
                     name="per_page"
                     onchange="this.form.submit()"
-                    aria-label="Rows per page"
+                    aria-label="{{ __('Rows per page') }}"
                 >
                     @foreach([10, 20, 50, 100, 200] as $option)
-                        <option value="{{ $option }}" @selected((int) $perPage === $option)>{{ $option }} / page</option>
+                        <option value="{{ $option }}" @selected((int) $perPage === $option)>{{ __(':count / page', ['count' => $option]) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -43,11 +43,11 @@
 
         @if($dateRange)
             <div class="flex flex-col gap-0.5">
-                <label for="tf-from-date" class="text-[11px] font-semibold text-slate-500">From</label>
+                <label for="tf-from-date" class="text-[11px] font-semibold text-slate-500">{{ __('From') }}</label>
                 <input id="tf-from-date" type="date" name="from_date" value="{{ $filters['from_date'] ?? '' }}" />
             </div>
             <div class="flex flex-col gap-0.5">
-                <label for="tf-to-date" class="text-[11px] font-semibold text-slate-500">To</label>
+                <label for="tf-to-date" class="text-[11px] font-semibold text-slate-500">{{ __('To') }}</label>
                 <input id="tf-to-date" type="date" name="to_date" value="{{ $filters['to_date'] ?? '' }}" />
             </div>
         @endif
@@ -60,15 +60,15 @@
         onclick="var f=this.closest('.tf');var o=f.toggleAttribute('data-open');this.setAttribute('aria-expanded',o)"
     >
         <x-admin.icon name="filter" class="h-4 w-4" />
-        Filters
+        {{ __('Filters') }}
         @if($applied > 0)<span class="tf-count">{{ $applied }}</span>@endif
     </button>
 
     <div class="tf-actions">
-        <button type="submit" class="btn btn-secondary">Filter</button>
+        <button type="submit" class="btn btn-secondary">{{ __('Filter') }}</button>
 
         @if($applied > 0)
-            <a href="{{ $action }}" class="btn btn-ghost">Clear filters</a>
+            <a href="{{ $action }}" class="btn btn-ghost">{{ __('Clear filters') }}</a>
         @endif
     </div>
 </form>

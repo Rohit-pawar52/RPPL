@@ -8,103 +8,103 @@
 
 <div class="crud-grid crud-grid-wide">
     <div class="crud-main">
-        <x-admin.card title="Where it appears">
-            <x-form.input name="title" label="Title" :value="$advertisement->title ?? ''" maxlength="255" required autofocus />
+        <x-admin.card :title="__('Where it appears')">
+            <x-form.input name="title" :label="__('Title')" :value="$advertisement->title ?? ''" maxlength="255" required autofocus />
 
             <x-form.select
                 name="tier"
-                label="Sponsor level"
-                :options="\App\Models\Advertisement::TIERS"
+                :label="__('Sponsor level')"
+                :options="array_map(fn ($label) => __($label), \App\Models\Advertisement::TIERS)"
                 :value="$advertisement->tier ?? 'normal'"
             />
             <ul class="-mt-2 mb-3.5 space-y-1 text-xs text-slate-500">
-                <li><span class="font-semibold text-slate-700">Main</span> — the top banner, always shown first (only one Main sponsor at a time).</li>
-                <li><span class="font-semibold text-slate-700">Auction</span> — the pop-up on the player auction page (only one at a time; until one is added, the Main sponsor is shown there).</li>
-                <li><span class="font-semibold text-slate-700">Normal</span> — takes turns with the other Normal sponsors of the same spot on every page load.</li>
-                <li><span class="font-semibold text-slate-700">Mini</span> — a small logo in the "Our sponsors" strip at the bottom (image only).</li>
+                <li>{!! __(':level — the top banner, always shown first (only one Main sponsor at a time).', ['level' => '<span class="font-semibold text-slate-700">'.e(__('Main')).'</span>']) !!}</li>
+                <li>{!! __(':level — the pop-up on the player auction page (only one at a time; until one is added, the Main sponsor is shown there).', ['level' => '<span class="font-semibold text-slate-700">'.e(__('Auction')).'</span>']) !!}</li>
+                <li>{!! __(':level — takes turns with the other Normal sponsors of the same spot on every page load.', ['level' => '<span class="font-semibold text-slate-700">'.e(__('Normal')).'</span>']) !!}</li>
+                <li>{!! __(':level — a small logo in the "Our sponsors" strip at the bottom (image only).', ['level' => '<span class="font-semibold text-slate-700">'.e(__('Mini')).'</span>']) !!}</li>
             </ul>
 
             <div data-format-field class="mt-3.5">
                 <x-form.select
                     name="format"
-                    label="Normal sponsor spot"
-                    :options="\App\Models\Advertisement::FORMATS"
+                    :label="__('Normal sponsor spot')"
+                    :options="array_map(fn ($label) => __($label), \App\Models\Advertisement::FORMATS)"
                     :value="$advertisement?->effectiveFormat() ?? 'banner'"
                 />
             </div>
         </x-admin.card>
 
-        <x-admin.card title="The picture or clip">
+        <x-admin.card :title="__('The picture or clip')">
             <x-form.select
                 name="media_type"
-                label="Type"
-                :options="['image' => 'Image', 'video' => 'Video']"
+                :label="__('Type')"
+                :options="['image' => __('Image'), 'video' => __('Video')]"
                 :value="$advertisement->media_type ?? 'image'"
             />
 
             <x-form.image-upload
                 name="media"
-                label="Image or video"
+                :label="__('Image or video')"
                 accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
                 :current="$advertisement?->media_path"
                 kind="image"
                 shape="wide"
                 box-class="h-40 w-full max-w-md rounded-xl sm:h-52"
                 stack
-                empty-text="Click the box to choose a picture or a clip"
-                change-text="Click the box to change it"
-                :help="'Image: JPG, PNG or WebP up to '.$maxImageMb.' MB. Video: MP4 or WebM up to '.$maxVideoMb.' MB, plays muted on a loop.'.($advertisement ? ' Leave it alone to keep the current file.' : '')"
+                :empty-text="__('Click the box to choose a picture or a clip')"
+                :change-text="__('Click the box to change it')"
+                :help="__('Image: JPG, PNG or WebP up to :image MB. Video: MP4 or WebM up to :video MB, plays muted on a loop.', ['image' => $maxImageMb, 'video' => $maxVideoMb]).($advertisement ? ' '.__('Leave it alone to keep the current file.') : '')"
             />
 
             <p class="crud-note crud-note-brand mb-4">
-                Best picture size for the chosen spot: <span id="spot-size-hint" class="font-semibold text-brand">{{ \App\Models\Advertisement::SPOTS[$spotKey]['size'] }} (ratio {{ \App\Models\Advertisement::SPOTS[$spotKey]['ratio'] }})</span>
+                {!! __('Best picture size for the chosen spot: :size', ['size' => '<span id="spot-size-hint" class="font-semibold text-brand">'.e(\App\Models\Advertisement::SPOTS[$spotKey]['size'].' '.__('(ratio :ratio)', ['ratio' => \App\Models\Advertisement::SPOTS[$spotKey]['ratio']])).'</span>']) !!}
             </p>
 
             <x-form.image-upload
                 name="poster"
-                label="Preview picture (video only, optional)"
+                :label="__('Preview picture (video only, optional)')"
                 accept="image/jpeg,image/png,image/webp"
                 :current="$advertisement?->poster_path"
                 kind="image"
                 shape="wide"
-                empty-text="Click the box to choose a preview picture"
-                help="Shown while the video loads. JPG, PNG or WebP up to 2 MB."
+                :empty-text="__('Click the box to choose a preview picture')"
+                :help="__('Shown while the video loads. JPG, PNG or WebP up to 2 MB.')"
             />
         </x-admin.card>
     </div>
 
     <div class="crud-aside">
-        <x-admin.card title="Schedule">
+        <x-admin.card :title="__('Schedule')">
             <x-form.select
                 name="status"
-                label="Status"
-                :options="['active' => 'Active', 'inactive' => 'Inactive']"
+                :label="__('Status')"
+                :options="['active' => __('Active'), 'inactive' => __('Inactive')]"
                 :value="$advertisement->status ?? 'active'"
             />
             <x-form.input
                 name="weight"
-                label="How often (1–10)"
+                :label="__('How often (1–10)')"
                 type="number"
                 min="1"
                 :max="\App\Models\Advertisement::MAX_WEIGHT"
                 :value="$advertisement->weight ?? 1"
-                help="Matters for Normal sponsors that take turns: a 3 is shown about three times as often as a 1."
+                :help="__('Matters for Normal sponsors that take turns: a 3 is shown about three times as often as a 1.')"
             />
             <div class="crud-cols">
                 <x-form.input
                     name="starts_on"
-                    label="Show from"
+                    :label="__('Show from')"
                     type="date"
                     :value="$advertisement?->starts_on?->format('Y-m-d') ?? ''"
                 />
                 <x-form.input
                     name="ends_on"
-                    label="Show until"
+                    :label="__('Show until')"
                     type="date"
                     :value="$advertisement?->ends_on?->format('Y-m-d') ?? ''"
                 />
             </div>
-            <p class="crud-note">Both dates are optional. Only Active ads inside their dates appear on the public website.</p>
+            <p class="crud-note">{{ __('Both dates are optional. Only Active ads inside their dates appear on the public website.') }}</p>
         </x-admin.card>
 
         @include('admin.advertisements._size-guide', ['highlight' => $spotKey])
@@ -130,7 +130,7 @@
                 var on = row.dataset.spot === spot;
                 row.classList.toggle('bg-brand-soft', on);
                 if (on && hint) {
-                    hint.textContent = row.dataset.size + ' (ratio ' + row.dataset.ratio + ')';
+                    hint.textContent = row.dataset.size + ' ' + @js(__('(ratio :ratio)')).replace(':ratio', row.dataset.ratio);
                 }
             });
         };

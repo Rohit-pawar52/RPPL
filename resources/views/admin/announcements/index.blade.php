@@ -1,11 +1,13 @@
 @extends('layouts.admin')
 
-@section('title', 'Announcements')
+@section('title', __('Announcements'))
 
-@section('subtitle', number_format($announcements->total()).' '.\Illuminate\Support\Str::plural('notice', $announcements->total()).' for the public ticker. Only Active and Enabled announcements show right now.')
+@section('subtitle', ($announcements->total() === 1
+    ? __('1 notice for the public ticker.')
+    : __(':count notices for the public ticker.', ['count' => number_format($announcements->total())])).' '.__('Only Active and Enabled announcements show right now.'))
 
 @section('actions')
-    <span class="max-sm:hidden"><x-admin.button :href="route('admin.announcements.create')" variant="primary">+ New announcement</x-admin.button></span>
+    <span class="max-sm:hidden"><x-admin.button :href="route('admin.announcements.create')" variant="primary">+ {{ __('New announcement') }}</x-admin.button></span>
 @endsection
 
 @section('content')
@@ -14,14 +16,14 @@
             <table class="crud-table crud-stack">
                 <thead>
                     <tr>
-                        <th>Message</th>
-                        <th>Status</th>
-                        <th>Push</th>
-                        <th class="hidden md:table-cell">Starts</th>
-                        <th class="hidden md:table-cell">Ends</th>
-                        <th class="hidden text-right sm:table-cell">Order</th>
-                        <th class="hidden lg:table-cell">Created By</th>
-                        <th class="text-right">Actions</th>
+                        <th>{{ __('Message') }}</th>
+                        <th>{{ __('Status') }}</th>
+                        <th>{{ __('Push') }}</th>
+                        <th class="hidden md:table-cell">{{ __('Starts') }}</th>
+                        <th class="hidden md:table-cell">{{ __('Ends') }}</th>
+                        <th class="hidden text-right sm:table-cell">{{ __('Order') }}</th>
+                        <th class="hidden lg:table-cell">{{ __('Created By') }}</th>
+                        <th class="text-right">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -29,12 +31,12 @@
                         @php $pushStatus = $announcement->notificationStatusLabel(); @endphp
                         <tr class="crud-row">
                             <td class="c-title max-w-md">
-                                <a href="{{ route('admin.announcements.edit', $announcement) }}" class="crud-row-link" aria-label="Edit announcement">{{ Illuminate\Support\Str::limit($announcement->message, 70) }}</a>
+                                <a href="{{ route('admin.announcements.edit', $announcement) }}" class="crud-row-link" aria-label="{{ __('Edit announcement') }}">{{ Illuminate\Support\Str::limit($announcement->message, 70) }}</a>
                                 <span class="crud-meta md:hidden">
                                     @if($announcement->starts_at || $announcement->ends_at)
-                                        {{ $announcement->starts_at ? display_datetime($announcement->starts_at, 'd M Y') : 'Now' }} &rarr; {{ $announcement->ends_at ? display_datetime($announcement->ends_at, 'd M Y') : 'no end' }}
+                                        {{ $announcement->starts_at ? display_datetime($announcement->starts_at, 'd M Y') : __('Now') }} &rarr; {{ $announcement->ends_at ? display_datetime($announcement->ends_at, 'd M Y') : __('no end') }}
                                     @else
-                                        No dates set
+                                        {{ __('No dates set') }}
                                     @endif
                                 </span>
                             </td>
@@ -59,16 +61,16 @@
                                 <x-crud.row-actions
                                     :edit="route('admin.announcements.edit', $announcement)"
                                     :delete="route('admin.announcements.destroy', $announcement)"
-                                    name="announcement"
-                                    confirm-title="Delete this announcement?"
+                                    :name="__('announcement')"
+                                    :confirm-title="__('Delete this announcement?')"
                                 />
                             </td>
                         </tr>
                     @empty
                         <x-admin.empty table colspan="8" icon="megaphone">
-                            No announcements yet.
+                            {{ __('No announcements yet.') }}
                             <x-slot:action>
-                                <x-admin.button :href="route('admin.announcements.create')" size="sm">+ New announcement</x-admin.button>
+                                <x-admin.button :href="route('admin.announcements.create')" size="sm">+ {{ __('New announcement') }}</x-admin.button>
                             </x-slot:action>
                         </x-admin.empty>
                     @endforelse
@@ -81,5 +83,5 @@
         {{ $announcements->links() }}
     </div>
 
-    <x-crud.fab :href="route('admin.announcements.create')" label="New announcement" />
+    <x-crud.fab :href="route('admin.announcements.create')" :label="__('New announcement')" />
 @endsection
