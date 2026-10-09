@@ -7,20 +7,20 @@
     $autocomplete, $inputmode, $min, $max, $maxlength, $hint (small help
     text under the field), $options (renders a <select>),
     $selectPlaceholder.
-    Compact (40 px) fields with a clear focus ring; an invalid field is
-    outlined in red and announced to assistive technology.
+    Compact (44 px) fields with a clear brand focus ring; an invalid field is
+    outlined in red and announced to assistive technology. The look lives in
+    resources/css/ux/public-content.css (.pc-label, .pc-input).
 --}}
 @php
     $type = $type ?? 'text';
     $value = $value ?? null;
     $hasError = $errors->has($name);
-    $fieldClass = 'h-10 w-full rounded-lg border bg-white px-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:outline-none focus:ring-4 '
-        .($hasError ? 'border-red-400 focus:border-red-500 focus:ring-red-100' : 'border-slate-300 hover:border-slate-400 focus:border-green-600 focus:ring-green-600/15');
+    $fieldClass = 'pc-input '.($hasError ? 'pc-input-error' : '');
     $describedBy = trim((! empty($hint) ? $name.'-hint ' : '').($hasError ? $name.'-error' : ''));
 @endphp
 
 <div class="mb-3.5">
-    <label for="{{ $name }}" class="mb-1 block text-xs font-semibold text-slate-700">{{ $label }}@if($required ?? false)<span class="text-red-500" aria-hidden="true"> *</span>@endif</label>
+    <label for="{{ $name }}" class="pc-label">{{ $label }}@if($required ?? false)<span class="text-red-500" aria-hidden="true"> *</span>@endif</label>
 
     @if(isset($options))
         <select

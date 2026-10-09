@@ -9,8 +9,8 @@
     is omitted entirely when there is no thumbnail (the element's own
     neutral surface shows instead — no generated thumbnails).
 --}}
-<article class="pub-card flex flex-col overflow-hidden">
-    <div class="pub-media aspect-video w-full bg-slate-900">
+<article class="group flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-card transition duration-150 hover:shadow-raised motion-safe:hover:-translate-y-0.5">
+    <div class="pub-media aspect-video w-full bg-navy-950">
         <video
             class="rppl-featured-video h-full w-full object-cover"
             controls
@@ -22,13 +22,13 @@
             {{ __('directory.videos.unsupported') }}
         </video>
     </div>
-    <div class="p-4">
-        <h3 class="line-clamp-2 break-words text-[14px] font-semibold leading-snug text-slate-900">{{ $video->title }}</h3>
+    <div class="flex flex-1 flex-col p-4">
+        <h3 class="line-clamp-2 break-words text-[15px] font-semibold leading-snug tracking-tight text-slate-900">{{ $video->title }}</h3>
         @if($video->description)
-            <p class="mt-1 line-clamp-2 break-words text-[13px] leading-relaxed text-slate-500">{{ $video->description }}</p>
+            <p class="mt-1.5 line-clamp-2 break-words text-[13px] leading-relaxed text-slate-500">{{ $video->description }}</p>
         @endif
         @if($video->created_at)
-            <p class="pub-meta mt-2">{{ display_datetime($video->created_at, 'd M Y') }}</p>
+            <p class="pc-eyebrow mt-auto pt-3 !text-slate-400">{{ display_datetime($video->created_at, 'd M Y') }}</p>
         @endif
     </div>
 </article>
