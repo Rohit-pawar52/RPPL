@@ -432,6 +432,21 @@ Good to know on the free plan:
 - The service sleeps after ~15 minutes without traffic and the first request after that can take 30–60 seconds; a 419 "page expired" right after a long idle period is normal (the session was lost).
 - Render's free PostgreSQL expires about 30 days after creation — export a backup (`pg_dump`) or move to a paid database before then.
 
+#### Clearing the demo data (and bringing it back for tests)
+
+A fresh site starts with the demo dataset. To start for real, set **`CLEAR_DEMO_DATA`** to any value (for example `clear-1`) in Render and redeploy: `rppl:clear-demo-data` removes the seasons and everything in them (teams, players, registrations, squads, matches and scoring, auctions, finance, contributors, committee), news, photos, videos, rules, announcements, notifications and venues, and starts the numbering from 1 again. It **keeps** the login accounts and roles, every setting, the three content pages, sponsor ads, push subscriptions, page-view statistics and Laravel's own tables; uploaded pictures are not touched (Data Cleanup → Media files removes the ones nothing uses). The value is a one-time token: while it stays the same, later restarts skip it, so leaving it set can never wipe the site again; use a new value to run it again. `php artisan rppl:clear-demo-data` without `--force` only shows what would go. The seeders stay in the code: set **`LOAD_DEMO_DATA=true`** for one deploy (and remove it afterwards) to load the demo data again for testing; it is safe to re-run.
+
+#### Backups on the free plan
+
+Render's free PostgreSQL has **no automatic backups**, and it expires about 30 days after creation, so take a copy yourself before then (and before risky changes):
+
+1. Render → the database → **Connections → External Database URL** (it contains the password: keep it private).
+2. Install the PostgreSQL command-line tools on your computer (postgresql.org → Download; at the installer's component step, pick only *Command Line Tools*). Use a version at least as new as the database's.
+3. Run: `pg_dump "<External Database URL>" --no-owner --no-acl -F c -f rppl-backup-2026-10-10.dump`
+4. To restore into a new, empty database: `pg_restore --no-owner --no-acl -d "<new External Database URL>" rppl-backup-2026-10-10.dump`, then point the web service's `DATABASE_URL` at the new database's Internal URL and redeploy.
+
+The pictures are in the bucket, not in the database: the free bucket is not backed up either, so download its files from the Supabase dashboard if they matter. The admin panel's *Export* buttons (registrations, transactions, matches) give spreadsheet copies of the key lists.
+
 #### Keeping pictures on the free plan (free bucket)
 
 Set these on the Render web service and redeploy; pictures then go to the bucket instead of the container disk, so a restart no longer loses them. Any S3-compatible bucket works; **Supabase Storage** is free without a card:
