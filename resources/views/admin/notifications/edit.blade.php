@@ -3,23 +3,9 @@
 @section('title', 'Edit Notification')
 
 @section('content')
-    <div class="mb-4">
-        <a href="{{ route('admin.notifications.show', $notification) }}" class="text-xs text-slate-500 hover:text-slate-700">
-            &larr; Back to notification
-        </a>
-    </div>
+    <x-crud.back :href="route('admin.notifications.index')">Notifications</x-crud.back>
 
-    <div class="max-w-lg rounded-lg border border-slate-200 bg-white p-4">
-        <form method="POST" action="{{ route('admin.notifications.update', $notification) }}" novalidate>
-            @csrf
-            @method('PUT')
-
-            @include('admin.notifications._form')
-
-            <div class="mt-2 flex items-center gap-2">
-                <x-admin.button>Save changes</x-admin.button>
-                <x-admin.button href="{{ route('admin.notifications.show', $notification) }}" variant="secondary">Cancel</x-admin.button>
-            </div>
-        </form>
-    </div>
+    <x-crud.form :action="route('admin.notifications.update', $notification)" method="PUT" :cancel="route('admin.notifications.index')" submit="Save changes">
+        @include('admin.notifications._form')
+    </x-crud.form>
 @endsection

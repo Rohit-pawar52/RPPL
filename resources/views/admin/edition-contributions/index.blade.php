@@ -2,168 +2,128 @@
 
 @section('title', 'Finance — Contributions')
 
+@section('subtitle', number_format($contributions->total()).' '.\Illuminate\Support\Str::plural('contribution', $contributions->total()).(array_filter($filters) ? ' match your filters.' : ' recorded from committee members and supporters.'))
+
+@section('actions')
+    <a href="{{ route('admin.edition-contributions.export', $filters) }}" class="btn btn-secondary btn-sm max-sm:hidden">
+        <x-icon name="document-chart" class="h-4 w-4" /> Export
+    </a>
+    <x-admin.button :href="route('admin.edition-contributions.create', array_filter(['edition_id' => $filters['edition_id'] ?? null, 'contributor_id' => $filters['contributor_id'] ?? null]))" variant="primary" size="sm">
+        <x-crud.glyph name="plus" class="h-4 w-4" /> Record contribution
+    </x-admin.button>
+@endsection
+
 @section('content')
     @include('admin.finance._tabs')
 
-    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <div class="crud-kpis grid-cols-1! sm:grid-cols-3!">
+        <x-crud.kpi label="Total Contributions" :value="money($totalContributions)" tone="in" icon="income" :sub="array_filter($filters) ? 'With the filters applied' : 'All editions'" />
+    </div>
+
+    <div class="crud-toolbar">
         <x-table-filters :action="route('admin.edition-contributions.index')" :filters="$filters" :date-range="true" :per-page="$perPage">
-            <input
-                type="text"
-                name="search"
-                value="{{ $filters['search'] ?? '' }}"
-                placeholder="Search contributor name&hellip;"
-                class="w-full max-w-[220px] rounded-md border border-neutral-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
-            />
-
-            <select name="edition_id" class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring">
-                <option value="">All editions</option>
-                @foreach($editions as $edition)
-                    <option value="{{ $edition->id }}" @selected(($filters['edition_id'] ?? '') == $edition->id)>
-                        {{ $edition->name }}
-                    </option>
-                @endforeach
-            </select>
-
-            <select name="contributor_id" class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring">
-                <option value="">All contributors</option>
-                @foreach($contributors as $contributor)
-                    <option value="{{ $contributor->id }}" @selected(($filters['contributor_id'] ?? '') == $contributor->id)>
-                        {{ $contributor->name }}
-                    </option>
-                @endforeach
-            </select>
+            <x-crud.search :value="$filters['search'] ?? ''" placeholder="Search contributor name&hellip;" />
+            <x-crud.select name="edition_id" all="All editions" :value="$filters['edition_id'] ?? ''" :options="$editions->pluck('name', 'id')->all()" />
+            <x-crud.select name="contributor_id" all="All contributors" :value="$filters['contributor_id'] ?? ''" :options="$contributors->pluck('name', 'id')->all()" />
         </x-table-filters>
+    </div>
 
-        <div class="flex items-center gap-2">
-            <x-selected-report-action
-                id="contributions-selected-export"
-                :action="route('admin.edition-contributions.export-selected')"
-                label="Export Selected ({count})"
-            />
-            <x-selected-report-action
-                id="contributions-selected-receipts"
-                :action="route('admin.edition-contributions.receipts.selected')"
-                label="Print Receipts ({count})"
-            />
-            <a
-                href="{{ route('admin.edition-contributions.export', $filters) }}"
-                class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] font-medium text-neutral-600 hover:bg-neutral-50"
-            >
-                <x-icon name="document-chart" class="h-4 w-4" />
-                Export
-            </a>
-            <a
-                href="{{ route('admin.edition-contributions.create') }}"
-                class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md theme-button px-3 py-1.5 text-[13px] font-medium"
-            >
-                + Record contribution
-            </a>
+    <div class="mb-3 flex flex-wrap items-center justify-end gap-2">
+        <x-selected-report-action
+            id="contributions-selected-export"
+            :action="route('admin.edition-contributions.export-selected')"
+            label="Export Selected ({count})"
+        />
+        <x-selected-report-action
+            id="contributions-selected-receipts"
+            :action="route('admin.edition-contributions.receipts.selected')"
+            label="Print Receipts ({count})"
+        />
+    </div>
+
+    <div class="crud-table-wrap" data-row-selection="#contributions-selected-export-button">
+        <div class="crud-table-scroll">
+            <table class="crud-table crud-stack">
+                <thead>
+                    <tr>
+                        <th class="w-10">
+                            <input type="checkbox" data-select-all aria-label="Select all contributions on this page" class="rounded border-slate-300" />
+                        </th>
+                        <th><x-sortable-header column="contributed_at" :sort="$sort" :direction="$direction">Date</x-sortable-header></th>
+                        <th>Edition</th>
+                        <th>Contributor</th>
+                        <th class="hidden md:table-cell">Source</th>
+                        <th class="text-right"><x-sortable-header column="amount" :sort="$sort" :direction="$direction">Amount</x-sortable-header></th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($contributions as $contribution)
+                        <tr class="crud-row">
+                            <td class="c-check w-10">
+                                <input
+                                    type="checkbox"
+                                    data-row-checkbox
+                                    form="contributions-selected-export"
+                                    name="selected_ids[]"
+                                    value="{{ $contribution->id }}"
+                                    aria-label="Select contribution {{ $contribution->receiptReference() }}"
+                                    class="rounded border-slate-300"
+                                />
+                            </td>
+                            <td class="whitespace-nowrap text-slate-600 max-md:hidden">{{ $contribution->contributed_at->format('d M Y') }}</td>
+                            <td class="text-slate-700 max-md:hidden">{{ $contribution->edition->name }}</td>
+                            <td class="c-title">
+                                <a href="{{ route('admin.edition-contributions.show', $contribution) }}" class="crud-row-link" aria-label="View contribution"></a>
+                                @can('view', $contribution->contributor)
+                                    <a href="{{ route('admin.contributors.show', $contribution->contributor) }}" class="relative z-1 font-medium hover:text-brand hover:underline">{{ $contribution->contributorName() }}</a>
+                                @else
+                                    {{ $contribution->contributorName() }}
+                                @endcan
+                                <span class="crud-meta md:hidden">{{ $contribution->contributed_at->format('d M Y') }} &middot; {{ $contribution->edition->name }}</span>
+                            </td>
+                            <td class="hidden md:table-cell">{{ $contribution->sourceLabel() }}</td>
+                            <td class="c-amount c-num whitespace-nowrap">
+                                <span class="crud-money crud-money-in">+{{ money($contribution->amount) }}</span>
+                            </td>
+                            <td class="c-actions">
+                                <x-crud.row-actions
+                                    :view="route('admin.edition-contributions.show', $contribution)"
+                                    name="contribution"
+                                    :delete="route('admin.edition-contributions.destroy', $contribution)"
+                                    confirm-title="Delete this contribution?"
+                                    confirm-text="This also removes its linked finance transaction. This cannot be undone."
+                                >
+                                    <a
+                                        href="{{ route('admin.edition-contributions.receipt', $contribution) }}"
+                                        target="_blank"
+                                        title="Receipt"
+                                        aria-label="View receipt"
+                                        class="crud-icon-btn crud-icon-btn-brand"
+                                    >
+                                        <x-crud.glyph name="receipt" class="h-4 w-4" />
+                                    </a>
+                                </x-crud.row-actions>
+                            </td>
+                        </tr>
+                    @empty
+                        <x-admin.empty table colspan="7" icon="currency">
+                            {{ array_filter($filters) ? 'No contributions match these filters.' : 'No contributions found.' }}
+                            <x-slot:action>
+                                @if(array_filter($filters))
+                                    <x-admin.button :href="route('admin.edition-contributions.index')" variant="secondary" size="sm">Clear filters</x-admin.button>
+                                @else
+                                    <x-admin.button :href="route('admin.edition-contributions.create')" size="sm">+ Record contribution</x-admin.button>
+                                @endif
+                            </x-slot:action>
+                        </x-admin.empty>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <div class="mb-4">
-        <x-stat-card label="Total Contributions" :value="money($totalContributions)" icon="currency" />
-    </div>
-
-    <div class="overflow-x-auto rounded-lg border border-neutral-200 bg-white" data-row-selection="#contributions-selected-export-button">
-        <table class="w-full min-w-[640px] text-left text-[13px]">
-            <thead class="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-400">
-                <tr>
-                    <th class="w-8 px-4 py-2">
-                        <input type="checkbox" data-select-all aria-label="Select all contributions on this page" />
-                    </th>
-                    <th class="px-4 py-2 font-medium"><x-sortable-header column="contributed_at" :sort="$sort" :direction="$direction">Date</x-sortable-header></th>
-                    <th class="px-4 py-2 font-medium">Edition</th>
-                    <th class="px-4 py-2 font-medium">Contributor</th>
-                    <th class="hidden px-4 py-2 font-medium md:table-cell">Source</th>
-                    <th class="px-4 py-2 text-right font-medium"><x-sortable-header column="amount" :sort="$sort" :direction="$direction">Amount</x-sortable-header></th>
-                    <th class="px-4 py-2 text-right font-medium">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-neutral-100">
-                @forelse($contributions as $contribution)
-                    <tr class="hover:bg-neutral-50">
-                        <td class="px-4 py-2">
-                            <input
-                                type="checkbox"
-                                data-row-checkbox
-                                form="contributions-selected-export"
-                                name="selected_ids[]"
-                                value="{{ $contribution->id }}"
-                                aria-label="Select contribution {{ $contribution->receiptReference() }}"
-                            />
-                        </td>
-                        <td class="whitespace-nowrap px-4 py-2 text-neutral-600">
-                            {{ $contribution->contributed_at->format('d M Y') }}
-                        </td>
-                        <td class="px-4 py-2 text-neutral-700">{{ $contribution->edition->name }}</td>
-                        <td class="px-4 py-2 font-medium text-neutral-800">
-                            @can('view', $contribution->contributor)
-                                <a href="{{ route('admin.contributors.show', $contribution->contributor) }}" class="hover:underline">
-                                    {{ $contribution->contributorName() }}
-                                </a>
-                            @else
-                                {{ $contribution->contributorName() }}
-                            @endcan
-                        </td>
-                        <td class="hidden px-4 py-2 text-neutral-600 md:table-cell">
-                            {{ $contribution->sourceLabel() }}
-                        </td>
-                        <td class="px-4 py-2 text-right font-medium text-neutral-800">
-                            {{ money($contribution->amount) }}
-                        </td>
-                        <td class="px-4 py-2">
-                            <div class="flex items-center justify-end gap-1">
-                                <a
-                                    href="{{ route('admin.edition-contributions.show', $contribution) }}"
-                                    title="View"
-                                    aria-label="View contribution"
-                                    class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
-                                >
-                                    <x-icon name="eye" class="h-4 w-4" />
-                                </a>
-                                <a
-                                    href="{{ route('admin.edition-contributions.receipt', $contribution) }}"
-                                    target="_blank"
-                                    title="Receipt"
-                                    aria-label="View receipt"
-                                    class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 theme-hover-primary"
-                                >
-                                    <x-icon name="document-chart" class="h-4 w-4" />
-                                </a>
-                                <form
-                                    method="POST"
-                                    action="{{ route('admin.edition-contributions.destroy', $contribution) }}"
-                                    data-confirm-delete
-                                    data-confirm-title="Delete this contribution?"
-                                    data-confirm-text="This also removes its linked finance transaction. This cannot be undone."
-                                >
-                                    @csrf
-                                    @method('DELETE')
-                                    <button
-                                        type="submit"
-                                        title="Delete"
-                                        aria-label="Delete contribution"
-                                        class="rounded p-1.5 text-neutral-500 hover:bg-red-50 hover:text-red-600"
-                                    >
-                                        <x-icon name="trash" class="h-4 w-4" />
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-neutral-400">
-                            No contributions found.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    <div class="mt-3">
+    <div class="mt-4">
         {{ $contributions->links() }}
     </div>
 

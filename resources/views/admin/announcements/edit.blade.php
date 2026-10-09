@@ -3,23 +3,9 @@
 @section('title', 'Edit Announcement')
 
 @section('content')
-    <div class="mb-4">
-        <a href="{{ route('admin.announcements.index') }}" class="text-xs text-slate-500 hover:text-slate-700">
-            &larr; Back to announcements
-        </a>
-    </div>
+    <x-crud.back :href="route('admin.announcements.index')">Announcements</x-crud.back>
 
-    <div class="max-w-lg rounded-lg border border-slate-200 bg-white p-4">
-        <form method="POST" action="{{ route('admin.announcements.update', $announcement) }}" novalidate>
-            @csrf
-            @method('PUT')
-
-            @include('admin.announcements._form')
-
-            <div class="mt-2 flex items-center gap-2">
-                <x-admin.button>Save changes</x-admin.button>
-                <x-admin.button href="{{ route('admin.announcements.index') }}" variant="secondary">Cancel</x-admin.button>
-            </div>
-        </form>
-    </div>
+    <x-crud.form :action="route('admin.announcements.update', $announcement)" method="PUT" :cancel="route('admin.announcements.index')" submit="Save changes">
+        @include('admin.announcements._form')
+    </x-crud.form>
 @endsection

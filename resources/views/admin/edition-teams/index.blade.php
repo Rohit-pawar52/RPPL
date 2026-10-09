@@ -2,111 +2,84 @@
 
 @section('title', 'Edition Teams')
 
-@section('subtitle', 'Teams taking part in each edition.')
+@section('subtitle', number_format($editionTeams->total()).' team '.\Illuminate\Support\Str::plural('entry', $editionTeams->total()).' taking part in the editions.')
 
 @section('actions')
-    <x-admin.button href="{{ route('admin.edition-teams.create') }}" variant="primary">+ Add team to edition</x-admin.button>
+    <span class="max-sm:hidden"><x-admin.button :href="route('admin.edition-teams.create')" variant="primary">+ Add team to edition</x-admin.button></span>
 @endsection
 
 @section('content')
-    <div class="mb-4">
-        <form method="GET" action="{{ route('admin.edition-teams.index') }}" class="flex flex-wrap items-center gap-2">
-            <input
-                type="text"
-                name="search"
-                value="{{ $filters['search'] ?? '' }}"
-                placeholder="Search team name&hellip;"
-                class="w-full max-w-[220px] rounded-md border border-slate-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100"
-            />
-
-            <select name="edition_id" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100">
-                <option value="">All editions</option>
-                @foreach($editions as $edition)
-                    <option value="{{ $edition->id }}" @selected(($filters['edition_id'] ?? '') == $edition->id)>
-                        {{ $edition->name }}
-                    </option>
-                @endforeach
-            </select>
-
-            <x-admin.button variant="secondary">Filter</x-admin.button>
-
-            @if(array_filter($filters))
-                <a href="{{ route('admin.edition-teams.index') }}" class="text-[13px] text-slate-400 hover:text-slate-600">
-                    Clear filters
-                </a>
-            @endif
-        </form>
+    <div class="crud-toolbar">
+        <x-table-filters :action="route('admin.edition-teams.index')" :filters="$filters">
+            <x-crud.search :value="$filters['search'] ?? ''" placeholder="Search team name&hellip;" />
+            <x-crud.select name="edition_id" all="All editions" :value="$filters['edition_id'] ?? ''" :options="$editions->pluck('name', 'id')->all()" />
+        </x-table-filters>
     </div>
 
-    <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table class="w-full min-w-[640px] text-left text-[13px]">
-            <thead class="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-400">
-                <tr>
-                    <th class="px-4 py-2 font-medium">Edition</th>
-                    <th class="px-4 py-2 font-medium">Team</th>
-                    <th class="hidden px-4 py-2 font-medium md:table-cell">Team Status</th>
-                    <th class="hidden px-4 py-2 font-medium md:table-cell">Squad</th>
-                    <th class="hidden px-4 py-2 font-medium lg:table-cell">Added</th>
-                    <th class="px-4 py-2 text-right font-medium">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                @forelse($editionTeams as $editionTeam)
-                    <tr class="hover:bg-slate-50">
-                        <td class="px-4 py-2 text-slate-600">{{ $editionTeam->edition->name }}</td>
-                        <td class="px-4 py-2 font-medium text-slate-800">
-                            <a href="{{ route('admin.edition-teams.show', $editionTeam) }}" class="hover:underline">
-                                {{ $editionTeam->team->name }}
-                            </a>
-                        </td>
-                        <td class="hidden px-4 py-2 md:table-cell">
-                            <x-status-badge :status="$editionTeam->team->is_active ? 'active' : 'inactive'" />
-                        </td>
-                        <td class="hidden px-4 py-2 text-slate-600 md:table-cell">
-                            {{ $editionTeam->team_players_count }}
-                        </td>
-                        <td class="hidden px-4 py-2 text-slate-500 lg:table-cell">
-                            {{ display_datetime($editionTeam->created_at, 'd M Y') }}
-                        </td>
-                        <td class="px-4 py-2">
-                            <div class="flex items-center justify-end gap-1">
-                                <a
-                                    href="{{ route('admin.edition-teams.show', $editionTeam) }}"
-                                    title="View"
-                                    aria-label="View {{ $editionTeam->team->name }} in {{ $editionTeam->edition->name }}"
-                                    class="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                                >
-                                    <x-icon name="eye" class="h-4 w-4" />
-                                </a>
-                                <form
-                                    method="POST"
-                                    action="{{ route('admin.edition-teams.destroy', $editionTeam) }}"
-                                    data-confirm-delete
-                                    data-confirm-title="Remove {{ $editionTeam->team->name }} from {{ $editionTeam->edition->name }}?"
-                                    data-confirm-text="This cannot be undone. Teams with existing squad or match data cannot be removed."
-                                >
-                                    @csrf
-                                    @method('DELETE')
-                                    <button
-                                        type="submit"
-                                        title="Remove"
-                                        aria-label="Remove {{ $editionTeam->team->name }} from {{ $editionTeam->edition->name }}"
-                                        class="rounded p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600"
-                                    >
-                                        <x-icon name="trash" class="h-4 w-4" />
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
+    <div class="crud-table-wrap">
+        <div class="crud-table-scroll">
+            <table class="crud-table crud-stack">
+                <thead>
+                    <tr>
+                        <th class="w-16">Logo</th>
+                        <th>Team</th>
+                        <th>Edition</th>
+                        <th class="hidden md:table-cell">Team Status</th>
+                        <th class="hidden md:table-cell">Squad</th>
+                        <th class="hidden lg:table-cell">Added</th>
+                        <th class="text-right">Actions</th>
                     </tr>
-                @empty
-                    <x-admin.empty table colspan="6">No teams have been added to any edition yet.</x-admin.empty>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @forelse($editionTeams as $editionTeam)
+                        <tr class="crud-row">
+                            <td class="c-media w-16">
+                                <x-crud.thumb :path="$editionTeam->team->logo_path" kind="image" size="sm" />
+                            </td>
+                            <td class="c-title">
+                                <a href="{{ route('admin.edition-teams.show', $editionTeam) }}" class="crud-row-link">{{ $editionTeam->team->name }}</a>
+                                <span class="crud-meta md:hidden">{{ $editionTeam->edition->name }} &middot; {{ $editionTeam->team_players_count }} in squad</span>
+                            </td>
+                            <td class="c-sub max-md:hidden">
+                                <span class="crud-pill crud-pill-brand">{{ $editionTeam->edition->name }}</span>
+                            </td>
+                            <td class="hidden md:table-cell">
+                                <x-status-badge :status="$editionTeam->team->is_active ? 'active' : 'inactive'" />
+                            </td>
+                            <td class="hidden tabular-nums md:table-cell">{{ $editionTeam->team_players_count }}</td>
+                            <td class="hidden whitespace-nowrap text-slate-500 lg:table-cell">{{ display_datetime($editionTeam->created_at, 'd M Y') }}</td>
+                            <td class="c-actions">
+                                <x-crud.row-actions
+                                    :view="route('admin.edition-teams.show', $editionTeam)"
+                                    :view-label="'View'"
+                                    :delete="route('admin.edition-teams.destroy', $editionTeam)"
+                                    delete-label="Remove"
+                                    :name="$editionTeam->team->name.' in '.$editionTeam->edition->name"
+                                    :confirm-title="'Remove '.$editionTeam->team->name.' from '.$editionTeam->edition->name.'?'"
+                                    confirm-text="This cannot be undone. Teams with existing squad or match data cannot be removed."
+                                />
+                            </td>
+                        </tr>
+                    @empty
+                        <x-admin.empty table colspan="7" icon="shield">
+                            {{ array_filter($filters) ? 'No teams match these filters.' : 'No teams have been added to any edition yet.' }}
+                            <x-slot:action>
+                                @if(array_filter($filters))
+                                    <x-admin.button :href="route('admin.edition-teams.index')" variant="secondary" size="sm">Clear filters</x-admin.button>
+                                @else
+                                    <x-admin.button :href="route('admin.edition-teams.create')" size="sm">+ Add team to edition</x-admin.button>
+                                @endif
+                            </x-slot:action>
+                        </x-admin.empty>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <div class="mt-3">
+    <div class="mt-4">
         {{ $editionTeams->links() }}
     </div>
+
+    <x-crud.fab :href="route('admin.edition-teams.create')" label="Add team" />
 @endsection

@@ -9,37 +9,20 @@
      here. The exception is echoed with {{ }} inside <pre>, so it is
      always escaped plain text, never interpreted as HTML. --}}
 @section('content')
-    <div class="mb-4 flex items-center justify-between">
-        <a href="{{ route('admin.data-cleanup.index', ['tab' => 'system']) }}" class="text-xs text-slate-500 hover:text-slate-700">
-            &larr; Back to Data Cleanup (System)
-        </a>
-    </div>
+    <x-crud.back :href="route('admin.data-cleanup.index', ['tab' => 'system'])">Data Cleanup (System)</x-crud.back>
 
-    <div class="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 class="text-base font-semibold text-slate-900">{{ $failedJob->job_name }}</h2>
+    <div class="space-y-4 lg:space-y-5">
+        <x-admin.card title="{{ $failedJob->job_name }}">
+            <dl class="crud-facts">
+                <x-crud.fact label="UUID" class="col-span-2"><span class="break-all font-mono text-[13px]">{{ $failedJob->uuid }}</span></x-crud.fact>
+                <x-crud.fact label="Failed At">{{ display_datetime($failedJob->failed_at, 'd M Y, h:i:s A') ?? '—' }}</x-crud.fact>
+                <x-crud.fact label="Connection">{{ $failedJob->connection }}</x-crud.fact>
+                <x-crud.fact label="Queue">{{ $failedJob->queue }}</x-crud.fact>
+            </dl>
+        </x-admin.card>
 
-        <dl class="mt-4 grid grid-cols-1 gap-3 text-[13px] sm:grid-cols-2">
-            <div>
-                <dt class="text-[11px] uppercase tracking-wide text-slate-400">UUID</dt>
-                <dd class="break-words font-mono text-slate-700">{{ $failedJob->uuid }}</dd>
-            </div>
-            <div>
-                <dt class="text-[11px] uppercase tracking-wide text-slate-400">Failed At</dt>
-                <dd class="text-slate-700">{{ display_datetime($failedJob->failed_at, 'd M Y, h:i:s A') ?? '—' }}</dd>
-            </div>
-            <div>
-                <dt class="text-[11px] uppercase tracking-wide text-slate-400">Connection</dt>
-                <dd class="text-slate-700">{{ $failedJob->connection }}</dd>
-            </div>
-            <div>
-                <dt class="text-[11px] uppercase tracking-wide text-slate-400">Queue</dt>
-                <dd class="text-slate-700">{{ $failedJob->queue }}</dd>
-            </div>
-        </dl>
-    </div>
-
-    <div class="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-        <h3 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Exception</h3>
-        <pre class="max-h-80 overflow-x-auto overflow-y-auto rounded-md bg-slate-50 p-3 font-mono text-[12px] text-slate-700">{{ $failedJob->exception }}</pre>
+        <x-admin.card title="Exception">
+            <pre class="max-h-96 overflow-auto rounded-lg bg-navy-950 p-4 font-mono text-[12px] leading-relaxed text-slate-200">{{ $failedJob->exception }}</pre>
+        </x-admin.card>
     </div>
 @endsection

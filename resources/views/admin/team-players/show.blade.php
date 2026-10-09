@@ -3,57 +3,41 @@
 @section('title', 'Squad Player Details')
 
 @section('content')
-    <div class="mb-4 flex items-center justify-between">
-        <a href="{{ route('admin.team-players.index') }}" class="text-xs text-slate-500 hover:text-slate-700">
-            &larr; Back to squads
-        </a>
-        <a
-            href="{{ route('admin.team-players.edit', $teamPlayer) }}"
-            class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
-        >
-            <x-icon name="pencil" class="h-3.5 w-3.5" />
-            Edit
-        </a>
-    </div>
-
     @php
         $player = $teamPlayer->playerRegistration->player;
     @endphp
 
-    <div class="rounded-lg border border-slate-200 bg-white p-4">
-        <div class="flex items-center justify-between gap-3">
-            <h2 class="text-base font-semibold text-slate-900">{{ $player->name }}</h2>
-            <x-status-badge :status="$teamPlayer->playerRegistration->payment_status" />
+    <x-crud.back :href="route('admin.team-players.index')">Squads</x-crud.back>
+
+    <div class="space-y-4 lg:space-y-5">
+        <x-crud.profile
+            :title="$player->name"
+            :path="$player->photo_path"
+            kind="user"
+            :status="$teamPlayer->playerRegistration->payment_status"
+            :subtitle="$teamPlayer->editionTeam->team->name.' · '.$teamPlayer->editionTeam->edition->name"
+        >
+            @if($teamPlayer->jersey_number)
+                <span class="crud-pill crud-pill-brand">Jersey #{{ $teamPlayer->jersey_number }}</span>
+            @endif
+
+            <x-slot:actions>
+                <x-admin.button :href="route('admin.players.show', $player)" variant="secondary" icon="user">Player page</x-admin.button>
+                <x-admin.button :href="route('admin.team-players.edit', $teamPlayer)" icon="pencil">Edit</x-admin.button>
+            </x-slot:actions>
+        </x-crud.profile>
+
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-5">
+            <x-admin.card title="Squad place">
+                <dl class="crud-facts">
+                    <x-crud.fact label="Jersey number">{{ $teamPlayer->jersey_number ?? '—' }}</x-crud.fact>
+                    <x-crud.fact label="Squad role" class="capitalize">{{ $teamPlayer->role ? str_replace('_', ' ', $teamPlayer->role) : '—' }}</x-crud.fact>
+                    <x-crud.fact label="General role" class="capitalize">{{ $player->primary_role ? str_replace('_', ' ', $player->primary_role) : '—' }}</x-crud.fact>
+                    <x-crud.fact label="Added">{{ display_datetime($teamPlayer->created_at, 'd M Y') }}</x-crud.fact>
+                </dl>
+            </x-admin.card>
+
+            <x-crud.kpi label="Match appearances" :value="$teamPlayer->match_players_count" icon="trophy" tone="brand" />
         </div>
-        <p class="mt-1 text-xs text-slate-500">
-            {{ $teamPlayer->editionTeam->team->name }} &middot; {{ $teamPlayer->editionTeam->edition->name }}
-        </p>
-
-        <dl class="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
-            <div>
-                <dt class="text-slate-400">Jersey number</dt>
-                <dd class="mt-0.5 font-medium text-slate-800">{{ $teamPlayer->jersey_number ?? '—' }}</dd>
-            </div>
-            <div>
-                <dt class="text-slate-400">Squad role</dt>
-                <dd class="mt-0.5 font-medium capitalize text-slate-800">
-                    {{ $teamPlayer->role ? str_replace('_', ' ', $teamPlayer->role) : '—' }}
-                </dd>
-            </div>
-            <div>
-                <dt class="text-slate-400">General role</dt>
-                <dd class="mt-0.5 font-medium capitalize text-slate-800">
-                    {{ $player->primary_role ? str_replace('_', ' ', $player->primary_role) : '—' }}
-                </dd>
-            </div>
-            <div>
-                <dt class="text-slate-400">Added</dt>
-                <dd class="mt-0.5 font-medium text-slate-800">{{ display_datetime($teamPlayer->created_at, 'd M Y') }}</dd>
-            </div>
-        </dl>
-    </div>
-
-    <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <x-stat-card label="Match appearances" :value="$teamPlayer->match_players_count" icon="trophy" />
     </div>
 @endsection

@@ -6,11 +6,15 @@
     the admin sees an exact count before confirming, never just
     "this cannot be undone."
 --}}
-<div class="space-y-6">
-    <div>
-        <h3 class="mb-1 text-sm font-semibold text-slate-900">Old Notifications</h3>
-        <p class="mb-3 text-xs text-slate-500">{{ $notificationCount }} total. Delete records before this date (selected date is not included) — times are interpreted in {{ $displayTimezone }}.</p>
-
+<section class="crud-danger">
+    <div class="crud-danger-head">
+        <span class="crud-danger-icon"><x-icon name="bell" class="h-4 w-4" /></span>
+        <div class="min-w-0">
+            <h3 class="crud-card-title">Old Notifications</h3>
+            <p class="crud-hint">{{ $notificationCount }} total. Delete records before this date (selected date is not included) — times are interpreted in {{ $displayTimezone }}.</p>
+        </div>
+    </div>
+    <div class="crud-card-body">
         <form
             method="POST"
             action="{{ route('admin.data-cleanup.notifications.destroy') }}"
@@ -22,20 +26,28 @@
             @csrf
             @method('DELETE')
 
-            <div class="flex flex-wrap items-end gap-2">
-                <x-form.input name="before_date" label="Delete notifications created before" type="date" required data-cutoff-preview="notifications" />
-                <button type="submit" class="mb-3.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] font-medium text-red-700 hover:bg-red-100">
-                    Delete notifications
+            <div class="flex flex-wrap items-end gap-3">
+                <div class="min-w-[12rem] flex-1 sm:max-w-xs">
+                    <x-form.input name="before_date" label="Delete notifications created before" type="date" required data-cutoff-preview="notifications" />
+                </div>
+                <button type="submit" class="btn btn-danger-soft mb-3.5">
+                    <x-icon name="trash" class="h-4 w-4" /> Delete notifications
                 </button>
             </div>
-            <p class="-mt-2 text-xs text-slate-500" data-cutoff-preview-result="notifications">Select a date to see how many notifications this would affect.</p>
+            <p class="-mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600" data-cutoff-preview-result="notifications">Select a date to see how many notifications this would affect.</p>
         </form>
     </div>
+</section>
 
-    <div class="border-t border-slate-100 pt-6">
-        <h3 class="mb-1 text-sm font-semibold text-slate-900">Notification Send History</h3>
-        <p class="mb-3 text-xs text-slate-500">{{ $notificationSendCount }} total. Deleting this leaves the notifications themselves untouched.</p>
-
+<section class="crud-danger">
+    <div class="crud-danger-head">
+        <span class="crud-danger-icon"><x-crud.glyph name="send" class="h-4 w-4" /></span>
+        <div class="min-w-0">
+            <h3 class="crud-card-title">Notification Send History</h3>
+            <p class="crud-hint">{{ $notificationSendCount }} total. Deleting this leaves the notifications themselves untouched.</p>
+        </div>
+    </div>
+    <div class="crud-card-body">
         <form
             method="POST"
             action="{{ route('admin.data-cleanup.notification-sends.destroy') }}"
@@ -47,24 +59,33 @@
             @csrf
             @method('DELETE')
 
-            <div class="flex flex-wrap items-end gap-2">
-                <x-form.input name="before_date" label="Delete sends created before" type="date" required data-cutoff-preview="notification-sends" />
-                <button type="submit" class="mb-3.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] font-medium text-red-700 hover:bg-red-100">
-                    Delete send history
+            <div class="flex flex-wrap items-end gap-3">
+                <div class="min-w-[12rem] flex-1 sm:max-w-xs">
+                    <x-form.input name="before_date" label="Delete sends created before" type="date" required data-cutoff-preview="notification-sends" />
+                </div>
+                <button type="submit" class="btn btn-danger-soft mb-3.5">
+                    <x-icon name="trash" class="h-4 w-4" /> Delete send history
                 </button>
             </div>
-            <p class="-mt-2 text-xs text-slate-500" data-cutoff-preview-result="notification-sends">Select a date to see how many send records this would affect.</p>
+            <p class="-mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600" data-cutoff-preview-result="notification-sends">Select a date to see how many send records this would affect.</p>
         </form>
     </div>
+</section>
 
-    <div class="border-t border-slate-100 pt-6">
-        <h3 class="mb-1 text-sm font-semibold text-slate-900">FCM Tokens</h3>
-        <p class="mb-3 text-xs text-slate-500">{{ $fcmTokenCount }} total, {{ $inactiveFcmTokenCount }} inactive.</p>
-
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+<section class="crud-danger">
+    <div class="crud-danger-head">
+        <span class="crud-danger-icon"><x-icon name="key" class="h-4 w-4" /></span>
+        <div class="min-w-0">
+            <h3 class="crud-card-title">FCM Tokens</h3>
+            <p class="crud-hint">{{ $fcmTokenCount }} total, {{ $inactiveFcmTokenCount }} inactive.</p>
+        </div>
+    </div>
+    <div class="crud-card-body">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <form
                 method="POST"
                 action="{{ route('admin.data-cleanup.fcm-tokens.destroy-inactive') }}"
+                class="flex flex-col rounded-lg border border-line p-4"
                 data-confirm-action
                 data-confirm-title="Delete inactive FCM tokens?"
                 data-confirm-text="This permanently deletes every FCM token Firebase has already reported as invalid/unregistered ({{ $inactiveFcmTokenCount }} token(s)). These can never receive a notification again. This cannot be undone."
@@ -72,10 +93,10 @@
             >
                 @csrf
                 @method('DELETE')
-                <p class="mb-2 text-xs font-medium text-slate-700">Delete all inactive tokens</p>
-                <p class="mb-3 text-xs text-slate-500">{{ $inactiveFcmTokenCount }} token(s) already marked invalid by Firebase.</p>
-                <button type="submit" class="w-full rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] font-medium text-red-700 hover:bg-red-100">
-                    Delete inactive tokens
+                <p class="mb-1 text-[13px] font-semibold text-slate-900">Delete all inactive tokens</p>
+                <p class="mb-4 text-xs text-slate-500">{{ $inactiveFcmTokenCount }} token(s) already marked invalid by Firebase.</p>
+                <button type="submit" class="btn btn-danger-soft btn-block mt-auto">
+                    <x-icon name="trash" class="h-4 w-4" /> Delete inactive tokens
                 </button>
             </form>
 
@@ -83,6 +104,7 @@
                 id="stale-fcm-tokens-form"
                 method="POST"
                 action="{{ route('admin.data-cleanup.fcm-tokens.destroy-stale') }}"
+                class="flex flex-col rounded-lg border border-line p-4"
                 data-confirm-action
                 data-confirm-title="Delete stale FCM tokens?"
                 data-confirm-text="This permanently deletes every FCM token not seen in the selected number of days, regardless of its active/inactive status. Devices behind a deleted token will stop receiving notifications until they resubscribe. This cannot be undone."
@@ -96,15 +118,15 @@
                     label="Delete tokens not seen in the last"
                     :options="collect($staleDaysOptions)->mapWithKeys(fn ($days) => [$days => $days.' days'])->all()"
                 />
-                <p class="-mt-2 mb-3 text-xs text-slate-500" id="stale-fcm-preview">Choose a threshold to see how many tokens this would affect.</p>
+                <p class="-mt-2 mb-4 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600" id="stale-fcm-preview">Choose a threshold to see how many tokens this would affect.</p>
 
-                <button type="submit" class="w-full rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] font-medium text-red-700 hover:bg-red-100">
-                    Delete stale tokens
+                <button type="submit" class="btn btn-danger-soft btn-block mt-auto">
+                    <x-icon name="trash" class="h-4 w-4" /> Delete stale tokens
                 </button>
             </form>
         </div>
     </div>
-</div>
+</section>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {

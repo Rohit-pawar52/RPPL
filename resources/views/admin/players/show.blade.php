@@ -3,223 +3,155 @@
 @section('title', 'Player Details')
 
 @section('content')
-    <div class="mb-4 flex items-center justify-between">
-        <a href="{{ route('admin.players.index') }}" class="text-xs text-slate-500 hover:text-slate-700">
-            &larr; Back to players
-        </a>
-        <a
-            href="{{ route('admin.players.edit', $player) }}"
-            class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+    @php
+        $label = fn (?string $value) => $value ? ucwords(str_replace('_', ' ', $value)) : '—';
+        $batting = $stats['batting'];
+        $bowling = $stats['bowling'];
+    @endphp
+
+    <x-crud.back :href="route('admin.players.index')">Players</x-crud.back>
+
+    <div class="space-y-4 lg:space-y-5">
+        <x-crud.profile
+            :title="$player->name"
+            :path="$player->photo_path"
+            kind="user"
+            :status="$player->is_active ? 'active' : 'inactive'"
+            :subtitle="collect([$player->primary_role ? $label($player->primary_role) : null, $player->batting_style ? $label($player->batting_style).' bat' : null, $player->bowling_style ? $label($player->bowling_style).' bowl' : null])->filter()->implode(' · ') ?: null"
         >
-            <x-icon name="pencil" class="h-3.5 w-3.5" />
-            Edit
-        </a>
-    </div>
+            <span class="inline-flex items-center gap-1.5"><x-crud.glyph name="mail" class="h-3.5 w-3.5" /> {{ $player->email ?: 'No email' }}</span>
+            <span class="inline-flex items-center gap-1.5"><x-crud.glyph name="phone" class="h-3.5 w-3.5" /> {{ $player->phone ?: 'No phone' }}</span>
 
-    <div class="rounded-lg border border-slate-200 bg-white p-4">
-        <div class="flex items-center gap-4">
-            <div class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-slate-300">
-                <x-media-image :path="$player->photo_path" kind="user" alt="" class="h-full w-full object-cover" />
-            </div>
+            <x-slot:actions>
+                <x-admin.button :href="route('admin.players.edit', $player)" icon="pencil">Edit</x-admin.button>
+            </x-slot:actions>
+        </x-crud.profile>
 
-            <div>
-                <div class="flex items-center gap-2">
-                    <h2 class="text-base font-semibold text-slate-900">{{ $player->name }}</h2>
-                    <x-status-badge :status="$player->is_active ? 'active' : 'inactive'" />
-                </div>
-                <p class="text-xs text-slate-500">
-                    {{ $player->email ?: 'No email' }} &middot; {{ $player->phone ?: 'No phone' }}
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-5">
+            <x-admin.card title="Profile">
+                <dl class="crud-facts">
+                    <x-crud.fact label="Date of birth">{{ $player->date_of_birth?->format('d M Y') ?? '—' }}</x-crud.fact>
+                    <x-crud.fact label="Primary role">{{ $label($player->primary_role) }}</x-crud.fact>
+                    <x-crud.fact label="Batting style">{{ $label($player->batting_style) }}</x-crud.fact>
+                    <x-crud.fact label="Bowling style">{{ $label($player->bowling_style) }}</x-crud.fact>
+                </dl>
+            </x-admin.card>
+
+            <x-admin.card title="Tournament History">
+                @forelse($player->playerRegistrations as $registration)
+                    <div class="crud-list-row">
+                        <span class="min-w-0 truncate font-medium text-slate-800">{{ $registration->edition->name }}</span>
+                        <x-status-badge :status="$registration->payment_status" />
+                    </div>
+                @empty
+                    <p class="text-xs text-slate-400">No edition registrations yet.</p>
+                @endforelse
+                <p class="mt-3 border-t border-line pt-3 text-xs text-slate-500">
+                    <span class="font-semibold tabular-nums text-slate-800">{{ $player->player_registrations_count }}</span> {{ \Illuminate\Support\Str::plural('registration', $player->player_registrations_count) }} in total
                 </p>
+            </x-admin.card>
+        </div>
+
+        {{-- Stats: all editions together, or one edition. --}}
+        <div>
+            <div class="crud-chips">
+                <x-crud.chip :href="route('admin.players.show', $player)" :active="! $selectedEdition">Career / All Editions</x-crud.chip>
+                @foreach($player->playerRegistrations as $registration)
+                    <x-crud.chip :href="route('admin.players.show', ['player' => $player, 'edition_id' => $registration->edition_id])" :active="$selectedEdition?->id === $registration->edition_id">
+                        {{ $registration->edition->name }}
+                    </x-crud.chip>
+                @endforeach
+            </div>
+
+            <div class="grid gap-4 lg:grid-cols-2 lg:gap-5">
+                <x-admin.card title="Batting">
+                    <dl class="crud-facts !grid-cols-3 sm:!grid-cols-4">
+                        <x-crud.fact big label="Matches">{{ $stats['matches_played'] }}</x-crud.fact>
+                        <x-crud.fact big label="Innings">{{ $batting['innings_batted'] }}</x-crud.fact>
+                        <x-crud.fact big label="Runs">{{ $batting['runs'] }}</x-crud.fact>
+                        <x-crud.fact big label="Highest">
+                            @if($batting['highest_score'] !== null)
+                                {{ $batting['highest_score'] }}{{ $batting['highest_score_not_out'] ? '*' : '' }}
+                            @else
+                                -
+                            @endif
+                        </x-crud.fact>
+                        <x-crud.fact big label="Average">{{ $batting['batting_average'] !== null ? number_format($batting['batting_average'], 2) : '-' }}</x-crud.fact>
+                        <x-crud.fact big label="Strike Rate">{{ number_format($batting['strike_rate'], 2) }}</x-crud.fact>
+                        <x-crud.fact big label="4s">{{ $batting['fours'] }}</x-crud.fact>
+                        <x-crud.fact big label="6s">{{ $batting['sixes'] }}</x-crud.fact>
+                    </dl>
+                </x-admin.card>
+
+                <x-admin.card title="Bowling">
+                    <dl class="crud-facts !grid-cols-3 sm:!grid-cols-4">
+                        <x-crud.fact big label="Overs">{{ $bowling['overs'] }}</x-crud.fact>
+                        <x-crud.fact big label="Runs">{{ $bowling['runs_conceded'] }}</x-crud.fact>
+                        <x-crud.fact big label="Wickets">{{ $bowling['wickets'] }}</x-crud.fact>
+                        <x-crud.fact big label="Best">{{ $bowling['best_bowling'] ?? '-' }}</x-crud.fact>
+                        <x-crud.fact big label="Average">{{ $bowling['bowling_average'] !== null ? number_format($bowling['bowling_average'], 2) : '-' }}</x-crud.fact>
+                        <x-crud.fact big label="Economy">{{ number_format($bowling['economy'], 2) }}</x-crud.fact>
+                    </dl>
+                </x-admin.card>
             </div>
         </div>
 
-        <dl class="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
-            <div>
-                <dt class="text-slate-400">Date of birth</dt>
-                <dd class="mt-0.5 font-medium text-slate-800">
-                    {{ $player->date_of_birth?->format('d M Y') ?? '—' }}
-                </dd>
-            </div>
-            <div>
-                <dt class="text-slate-400">Primary role</dt>
-                <dd class="mt-0.5 font-medium capitalize text-slate-800">
-                    {{ $player->primary_role ? str_replace('_', ' ', $player->primary_role) : '—' }}
-                </dd>
-            </div>
-            <div>
-                <dt class="text-slate-400">Batting style</dt>
-                <dd class="mt-0.5 font-medium capitalize text-slate-800">
-                    {{ $player->batting_style ? str_replace('_', ' ', $player->batting_style) : '—' }}
-                </dd>
-            </div>
-            <div>
-                <dt class="text-slate-400">Bowling style</dt>
-                <dd class="mt-0.5 font-medium capitalize text-slate-800">
-                    {{ $player->bowling_style ? str_replace('_', ' ', $player->bowling_style) : '—' }}
-                </dd>
-            </div>
-        </dl>
-    </div>
-
-    <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <x-stat-card label="Registrations" :value="$player->player_registrations_count" icon="clipboard" />
-    </div>
-
-    <div class="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Tournament History</h3>
-
-        @forelse($player->playerRegistrations as $registration)
-            <div class="flex items-center justify-between border-b border-slate-100 py-2 text-[13px] last:border-b-0">
-                <span class="font-medium text-slate-800">{{ $registration->edition->name }}</span>
-                <x-status-badge :status="$registration->payment_status" />
-            </div>
-        @empty
-            <p class="text-xs text-slate-400">No edition registrations yet.</p>
-        @endforelse
-    </div>
-
-    <div class="mt-4 flex flex-wrap items-center gap-2">
-        <a
-            href="{{ route('admin.players.show', $player) }}"
-            class="rounded-md border px-2.5 py-1 text-xs font-medium {{ ! $selectedEdition ? 'border-green-600 bg-green-50 text-green-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50' }}"
-        >
-            Career / All Editions
-        </a>
-        @foreach($player->playerRegistrations as $registration)
-            <a
-                href="{{ route('admin.players.show', ['player' => $player, 'edition_id' => $registration->edition_id]) }}"
-                class="rounded-md border px-2.5 py-1 text-xs font-medium {{ $selectedEdition?->id === $registration->edition_id ? 'border-green-600 bg-green-50 text-green-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50' }}"
-            >
-                {{ $registration->edition->name }}
-            </a>
-        @endforeach
-    </div>
-
-    <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div class="rounded-lg border border-slate-200 bg-white p-4">
-            <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Batting</h3>
-            <dl class="grid grid-cols-3 gap-3 text-xs sm:grid-cols-4">
-                <div>
-                    <dt class="text-slate-400">Matches</dt>
-                    <dd class="mt-0.5 font-medium text-slate-800">{{ $stats['matches_played'] }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-400">Innings</dt>
-                    <dd class="mt-0.5 font-medium text-slate-800">{{ $stats['batting']['innings_batted'] }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-400">Runs</dt>
-                    <dd class="mt-0.5 font-medium text-slate-800">{{ $stats['batting']['runs'] }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-400">Highest</dt>
-                    <dd class="mt-0.5 font-medium text-slate-800">
-                        @if($stats['batting']['highest_score'] !== null)
-                            {{ $stats['batting']['highest_score'] }}{{ $stats['batting']['highest_score_not_out'] ? '*' : '' }}
-                        @else
-                            -
-                        @endif
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-slate-400">Average</dt>
-                    <dd class="mt-0.5 font-medium text-slate-800">
-                        {{ $stats['batting']['batting_average'] !== null ? number_format($stats['batting']['batting_average'], 2) : '-' }}
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-slate-400">Strike Rate</dt>
-                    <dd class="mt-0.5 font-medium text-slate-800">{{ number_format($stats['batting']['strike_rate'], 2) }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-400">4s</dt>
-                    <dd class="mt-0.5 font-medium text-slate-800">{{ $stats['batting']['fours'] }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-400">6s</dt>
-                    <dd class="mt-0.5 font-medium text-slate-800">{{ $stats['batting']['sixes'] }}</dd>
-                </div>
-            </dl>
-        </div>
-
-        <div class="rounded-lg border border-slate-200 bg-white p-4">
-            <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Bowling</h3>
-            <dl class="grid grid-cols-3 gap-3 text-xs sm:grid-cols-4">
-                <div>
-                    <dt class="text-slate-400">Overs</dt>
-                    <dd class="mt-0.5 font-medium text-slate-800">{{ $stats['bowling']['overs'] }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-400">Runs</dt>
-                    <dd class="mt-0.5 font-medium text-slate-800">{{ $stats['bowling']['runs_conceded'] }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-400">Wickets</dt>
-                    <dd class="mt-0.5 font-medium text-slate-800">{{ $stats['bowling']['wickets'] }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-400">Best</dt>
-                    <dd class="mt-0.5 font-medium text-slate-800">{{ $stats['bowling']['best_bowling'] ?? '-' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-400">Average</dt>
-                    <dd class="mt-0.5 font-medium text-slate-800">
-                        {{ $stats['bowling']['bowling_average'] !== null ? number_format($stats['bowling']['bowling_average'], 2) : '-' }}
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-slate-400">Economy</dt>
-                    <dd class="mt-0.5 font-medium text-slate-800">{{ number_format($stats['bowling']['economy'], 2) }}</dd>
-                </div>
-            </dl>
-        </div>
-    </div>
-
-    <div class="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-        <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Match History</h3>
-
-        <div class="overflow-x-auto">
-            <table class="w-full min-w-[640px] text-left text-[13px]">
-                <thead class="border-b border-slate-200 text-[11px] uppercase tracking-wide text-slate-400">
+        <x-admin.card title="Match History" flush>
+            <table class="crud-table crud-stack">
+                <thead>
                     <tr>
-                        <th class="px-2 py-1.5 font-medium">Date</th>
-                        <th class="hidden px-2 py-1.5 font-medium md:table-cell">Edition</th>
-                        <th class="px-2 py-1.5 font-medium">Match</th>
-                        <th class="px-2 py-1.5 font-medium">Batting</th>
-                        <th class="px-2 py-1.5 font-medium">Bowling</th>
-                        <th class="hidden px-2 py-1.5 font-medium md:table-cell">Result</th>
+                        <th>Date</th>
+                        <th class="hidden md:table-cell">Edition</th>
+                        <th>Match</th>
+                        <th>Batting</th>
+                        <th>Bowling</th>
+                        <th class="hidden md:table-cell">Result</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
+                <tbody>
                     @forelse($matchHistory as $row)
                         @php $match = $row['match']; @endphp
-                        <tr>
-                            <td class="whitespace-nowrap px-2 py-1.5 text-slate-500">{{ display_datetime($match->scheduled_at, 'd M Y') }}</td>
-                            <td class="hidden px-2 py-1.5 text-slate-600 md:table-cell">{{ $match->edition->name }}</td>
-                            <td class="px-2 py-1.5 text-slate-800">
+                        <tr class="crud-row">
+                            <td class="c-sub whitespace-nowrap text-slate-500">{{ display_datetime($match->scheduled_at, 'd M Y') }}</td>
+                            <td class="hidden md:table-cell">{{ $match->edition->name }}</td>
+                            <td class="c-title">
                                 @can('view', $match)
-                                    <a href="{{ route('admin.matches.show', $match) }}" class="hover:underline">
+                                    <a href="{{ route('admin.matches.show', $match) }}" class="crud-row-link">
                                         {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
                                     </a>
                                 @else
                                     {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
                                 @endcan
+                                <span class="crud-meta md:hidden">
+                                    Bat:
+                                    @if($row['batting'])
+                                        {{ $row['batting']['runs'] }} ({{ $row['batting']['balls'] }}){{ $row['batting']['not_out'] ? '*' : '' }}
+                                    @else
+                                        &mdash;
+                                    @endif
+                                    &middot; Bowl:
+                                    @if($row['bowling'])
+                                        {{ $row['bowling']['wickets'] }}/{{ $row['bowling']['runs_conceded'] }} ({{ $row['bowling']['overs'] }})
+                                    @else
+                                        &mdash;
+                                    @endif
+                                </span>
                             </td>
-                            <td class="px-2 py-1.5 text-slate-700">
+                            <td class="font-semibold tabular-nums text-slate-800">
                                 @if($row['batting'])
                                     {{ $row['batting']['runs'] }} ({{ $row['batting']['balls'] }}){{ $row['batting']['not_out'] ? '*' : '' }}
                                 @else
-                                    &mdash;
+                                    <span class="font-normal text-slate-300">&mdash;</span>
                                 @endif
                             </td>
-                            <td class="px-2 py-1.5 text-slate-700">
+                            <td class="font-semibold tabular-nums text-slate-800">
                                 @if($row['bowling'])
                                     {{ $row['bowling']['wickets'] }}/{{ $row['bowling']['runs_conceded'] }} ({{ $row['bowling']['overs'] }})
                                 @else
-                                    &mdash;
+                                    <span class="font-normal text-slate-300">&mdash;</span>
                                 @endif
                             </td>
-                            <td class="hidden px-2 py-1.5 text-slate-500 md:table-cell">
+                            <td class="hidden text-slate-500 md:table-cell">
                                 @if($match->match_status === 'completed')
                                     {{ $match->match_result }}
                                 @else
@@ -228,15 +160,13 @@
                             </td>
                         </tr>
                     @empty
-                        <tr>
-                            <td colspan="6" class="px-2 py-6 text-center text-slate-400">No match history yet.</td>
-                        </tr>
+                        <x-admin.empty table colspan="6" icon="trophy">No match history yet.</x-admin.empty>
                     @endforelse
                 </tbody>
             </table>
-        </div>
+        </x-admin.card>
 
-        <div class="mt-3">
+        <div>
             {{ $matchHistory->links() }}
         </div>
     </div>
