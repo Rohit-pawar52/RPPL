@@ -1,10 +1,12 @@
 @props(['status'])
 
 @php
+    // Status colours carry MEANING (paid / failed / pending ...), so they stay on
+    // the semantic palette and never follow the brand colour.
     $styles = [
         'upcoming' => 'bg-amber-50 text-amber-700 ring-amber-200',
         'active' => 'bg-green-50 text-green-700 ring-green-200',
-        'completed' => 'bg-neutral-100 text-neutral-600 ring-neutral-200',
+        'completed' => 'bg-slate-100 text-slate-600 ring-slate-200',
         // Payment statuses (player_registrations.payment_status)
         'pending' => 'bg-amber-50 text-amber-700 ring-amber-200',
         'paid' => 'bg-green-50 text-green-700 ring-green-200',
@@ -26,20 +28,20 @@
         'queued' => 'bg-amber-50 text-amber-700 ring-amber-200',
         // Announcement computed status (Announcement::computedStatus())
         // — 'active'/'scheduled' above are reused as-is.
-        'expired' => 'bg-neutral-100 text-neutral-500 ring-neutral-200',
-        'disabled' => 'bg-neutral-100 text-neutral-500 ring-neutral-200',
+        'expired' => 'bg-slate-100 text-slate-500 ring-slate-200',
+        'disabled' => 'bg-slate-100 text-slate-500 ring-slate-200',
         // Video status (videos.status) — 'active' above is reused as-is.
-        'inactive' => 'bg-neutral-100 text-neutral-500 ring-neutral-200',
+        'inactive' => 'bg-slate-100 text-slate-500 ring-slate-200',
         // Auction status (auctions.status) — 'live' and 'completed' above
         // are reused as-is.
-        'draft' => 'bg-neutral-100 text-neutral-600 ring-neutral-200',
+        'draft' => 'bg-slate-100 text-slate-600 ring-slate-200',
         'paused' => 'bg-amber-50 text-amber-700 ring-amber-200',
         // Committee dues status (CommitteeDuesService, Phase 3.48).
         'paid in full' => 'bg-green-50 text-green-700 ring-green-200',
         'partially paid' => 'bg-amber-50 text-amber-700 ring-amber-200',
         'not paid' => 'bg-red-50 text-red-700 ring-red-200',
     ];
-    $style = $styles[$status] ?? 'bg-neutral-100 text-neutral-600 ring-neutral-200';
+    $style = $styles[$status] ?? 'bg-slate-100 text-slate-600 ring-slate-200';
 
     // Shared by Admin and Public — Admin never runs with locale 'hi'
     // (SetPublicLocale is only ever registered on the public route
@@ -50,6 +52,7 @@
     $displayStatus = app()->getLocale() !== 'en' && \Illuminate\Support\Facades\Lang::has('public.status.'.$status)
         ? __('public.status.'.$status)
         : $status;
+    $isLive = $status === 'live';
 @endphp
 
-<span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium leading-4 capitalize ring-1 ring-inset {{ $style }}"><span class="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-70" aria-hidden="true"></span>{{ $displayStatus }}</span>
+<span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold leading-4 capitalize ring-1 ring-inset {{ $style }}"><span @class(['h-1.5 w-1.5 shrink-0 rounded-full bg-current', 'live-dot' => $isLive, 'opacity-70' => ! $isLive]) aria-hidden="true"></span>{{ $displayStatus }}</span>

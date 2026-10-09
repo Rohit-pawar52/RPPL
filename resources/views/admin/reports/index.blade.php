@@ -1,30 +1,34 @@
 @extends('layouts.admin')
 
 @section('title', 'Reports')
+@section('subtitle', 'Download or print reports for one edition.')
+
+@if($editions->isNotEmpty())
+@section('actions')
+    <form method="GET" action="{{ route('admin.reports.index') }}" class="max-sm:w-full">
+        <label for="report-edition" class="sr-only">Edition</label>
+        <select id="report-edition" name="edition_id" onchange="this.form.submit()" class="fld-control sm:w-64">
+            @foreach($editions as $option)
+                <option value="{{ $option->id }}" @selected($edition && $edition->id === $option->id)>
+                    {{ $option->name }}
+                </option>
+            @endforeach
+        </select>
+    </form>
+@endsection
+@endif
 
 @section('content')
-    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p class="text-xs text-neutral-500">Download or print reports for one edition.</p>
-
-        <form method="GET" action="{{ route('admin.reports.index') }}" class="flex items-center gap-2">
-            <select
-                name="edition_id"
-                onchange="this.form.submit()"
-                class="rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 theme-focus-ring"
-            >
-                @foreach($editions as $option)
-                    <option value="{{ $option->id }}" @selected($edition && $edition->id === $option->id)>
-                        {{ $option->name }}
-                    </option>
-                @endforeach
-            </select>
-        </form>
-    </div>
-
     @if(! $edition)
-        <div class="rounded-lg border border-neutral-200 bg-white p-4">
-            <h2 class="mb-2 text-sm font-semibold text-neutral-900">No editions available yet</h2>
-            <p class="text-xs text-neutral-500">Create a tournament edition to generate reports here.</p>
+        <div class="adm-card">
+            <x-admin.empty icon="document-chart" title="No editions available yet">
+                Create a tournament edition to generate reports here.
+                @can('create', \App\Models\Edition::class)
+                    <x-slot:action>
+                        <x-admin.button :href="route('admin.editions.create')" icon="plus">Create an edition</x-admin.button>
+                    </x-slot:action>
+                @endcan
+            </x-admin.empty>
         </div>
     @else
         @php
@@ -40,148 +44,109 @@
             $canOpenMatches = $user->can('viewAny', \App\Models\GameMatch::class);
         @endphp
 
-        {{-- A and B are short, so they sit side by side on wide screens. --}}
-        @if($canEditionSummary || $canRegistrationsCsv)
-        <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
-        {{-- A. Tournament Reports --}}
-        @if($canEditionSummary)
-        <div class="rounded-lg border border-neutral-200 bg-white p-4">
-            <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Tournament Reports</h3>
-            <div class="flex items-center justify-between gap-3 rounded-md border border-neutral-100 px-3 py-2.5 text-[13px]">
-                <div class="min-w-0">
-                    <p class="font-medium text-neutral-800">Edition Summary</p>
-                    <p class="text-[11px] text-neutral-500">Overview, registrations, teams, matches, standings, and top player statistics &middot; PDF</p>
-                </div>
-                <a
-                    href="{{ route('admin.editions.report.pdf', $edition) }}"
-                    class="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
-                >
-                    <x-icon name="document-chart" class="h-3.5 w-3.5" />
-                    Download PDF
-                </a>
-            </div>
-        </div>
-        @endif
-
-        {{-- B. Registration Reports --}}
-        @if($canRegistrationsCsv)
-        <div class="rounded-lg border border-neutral-200 bg-white p-4">
-            <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Registration Reports</h3>
-            <div class="flex items-center justify-between gap-3 rounded-md border border-neutral-100 px-3 py-2.5 text-[13px]">
-                <div class="min-w-0">
-                    <p class="font-medium text-neutral-800">Player Registrations</p>
-                    <p class="text-[11px] text-neutral-500">Every registration for this edition, with payment status &middot; CSV</p>
-                </div>
-                <a
-                    href="{{ route('admin.player-registrations.export', ['edition_id' => $edition->id]) }}"
-                    class="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
-                >
-                    <x-icon name="document-chart" class="h-3.5 w-3.5" />
-                    Export CSV
-                </a>
-            </div>
-        </div>
-        @endif
-
-        </div>
-        @endif
-
-        {{-- C. Finance & Contributions --}}
-        @if($canTransactionsCsv || $canContributionsCsv || $canFinancialSummary)
-        <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-            <h3 class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Finance &amp; Contributions</h3>
-            <div class="space-y-2">
-                @if($canTransactionsCsv)
-                <div class="flex items-center justify-between gap-3 rounded-md border border-neutral-100 px-3 py-2.5 text-[13px]">
-                    <div class="min-w-0">
-                        <p class="font-medium text-neutral-800">Finance Transactions</p>
-                        <p class="text-[11px] text-neutral-500">The full income/expense ledger for this edition &middot; CSV</p>
-                    </div>
-                    <a
-                        href="{{ route('admin.edition-transactions.export', ['edition_id' => $edition->id]) }}"
-                        class="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
-                    >
-                        <x-icon name="document-chart" class="h-3.5 w-3.5" />
-                        Export CSV
-                    </a>
-                </div>
-                @endif
-
-                @if($canContributionsCsv)
-                <div class="flex items-center justify-between gap-3 rounded-md border border-neutral-100 px-3 py-2.5 text-[13px]">
-                    <div class="min-w-0">
-                        <p class="font-medium text-neutral-800">Contributions</p>
-                        <p class="text-[11px] text-neutral-500">
-                            Individual committee/general contribution records for this edition &middot; CSV.
-                            Individual receipts remain available from
-                            <a href="{{ route('admin.edition-contributions.index', ['edition_id' => $edition->id]) }}" class="theme-link hover:underline">Edition Contributions</a>.
-                        </p>
-                    </div>
-                    <a
-                        href="{{ route('admin.edition-contributions.export', ['edition_id' => $edition->id]) }}"
-                        class="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
-                    >
-                        <x-icon name="document-chart" class="h-3.5 w-3.5" />
-                        Export CSV
-                    </a>
-                </div>
-                @endif
-
-                @if($canFinancialSummary)
-                <div class="flex items-center justify-between gap-3 rounded-md border border-neutral-100 px-3 py-2.5 text-[13px]">
-                    <div class="min-w-0">
-                        <p class="font-medium text-neutral-800">Financial Summary</p>
-                        <p class="text-[11px] text-neutral-500">Income, expenses, balance, registration payments, and contributions in one printable page &middot; HTML</p>
-                    </div>
-                    <a
-                        href="{{ route('admin.reports.financial-summary', ['edition_id' => $edition->id]) }}"
-                        class="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
-                    >
-                        <x-icon name="document-chart" class="h-3.5 w-3.5" />
-                        View
-                    </a>
-                </div>
-                @endif
-            </div>
-        </div>
-        @endif
-
-        {{-- D. Match Reports --}}
-        <div class="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-            <div class="mb-3 flex items-center justify-between gap-3">
-                <h3 class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Match Reports</h3>
-                @if($canOpenMatches)
-                    <a href="{{ route('admin.matches.index', ['edition_id' => $edition->id]) }}" class="text-[11px] font-medium theme-link hover:underline">
-                        View all matches &rarr;
-                    </a>
-                @endif
-            </div>
-
-            @forelse($recentMatches as $match)
-                <div class="flex items-center justify-between gap-3 border-b border-neutral-100 py-2 text-[13px] last:border-b-0">
-                    <div class="min-w-0">
-                        @if($canOpenMatches)
-                            <a href="{{ route('admin.matches.show', $match) }}" class="font-medium text-neutral-800 hover:underline">
-                                {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
-                            </a>
-                        @else
-                            <span class="font-medium text-neutral-800">
-                                {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
-                            </span>
+        <div class="space-y-8">
+            {{-- A. Tournament and registrations --}}
+            @if($canEditionSummary || $canRegistrationsCsv)
+                <section aria-labelledby="rep-tournament">
+                    <h2 id="rep-tournament" class="adm-kicker mb-3">Tournament &amp; Registrations</h2>
+                    <div class="grid gap-3 lg:grid-cols-2">
+                        @if($canEditionSummary)
+                            @include('admin.reports._item', [
+                                'icon' => 'trophy',
+                                'name' => 'Edition Summary',
+                                'text' => e('Overview, registrations, teams, matches, standings, and top player statistics'),
+                                'format' => 'PDF',
+                                'href' => route('admin.editions.report.pdf', $edition),
+                                'cta' => 'Download PDF',
+                            ])
                         @endif
-                        <p class="text-[11px] text-neutral-500">{{ display_datetime($match->scheduled_at, 'd M Y') }}</p>
+                        @if($canRegistrationsCsv)
+                            @include('admin.reports._item', [
+                                'icon' => 'clipboard',
+                                'name' => 'Player Registrations',
+                                'text' => e('Every registration for this edition, with payment status'),
+                                'format' => 'CSV',
+                                'href' => route('admin.player-registrations.export', ['edition_id' => $edition->id]),
+                                'cta' => 'Export CSV',
+                            ])
+                        @endif
                     </div>
-                    <a
-                        href="{{ route('public.matches.scorecard.pdf', $match) }}"
-                        class="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
-                    >
-                        <x-icon name="document-chart" class="h-3.5 w-3.5" />
-                        Scorecard PDF
-                    </a>
+                </section>
+            @endif
+
+            {{-- B. Finance & Contributions --}}
+            @if($canTransactionsCsv || $canContributionsCsv || $canFinancialSummary)
+                <section aria-labelledby="rep-finance">
+                    <h2 id="rep-finance" class="adm-kicker mb-3">Finance &amp; Contributions</h2>
+                    <div class="grid gap-3 lg:grid-cols-2">
+                        @if($canTransactionsCsv)
+                            @include('admin.reports._item', [
+                                'icon' => 'currency',
+                                'name' => 'Finance Transactions',
+                                'text' => e('The full income/expense ledger for this edition'),
+                                'format' => 'CSV',
+                                'href' => route('admin.edition-transactions.export', ['edition_id' => $edition->id]),
+                                'cta' => 'Export CSV',
+                            ])
+                        @endif
+                        @if($canContributionsCsv)
+                            @include('admin.reports._item', [
+                                'icon' => 'star',
+                                'name' => 'Contributions',
+                                'text' => e('Individual committee/general contribution records for this edition. Individual receipts remain available from ').'<a href="'.e(route('admin.edition-contributions.index', ['edition_id' => $edition->id])).'" class="font-medium text-link hover:text-link-hover hover:underline">Edition Contributions</a>.',
+                                'format' => 'CSV',
+                                'href' => route('admin.edition-contributions.export', ['edition_id' => $edition->id]),
+                                'cta' => 'Export CSV',
+                            ])
+                        @endif
+                        @if($canFinancialSummary)
+                            @include('admin.reports._item', [
+                                'icon' => 'document-chart',
+                                'name' => 'Financial Summary',
+                                'text' => e('Income, expenses, balance, registration payments, and contributions in one printable page'),
+                                'format' => 'HTML',
+                                'href' => route('admin.reports.financial-summary', ['edition_id' => $edition->id]),
+                                'cta' => 'View',
+                            ])
+                        @endif
+                    </div>
+                </section>
+            @endif
+
+            {{-- C. Match scorecards --}}
+            <section aria-labelledby="rep-matches">
+                <div class="mb-3 flex items-center justify-between gap-3">
+                    <h2 id="rep-matches" class="adm-kicker">Match Reports</h2>
+                    @if($canOpenMatches)
+                        <a href="{{ route('admin.matches.index', ['edition_id' => $edition->id]) }}" class="text-xs font-semibold text-link hover:text-link-hover">View all matches &rarr;</a>
+                    @endif
                 </div>
-            @empty
-                <p class="py-4 text-center text-xs text-neutral-400">No completed matches yet.</p>
-            @endforelse
+
+                <div class="adm-card adm-card-flush">
+                    @forelse($recentMatches as $match)
+                        <div class="flex flex-col gap-2 border-b border-line px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                            <div class="min-w-0">
+                                @if($canOpenMatches)
+                                    <a href="{{ route('admin.matches.show', $match) }}" class="block truncate text-[13px] font-semibold text-slate-900 hover:text-link">
+                                        {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
+                                    </a>
+                                @else
+                                    <span class="block truncate text-[13px] font-semibold text-slate-900">
+                                        {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }}
+                                    </span>
+                                @endif
+                                <p class="mt-0.5 text-[11px] text-slate-500">{{ display_datetime($match->scheduled_at, 'd M Y') }}</p>
+                            </div>
+                            <a href="{{ route('public.matches.scorecard.pdf', $match) }}" class="btn btn-secondary btn-sm shrink-0 max-sm:w-full">
+                                <x-admin.icon name="download" class="h-4 w-4" />
+                                Scorecard PDF
+                            </a>
+                        </div>
+                    @empty
+                        <x-admin.empty icon="trophy">No completed matches yet.</x-admin.empty>
+                    @endforelse
+                </div>
+            </section>
         </div>
     @endif
 @endsection

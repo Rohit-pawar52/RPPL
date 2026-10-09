@@ -1,21 +1,33 @@
 @extends('layouts.admin')
 
 @section('title', 'Dashboard')
+@section('bare', '1')
 
 @section('content')
-    <p class="mb-4 text-xs text-neutral-500">
-        Welcome back, {{ auth()->user()->name }}. You are signed in as
-        <span class="font-medium text-neutral-700">{{ auth()->user()->role->name }}</span>.
-    </p>
+    @php
+        $hour = (int) display_datetime(now(), 'G');
+        $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening');
+        $firstName = \Illuminate\Support\Str::before(trim(auth()->user()->name), ' ');
+        $inProgress = $auction && ($auction->isLive() || $auction->isPaused());
+    @endphp
 
-    <x-admin.card title="Player auction" class="max-w-xl">
+    <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-navy-900 to-navy-800 p-5 text-white shadow-raised sm:p-7">
+        <div class="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full bg-brand opacity-30 blur-3xl" aria-hidden="true"></div>
+        <div class="relative">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-dark">{{ display_datetime(now(), 'l, j F') }}</p>
+            <h1 class="mt-1.5 break-words text-2xl font-bold tracking-tight sm:text-3xl">{{ $greeting }}, {{ $firstName }}</h1>
+            <p class="mt-2 text-[13px] text-white/70">You are signed in as {{ auth()->user()->role->name }}.</p>
+        </div>
+    </section>
+
+    <x-admin.card title="Player auction" class="mt-6 max-w-2xl">
         @if(! $edition)
-            <p class="text-[13px] text-slate-600">There is no season yet.</p>
+            <x-admin.empty icon="gavel">There is no season yet.</x-admin.empty>
         @else
-            <div class="flex items-center justify-between gap-3">
-                <div>
-                    <p class="text-[15px] font-semibold text-slate-900">{{ $edition->name }}</p>
-                    <p class="mt-0.5 text-xs text-slate-500">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="text-lg font-bold tracking-tight text-slate-900">{{ $edition->name }}</p>
+                    <p class="mt-0.5 text-[13px] text-slate-500">
                         {{ $auction ? 'Auction is '.$auction->status.($auction->isLive() ? ' — round '.$auction->round : '') : 'The auction has not been set up yet.' }}
                     </p>
                 </div>
@@ -24,12 +36,12 @@
                 @endif
             </div>
 
-            <div class="mt-4">
-                @if($auction && ($auction->isLive() || $auction->isPaused()))
-                    <x-admin.button :href="route('admin.auctions.console', $edition)" variant="primary" icon="gavel">Open the console</x-admin.button>
-                    <x-admin.button :href="route('admin.auctions.show', $edition)" variant="secondary">Rules and set-up</x-admin.button>
+            <div class="mt-5 flex flex-wrap gap-2">
+                @if($inProgress)
+                    <x-admin.button :href="route('admin.auctions.console', $edition)" variant="primary" size="lg" icon="gavel" class="max-sm:flex-1">Open the console</x-admin.button>
+                    <x-admin.button :href="route('admin.auctions.show', $edition)" variant="secondary" size="lg" class="max-sm:flex-1">Rules and set-up</x-admin.button>
                 @else
-                    <x-admin.button :href="route('admin.auctions.show', $edition)" variant="primary" icon="gavel">
+                    <x-admin.button :href="route('admin.auctions.show', $edition)" variant="primary" size="lg" icon="gavel" class="max-sm:flex-1">
                         {{ $auction ? 'Open the auction' : 'Set up the auction' }}
                     </x-admin.button>
                 @endif

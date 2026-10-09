@@ -17,7 +17,7 @@
     id="{{ $id }}-button"
     data-label="{{ $label }}"
     hidden
-    class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-green-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-green-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
+    class="btn btn-primary btn-sm"
 >
     {{ str_replace('{count}', '', $label) }}
 </button>

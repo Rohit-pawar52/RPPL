@@ -1,99 +1,87 @@
 @extends('layouts.admin')
 
 @section('title', 'Financial Summary')
+@if($edition)
+    @section('subtitle', $edition->name.' · Generated '.display_datetime($generatedAt, 'd M Y, h:i A'))
+@endif
+
+@section('actions')
+    <x-admin.button :href="route('admin.reports.index', $edition ? ['edition_id' => $edition->id] : [])" variant="secondary" icon="arrow-left">Back to Reports</x-admin.button>
+    @if($edition)
+        <x-admin.button type="button" icon="printer" onclick="window.print()">Print</x-admin.button>
+    @endif
+@endsection
 
 @section('content')
-    <div class="mb-4 flex items-center justify-between gap-3 print:hidden">
-        <a href="{{ route('admin.reports.index', $edition ? ['edition_id' => $edition->id] : []) }}" class="text-xs text-neutral-500 hover:text-neutral-700">
-            &larr; Back to Reports
-        </a>
-        @if($edition)
-            <button
-                type="button"
-                onclick="window.print()"
-                class="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
-            >
-                Print
-            </button>
-        @endif
-    </div>
-
     @if(! $edition)
-        <div class="rounded-lg border border-neutral-200 bg-white p-4">
-            <h2 class="mb-2 text-sm font-semibold text-neutral-900">No edition available</h2>
-            <p class="text-xs text-neutral-500">Create a tournament edition to generate a financial summary.</p>
+        <div class="adm-card">
+            <x-admin.empty icon="document-chart" title="No edition available">
+                Create a tournament edition to generate a financial summary.
+            </x-admin.empty>
         </div>
     @else
-        <div class="rounded-lg border border-neutral-200 bg-white p-5">
-            <div class="mb-4 flex items-center justify-between gap-3 border-b border-neutral-100 pb-3">
-                <div>
-                    <h1 class="text-base font-semibold text-neutral-900">Financial Summary &mdash; {{ $edition->name }}</h1>
-                    <p class="text-[11px] text-neutral-400">Generated {{ display_datetime($generatedAt, 'd M Y, h:i A') }}</p>
-                </div>
-            </div>
-
-            <section class="mb-5">
-                <h2 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Finance Ledger</h2>
-                <dl class="grid grid-cols-3 gap-3 text-xs">
-                    <div>
-                        <dt class="text-neutral-400">Total Income</dt>
-                        <dd class="mt-0.5 text-sm font-semibold text-neutral-800">{{ money($financeSummary['income']) }}</dd>
+        <div class="space-y-6">
+            {{-- Finance ledger: the three numbers that matter, big --}}
+            <section class="adm-card adm-card-body" aria-labelledby="fs-ledger">
+                <h2 id="fs-ledger" class="adm-kicker mb-4">Finance Ledger</h2>
+                <dl class="grid gap-4 sm:grid-cols-3">
+                    <div class="rounded-xl bg-green-50 p-4">
+                        <dt class="text-xs font-medium text-green-800">Total Income</dt>
+                        <dd class="mt-1 text-2xl font-bold tabular-nums tracking-tight text-green-700">{{ money($financeSummary['income']) }}</dd>
                     </div>
-                    <div>
-                        <dt class="text-neutral-400">Total Expenses</dt>
-                        <dd class="mt-0.5 text-sm font-semibold text-neutral-800">{{ money($financeSummary['expense']) }}</dd>
+                    <div class="rounded-xl bg-red-50 p-4">
+                        <dt class="text-xs font-medium text-red-800">Total Expenses</dt>
+                        <dd class="mt-1 text-2xl font-bold tabular-nums tracking-tight text-red-600">{{ money($financeSummary['expense']) }}</dd>
                     </div>
-                    <div>
-                        <dt class="text-neutral-400">Balance</dt>
-                        <dd class="mt-0.5 text-sm font-semibold {{ $financeSummary['balance'] < 0 ? 'text-red-600' : 'text-neutral-800' }}">
-                            {{ money($financeSummary['balance']) }}
-                        </dd>
+                    <div class="rounded-xl bg-slate-100 p-4">
+                        <dt class="text-xs font-medium text-slate-600">Balance</dt>
+                        <dd class="mt-1 text-2xl font-bold tabular-nums tracking-tight {{ $financeSummary['balance'] < 0 ? 'text-red-600' : 'text-slate-900' }}">{{ money($financeSummary['balance']) }}</dd>
                     </div>
                 </dl>
             </section>
 
-            <section class="mb-5">
-                <h2 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Registration Payments</h2>
-                <dl class="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+            <section class="adm-card adm-card-body" aria-labelledby="fs-reg">
+                <h2 id="fs-reg" class="adm-kicker mb-4">Registration Payments</h2>
+                <dl class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                     <div>
-                        <dt class="text-neutral-400">Paid Registrations</dt>
-                        <dd class="mt-0.5 font-medium text-neutral-800">{{ $paidRegistrations }}</dd>
+                        <dt class="text-xs text-slate-500">Paid Registrations</dt>
+                        <dd class="mt-0.5 text-xl font-bold tabular-nums text-slate-900">{{ $paidRegistrations }}</dd>
                     </div>
                     <div>
-                        <dt class="text-neutral-400">Paid Amount</dt>
-                        <dd class="mt-0.5 font-medium text-neutral-800">{{ money($paidRegistrationAmount) }}</dd>
+                        <dt class="text-xs text-slate-500">Paid Amount</dt>
+                        <dd class="mt-0.5 text-xl font-bold tabular-nums text-slate-900">{{ money($paidRegistrationAmount) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-neutral-400">Pending Verification</dt>
-                        <dd class="mt-0.5 font-medium text-neutral-800">{{ $pendingRegistrations }}</dd>
+                        <dt class="text-xs text-slate-500">Pending Verification</dt>
+                        <dd class="mt-0.5 text-xl font-bold tabular-nums {{ $pendingRegistrations > 0 ? 'text-amber-600' : 'text-slate-900' }}">{{ $pendingRegistrations }}</dd>
                     </div>
                     <div>
-                        <dt class="text-neutral-400">Failed / Refunded</dt>
-                        <dd class="mt-0.5 font-medium text-neutral-800">{{ $failedRegistrations }} / {{ $refundedRegistrations }}</dd>
+                        <dt class="text-xs text-slate-500">Failed / Refunded</dt>
+                        <dd class="mt-0.5 text-xl font-bold tabular-nums text-slate-900">{{ $failedRegistrations }} / {{ $refundedRegistrations }}</dd>
                     </div>
                 </dl>
-                <p class="mt-2 text-[11px] text-neutral-400">
+                <p class="mt-4 text-[11px] leading-4 text-slate-500">
                     Registration payments are an operational collection figure and are not currently linked into the Finance ledger above.
                 </p>
             </section>
 
-            <section>
-                <h2 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Contributions</h2>
-                <dl class="grid grid-cols-3 gap-3 text-xs">
+            <section class="adm-card adm-card-body" aria-labelledby="fs-contrib">
+                <h2 id="fs-contrib" class="adm-kicker mb-4">Contributions</h2>
+                <dl class="grid grid-cols-2 gap-4 lg:grid-cols-3">
                     <div>
-                        <dt class="text-neutral-400">Contribution Records</dt>
-                        <dd class="mt-0.5 font-medium text-neutral-800">{{ $contributionCount }}</dd>
+                        <dt class="text-xs text-slate-500">Contribution Records</dt>
+                        <dd class="mt-0.5 text-xl font-bold tabular-nums text-slate-900">{{ $contributionCount }}</dd>
                     </div>
                     <div>
-                        <dt class="text-neutral-400">Total Contributions</dt>
-                        <dd class="mt-0.5 font-medium text-neutral-800">{{ money($contributionTotal) }}</dd>
+                        <dt class="text-xs text-slate-500">Total Contributions</dt>
+                        <dd class="mt-0.5 text-xl font-bold tabular-nums text-slate-900">{{ money($contributionTotal) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-neutral-400">Recognized Contributors</dt>
-                        <dd class="mt-0.5 font-medium text-neutral-800">{{ $recognizedContributorsCount }}</dd>
+                        <dt class="text-xs text-slate-500">Recognized Contributors</dt>
+                        <dd class="mt-0.5 text-xl font-bold tabular-nums text-slate-900">{{ $recognizedContributorsCount }}</dd>
                     </div>
                 </dl>
-                <p class="mt-2 text-[11px] text-neutral-400">
+                <p class="mt-4 text-[11px] leading-4 text-slate-500">
                     Total Contributions is already included within Finance Total Income above (every contribution has a matching income transaction) &mdash; shown separately for visibility only, never added on top.
                 </p>
             </section>

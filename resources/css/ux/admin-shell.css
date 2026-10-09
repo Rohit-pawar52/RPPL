@@ -1,0 +1,539 @@
+/*
+ * Admin shell, shared admin/form components, dashboard, reports, analytics.
+ *
+ * Everything here is theme-driven: brand, action and shell colours come from
+ * the css variables written by layouts/partials/theme-vars (Settings >
+ * General), so nothing needs a rebuild when the admin changes a colour.
+ *
+ * Class families (all optional for other pages - the Blade components use them):
+ *   .sb-*       sidebar (rail/drawer)            .adm-topbar / .adm-menu   top bar + dropdown panels
+ *   .adm-page-head                               page title + actions block
+ *   .adm-card-* cards                            .adm-empty                empty states
+ *   .fld-*      form fields (use .fld-control on a raw <input>/<select>/<textarea> to match the components)
+ *   .tf         <x-table-filters>                .adm-table-wrap/.adm-table  list tables
+ *   .adm-palette  Ctrl+K "jump to" dialog
+ *
+ * WIDE TABLES: wrap them in <div class="adm-table-wrap"><table class="adm-table">...</table></div>
+ * (a rounded card that scrolls sideways inside itself on a phone; add
+ * .adm-table-sticky on the table to pin its first column). Never let a table
+ * widen the page.
+ */
+
+@layer base {
+    /* Admin pages: bare form controls still get a visible, brand-coloured focus ring. */
+    .admin-app :where(input, select, textarea, button, summary, a):focus-visible {
+        outline-color: var(--rppl-primary);
+    }
+    .admin-app summary {
+        list-style: none;
+    }
+    .admin-app summary::-webkit-details-marker {
+        display: none;
+    }
+}
+
+@layer components {
+    /* ------------------------------------------------------------------ */
+    /* Sidebar                                                             */
+    /* ------------------------------------------------------------------ */
+    .sb {
+        @apply relative flex flex-col overflow-hidden bg-navy-950 text-slate-300;
+    }
+    /* A soft glow of the brand colour in the top corner: the only decoration. */
+    .sb::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 11rem;
+        pointer-events: none;
+        background: radial-gradient(70% 100% at 0% 0%, color-mix(in srgb, var(--rppl-primary) 26%, transparent), transparent);
+    }
+    .sb > * {
+        position: relative;
+    }
+    .sb-brand {
+        @apply flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-4 text-white;
+    }
+    .sb-logo {
+        @apply flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white/10 text-sm font-bold;
+    }
+    .sb-logo-letter {
+        background: var(--rppl-primary);
+        color: var(--rppl-primary-fg);
+    }
+    .sb-nav {
+        @apply min-h-0 flex-1 space-y-0.5 overflow-y-auto px-3 py-3;
+        scrollbar-width: none;
+        overscroll-behavior: contain;
+    }
+    .sb-nav::-webkit-scrollbar {
+        display: none;
+    }
+    .sb-section {
+        @apply px-3 pb-1.5 pt-5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500;
+    }
+    .sb-link {
+        @apply relative flex min-h-10 w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-slate-300 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent-dark;
+    }
+    .sb-link-active {
+        @apply bg-white/10 text-white;
+    }
+    .sb-link-active::before {
+        content: '';
+        @apply absolute -left-3 bottom-2 top-2 w-[3px] rounded-r-full bg-accent-dark;
+    }
+    .sb-link-active .sb-ico,
+    .sb-group-active .sb-ico {
+        @apply text-accent-dark;
+    }
+    .sb-ico {
+        @apply h-[18px] w-[18px] shrink-0 text-slate-400 transition-colors;
+    }
+    .sb-link:hover .sb-ico {
+        @apply text-slate-200;
+    }
+    .sb-chevron {
+        @apply h-4 w-4 shrink-0 text-slate-500 transition-transform duration-150;
+    }
+    details[open] > summary .sb-chevron {
+        transform: rotate(180deg);
+    }
+    .sb-sub {
+        @apply mb-1 ml-[1.375rem] mt-0.5 space-y-0.5 border-l border-white/10 pl-2.5;
+    }
+    .sb-sublink {
+        @apply relative flex min-h-9 items-center rounded-lg px-3 py-1.5 text-[13px] text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent-dark;
+    }
+    .sb-sublink-active {
+        @apply bg-white/10 font-medium text-white;
+    }
+    .sb-sublink-active::before {
+        content: '';
+        @apply absolute -left-[0.8125rem] bottom-1.5 top-1.5 w-[2px] rounded-full bg-accent-dark;
+    }
+    .sb-foot {
+        @apply shrink-0 space-y-0.5 border-t border-white/10 p-3;
+    }
+
+    /* The floating label shown next to an icon when the sidebar is a rail. */
+    .sb-tip {
+        @apply pointer-events-none fixed z-[90] whitespace-nowrap rounded-md bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-white shadow-pop;
+        opacity: 0;
+        transform: translateX(-4px);
+        transition: opacity 0.12s ease, transform 0.12s ease;
+    }
+    .sb-tip[data-show] {
+        opacity: 1;
+        transform: none;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Top bar, dropdown panels                                            */
+    /* ------------------------------------------------------------------ */
+    .adm-topbar {
+        @apply sticky top-0 z-30 border-b border-line bg-white/90 backdrop-blur-md;
+    }
+    .adm-iconbtn {
+        @apply inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-hover hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2;
+    }
+    .adm-jump {
+        @apply hidden h-9 w-60 items-center gap-2 rounded-lg border border-line bg-slate-50 px-3 text-[13px] text-slate-400 transition hover:border-slate-300 hover:bg-white lg:flex xl:w-72;
+    }
+    .adm-kbd {
+        @apply ml-auto rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold leading-none text-slate-400;
+    }
+    .adm-menu {
+        @apply absolute z-50 mt-2 min-w-56 overflow-hidden rounded-xl border border-line bg-white py-1.5 shadow-pop;
+    }
+    .adm-menu-label {
+        @apply px-3.5 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400;
+    }
+    .adm-menu-item {
+        @apply flex min-h-10 w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13px] text-slate-700 transition-colors hover:bg-hover hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-[-2px];
+    }
+    .adm-menu-item .adm-menu-ico {
+        @apply h-4 w-4 shrink-0 text-slate-400;
+    }
+    .adm-menu-item:hover .adm-menu-ico {
+        @apply text-brand;
+    }
+    details[open] > .adm-menu {
+        animation: adm-pop 0.12s ease-out;
+    }
+    @keyframes adm-pop {
+        from {
+            opacity: 0;
+            transform: translateY(-4px);
+        }
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Page header (title, subtitle, actions) and footer                   */
+    /* ------------------------------------------------------------------ */
+    .adm-page-head {
+        @apply mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between lg:mb-6;
+    }
+    .adm-page-title {
+        @apply break-words text-2xl font-bold tracking-tight text-slate-900 sm:text-[28px] sm:leading-9;
+    }
+    .adm-page-sub {
+        @apply mt-1 max-w-3xl text-[13px] leading-5 text-slate-500;
+    }
+    /* On a phone the actions fill one tidy row under the title (primary never lost). */
+    .adm-page-actions {
+        @apply flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end;
+    }
+    .adm-page-actions > .btn {
+        @apply max-sm:flex-1;
+    }
+    .adm-footer {
+        @apply border-t border-line bg-white;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Cards, empty states                                                 */
+    /* ------------------------------------------------------------------ */
+    .adm-card {
+        @apply rounded-xl border border-line bg-white shadow-card;
+    }
+    .adm-card-flush {
+        @apply overflow-hidden;
+    }
+    .adm-card-head {
+        @apply flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-line px-4 py-3 sm:px-5;
+    }
+    .adm-card-title {
+        @apply text-[15px] font-semibold tracking-tight text-slate-900;
+    }
+    .adm-card-sub {
+        @apply mt-0.5 text-xs leading-4 text-slate-500;
+    }
+    .adm-card-body {
+        @apply p-4 sm:p-5;
+    }
+    .adm-card-foot {
+        @apply border-t border-line bg-slate-50/70 px-4 py-3 sm:px-5;
+    }
+    .adm-kicker {
+        @apply text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+
+    .adm-empty {
+        @apply flex flex-col items-center justify-center gap-1.5 px-4 py-10 text-center;
+    }
+    .adm-empty-ico {
+        @apply mb-1 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft text-brand;
+    }
+    .adm-empty-title {
+        @apply text-sm font-semibold text-slate-800;
+    }
+    .adm-empty-text {
+        @apply max-w-sm text-[13px] leading-5 text-slate-500;
+    }
+    .adm-empty-action {
+        @apply mt-3 flex flex-wrap items-center justify-center gap-2;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Form fields                                                         */
+    /* ------------------------------------------------------------------ */
+    .fld {
+        @apply mb-4;
+    }
+    .fld-label {
+        @apply mb-1.5 block text-xs font-semibold text-slate-700;
+    }
+    .fld-req {
+        @apply ml-0.5 text-red-500;
+    }
+    .fld-control {
+        @apply block h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 shadow-xs transition duration-150 placeholder:text-slate-400 hover:border-slate-400 focus:border-brand focus:outline-none focus:ring-3 focus:ring-brand/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 disabled:shadow-none read-only:bg-slate-50;
+    }
+    textarea.fld-control {
+        @apply h-auto min-h-20 py-2.5 leading-5;
+    }
+    .fld-control-sm {
+        @apply h-9 text-xs;
+    }
+    .fld-control[aria-invalid='true'] {
+        @apply border-red-400 hover:border-red-400 focus:border-red-500 focus:ring-red-500/20;
+    }
+    /* A native <select> with one consistent chevron (slate-400 stroke, painted as a data URI because a
+       css background cannot read a colour variable). */
+    select.fld-control {
+        @apply cursor-pointer appearance-none pr-9;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.625rem center;
+        background-size: 1.125rem;
+    }
+    input[type='date'].fld-control,
+    input[type='datetime-local'].fld-control,
+    input[type='time'].fld-control {
+        @apply min-w-0;
+    }
+    .fld-help {
+        @apply mt-1.5 text-[11px] leading-4 text-slate-500;
+    }
+    .fld-error {
+        @apply mt-1.5 flex items-start gap-1 text-xs font-medium leading-4 text-red-600;
+    }
+    .fld-check {
+        @apply inline-flex min-h-8 cursor-pointer items-start gap-2.5 text-[13px] leading-5 text-slate-700;
+    }
+    .fld-check input[type='checkbox'],
+    .fld-check input[type='radio'] {
+        @apply mt-0.5 h-[18px] w-[18px] shrink-0 cursor-pointer accent-brand;
+    }
+    .fld-drop {
+        @apply flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50/60 px-3.5 py-3 text-xs transition hover:border-brand hover:bg-hover focus-within:border-brand focus-within:ring-3 focus-within:ring-brand/20;
+    }
+    .fld-drop[data-invalid] {
+        @apply border-red-400;
+    }
+    .fld-addon {
+        @apply pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400;
+    }
+    .fld-reveal {
+        @apply absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-slate-400 transition-colors hover:text-slate-700 focus-visible:outline-2 focus-visible:-outline-offset-2;
+    }
+
+    /* A floating bar for the save / cancel buttons of a long form (<x-admin.form-actions>): it follows the
+       reader at the bottom of the window until the form's own end is reached. */
+    .adm-actionbar {
+        @apply sticky z-20 mt-6 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-white/95 px-4 py-3 shadow-raised backdrop-blur;
+        bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+    .adm-actionbar-inline {
+        @apply static mt-5 border-0 bg-transparent px-0 py-0 shadow-none backdrop-blur-none;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Tables / lists                                                      */
+    /* ------------------------------------------------------------------ */
+    .adm-table-wrap {
+        @apply overflow-x-auto rounded-xl border border-line bg-white shadow-card;
+        -webkit-overflow-scrolling: touch;
+    }
+    .adm-table {
+        @apply w-full text-left text-[13px];
+    }
+    .adm-table thead th {
+        @apply whitespace-nowrap border-b border-line bg-slate-50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500;
+    }
+    .adm-table tbody td {
+        @apply border-t border-line px-4 py-3 align-middle text-slate-700;
+    }
+    .adm-table tbody tr:first-child td {
+        border-top-width: 0;
+    }
+    .adm-table tbody tr:hover td {
+        background-color: var(--rppl-hover-bg);
+    }
+    .adm-table .num {
+        @apply text-right tabular-nums;
+    }
+    .adm-table-sticky th:first-child,
+    .adm-table-sticky td:first-child {
+        @apply sticky left-0 z-[1] bg-white;
+        box-shadow: 1px 0 0 var(--color-line);
+    }
+    .adm-table-sticky thead th:first-child {
+        @apply bg-slate-50;
+    }
+    .adm-table-sticky tbody tr:hover td:first-child {
+        background-color: var(--rppl-hover-bg);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* <x-table-filters>: one compact bar; on a phone everything but the   */
+    /* search box folds behind a "Filters" button.                         */
+    /* ------------------------------------------------------------------ */
+    .tf {
+        @apply flex flex-wrap items-end gap-2;
+    }
+    .tf-fields {
+        @apply contents;
+    }
+    .tf input:not([type='checkbox'], [type='radio'], [type='hidden'], [type='submit']),
+    .tf select {
+        @apply h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-800 shadow-xs transition duration-150 placeholder:text-slate-400 hover:border-slate-400 focus:border-brand focus:outline-none focus:ring-3 focus:ring-brand/20;
+    }
+    .tf select {
+        @apply cursor-pointer appearance-none pr-8;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.5rem center;
+        background-size: 1rem;
+    }
+    .tf label {
+        @apply text-[11px] font-semibold text-slate-500;
+    }
+    .tf-toggle {
+        @apply inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-[13px] font-semibold text-slate-700 shadow-xs hover:border-slate-400 sm:hidden;
+    }
+    .tf-count {
+        @apply inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-fg;
+    }
+    .tf-actions {
+        @apply flex flex-wrap items-center gap-2;
+    }
+    @media (max-width: 639px) {
+        .tf {
+            @apply flex-col items-stretch;
+        }
+        .tf-fields {
+            @apply grid w-full grid-cols-2 gap-2;
+        }
+        .tf-fields > * {
+            @apply min-w-0;
+        }
+        .tf-fields input:not([type='checkbox'], [type='radio'], [type='hidden']),
+        .tf-fields select {
+            @apply h-10 w-full text-base;
+        }
+        .tf-fields > :is(input[name='search'], input[name='q'], input[type='search'], :has(input[name='search'], input[name='q'], input[type='search'])) {
+            grid-column: 1 / -1;
+        }
+        /* folded: only the search box stays; "Filters" opens the rest */
+        .tf:not([data-open]) .tf-fields > :not(:is(input[name='search'], input[name='q'], input[type='search'], :has(input[name='search'], input[name='q'], input[type='search']))),
+        .tf:not([data-open]) .tf-actions {
+            display: none;
+        }
+        .tf-actions .btn {
+            @apply flex-1;
+        }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Palette (Ctrl+K "jump to")                                          */
+    /* ------------------------------------------------------------------ */
+    .adm-palette {
+        @apply fixed left-1/2 top-[10vh] m-0 w-[min(38rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-2xl border border-line bg-white p-0 text-slate-800 shadow-pop;
+    }
+    .adm-palette:not([open]) {
+        display: none;
+    }
+    .adm-palette::backdrop {
+        background: color-mix(in srgb, var(--rppl-header) 62%, transparent);
+        backdrop-filter: blur(2px);
+    }
+    .adm-palette-item {
+        @apply flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] text-slate-700;
+    }
+    .adm-palette-item[aria-selected='true'] {
+        background-color: var(--rppl-hover-bg);
+        @apply text-slate-900;
+    }
+    .adm-palette-item[aria-selected='true'] .adm-palette-go {
+        @apply opacity-100;
+    }
+}
+
+/* Toasts and dialogs raised by SweetAlert (resources/js/flash.js). */
+.swal2-popup.rppl-toast {
+    border-radius: 0.75rem;
+    font-size: 13px;
+    padding: 0.625rem 0.875rem;
+    box-shadow: var(--shadow-pop);
+}
+.swal2-popup.rppl-dialog {
+    border-radius: 1rem;
+    font-size: 14px;
+    padding-bottom: 1.25rem;
+}
+.swal2-popup.rppl-dialog .swal2-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+.swal2-popup.rppl-dialog .swal2-actions {
+    gap: 0.5rem;
+}
+
+/* Phones and tablets: a 40px minimum tap target for every admin button. */
+@media (pointer: coarse) {
+    .admin-app .btn:not(.btn-sm, .btn-lg) {
+        min-height: 2.5rem;
+    }
+    .admin-app .btn-icon:not(.btn-sm) {
+        width: 2.5rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sb,
+    .sb-chevron,
+    .sb-tip,
+    details[open] > .adm-menu {
+        transition: none;
+        animation: none;
+    }
+}
+
+/* Sidebar as an icon rail (desktop only; set by admin-nav.js on <html data-sidebar="collapsed">). */
+@media (min-width: 1024px) {
+    .sb {
+        transition: width 0.18s ease;
+    }
+    html[data-sidebar='collapsed'] .sb {
+        width: 4.5rem;
+    }
+    html[data-sidebar='collapsed'] .sb-label,
+    html[data-sidebar='collapsed'] .sb-chevron,
+    html[data-sidebar='collapsed'] .sb-sub {
+        display: none;
+    }
+    html[data-sidebar='collapsed'] .sb-section {
+        height: 1px;
+        margin: 0.875rem 0.75rem;
+        padding: 0;
+        overflow: hidden;
+        font-size: 0;
+        background: rgb(255 255 255 / 0.1);
+    }
+    html[data-sidebar='collapsed'] .sb-link {
+        justify-content: center;
+        padding-inline: 0;
+    }
+    html[data-sidebar='collapsed'] .sb-link-active::before {
+        left: -0.5rem;
+    }
+    html[data-sidebar='collapsed'] .sb-brand {
+        justify-content: center;
+        padding-inline: 0;
+    }
+    html[data-sidebar='collapsed'] .sb-nav,
+    html[data-sidebar='collapsed'] .sb-foot {
+        padding-inline: 0.5rem;
+    }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Print: reports print as a clean page, without the shell.               */
+/* ---------------------------------------------------------------------- */
+@media print {
+    .admin-app .sb,
+    .admin-app .adm-topbar,
+    .admin-app .adm-footer,
+    .admin-app #admin-backdrop,
+    .admin-app .no-print,
+    .admin-app .sb-tip {
+        display: none !important;
+    }
+    .admin-app,
+    html {
+        background: white !important;
+    }
+    .admin-app main {
+        padding: 0 !important;
+    }
+    .admin-app .adm-card,
+    .admin-app .adm-table-wrap {
+        box-shadow: none !important;
+    }
+}
