@@ -41,8 +41,7 @@
                         <select
                             id="contributor_id"
                             name="contributor_id"
-                            size="6"
-                            class="fld-control h-auto bg-none pr-3"
+                            class="fld-control"
                             aria-describedby="contributor-empty"
                             @if($errors->has('contributor_id')) aria-invalid="true" @endif
                         >
@@ -220,6 +219,13 @@
                     }
                 });
 
+                // A closed dropdown until somebody types: then the matches open as a short list under the box.
+                if (query.trim() !== '' && shown > 0) {
+                    contributorSelect.size = Math.min(6, Math.max(2, shown));
+                } else {
+                    contributorSelect.removeAttribute('size');
+                }
+
                 emptyNote.textContent = '';
                 emptyNote.classList.add('hidden');
 
@@ -247,6 +253,9 @@
             };
 
             filterInput.addEventListener('input', () => showList(filterInput.value));
+
+            // Choosing somebody closes the list again.
+            contributorSelect.addEventListener('change', () => contributorSelect.removeAttribute('size'));
 
             // Reaching the chosen person (e.g. from "Record contribution" on a contributor's page) without scrolling.
             const chosen = contributorSelect.options[contributorSelect.selectedIndex];
