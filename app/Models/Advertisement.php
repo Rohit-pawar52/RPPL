@@ -185,7 +185,8 @@ class Advertisement extends Model
 
     public function spotLabel(): string
     {
-        return self::SPOTS[$this->spotKey()]['label'];
+        // The constants keep the English text; it is translated here for the admin panel's language.
+        return __(self::SPOTS[$this->spotKey()]['label']);
     }
 
     /**
@@ -199,7 +200,7 @@ class Advertisement extends Model
 
     public function tierLabel(): string
     {
-        return self::TIERS[$this->tier] ?? ucfirst($this->tier);
+        return __(self::TIERS[$this->tier] ?? ucfirst($this->tier));
     }
 
     /**
@@ -213,9 +214,9 @@ class Advertisement extends Model
 
         return match (true) {
             $start && $end => $start.' – '.$end,
-            (bool) $start => 'From '.$start,
-            (bool) $end => 'Until '.$end,
-            default => 'Always',
+            (bool) $start => __('From :date', ['date' => $start]),
+            (bool) $end => __('Until :date', ['date' => $end]),
+            default => __('Always'),
         };
     }
 }

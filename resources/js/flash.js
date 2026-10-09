@@ -1,4 +1,5 @@
 import Swal from 'sweetalert2';
+import { t } from './i18n';
 
 const SWAL_ICON_BY_FLASH_TYPE = {
     success: 'success',
@@ -53,14 +54,14 @@ export function initFlashMessages() {
  *
  * @returns {Promise<import('sweetalert2').SweetAlertResult>}
  */
-export function confirmAction({ title, text, confirmButtonText = 'Yes, continue', danger = false } = {}) {
+export function confirmAction({ title, text, confirmButtonText = t('Yes, continue'), danger = false } = {}) {
     return Swal.fire({
-        title: title ?? 'Are you sure?',
-        text: text ?? 'This action cannot be undone.',
+        title: title ?? t('Are you sure?'),
+        text: text ?? t('This action cannot be undone.'),
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText,
-        cancelButtonText: 'Cancel',
+        cancelButtonText: t('Cancel'),
         reverseButtons: true,
         focusCancel: true,
         buttonsStyling: false,

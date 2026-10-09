@@ -55,11 +55,11 @@ class AuctionService
     public function create(Edition $edition, ?User $by = null, array $settings = []): Auction
     {
         if ($edition->status === 'completed') {
-            $this->fail('auction', 'This season is completed, so it cannot have a new auction.');
+            $this->fail('auction', __('This season is completed, so it cannot have a new auction.'));
         }
 
         if ($edition->auction()->exists()) {
-            $this->fail('auction', 'This season already has an auction.');
+            $this->fail('auction', __('This season already has an auction.'));
         }
 
         $settings = $this->onlySettings($settings);
@@ -90,7 +90,7 @@ class AuctionService
             $auction = $this->lockAuction($auction);
 
             if ($auction->isCompleted()) {
-                $this->fail('auction', 'This auction is completed, so its settings can no longer be changed.');
+                $this->fail('auction', __('This auction is completed, so its settings can no longer be changed.'));
             }
 
             $settings = $this->onlySettings($settings);
@@ -123,7 +123,7 @@ class AuctionService
             $auction = $this->lockAuction($auction);
 
             if ($auction->isCompleted()) {
-                $this->fail('auction', 'This auction is completed, so its player pool can no longer change.');
+                $this->fail('auction', __('This auction is completed, so its player pool can no longer change.'));
             }
 
             $eligible = $this->eligibleRegistrationIds($auction->edition_id);
@@ -236,24 +236,24 @@ class AuctionService
             $auction = $this->lockAuction($auction);
 
             if ($auction->isCompleted()) {
-                $this->fail('auction', 'This auction is completed, so no more players can be added.');
+                $this->fail('auction', __('This auction is completed, so no more players can be added.'));
             }
 
             $edition = Edition::findOrFail($auction->edition_id);
             $normalised = Player::normalizePhone($phone);
 
             if ($normalised === null || strlen(preg_replace('/\D/', '', $normalised)) < 7) {
-                $this->fail('phone', 'Enter the player\'s mobile number.');
+                $this->fail('phone', __('Enter the player\'s mobile number.'));
             }
 
             $player = Player::where('phone', $normalised)->first();
 
             if ($player && ! $player->is_active) {
-                $this->fail('phone', 'This player is inactive and cannot be added.');
+                $this->fail('phone', __('This player is inactive and cannot be added.'));
             }
 
             if ($player && PlayerRegistration::where('edition_id', $edition->id)->where('player_id', $player->id)->exists()) {
-                $this->fail('phone', $player->name.' is already registered for this season. Once their payment is marked paid they join the pool by themselves.');
+                $this->fail('phone', __(':name is already registered for this season. Once their payment is marked paid they join the pool by themselves.', ['name' => $player->name]));
             }
 
             $player ??= Player::create(['name' => $name, 'phone' => $normalised]);
@@ -301,15 +301,15 @@ class AuctionService
             $auction = $this->lockAuction($auction);
 
             if (! $auction->isDraft()) {
-                $this->fail('auction', 'This auction has already been started.');
+                $this->fail('auction', __('This auction has already been started.'));
             }
 
             if (! EditionTeam::where('edition_id', $auction->edition_id)->exists()) {
-                $this->fail('auction', 'Add the season\'s teams before starting the auction.');
+                $this->fail('auction', __('Add the season\'s teams before starting the auction.'));
             }
 
             if (! $auction->lots()->exists()) {
-                $this->fail('auction', 'There are no paid players in the pool yet.');
+                $this->fail('auction', __('There are no paid players in the pool yet.'));
             }
 
             $auction->update(['status' => Auction::STATUS_LIVE, 'started_at' => now()]);
@@ -320,12 +320,12 @@ class AuctionService
 
     public function pause(Auction $auction): Auction
     {
-        return $this->transition($auction, Auction::STATUS_LIVE, Auction::STATUS_PAUSED, 'Only a live auction can be paused.');
+        return $this->transition($auction, Auction::STATUS_LIVE, Auction::STATUS_PAUSED, __('Only a live auction can be paused.'));
     }
 
     public function resume(Auction $auction): Auction
     {
-        return $this->transition($auction, Auction::STATUS_PAUSED, Auction::STATUS_LIVE, 'Only a paused auction can be resumed.');
+        return $this->transition($auction, Auction::STATUS_PAUSED, Auction::STATUS_LIVE, __('Only a paused auction can be resumed.'));
     }
 
     /**
@@ -432,7 +432,7 @@ class AuctionService
     {
         return DB::transaction(function () use ($auction, $lot) {
             $auction = $this->lockAuction($auction);
-            $this->assertLive($auction, 'call a player');
+            $this->assertLive($auction, __('The auction is paused. Resume it to call a player.'), __('The auction is not live, so you cannot call a player.'));
             $lot = $this->lockLot($auction, $lot);
 
             if ($lot->isLive() && $auction->current_lot_id === $lot->id) {
@@ -440,7 +440,7 @@ class AuctionService
             }
 
             if (! in_array($lot->status, [AuctionLot::PENDING, AuctionLot::HOLD], true)) {
-                $this->fail('auction', 'Only a waiting or hold player can be called.');
+                $this->fail('auction', __('Only a waiting or hold player can be called.'));
             }
 
             $this->clearBlock($auction);
@@ -494,46 +494,46 @@ class AuctionService
                 return $previous;
             }
 
-            $this->assertRunning($auction, 'The auction is not live.');
+            $this->assertRunning($auction, __('The auction is not live.'));
             $lot = $this->lockLot($auction, $lot);
             $this->assertOnTheBlock($auction, $lot, $expectedVersion);
 
             if ($team->edition_id !== $auction->edition_id) {
-                $this->fail('bid', 'That team is not in this season.');
+                $this->fail('bid', __('That team is not in this season.'));
             }
 
             $team->loadMissing('team');
             $name = $team->team->name;
 
             if ($lot->leading_edition_team_id === $team->id) {
-                $this->fail('bid', $name.' is already leading — another team has to bid.');
+                $this->fail('bid', __(':name is already leading — another team has to bid.', ['name' => $name]));
             }
 
             $standing = $this->teamStanding($auction, $team);
 
             if ($standing['full']) {
-                $this->fail('bid', $name.' already has a full squad of '.$auction->max_squad.'.');
+                $this->fail('bid', __(':name already has a full squad of :max.', ['name' => $name, 'max' => $auction->max_squad]));
             }
 
             $next = $this->nextBidAmount($auction, $lot);
             $amount ??= $next;
 
             if ($amount < $next) {
-                $this->fail('bid', 'The bid must be at least '.points($next, true).'.');
+                $this->fail('bid', __('The bid must be at least :amount pts.', ['amount' => points($next)]));
             }
 
             if (($amount - $auction->min_bid) % $auction->bid_step !== 0) {
-                $this->fail('bid', 'A bid goes up in steps of '.points($auction->bid_step).' (from '.points($auction->min_bid).').');
+                $this->fail('bid', __('A bid goes up in steps of :step (from :min).', ['step' => points($auction->bid_step), 'min' => points($auction->min_bid)]));
             }
 
             if ($amount > $standing['left']) {
-                $this->fail('bid', $name.' has only '.points($standing['left'], true).' left.');
+                $this->fail('bid', __(':name has only :amount pts left.', ['name' => $name, 'amount' => points($standing['left'])]));
             }
 
             $overLimit = $amount > $standing['max_bid'];
 
             if ($overLimit && ! $override) {
-                $this->fail('reserve', $name.' must keep '.points($standing['reserve'], true).' to still reach a squad of '.$auction->min_squad.' — the most it can bid now is '.points($standing['max_bid'], true).'.');
+                $this->fail('reserve', __(':name must keep :reserve pts to still reach a squad of :min — the most it can bid now is :max pts.', ['name' => $name, 'reserve' => points($standing['reserve']), 'min' => $auction->min_squad, 'max' => points($standing['max_bid'])]));
             }
 
             $bid = AuctionBid::create([
@@ -563,14 +563,14 @@ class AuctionService
     {
         return DB::transaction(function () use ($auction, $lot, $expectedVersion) {
             $auction = $this->lockAuction($auction);
-            $this->assertRunning($auction, 'The auction is not live.');
+            $this->assertRunning($auction, __('The auction is not live.'));
             $lot = $this->lockLot($auction, $lot);
             $this->assertOnTheBlock($auction, $lot, $expectedVersion);
 
             $latest = $lot->bids()->standing()->latest('id')->first();
 
             if (! $latest) {
-                $this->fail('bid', 'There is no bid to undo.');
+                $this->fail('bid', __('There is no bid to undo.'));
             }
 
             $latest->update(['cancelled_at' => now()]);
@@ -595,12 +595,12 @@ class AuctionService
     {
         return DB::transaction(function () use ($auction, $lot, $expectedVersion) {
             $auction = $this->lockAuction($auction);
-            $this->assertRunning($auction, 'The auction is not live.');
+            $this->assertRunning($auction, __('The auction is not live.'));
             $lot = $this->lockLot($auction, $lot);
             $this->assertOnTheBlock($auction, $lot, $expectedVersion);
 
             if ($lot->current_bid === null || $lot->leading_edition_team_id === null) {
-                $this->fail('sell', 'There is no bid yet, so the player cannot be sold.');
+                $this->fail('sell', __('There is no bid yet, so the player cannot be sold.'));
             }
 
             $team = EditionTeam::findOrFail($lot->leading_edition_team_id);
@@ -609,17 +609,17 @@ class AuctionService
             // Re-checked at the moment of sale: the squad page may have been
             // used since the bid was placed.
             if ($standing['full']) {
-                $this->fail('sell', $team->team->name.' already has a full squad of '.$auction->max_squad.'.');
+                $this->fail('sell', __(':name already has a full squad of :max.', ['name' => $team->team->name, 'max' => $auction->max_squad]));
             }
 
             if ($lot->current_bid > $standing['left']) {
-                $this->fail('sell', $team->team->name.' has only '.points($standing['left'], true).' left, less than the bid.');
+                $this->fail('sell', __(':name has only :amount pts left, less than the bid.', ['name' => $team->team->name, 'amount' => points($standing['left'])]));
             }
 
             $registration = PlayerRegistration::findOrFail($lot->player_registration_id);
 
             if ($this->teamPlayers->addPlayers($team, [$registration->id => $lot->current_bid]) !== 1) {
-                $this->fail('sell', 'This player is already in a squad or is inactive, so cannot be sold.');
+                $this->fail('sell', __('This player is already in a squad or is inactive, so cannot be sold.'));
             }
 
             $teamPlayer = TeamPlayer::query()->where('player_registration_id', $registration->id)->firstOrFail();
@@ -663,11 +663,11 @@ class AuctionService
     {
         return DB::transaction(function () use ($auction, $lot) {
             $auction = $this->lockAuction($auction);
-            $this->assertLive($auction, 'reopen a sale');
+            $this->assertLive($auction, __('The auction is paused. Resume it to reopen a sale.'), __('The auction is not live, so you cannot reopen a sale.'));
             $lot = $this->lockLot($auction, $lot);
 
             if (! $lot->isSold() || ! $lot->teamPlayer) {
-                $this->fail('auction', 'Only a sold player can be reopened.');
+                $this->fail('auction', __('Only a sold player can be reopened.'));
             }
 
             $this->clearBlock($auction);
@@ -686,7 +686,7 @@ class AuctionService
             ]);
 
             if (! $this->teamPlayers->deleteTeamPlayer($teamPlayer)) {
-                $this->fail('auction', 'This player has already played a match, so the sale cannot be undone.');
+                $this->fail('auction', __('This player has already played a match, so the sale cannot be undone.'));
             }
 
             $auction->update(['current_lot_id' => $lot->id]);
@@ -710,7 +710,7 @@ class AuctionService
             $lot = $this->lockLot($auction, $lot);
 
             if (! $lot->isSold()) {
-                $this->fail('auction', 'Only a sold player can be taken back.');
+                $this->fail('auction', __('Only a sold player can be taken back.'));
             }
 
             $teamPlayer = $lot->teamPlayer;
@@ -721,7 +721,7 @@ class AuctionService
             $this->resetSoldLot($auction, $lot);
 
             if ($teamPlayer && ! $this->teamPlayers->deleteTeamPlayer($teamPlayer)) {
-                $this->fail('auction', 'This player has already played a match, so the sale cannot be undone.');
+                $this->fail('auction', __('This player has already played a match, so the sale cannot be undone.'));
             }
 
             return $lot->refresh();
@@ -820,7 +820,7 @@ class AuctionService
 
         if ($current?->isLive()) {
             if ($current->bids()->standing()->exists()) {
-                $this->fail('auction', 'Sell or hold the player on the block first — there is a bid on them.');
+                $this->fail('auction', __('Sell or hold the player on the block first — there is a bid on them.'));
             }
 
             $current->update(['status' => AuctionLot::PENDING, 'version' => $current->version + 1]);
@@ -833,7 +833,7 @@ class AuctionService
     {
         return DB::transaction(function () use ($auction, $lot, $expectedVersion, $status) {
             $auction = $this->lockAuction($auction);
-            $this->assertRunning($auction, 'The auction is not live.');
+            $this->assertRunning($auction, __('The auction is not live.'));
             $lot = $this->lockLot($auction, $lot);
             $this->assertOnTheBlock($auction, $lot, $expectedVersion);
 
@@ -896,7 +896,7 @@ class AuctionService
         $locked = AuctionLot::query()->whereKey($lot->id)->lockForUpdate()->firstOrFail();
 
         if ($locked->auction_id !== $auction->id) {
-            $this->fail('auction', 'That player is not part of this auction.');
+            $this->fail('auction', __('That player is not part of this auction.'));
         }
 
         return $locked;
@@ -906,14 +906,14 @@ class AuctionService
      * Calling, bidding, selling and reopening need a live auction; only
      * "next round" and "complete" also work while it is paused.
      */
-    private function assertLive(Auction $auction, string $what): void
+    private function assertLive(Auction $auction, string $pausedMessage, string $notLiveMessage): void
     {
         if ($auction->isPaused()) {
-            $this->fail('auction', 'The auction is paused. Resume it to '.$what.'.');
+            $this->fail('auction', $pausedMessage);
         }
 
         if (! $auction->isLive()) {
-            $this->fail('auction', 'The auction is not live, so you cannot '.$what.'.');
+            $this->fail('auction', $notLiveMessage);
         }
     }
 
@@ -921,25 +921,25 @@ class AuctionService
      * Next round and complete: any time after the start, while it is live or
      * paused.
      */
-    private function assertRunning(Auction $auction, string $message = 'The auction has not been started or is already completed.'): void
+    private function assertRunning(Auction $auction, ?string $message = null): void
     {
         if ($auction->isDraft() || $auction->isCompleted()) {
-            $this->fail('auction', $message);
+            $this->fail('auction', $message ?? __('The auction has not been started or is already completed.'));
         }
     }
 
     private function assertOnTheBlock(Auction $auction, AuctionLot $lot, int $expectedVersion): void
     {
         if (! $auction->acceptsBids()) {
-            $this->fail('auction', 'The auction is paused. Resume it to carry on.');
+            $this->fail('auction', __('The auction is paused. Resume it to carry on.'));
         }
 
         if (! $lot->isLive() || $auction->current_lot_id !== $lot->id) {
-            $this->fail('stale', 'That player is no longer on the block. The screen has been refreshed.');
+            $this->fail('stale', __('That player is no longer on the block. The screen has been refreshed.'));
         }
 
         if ($lot->version !== $expectedVersion) {
-            $this->fail('stale', 'This screen is out of date — somebody else just changed this player. It has been refreshed.');
+            $this->fail('stale', __('This screen is out of date — somebody else just changed this player. It has been refreshed.'));
         }
     }
 
@@ -957,7 +957,7 @@ class AuctionService
     private function assertSquadLimits(int $min, int $max): void
     {
         if ($min > $max) {
-            $this->fail('min_squad', 'The minimum squad cannot be bigger than the maximum.');
+            $this->fail('min_squad', __('The minimum squad cannot be bigger than the maximum.'));
         }
     }
 

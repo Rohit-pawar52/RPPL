@@ -20,7 +20,7 @@
                 id="admin-sidebar-toggle"
                 type="button"
                 class="adm-iconbtn -ml-1 focus-visible:outline-brand lg:hidden"
-                aria-label="Toggle navigation"
+                aria-label="{{ __('Toggle navigation') }}"
                 aria-controls="admin-sidebar"
                 aria-expanded="false"
             >
@@ -28,7 +28,7 @@
             </button>
 
             {{-- Where am I: "Group / Page", derived from the navigation config --}}
-            <nav aria-label="Breadcrumb" class="min-w-0 truncate text-[13px] text-slate-500">
+            <nav aria-label="{{ __('Breadcrumb') }}" class="min-w-0 truncate text-[13px] text-slate-500">
                 @if($breadcrumb)
                     @if($breadcrumb['group'])
                         <span class="hidden sm:inline">{{ $breadcrumb['group'] }}<span class="mx-1.5 text-slate-300" aria-hidden="true">/</span></span>
@@ -36,32 +36,34 @@
                     {{-- The current page follows the configured primary colour (Settings -> General). --}}
                     <span class="theme-primary-soft-bg theme-primary-text rounded-md px-2 py-1 font-semibold">{{ $breadcrumb['item'] }}</span>
                 @else
-                    <span class="font-semibold text-slate-800">{{ $branding->shortName }} Admin</span>
+                    <span class="font-semibold text-slate-800">{{ $branding->shortName }} {{ __('Admin') }}</span>
                 @endif
             </nav>
         </div>
 
         <div class="flex shrink-0 items-center gap-1 sm:gap-2">
             {{-- Jump to any page or common task (Ctrl+K / Cmd+K, or "/"). --}}
-            <button type="button" id="admin-palette-open" class="adm-jump" aria-haspopup="dialog" aria-label="Jump to a page or task">
+            <button type="button" id="admin-palette-open" class="adm-jump" aria-haspopup="dialog" aria-label="{{ __('Jump to a page or task') }}">
                 <x-admin.icon name="search" class="h-4 w-4" />
-                <span>Jump to&hellip;</span>
+                <span>{{ __('Jump to…') }}</span>
                 <kbd class="adm-kbd" data-kbd>Ctrl K</kbd>
             </button>
-            <button type="button" class="adm-iconbtn lg:hidden" data-palette-open aria-haspopup="dialog" aria-label="Jump to a page or task">
+            <button type="button" class="adm-iconbtn lg:hidden" data-palette-open aria-haspopup="dialog" aria-label="{{ __('Jump to a page or task') }}">
                 <x-admin.icon name="search" class="h-[18px] w-[18px]" />
             </button>
 
             {{-- "+ New": the common create pages, only those this user may use --}}
             <x-admin.quick-links layout="menu" />
 
+            <x-admin.language-switch class="hidden sm:inline-flex" />
+
             <a
                 href="{{ route('public.home') }}"
                 target="_blank"
                 rel="noopener"
                 class="adm-iconbtn hidden sm:inline-flex"
-                title="View public site"
-                aria-label="View public site"
+                title="{{ __('View public site') }}"
+                aria-label="{{ __('View public site') }}"
             >
                 <x-admin.icon name="external" class="h-[18px] w-[18px]" />
             </a>
@@ -87,17 +89,21 @@
                     </div>
                     <a href="{{ route('public.home') }}" target="_blank" rel="noopener" class="adm-menu-item sm:hidden">
                         <x-admin.icon name="external" class="adm-menu-ico" />
-                        View site
+                        {{ __('View site') }}
                     </a>
+                    <div class="flex items-center justify-between gap-3 px-3.5 py-2 sm:hidden">
+                        <span class="text-xs font-medium text-slate-500">{{ __('Language') }}</span>
+                        <x-admin.language-switch />
+                    </div>
                     <a href="{{ route('admin.account.password.edit') }}" class="adm-menu-item">
                         <x-icon name="key" class="adm-menu-ico" />
-                        Change password
+                        {{ __('Change password') }}
                     </a>
                     <form method="POST" action="{{ route('admin.logout') }}">
                         @csrf
                         <button type="submit" class="adm-menu-item" data-no-lock>
                             <x-icon name="logout" class="adm-menu-ico" />
-                            Logout
+                            {{ __('Logout') }}
                         </button>
                     </form>
                 </div>
@@ -109,14 +115,14 @@
 {{-- Ctrl+K palette: filled and driven by resources/js/admin-ui.js --}}
 <script type="application/json" id="admin-palette-pages">@json($palettePages)</script>
 <x-admin.quick-links layout="json" />
-<dialog id="admin-palette" class="adm-palette" aria-label="Jump to a page or task">
+<dialog id="admin-palette" class="adm-palette" aria-label="{{ __('Jump to a page or task') }}">
     <div class="flex items-center gap-3 border-b border-line px-4">
         <x-admin.icon name="search" class="h-[18px] w-[18px] shrink-0 text-slate-400" />
         <input
             type="text"
             id="admin-palette-input"
             class="h-14 w-full border-0 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400 sm:text-sm"
-            placeholder="Go to a page or start a task&hellip;"
+            placeholder="{{ __('Go to a page or start a task…') }}"
             autocomplete="off"
             spellcheck="false"
             role="combobox"
@@ -126,5 +132,5 @@
         <button type="button" class="adm-kbd" data-palette-close>Esc</button>
     </div>
     <div id="admin-palette-list" class="max-h-[min(24rem,60vh)] overflow-y-auto p-2" role="listbox"></div>
-    <p class="border-t border-line px-4 py-2 text-[11px] text-slate-400">Use the arrow keys, then Enter. Press Esc to close.</p>
+    <p class="border-t border-line px-4 py-2 text-[11px] text-slate-400">{{ __('Use the arrow keys, then Enter. Press Esc to close.') }}</p>
 </dialog>

@@ -214,14 +214,11 @@ class PlayerRegistrationController extends Controller
 
         return redirect()
             ->route('admin.player-registrations.index', ['edition_id' => $edition->id])
-            ->with('success', sprintf(
-                'Import completed: %d registration%s created, %d skipped, %d new player%s created.',
-                $result['created_registrations'],
-                $result['created_registrations'] === 1 ? '' : 's',
-                $result['skipped'],
-                $result['created_players'],
-                $result['created_players'] === 1 ? '' : 's',
-            ))
+            ->with('success', __('Import completed: :registrations created, :skipped skipped, :players created.', [
+                'registrations' => $result['created_registrations'] === 1 ? __(':count registration', ['count' => 1]) : __(':count registrations', ['count' => $result['created_registrations']]),
+                'skipped' => $result['skipped'],
+                'players' => $result['created_players'] === 1 ? __(':count new player', ['count' => 1]) : __(':count new players', ['count' => $result['created_players']]),
+            ]))
             ->with('import_notes', $result['notes']);
     }
 
@@ -244,7 +241,7 @@ class PlayerRegistrationController extends Controller
 
         return redirect()
             ->route('admin.player-registrations.index')
-            ->with('success', 'Registration created successfully.');
+            ->with('success', __('Registration created successfully.'));
     }
 
     public function show(PlayerRegistration $playerRegistration): View
@@ -326,13 +323,13 @@ class PlayerRegistrationController extends Controller
         $result = $files->fetchFor($playerRegistration);
 
         if ($result['fetched'] === [] && $result['failed'] === []) {
-            return back()->with('info', 'Nothing to copy: there is no Google Drive link without a stored file.');
+            return back()->with('info', __('Nothing to copy: there is no Google Drive link without a stored file.'));
         }
 
-        $message = $result['fetched'] === [] ? '' : 'Copied from Google Drive: '.implode(', ', $result['fetched']).'.';
+        $message = $result['fetched'] === [] ? '' : __('Copied from Google Drive: :files.', ['files' => implode(', ', $result['fetched'])]);
 
         foreach ($result['failed'] as $label => $reason) {
-            $message .= " The {$label} could not be copied: {$reason}.";
+            $message .= ' '.__('The :label could not be copied: :reason.', ['label' => __($label), 'reason' => $reason]);
         }
 
         return back()->with($result['failed'] === [] ? 'success' : ($result['fetched'] === [] ? 'error' : 'warning'), trim($message));
@@ -352,7 +349,7 @@ class PlayerRegistrationController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
-        return back()->with('success', 'The photo is now the profile photo of this player.');
+        return back()->with('success', __('The photo is now the profile photo of this player.'));
     }
 
     /**
@@ -367,7 +364,7 @@ class PlayerRegistrationController extends Controller
 
         $this->registrations->markPaid($playerRegistration);
 
-        return $this->redirectToNextPending($playerRegistration, "{$playerRegistration->registration_number} marked paid.");
+        return $this->redirectToNextPending($playerRegistration, __(':number marked paid.', ['number' => $playerRegistration->registration_number]));
     }
 
     public function markFailed(Request $request, PlayerRegistration $playerRegistration): RedirectResponse
@@ -378,7 +375,7 @@ class PlayerRegistrationController extends Controller
 
         $this->registrations->markFailed($playerRegistration, trim($validated['reason']));
 
-        return $this->redirectToNextPending($playerRegistration, "{$playerRegistration->registration_number} marked failed.");
+        return $this->redirectToNextPending($playerRegistration, __(':number marked failed.', ['number' => $playerRegistration->registration_number]));
     }
 
     public function nextPending(PlayerRegistration $playerRegistration): RedirectResponse
@@ -389,7 +386,7 @@ class PlayerRegistrationController extends Controller
 
         return $next
             ? redirect()->route('admin.player-registrations.show', $next)
-            : $this->noMorePending($playerRegistration->edition_id, 'There are no other pending registrations in this edition.');
+            : $this->noMorePending($playerRegistration->edition_id, __('There are no other pending registrations in this edition.'));
     }
 
     /**
@@ -405,7 +402,7 @@ class PlayerRegistrationController extends Controller
 
         return $first
             ? redirect()->route('admin.player-registrations.show', $first)
-            : $this->noMorePending($editionId ?: null, 'There are no pending registrations to review.');
+            : $this->noMorePending($editionId ?: null, __('There are no pending registrations to review.'));
     }
 
     private function redirectToNextPending(PlayerRegistration $done, string $message): RedirectResponse
@@ -413,12 +410,12 @@ class PlayerRegistrationController extends Controller
         $next = $this->registrations->nextPending($done);
 
         if (! $next) {
-            return $this->noMorePending($done->edition_id, "{$message} No more pending registrations in this edition.");
+            return $this->noMorePending($done->edition_id, __(':message No more pending registrations in this edition.', ['message' => $message]));
         }
 
         return redirect()
             ->route('admin.player-registrations.show', $next)
-            ->with('success', "{$message} Next pending registration:");
+            ->with('success', __(':message Next pending registration:', ['message' => $message]));
     }
 
     private function noMorePending(?int $editionId, string $message): RedirectResponse
@@ -436,7 +433,7 @@ class PlayerRegistrationController extends Controller
 
         return redirect()
             ->route('admin.player-registrations.index')
-            ->with('success', 'Registration updated successfully.');
+            ->with('success', __('Registration updated successfully.'));
     }
 
     public function destroy(PlayerRegistration $playerRegistration): RedirectResponse
@@ -446,12 +443,12 @@ class PlayerRegistrationController extends Controller
         if (! $this->registrations->deleteRegistration($playerRegistration)) {
             return redirect()
                 ->route('admin.player-registrations.index')
-                ->with('error', 'This registration cannot be deleted because the player has already been assigned to a squad.');
+                ->with('error', __('This registration cannot be deleted because the player has already been assigned to a squad.'));
         }
 
         return redirect()
             ->route('admin.player-registrations.index')
-            ->with('success', 'Registration deleted successfully.');
+            ->with('success', __('Registration deleted successfully.'));
     }
 
     /**

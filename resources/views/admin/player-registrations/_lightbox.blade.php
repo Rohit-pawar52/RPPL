@@ -7,8 +7,8 @@
     <div class="flex items-center justify-between gap-3 px-4 py-3">
         <p id="ops-lightbox-caption" class="min-w-0 truncate text-sm font-semibold"></p>
         <div class="flex shrink-0 items-center gap-2">
-            <a id="ops-lightbox-open" href="#" target="_blank" rel="noopener" class="btn btn-sm border border-white/20 text-white hover:bg-white/10">Open original</a>
-            <button type="button" id="ops-lightbox-close" class="btn btn-sm btn-icon border border-white/20 text-white hover:bg-white/10" aria-label="Close">
+            <a id="ops-lightbox-open" href="#" target="_blank" rel="noopener" class="btn btn-sm border border-white/20 text-white hover:bg-white/10">{{ __('Open original') }}</a>
+            <button type="button" id="ops-lightbox-close" class="btn btn-sm btn-icon border border-white/20 text-white hover:bg-white/10" aria-label="{{ __('Close') }}">
                 <x-ops.icon name="x" class="h-4 w-4" />
             </button>
         </div>

@@ -120,7 +120,7 @@ class SeasonSquadController extends Controller
 
         return redirect()
             ->route('admin.editions.squads.show', [$edition, $editionTeam])
-            ->with('success', 'Squad saved.');
+            ->with('success', __('Squad saved.'));
     }
 
     public function destroy(Edition $edition, EditionTeam $editionTeam, TeamPlayer $teamPlayer): RedirectResponse
@@ -170,6 +170,6 @@ class SeasonSquadController extends Controller
 
         return redirect()
             ->route('admin.editions.squads.show', [$edition, $editionTeam])
-            ->with('error', 'This season is completed, so new players cannot be added to a squad.');
+            ->with('error', __('This season is completed, so new players cannot be added to a squad.'));
     }
 }

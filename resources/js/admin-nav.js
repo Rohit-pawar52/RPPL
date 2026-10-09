@@ -10,6 +10,8 @@
  * All storage access is wrapped: private windows/blocked storage just mean
  * the preference isn't remembered.
  */
+import { t } from './i18n';
+
 const STORAGE_KEY = 'rppl.admin.sidebar';
 const DESKTOP = window.matchMedia('(min-width: 1024px)');
 
@@ -34,7 +36,7 @@ export function initAdminSidebar() {
     const syncCollapseButton = () => {
         if (collapseButton) {
             collapseButton.setAttribute('aria-pressed', isCollapsed() ? 'true' : 'false');
-            collapseButton.dataset.tip = isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar';
+            collapseButton.dataset.tip = isCollapsed() ? t('Expand sidebar') : t('Collapse sidebar');
             collapseButton.setAttribute('aria-label', collapseButton.dataset.tip);
         }
     };

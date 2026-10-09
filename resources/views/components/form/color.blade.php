@@ -22,7 +22,7 @@
 <div class="fld">
     @if($label)
         <label for="{{ $name }}" class="fld-label">{{ $label }}@if($attributes->has('required'))<span class="fld-req" aria-hidden="true">*</span>@endif
-            @if($nullable)<span class="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Optional</span>@endif
+            @if($nullable)<span class="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">{{ __('Optional') }}</span>@endif
         </label>
     @endif
 
@@ -33,7 +33,7 @@
             value="{{ $current ?: $fallback }}"
             class="h-10 w-12 shrink-0 cursor-pointer rounded-lg border border-slate-300 bg-white p-1 transition hover:border-slate-400"
             onchange="document.getElementById('{{ $name }}').value = this.value"
-            aria-label="{{ $label ?? $name }} picker"
+            aria-label="{{ __(':label picker', ['label' => $label ?? $name]) }}"
             tabindex="-1"
         />
         <input
@@ -42,7 +42,7 @@
             name="{{ $name }}"
             value="{{ $current }}"
             maxlength="7"
-            placeholder="{{ $nullable ? 'Auto' : '#2563EB' }}"
+            placeholder="{{ $nullable ? __('Auto') : '#2563EB' }}"
             oninput="if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) { document.getElementById('{{ $name }}_swatch').value = this.value; }@if($nullable) else if (this.value === '') { document.getElementById('{{ $name }}_swatch').value = '{{ $fallback }}'; }@endif"
             @if($hasError) aria-invalid="true" @endif
             {{ $attributes->merge(['class' => 'fld-control min-w-0 font-mono']) }}
@@ -51,9 +51,9 @@
             <button
                 type="button"
                 class="btn btn-ghost btn-sm shrink-0"
-                title="Use the automatic colour"
+                title="{{ __('Use the automatic colour') }}"
                 onclick="var t=document.getElementById('{{ $name }}');t.value='';document.getElementById('{{ $name }}_swatch').value='{{ $fallback }}';t.focus();"
-            >Auto</button>
+            >{{ __('Auto') }}</button>
         @endif
     </div>
 

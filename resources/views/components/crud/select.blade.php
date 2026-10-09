@@ -5,7 +5,7 @@
         <x-crud.select name="status" all="All statuses" :value="$filters['status'] ?? ''"
             :options="['active' => 'Active', 'inactive' => 'Inactive']" />
 --}}
-@props(['name', 'options' => [], 'value' => '', 'all' => 'All', 'auto' => true])
+@props(['name', 'options' => [], 'value' => '', 'all' => __('All'), 'auto' => true])
 
 <select
     name="{{ $name }}"

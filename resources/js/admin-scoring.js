@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import { t } from './i18n';
 
 /**
  * One-click match-day scoring (frozen S02 rules 42/47-53): the quick-tap
@@ -78,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         el.hidden = false;
-        el.innerHTML = `Target ${chase.target} &middot; Need ${chase.runs_needed} from ${chase.balls_remaining} &middot; RRR ${Number(chase.required_run_rate).toFixed(2)}`;
+        el.innerHTML = `${t('Target :target', { target: chase.target })} &middot; ${t('Need :runs from :balls', { runs: chase.runs_needed, balls: chase.balls_remaining })} &middot; ${t('RRR :rate', { rate: Number(chase.required_run_rate).toFixed(2) })}`;
     }
 
     // KEEP IN SYNC with admin/scoring/_batter-figure, _bowler-figure and _over-strip.
@@ -108,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderOverStrip(over) {
         if (!over) {
-            return '<span class="text-xs text-white/60">No deliveries yet.</span>';
+            return `<span class="text-xs text-white/60">${t('No deliveries yet.')}</span>`;
         }
 
         return over.balls
@@ -116,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const kind = ballKind(ball);
 
                 if (ball.is_correctable) {
-                    return `<button type="button" class="scorer-over-ball scorer-over-ball-correctable sc-ball sc-ball-correctable sc-ball-${kind}" data-delivery-id="${ball.id}" title="Tap to correct this delivery">${escapeHtml(ball.label)}</button>`;
+                    return `<button type="button" class="scorer-over-ball scorer-over-ball-correctable sc-ball sc-ball-correctable sc-ball-${kind}" data-delivery-id="${ball.id}" title="${escapeHtml(t('Tap to correct this delivery'))}">${escapeHtml(ball.label)}</button>`;
                 }
 
                 return `<span class="sc-ball sc-ball-${kind}">${escapeHtml(ball.label)}</span>`;
@@ -128,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         latestState = state;
 
         const crrEl = document.getElementById('scorer-crr');
-        if (crrEl) crrEl.textContent = `CRR ${Number(state.innings.crr).toFixed(2)}`;
+        if (crrEl) crrEl.textContent = t('CRR :rate', { rate: Number(state.innings.crr).toFixed(2) });
 
         const scoreEl = document.getElementById('scorer-score');
         if (scoreEl) scoreEl.textContent = `${state.innings.total_runs}/${state.innings.total_wickets}`;
@@ -155,14 +156,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const partnershipEl = document.getElementById('scorer-partnership');
         if (partnershipEl) {
-            partnershipEl.innerHTML = `Partnership: <span class="font-semibold text-slate-800">${state.partnership.runs} runs (${state.partnership.balls} balls)</span>`;
+            partnershipEl.innerHTML = `${t('Partnership:')} <span class="font-semibold text-slate-800">${t(':runs runs (:balls balls)', { runs: state.partnership.runs, balls: state.partnership.balls })}</span>`;
         }
 
         const lastWicketEl = document.getElementById('scorer-last-wicket');
         if (lastWicketEl) {
             lastWicketEl.innerHTML = state.last_wicket
-                ? `Last Wicket: <span class="font-semibold text-slate-800">${escapeHtml(state.last_wicket.player)} ${state.last_wicket.runs} (${state.last_wicket.balls}) &mdash; ${state.last_wicket.team_score}, ${state.last_wicket.over_notation} ov</span>`
-                : 'Last Wicket: <span class="font-semibold text-slate-800">—</span>';
+                ? `${t('Last Wicket:')} <span class="font-semibold text-slate-800">${t(':player :runs (:balls) — :score, :over ov', { player: escapeHtml(state.last_wicket.player), runs: state.last_wicket.runs, balls: state.last_wicket.balls, score: state.last_wicket.team_score, over: state.last_wicket.over_notation })}</span>`
+                : `${t('Last Wicket:')} <span class="font-semibold text-slate-800">—</span>`;
         }
 
         const thisOverEl = document.getElementById('scorer-this-over');
@@ -260,8 +261,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const message = error.response?.data?.message
                     ?? (isNetworkFailure
-                        ? 'Could not confirm this ball was recorded — check your connection. Refreshing to show the current score.'
-                        : 'This action could not be completed.');
+                        ? t('Could not confirm this ball was recorded — check your connection. Refreshing to show the current score.')
+                        : t('This action could not be completed.'));
 
                 window.Swal?.fire({ icon: 'error', text: message, toast: true, position: 'top-end', timer: 4000, showConfirmButton: false });
 
@@ -309,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="grid gap-2" style="grid-template-columns: repeat(${values.length}, minmax(0, 1fr));">
                 ${values.map((value) => `<button type="button" class="sc-pick min-h-12 text-base" data-count="${value}">${value}</button>`).join('')}
             </div>
-            <button type="button" id="scorer-panel-cancel" class="btn btn-ghost btn-sm mt-2">Cancel</button>
+            <button type="button" id="scorer-panel-cancel" class="btn btn-ghost btn-sm mt-2">${t('Cancel')}</button>
         `;
 
         document.getElementById('scorer-panel-cancel').addEventListener('click', closeSituationalPanel);
@@ -320,20 +321,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function openExtraRunsPanel(kind) {
         if (kind === 'wide') {
-            renderCountPanel('Wide &mdash; runs physically run', [1, 2, 3, 4], (value) => submitDelivery({ is_wide: true, wide_running_runs: value }));
+            renderCountPanel(t('Wide — runs physically run'), [1, 2, 3, 4], (value) => submitDelivery({ is_wide: true, wide_running_runs: value }));
 
             return;
         }
 
-        renderCountPanel('No ball &mdash; runs off the bat', [0, 1, 2, 3, 4, 5, 6], (value) => submitDelivery({ is_no_ball: true, runs_off_bat: value }));
+        renderCountPanel(t('No ball — runs off the bat'), [0, 1, 2, 3, 4, 5, 6], (value) => submitDelivery({ is_no_ball: true, runs_off_bat: value }));
     }
 
     document.getElementById('scorer-quick-bye')?.addEventListener('click', () => {
-        renderCountPanel('Byes &mdash; how many?', [1, 2, 3, 4, 5], (value) => submitDelivery({ bye_runs: value }));
+        renderCountPanel(t('Byes — how many?'), [1, 2, 3, 4, 5], (value) => submitDelivery({ bye_runs: value }));
     });
 
     document.getElementById('scorer-quick-legbye')?.addEventListener('click', () => {
-        renderCountPanel('Leg byes &mdash; how many?', [1, 2, 3, 4, 5], (value) => submitDelivery({ leg_bye_runs: value }));
+        renderCountPanel(t('Leg byes — how many?'), [1, 2, 3, 4, 5], (value) => submitDelivery({ leg_bye_runs: value }));
     });
 
     // ----- Wicket follow-up (frozen rule 50: situational, not on the primary pad) -----
@@ -363,28 +364,28 @@ document.addEventListener('DOMContentLoaded', () => {
         // keys below only set them, so one tap picks who is out and how.
         situationalPanel.hidden = false;
         situationalPanel.innerHTML = `
-            ${isFreeHit ? '<p class="mb-2 text-[11px] font-semibold text-amber-700">Free Hit — only Run Out or Obstructing the Field is valid.</p>' : ''}
-            <p class="mb-1.5 text-xs font-semibold text-slate-700">Who is out?</p>
+            ${isFreeHit ? `<p class="mb-2 text-[11px] font-semibold text-amber-700">${t('Free Hit — only Run Out or Obstructing the Field is valid.')}</p>` : ''}
+            <p class="mb-1.5 text-xs font-semibold text-slate-700">${t('Who is out?')}</p>
             <div class="grid grid-cols-2 gap-2" data-pick-for="scorer-wicket-dismissed">
                 ${batters.map((p, index) => `<button type="button" class="sc-pick sc-pick-red min-h-12" data-value="${p.id}" aria-pressed="${index === 0 ? 'true' : 'false'}"><span class="truncate">${escapeHtml(p.name)}${index === 0 ? ' *' : ''}</span></button>`).join('')}
             </div>
-            <p class="mb-1.5 mt-3 text-xs font-semibold text-slate-700">How?</p>
+            <p class="mb-1.5 mt-3 text-xs font-semibold text-slate-700">${t('How?')}</p>
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-4" data-pick-for="scorer-wicket-type">
                 ${allowedTypes.map((type, index) => `<button type="button" class="sc-pick sc-pick-red" data-value="${type}" aria-pressed="${index === 0 ? 'true' : 'false'}">${escapeHtml(wicketTypes[type] ?? type)}</button>`).join('')}
             </div>
             <select id="scorer-wicket-dismissed" class="hidden" aria-hidden="true" tabindex="-1">${dismissedOptions}</select>
             <select id="scorer-wicket-type" class="hidden" aria-hidden="true" tabindex="-1">${typeOptions}</select>
             <div class="mt-3 grid gap-2 sm:grid-cols-2">
-                <label class="text-xs font-medium text-slate-600">Fielder (optional)
-                    <select id="scorer-wicket-fielder" class="ops-input mt-1 min-h-11"><option value="">None</option>${fielderOptions}</select>
+                <label class="text-xs font-medium text-slate-600">${t('Fielder (optional)')}
+                    <select id="scorer-wicket-fielder" class="ops-input mt-1 min-h-11"><option value="">${t('None')}</option>${fielderOptions}</select>
                 </label>
-                <label class="text-xs font-medium text-slate-600">Runs completed (if any)
+                <label class="text-xs font-medium text-slate-600">${t('Runs completed (if any)')}
                     <input type="number" inputmode="numeric" min="0" max="11" value="0" id="scorer-wicket-runs" class="ops-input mt-1 min-h-11" />
                 </label>
             </div>
             <div class="mt-3 grid grid-cols-[1fr_auto] gap-2">
-                <button type="button" id="scorer-wicket-confirm" class="btn btn-danger btn-lg min-h-12">Confirm Wicket</button>
-                <button type="button" id="scorer-wicket-cancel" class="btn btn-secondary btn-lg min-h-12">Cancel</button>
+                <button type="button" id="scorer-wicket-confirm" class="btn btn-danger btn-lg min-h-12">${t('Confirm Wicket')}</button>
+                <button type="button" id="scorer-wicket-cancel" class="btn btn-secondary btn-lg min-h-12">${t('Cancel')}</button>
             </div>
         `;
 
@@ -417,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('scorer-undo-button')?.addEventListener('click', (event) => {
         event.preventDefault();
 
-        window.confirmAction?.({ title: 'Undo the last action?', confirmButtonText: 'Yes, undo' }).then((result) => {
+        window.confirmAction?.({ title: t('Undo the last action?'), confirmButtonText: t('Yes, undo') }).then((result) => {
             if (!result.isConfirmed) return;
 
             axios
@@ -426,7 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .catch((error) => {
                     window.Swal?.fire({
                         icon: 'error',
-                        text: error.response?.data?.message ?? 'There is nothing to undo right now.',
+                        text: error.response?.data?.message ?? t('There is nothing to undo right now.'),
                         toast: true,
                         position: 'top-end',
                         timer: 4000,
@@ -462,31 +463,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
         correctionPanel.classList.remove('hidden');
         correctionPanel.innerHTML = `
-            <h4 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-amber-800">Correct Delivery ${escapeHtml(delivery.label)}</h4>
+            <h4 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-amber-800">${t('Correct Delivery :label', { label: escapeHtml(delivery.label) })}</h4>
             <div class="grid gap-2 sm:grid-cols-3">
-                <label class="text-xs font-medium text-slate-700">Runs off bat
+                <label class="text-xs font-medium text-slate-700">${t('Runs off bat')}
                     <input type="number" min="0" max="11" id="scorer-correct-runs" value="${raw.runs_off_bat}" class="ops-input mt-1 min-h-11" ${raw.is_wide ? 'disabled' : ''} />
                 </label>
                 <label class="flex items-center gap-2 text-xs font-medium text-slate-700">
-                    <input type="checkbox" id="scorer-correct-is-wicket" ${raw.is_wicket ? 'checked' : ''} /> Wicket
+                    <input type="checkbox" id="scorer-correct-is-wicket" ${raw.is_wicket ? 'checked' : ''} /> ${t('Wicket')}
                 </label>
                 <div></div>
-                <label class="text-xs font-medium text-slate-700">Dismissed
+                <label class="text-xs font-medium text-slate-700">${t('Dismissed')}
                     <select id="scorer-correct-dismissed" class="ops-input mt-1 min-h-11">${dismissedOptions}</select>
                 </label>
-                <label class="text-xs font-medium text-slate-700">Wicket type
+                <label class="text-xs font-medium text-slate-700">${t('Wicket type')}
                     <select id="scorer-correct-type" class="ops-input mt-1 min-h-11">${typeOptions}</select>
                 </label>
-                <label class="text-xs font-medium text-slate-700">Commentary
+                <label class="text-xs font-medium text-slate-700">${t('Commentary')}
                     <input type="text" id="scorer-correct-commentary" value="${escapeHtml(raw.commentary ?? '')}" class="ops-input mt-1 min-h-11" />
                 </label>
             </div>
-            <label class="mt-2 block text-xs font-medium text-slate-700">Reason (optional)
-                <input type="text" id="scorer-correct-reason" class="ops-input mt-1 min-h-11" placeholder="e.g. Miscounted runs" />
+            <label class="mt-2 block text-xs font-medium text-slate-700">${t('Reason (optional)')}
+                <input type="text" id="scorer-correct-reason" class="ops-input mt-1 min-h-11" placeholder="${escapeHtml(t('e.g. Miscounted runs'))}" />
             </label>
             <div class="mt-3 flex gap-2">
-                <button type="button" id="scorer-correct-confirm" class="btn btn-primary min-h-11">Save Correction</button>
-                <button type="button" id="scorer-correct-cancel" class="btn btn-secondary min-h-11">Cancel</button>
+                <button type="button" id="scorer-correct-confirm" class="btn btn-primary min-h-11">${t('Save Correction')}</button>
+                <button type="button" id="scorer-correct-cancel" class="btn btn-secondary min-h-11">${t('Cancel')}</button>
             </div>
         `;
 
@@ -516,7 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .catch((error) => {
                     window.Swal?.fire({
                         icon: 'error',
-                        text: error.response?.data?.message ?? 'This correction could not be saved.',
+                        text: error.response?.data?.message ?? t('This correction could not be saved.'),
                         toast: true,
                         position: 'top-end',
                         timer: 4000,

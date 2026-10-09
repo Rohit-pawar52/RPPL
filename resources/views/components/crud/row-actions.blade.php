@@ -14,14 +14,19 @@
     'view' => null,
     'edit' => null,
     'delete' => null,
-    'name' => 'this item',
+    'name' => __('this item'),
     'confirmTitle' => null,
-    'confirmText' => 'This cannot be undone.',
-    'viewLabel' => 'View',
-    'editLabel' => 'Edit',
-    'deleteLabel' => 'Delete',
+    'confirmText' => __('This cannot be undone.'),
+    'viewLabel' => __('View'),
+    'editLabel' => __('Edit'),
+    'deleteLabel' => __('Delete'),
     'viewHiddenOnPhone' => true,
 ])
+
+@php
+    // The default "Delete" reads best as a whole sentence in Hindi ("Delete Rahul?"); a custom word (Remove...) keeps the old join.
+    $deleteTitle = $confirmTitle ?? ($deleteLabel === __('Delete') ? __('Delete :name?', ['name' => $name]) : $deleteLabel.' '.$name.'?');
+@endphp
 
 <div class="crud-actions">
     {{ $slot }}
@@ -54,7 +59,7 @@
             action="{{ $delete }}"
             class="inline"
             data-confirm-delete
-            data-confirm-title="{{ $confirmTitle ?? $deleteLabel.' '.$name.'?' }}"
+            data-confirm-title="{{ $deleteTitle }}"
             data-confirm-text="{{ $confirmText }}"
         >
             @csrf

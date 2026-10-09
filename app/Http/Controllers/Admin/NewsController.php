@@ -45,7 +45,7 @@ class NewsController extends Controller
 
         return redirect()
             ->route('admin.news.index')
-            ->with('success', 'News created successfully.');
+            ->with('success', __('News created successfully.'));
     }
 
     public function edit(News $news): View
@@ -70,7 +70,7 @@ class NewsController extends Controller
 
         return redirect()
             ->route('admin.news.index')
-            ->with('success', 'News updated successfully.');
+            ->with('success', __('News updated successfully.'));
     }
 
     /**
@@ -85,7 +85,7 @@ class NewsController extends Controller
 
         return redirect()
             ->back(fallback: route('admin.news.index'))
-            ->with('success', $news->status === 'active' ? 'News activated successfully.' : 'News deactivated successfully.');
+            ->with('success', $news->status === 'active' ? __('News activated successfully.') : __('News deactivated successfully.'));
     }
 
     public function destroy(News $news): RedirectResponse
@@ -96,6 +96,6 @@ class NewsController extends Controller
 
         return redirect()
             ->route('admin.news.index')
-            ->with('success', 'News deleted successfully.');
+            ->with('success', __('News deleted successfully.'));
     }
 }

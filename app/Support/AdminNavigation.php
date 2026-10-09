@@ -35,6 +35,8 @@ class AdminNavigation
                     ->values()
                     ->all();
 
+                // The config keeps the English text; it is translated here, per request, in the signed-in user's language.
+                $group['label'] = __($group['label']);
                 $group['items'] = $items;
                 $group['active'] = collect($items)->contains('active', true);
 
@@ -107,6 +109,7 @@ class AdminNavigation
      */
     private function resolveItem(array $item): array
     {
+        $item['label'] = __($item['label']);
         $item['url'] = route($item['route']);
         $item['active'] = request()->routeIs(...$item['active']);
 

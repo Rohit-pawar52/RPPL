@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Record Contribution')
+@section('title', __('Record Contribution'))
 
 @section('content')
     @php
@@ -9,16 +9,16 @@
         $newContributorOpen = old('new_name') || old('new_village') || old('new_phone') || old('new_address') || $errors->has('confirm_duplicate');
     @endphp
 
-    <x-crud.back :href="route('admin.edition-contributions.index')">Contributions</x-crud.back>
+    <x-crud.back :href="route('admin.edition-contributions.index')">{{ __('Contributions') }}</x-crud.back>
 
-    <x-crud.form :action="route('admin.edition-contributions.store')" :cancel="route('admin.edition-contributions.index')" submit="Save contribution">
+    <x-crud.form :action="route('admin.edition-contributions.store')" :cancel="route('admin.edition-contributions.index')" :submit="__('Save contribution')">
         <div class="crud-grid">
             <div class="crud-main">
-                <x-admin.card title="Who gave">
+                <x-admin.card :title="__('Who gave')">
                     <x-form.select
                         name="edition_id"
-                        label="Edition"
-                        placeholder="Select edition"
+                        :label="__('Edition')"
+                        :placeholder="__('Select edition')"
                         :options="$editions->pluck('name', 'id')"
                         :value="old('edition_id', request('edition_id'))"
                         :autofocus="! request('edition_id')"
@@ -29,19 +29,19 @@
                         real field, so the page still works if the script does not run (the whole list is there).
                     --}}
                     <div class="fld" id="contributor-picker">
-                        <label for="contributor-filter" class="fld-label">Contributor</label>
+                        <label for="contributor-filter" class="fld-label">{{ __('Contributor') }}</label>
                         <input
                             type="search"
                             id="contributor-filter"
                             class="fld-control mb-2"
-                            placeholder="Type a name or village to find them&hellip;"
+                            placeholder="{!! __('Type a name or village to find them&hellip;') !!}"
                             autocomplete="off"
                             aria-controls="contributor_id"
                         />
                         {{-- Shown by the script once somebody is chosen; the list itself stays hidden until typing starts. --}}
                         <p id="contributor-chosen" class="mb-2 hidden items-center gap-2 text-[13px] text-slate-700">
-                            <span>Chosen: <strong class="font-semibold text-slate-900" data-chosen-name></strong></span>
-                            <button type="button" id="contributor-change" class="crud-link">Change</button>
+                            <span>{{ __('Chosen:') }} <strong class="font-semibold text-slate-900" data-chosen-name></strong></span>
+                            <button type="button" id="contributor-change" class="crud-link">{{ __('Change') }}</button>
                         </p>
                         <select
                             id="contributor_id"
@@ -51,7 +51,7 @@
                             @if($errors->has('contributor_id')) aria-invalid="true" @endif
                         >
                             {{-- An empty first choice, so the browser never picks the first person by itself. --}}
-                            <option value="" @selected(! $selectedContributor)>Select a contributor</option>
+                            <option value="" @selected(! $selectedContributor)>{{ __('Select a contributor') }}</option>
                             @foreach($contributors as $contributor)
                                 <option value="{{ $contributor->id }}" @selected((string) $selectedContributor === (string) $contributor->id)>{{ $contributor->label() }}</option>
                             @endforeach
@@ -63,11 +63,11 @@
                     </div>
 
                     <div id="committee-dues-preview" class="mb-3.5 hidden rounded-lg border border-sky-100 bg-sky-50 p-3 text-[12px] text-sky-900">
-                        <span class="crud-pill crud-pill-blue">Committee Member</span>
+                        <span class="crud-pill crud-pill-blue">{{ __('Committee Member') }}</span>
                         <dl class="mt-2 grid grid-cols-3 gap-2">
-                            <div><dt class="text-sky-600">Target</dt><dd class="text-sm font-bold tabular-nums" data-dues-target>&mdash;</dd></div>
-                            <div><dt class="text-sky-600">Paid So Far</dt><dd class="text-sm font-bold tabular-nums" data-dues-paid>&mdash;</dd></div>
-                            <div><dt class="text-sky-600">Remaining</dt><dd class="text-sm font-bold tabular-nums" data-dues-remaining>&mdash;</dd></div>
+                            <div><dt class="text-sky-600">{{ __('Target') }}</dt><dd class="text-sm font-bold tabular-nums" data-dues-target>&mdash;</dd></div>
+                            <div><dt class="text-sky-600">{{ __('Paid So Far') }}</dt><dd class="text-sm font-bold tabular-nums" data-dues-paid>&mdash;</dd></div>
+                            <div><dt class="text-sky-600">{{ __('Remaining') }}</dt><dd class="text-sm font-bold tabular-nums" data-dues-remaining>&mdash;</dd></div>
                         </dl>
                     </div>
 
@@ -78,22 +78,22 @@
                             Filling any of these means "new contributor"; the server refuses to also have one picked.
                         --}}
                         <details id="new-contributor" class="mb-1 rounded-lg border border-slate-200 bg-white" @if($newContributorOpen) open @endif>
-                            <summary class="cursor-pointer select-none px-3 py-2.5 text-[13px] font-semibold text-brand">+ Not in the list? Add a new contributor</summary>
+                            <summary class="cursor-pointer select-none px-3 py-2.5 text-[13px] font-semibold text-brand">{{ __('+ Not in the list? Add a new contributor') }}</summary>
 
                             <div class="border-t border-slate-100 px-3 pt-3">
                                 <div class="crud-cols">
-                                    <x-form.input name="new_name" label="Name" :value="''" maxlength="255" autocomplete="off" />
-                                    <x-form.input name="new_village" label="Village" :value="''" maxlength="100" placeholder="e.g. Shirur" autocomplete="off" help="Needed for a new contributor: it tells two people with the same name apart." />
+                                    <x-form.input name="new_name" :label="__('Name')" :value="''" maxlength="255" autocomplete="off" />
+                                    <x-form.input name="new_village" :label="__('Village')" :value="''" maxlength="100" :placeholder="__('e.g. Shirur')" autocomplete="off" :help="__('Needed for a new contributor: it tells two people with the same name apart.')" />
                                 </div>
                                 <div class="crud-cols">
-                                    <x-form.input name="new_phone" label="Phone (optional)" type="tel" inputmode="tel" :value="''" maxlength="20" autocomplete="off" />
-                                    <x-form.input name="new_address" label="Address (optional)" :value="''" maxlength="255" autocomplete="off" />
+                                    <x-form.input name="new_phone" :label="__('Phone (optional)')" type="tel" inputmode="tel" :value="''" maxlength="20" autocomplete="off" />
+                                    <x-form.input name="new_address" :label="__('Address (optional)')" :value="''" maxlength="255" autocomplete="off" />
                                 </div>
 
                                 @if($canAddToCommittee)
                                     <label class="mb-4 flex items-center gap-2 text-[13px] text-slate-700">
                                         <input type="checkbox" name="add_to_committee" value="1" class="rounded border-slate-300" @checked(old('add_to_committee'))>
-                                        Also add them to this edition's committee
+                                        {{ __('Also add them to this edition\'s committee') }}
                                     </label>
                                 @endif
 
@@ -103,7 +103,7 @@
                                     <ul id="duplicate-list" class="mt-1 list-disc pl-5"></ul>
                                     <label class="mt-2 flex items-center gap-2 text-[13px] font-medium text-slate-800">
                                         <input type="checkbox" id="confirm_duplicate" name="confirm_duplicate" value="1" class="rounded border-slate-300" @checked(old('confirm_duplicate'))>
-                                        This is a different person
+                                        {{ __('This is a different person') }}
                                     </label>
                                 </div>
                             </div>
@@ -111,31 +111,31 @@
                     @endif
                 </x-admin.card>
 
-                <x-admin.card title="The money">
+                <x-admin.card :title="__('The money')">
                     <div class="crud-cols">
                         <x-form.input
                             name="amount"
-                            label="Amount"
+                            :label="__('Amount')"
                             type="number"
                             step="0.01"
                             min="0.01"
                             inputmode="decimal"
                             required
                             :autofocus="(bool) request('edition_id')"
-                            help="Any amount greater than {{ money(0, 0) }} is accepted — a committee member's target above may be reached across several separate contributions."
+                            :help="__('Any amount greater than :amount is accepted — a committee member\'s target above may be reached across several separate contributions.', ['amount' => money(0, 0)])"
                         />
 
-                        <x-form.input name="contributed_at" label="Date" type="date" required />
+                        <x-form.input name="contributed_at" :label="__('Date')" type="date" required />
                     </div>
 
-                    <x-form.input name="notes" label="Notes" :value="old('notes')" />
+                    <x-form.input name="notes" :label="__('Notes')" :value="old('notes')" />
                 </x-admin.card>
             </div>
 
             <div class="crud-aside">
-                <p class="crud-note crud-note-brand">Each contribution also adds an <strong class="font-semibold text-slate-700">income</strong> line to the ledger, and a receipt you can print or download.</p>
+                <p class="crud-note crud-note-brand">{!! __('Each contribution also adds an :income line to the ledger, and a receipt you can print or download.', ['income' => '<strong class="font-semibold text-slate-700">'.e(__('income')).'</strong>']) !!}</p>
                 @if($canAddContributor)
-                    <p class="crud-note mt-3">Giving for the first time? Use <strong class="font-semibold text-slate-700">Add a new contributor</strong> under the list: they are saved together with this contribution.</p>
+                    <p class="crud-note mt-3">{!! __('Giving for the first time? Use :action under the list: they are saved together with this contribution.', ['action' => '<strong class="font-semibold text-slate-700">'.e(__('Add a new contributor')).'</strong>']) !!}</p>
                 @endif
             </div>
         </div>
@@ -147,6 +147,17 @@
     --}}
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // The texts this script shows, in the admin's language.
+            const text = {
+                select: @json(__('Select a contributor')),
+                nobody: @json(__('Nobody matches ":query".')),
+                addNew: @json(__('Add ":query" as a new contributor')),
+                maybeOne: @json(__('This person may already be in the list:')),
+                maybeMany: @json(__('These people may already be in the list:')),
+                useThis: @json(__('Use this one')),
+                switchedOff: @json(__('(switched off - turn them on again under Contributors)')),
+            };
+
             const editionSelect = document.getElementById('edition_id');
             const contributorSelect = document.getElementById('contributor_id');
             const filterInput = document.getElementById('contributor-filter');
@@ -253,7 +264,7 @@
                 contributorSelect.innerHTML = '';
 
                 // The empty choice stays (so nobody is picked by accident) but is never shown as a row.
-                const none = new Option('Select a contributor', '', false, keep === '');
+                const none = new Option(text.select, '', false, keep === '');
                 none.hidden = true;
                 contributorSelect.add(none);
 
@@ -277,13 +288,13 @@
                 emptyNote.classList.add('hidden');
 
                 if (shown === 0 && query.trim() !== '') {
-                    emptyNote.append(document.createTextNode(`Nobody matches "${query.trim()}". `));
+                    emptyNote.append(document.createTextNode(text.nobody.replace(':query', query.trim()) + ' '));
 
                     if (details) {
                         const add = document.createElement('button');
                         add.type = 'button';
                         add.className = 'crud-link font-semibold';
-                        add.textContent = `Add "${query.trim()}" as a new contributor`;
+                        add.textContent = text.addNew.replace(':query', query.trim());
                         add.addEventListener('click', () => {
                             details.open = true;
                             newName.value = query.trim();
@@ -377,8 +388,8 @@
                     }
 
                     duplicateText.textContent = matches.length === 1
-                        ? 'This person may already be in the list:'
-                        : 'These people may already be in the list:';
+                        ? text.maybeOne
+                        : text.maybeMany;
 
                     matches.forEach((match) => {
                         const item = document.createElement('li');
@@ -388,7 +399,7 @@
                             const use = document.createElement('button');
                             use.type = 'button';
                             use.className = 'crud-link font-semibold';
-                            use.textContent = 'Use this one';
+                            use.textContent = text.useThis;
                             use.addEventListener('click', () => {
                                 filterInput.value = '';
                                 showList('');
@@ -397,7 +408,7 @@
                             });
                             item.append(use);
                         } else {
-                            item.append(document.createTextNode('(switched off - turn them on again under Contributors)'));
+                            item.append(document.createTextNode(text.switchedOff));
                         }
 
                         duplicateList.append(item);

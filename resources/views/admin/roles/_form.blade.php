@@ -11,24 +11,24 @@
     $ticked = session()->hasOldInput() ? (array) old('permissions', []) : ($held ?? []);
 @endphp
 
-<x-admin.card title="Role">
+<x-admin.card :title="__('Role')">
     <div class="max-w-xl">
         <x-form.input
             name="name"
-            label="Name"
+            :label="__('Name')"
             :value="$role->name ?? ''"
             maxlength="100"
             required
             autofocus
-            help="Shown when you choose a role for a login, e.g. News Editor."
+            :help="__('Shown when you choose a role for a login, e.g. News Editor.')"
         />
     </div>
 
     @if($role)
         <p class="text-[11px] leading-4 text-slate-500">
-            Code: <span class="font-mono">{{ $role->slug }}</span> &mdash; made from the name when the role was created and never changes.
+            {!! __('Code: :code — made from the name when the role was created and never changes.', ['code' => '<span class="font-mono">'.e($role->slug).'</span>']) !!}
             @if($role->isSystem())
-                This is a built-in role: it can be renamed and its permissions changed, but it cannot be deleted.
+                {{ __('This is a built-in role: it can be renamed and its permissions changed, but it cannot be deleted.') }}
             @endif
         </p>
     @endif
@@ -37,15 +37,14 @@
 <section class="mt-6" aria-labelledby="perm-heading">
     <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div class="max-w-3xl">
-            <h2 id="perm-heading" class="text-base font-semibold tracking-tight text-slate-900">Permissions</h2>
+            <h2 id="perm-heading" class="text-base font-semibold tracking-tight text-slate-900">{{ __('Permissions') }}</h2>
             <p class="mt-0.5 text-xs leading-5 text-slate-500">
-                Tick what a login with this role may do. A new role starts with nothing. &ldquo;Manage&rdquo; includes &ldquo;view&rdquo;.
-                Whoever is to use the admin panel needs &ldquo;Sign in to the admin panel&rdquo;. Managing logins and roles is never given to a role: only administrators can do that.
+                {{ __('Tick what a login with this role may do. A new role starts with nothing. “Manage” includes “view”. Whoever is to use the admin panel needs “Sign in to the admin panel”. Managing logins and roles is never given to a role: only administrators can do that.') }}
             </p>
         </div>
         <div class="flex shrink-0 items-center gap-1">
-            <button type="button" class="btn btn-ghost btn-sm" data-tick-all>Tick all</button>
-            <button type="button" class="btn btn-ghost btn-sm" data-clear-all>Clear all</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-tick-all>{{ __('Tick all') }}</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-clear-all>{{ __('Clear all') }}</button>
         </div>
     </div>
 
@@ -57,8 +56,9 @@
         <div id="role-signin-warning" hidden class="mb-3 flex gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-800">
             <x-admin.icon name="alert" class="mt-0.5 h-4 w-4 shrink-0" />
             <p>
-                {{ $usersCount === 1 ? '1 user has' : $usersCount.' users have' }} this role. Without &ldquo;Sign in to the admin panel&rdquo;
-                {{ $usersCount === 1 ? 'that user' : 'those users' }} will no longer be able to sign in.
+                {{ $usersCount === 1
+                    ? __('1 user has this role. Without “Sign in to the admin panel” that user will no longer be able to sign in.')
+                    : __(':count users have this role. Without “Sign in to the admin panel” those users will no longer be able to sign in.', ['count' => $usersCount]) }}
             </p>
         </div>
     @endif
@@ -66,16 +66,16 @@
     <div class="gap-4 md:columns-2 [&>*]:mb-4 [&>*]:break-inside-avoid">
         @foreach($groups as $group => $items)
             <fieldset data-group class="adm-card min-w-0 overflow-hidden">
-                <legend class="sr-only">{{ $group }}</legend>
+                <legend class="sr-only">{{ __($group) }}</legend>
 
                 <div class="flex items-center justify-between gap-3 border-b border-line bg-slate-50/70 px-4 py-2.5">
                     <p class="flex items-center gap-2 text-[13px] font-semibold text-slate-900" aria-hidden="true">
-                        {{ $group }}
+                        {{ __($group) }}
                         <span data-group-count class="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold tabular-nums text-slate-500 ring-1 ring-inset ring-line"></span>
                     </p>
                     <label class="fld-check min-h-0 text-[11px] font-semibold text-slate-500">
                         <input type="checkbox" data-select-group />
-                        Select all
+                        {{ __('Select all') }}
                     </label>
                 </div>
 
@@ -90,7 +90,7 @@
                                 @checked(in_array($key, $ticked, true))
                                 class="mt-0.5 h-[18px] w-[18px] shrink-0 cursor-pointer accent-brand"
                             />
-                            <span>{{ $meta['label'] }}</span>
+                            <span>{{ __($meta['label']) }}</span>
                         </label>
                     @endforeach
                 </div>

@@ -6,7 +6,7 @@
     live in its cells) plus a button that table-selection.js reveals
     once at least one row is checked.
 --}}
-@props(['id', 'action', 'label' => 'Export Selected ({count})'])
+@props(['id', 'action', 'label' => __('Export Selected ({count})')])
 
 <form id="{{ $id }}" method="POST" action="{{ $action }}">
     @csrf

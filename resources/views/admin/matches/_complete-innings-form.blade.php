@@ -10,10 +10,10 @@
     class="mt-4 grid gap-x-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
 >
     @csrf
-    <x-form.input name="reason" label="Reason for completing this innings now" placeholder="e.g. Bad light, umpire's decision" />
+    <x-form.input name="reason" :label="__('Reason for completing this innings now')" :placeholder="__('e.g. Bad light, umpire\'s decision')" />
     <div class="mb-3.5">
         <button type="submit" class="btn btn-secondary min-h-10 max-sm:w-full">
-            Complete Innings
+            {{ __('Complete Innings') }}
         </button>
     </div>
 </form>

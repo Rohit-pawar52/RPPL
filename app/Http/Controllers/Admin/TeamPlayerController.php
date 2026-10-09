@@ -83,7 +83,7 @@ class TeamPlayerController extends Controller
 
         return redirect()
             ->route('admin.team-players.index')
-            ->with('success', 'Player added to squad successfully.');
+            ->with('success', __('Player added to squad successfully.'));
     }
 
     public function show(TeamPlayer $teamPlayer): View
@@ -118,7 +118,7 @@ class TeamPlayerController extends Controller
 
         return redirect()
             ->route('admin.team-players.index')
-            ->with('success', 'Squad player updated successfully.');
+            ->with('success', __('Squad player updated successfully.'));
     }
 
     public function destroy(TeamPlayer $teamPlayer): RedirectResponse
@@ -128,11 +128,11 @@ class TeamPlayerController extends Controller
         if (! $this->teamPlayers->deleteTeamPlayer($teamPlayer)) {
             return redirect()
                 ->route('admin.team-players.index')
-                ->with('error', 'This squad player cannot be removed because match history exists.');
+                ->with('error', __('This squad player cannot be removed because match history exists.'));
         }
 
         return redirect()
             ->route('admin.team-players.index')
-            ->with('success', 'Player removed from squad successfully.');
+            ->with('success', __('Player removed from squad successfully.'));
     }
 }

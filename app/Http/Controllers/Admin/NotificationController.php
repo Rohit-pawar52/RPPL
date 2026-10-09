@@ -66,7 +66,7 @@ class NotificationController extends Controller
 
         return redirect()
             ->route('admin.notifications.index')
-            ->with('success', 'Notification created successfully.');
+            ->with('success', __('Notification created successfully.'));
     }
 
     public function show(Notification $notification): View
@@ -109,7 +109,7 @@ class NotificationController extends Controller
 
         return redirect()
             ->route('admin.notifications.index')
-            ->with('success', 'Notification updated successfully.');
+            ->with('success', __('Notification updated successfully.'));
     }
 
     /**
@@ -127,11 +127,11 @@ class NotificationController extends Controller
         if (! $result['dispatched']) {
             return redirect()
                 ->route('admin.notifications.show', $notification)
-                ->with('error', 'The notification was recorded but could not be queued for sending. Please try again, or contact a developer if this keeps happening.');
+                ->with('error', __('The notification was recorded but could not be queued for sending. Please try again, or contact a developer if this keeps happening.'));
         }
 
         return redirect()
             ->route('admin.notifications.show', $notification)
-            ->with('success', 'Notification queued for sending.');
+            ->with('success', __('Notification queued for sending.'));
     }
 }

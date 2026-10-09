@@ -59,11 +59,11 @@ trait ValidatesRegistrationPeriod
         if (filled($opensAt) && filled($closesAt)
             && ! $validator->errors()->hasAny(['registration_opens_at', 'registration_closes_at'])
             && $closesAt <= $opensAt) {
-            $validator->errors()->add('registration_closes_at', 'Registration must close after it opens.');
+            $validator->errors()->add('registration_closes_at', __('Registration must close after it opens.'));
         }
 
         if ($this->boolean('registration_reminder_enabled') && blank($closesAt)) {
-            $validator->errors()->add('registration_closes_at', 'Set a registration closing time to use the closing reminder.');
+            $validator->errors()->add('registration_closes_at', __('Set a registration closing time to use the closing reminder.'));
         }
     }
 }

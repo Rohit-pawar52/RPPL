@@ -46,7 +46,7 @@ class AnalyticsController extends Controller
             $days = Carbon::parse($request->query('from_date'))->diffInDays(Carbon::parse($request->query('to_date'))) + 1;
 
             if ($days > AdminAnalyticsService::MAX_RANGE_DAYS) {
-                $validator->errors()->add('to_date', 'Choose a range of at most '.AdminAnalyticsService::MAX_RANGE_DAYS.' days.');
+                $validator->errors()->add('to_date', __('Choose a range of at most :days days.', ['days' => AdminAnalyticsService::MAX_RANGE_DAYS]));
             }
         });
 

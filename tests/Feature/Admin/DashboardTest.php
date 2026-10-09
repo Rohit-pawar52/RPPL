@@ -231,7 +231,7 @@ class DashboardTest extends TestCase
         $response->assertDontSee('Registration Payments')
             ->assertDontSee('View ledger')
             ->assertDontSee('View full Reports')
-            ->assertDontSee('paid,')
+            ->assertDontSee('Paid Amount')
             ->assertDontSee('awaiting payment verification')
             ->assertDontSee(route('admin.edition-transactions.index'), false)
             ->assertDontSee(route('admin.edition-contributions.index'), false)

@@ -9,38 +9,38 @@
 
 <div class="crud-grid">
     <div class="crud-main">
-        <x-admin.card title="Amount">
+        <x-admin.card :title="__('Amount')">
             <div class="crud-cols">
                 <x-form.select
                     name="type"
-                    label="Type"
-                    placeholder="Select type"
-                    :options="['income' => 'Income', 'expense' => 'Expense']"
+                    :label="__('Type')"
+                    :placeholder="__('Select type')"
+                    :options="['income' => __('Income'), 'expense' => __('Expense')]"
                     :value="$prefillType"
                     required
                     :autofocus="$prefillType === ''"
-                    help="Income is money coming in; expense is money going out."
+                    :help="__('Income is money coming in; expense is money going out.')"
                 />
-                <x-form.input name="amount" label="Amount" type="number" step="0.01" min="0.01" inputmode="decimal" :value="$transaction->amount ?? ''" required :autofocus="$prefillType !== ''" />
+                <x-form.input name="amount" :label="__('Amount')" type="number" step="0.01" min="0.01" inputmode="decimal" :value="$transaction->amount ?? ''" required :autofocus="$prefillType !== ''" />
             </div>
 
-            <x-form.input name="category" label="Category" :value="$transaction->category ?? ''" placeholder="e.g. Trophies, Sponsorship, Ground rent" />
-            <x-form.input name="description" label="Description" :value="$transaction->description ?? ''" />
+            <x-form.input name="category" :label="__('Category')" :value="$transaction->category ?? ''" :placeholder="__('e.g. Trophies, Sponsorship, Ground rent')" />
+            <x-form.input name="description" :label="__('Description')" :value="$transaction->description ?? ''" />
         </x-admin.card>
     </div>
 
     <div class="crud-aside">
-        <x-admin.card title="Where and when">
+        <x-admin.card :title="__('Where and when')">
             <x-form.select
                 name="edition_id"
-                label="Edition"
-                placeholder="Select edition"
+                :label="__('Edition')"
+                :placeholder="__('Select edition')"
                 :options="$editions->pluck('name', 'id')"
                 :value="$prefillEdition"
             />
             <x-form.input
                 name="transaction_date"
-                label="Date"
+                :label="__('Date')"
                 type="date"
                 :value="$transaction?->transaction_date?->format('Y-m-d') ?? ''"
                 required

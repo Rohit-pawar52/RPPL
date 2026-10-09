@@ -78,7 +78,7 @@ class StoreEditionContributionRequest extends FormRequest
                     'integer',
                     function ($attribute, $value, $fail) {
                         if (! Contributor::where('id', $value)->where('is_active', true)->exists()) {
-                            $fail('The selected contributor must be active.');
+                            $fail(__('The selected contributor must be active.'));
                         }
                     },
                 ],
@@ -101,7 +101,7 @@ class StoreEditionContributionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'contributor_id.prohibited' => 'Choose a contributor from the list, or add a new one below - not both.',
+            'contributor_id.prohibited' => __('Choose a contributor from the list, or add a new one below - not both.'),
         ];
     }
 
@@ -111,10 +111,10 @@ class StoreEditionContributionRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'new_name' => 'name',
-            'new_village' => 'village',
-            'new_phone' => 'phone',
-            'new_address' => 'address',
+            'new_name' => __('name'),
+            'new_village' => __('village'),
+            'new_phone' => __('phone'),
+            'new_address' => __('address'),
         ];
     }
 

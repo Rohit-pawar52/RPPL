@@ -74,7 +74,7 @@ class AuctionController extends Controller
         return $this->attempt(
             $edition,
             fn () => $this->auctions->create($edition, $request->user(), $request->settings()),
-            'Auction created. Check the rules and the players, then start it.',
+            __('Auction created. Check the rules and the players, then start it.'),
         );
     }
 
@@ -86,7 +86,7 @@ class AuctionController extends Controller
         return $this->attempt(
             $edition,
             fn () => $this->auctions->updateSettings($auction, $request->settings(), $request->teamPurses()),
-            'Auction settings saved. They apply from the next bid.',
+            __('Auction settings saved. They apply from the next bid.'),
         );
     }
 
@@ -103,7 +103,7 @@ class AuctionController extends Controller
 
         return redirect()
             ->route('admin.auctions.show', $edition)
-            ->with('success', "Pool updated: {$result['added']} added, {$result['removed']} removed.");
+            ->with('success', __('Pool updated: :added added, :removed removed.', ['added' => $result['added'], 'removed' => $result['removed']]));
     }
 
     public function start(Request $request, Edition $edition): RedirectResponse
@@ -119,7 +119,7 @@ class AuctionController extends Controller
 
         $this->notifications->started($auction->fresh(), $request->user());
 
-        return redirect()->route('admin.auctions.show', $edition)->with('success', 'The auction is live.');
+        return redirect()->route('admin.auctions.show', $edition)->with('success', __('The auction is live.'));
     }
 
     public function pause(Edition $edition): RedirectResponse
@@ -127,7 +127,7 @@ class AuctionController extends Controller
         $auction = $this->auctionOf($edition);
         $this->authorize('update', $auction);
 
-        return $this->attempt($edition, fn () => $this->auctions->pause($auction), 'The auction is paused.');
+        return $this->attempt($edition, fn () => $this->auctions->pause($auction), __('The auction is paused.'));
     }
 
     public function resume(Edition $edition): RedirectResponse
@@ -135,7 +135,7 @@ class AuctionController extends Controller
         $auction = $this->auctionOf($edition);
         $this->authorize('update', $auction);
 
-        return $this->attempt($edition, fn () => $this->auctions->resume($auction), 'The auction is live again.');
+        return $this->attempt($edition, fn () => $this->auctions->resume($auction), __('The auction is live again.'));
     }
 
     public function complete(Request $request, Edition $edition): RedirectResponse
@@ -151,12 +151,12 @@ class AuctionController extends Controller
 
         $this->notifications->completed($auction->fresh(), $request->user());
 
-        $message = "The auction is completed. {$result['unsold']} players were left unsold.";
+        $message = __('The auction is completed. :count players were left unsold.', ['count' => $result['unsold']]);
 
         if ($result['short_teams']->isNotEmpty()) {
-            $message .= ' Still short of the minimum squad: '.$result['short_teams']
-                ->map(fn (array $row) => $row['edition_team']->team->name.' (needs '.$row['missing'].')')
-                ->implode(', ').'.';
+            $message .= ' '.__('Still short of the minimum squad: :teams.', ['teams' => $result['short_teams']
+                ->map(fn (array $row) => __(':team (needs :count)', ['team' => $row['edition_team']->team->name, 'count' => $row['missing']]))
+                ->implode(', ')]);
         }
 
         return redirect()->route('admin.auctions.show', $edition)->with('success', $message);

@@ -41,6 +41,15 @@ class UpdateUserRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'email.unique' => __('The :attribute has already been taken.'),
+            'password.confirmed' => __('The :attribute field confirmation does not match.'),
+            'password.min' => __('The :attribute field must be at least :min characters.'),
+        ];
+    }
+
     /**
      * The self-lockout and last-active-admin rules from this phase's
      * spec are cross-field/data-dependent business rules, not simple
@@ -62,11 +71,11 @@ class UpdateUserRequest extends FormRequest
 
             if ($actingUser->id === $target->id) {
                 if ($isDeactivating) {
-                    $validator->errors()->add('is_active', 'You cannot deactivate your own account.');
+                    $validator->errors()->add('is_active', __('You cannot deactivate your own account.'));
                 }
 
                 if ($isDemotingFromAdmin) {
-                    $validator->errors()->add('role_id', 'You cannot remove your own administrator role.');
+                    $validator->errors()->add('role_id', __('You cannot remove your own administrator role.'));
                 }
 
                 return;
@@ -74,7 +83,7 @@ class UpdateUserRequest extends FormRequest
 
             if ($target->role?->slug === 'admin' && ($isDeactivating || $isDemotingFromAdmin) && $this->isLastActiveAdmin($target)) {
                 $field = $isDeactivating ? 'is_active' : 'role_id';
-                $validator->errors()->add($field, 'At least one active administrator account must remain.');
+                $validator->errors()->add($field, __('At least one active administrator account must remain.'));
             }
         });
     }

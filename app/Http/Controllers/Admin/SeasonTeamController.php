@@ -71,7 +71,7 @@ class SeasonTeamController extends Controller
 
         return redirect()
             ->route('admin.editions.teams.index', $edition)
-            ->with('success', 'Team created and added to the season.');
+            ->with('success', __('Team created and added to the season.'));
     }
 
     public function destroy(Edition $edition, EditionTeam $editionTeam): RedirectResponse
@@ -102,6 +102,6 @@ class SeasonTeamController extends Controller
 
         return redirect()
             ->route('admin.editions.teams.index', $edition)
-            ->with('error', 'This season is completed, so new teams cannot be added.');
+            ->with('error', __('This season is completed, so new teams cannot be added.'));
     }
 }

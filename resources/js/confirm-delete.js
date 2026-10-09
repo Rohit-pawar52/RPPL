@@ -1,3 +1,5 @@
+import { t } from './i18n';
+
 /**
  * Generic delete-confirmation wiring for any form marked
  * data-confirm-delete, using the SweetAlert confirmAction() helper
@@ -12,7 +14,7 @@ export function initConfirmDeleteForms() {
             window.confirmAction({
                 title: form.dataset.confirmTitle,
                 text: form.dataset.confirmText,
-                confirmButtonText: 'Yes, delete',
+                confirmButtonText: t('Yes, delete'),
                 danger: true,
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -37,7 +39,7 @@ export function initConfirmActionForms() {
             window.confirmAction({
                 title: form.dataset.confirmTitle,
                 text: form.dataset.confirmText,
-                confirmButtonText: form.dataset.confirmButtonText ?? 'Yes, continue',
+                confirmButtonText: form.dataset.confirmButtonText ?? t('Yes, continue'),
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit();
@@ -87,9 +89,9 @@ function lockSubmittedForm(event) {
             const original = button.tagName === 'INPUT' ? button.value : button.innerHTML;
 
             if (isSubmitter && button.tagName === 'BUTTON' && !button.querySelector('svg')) {
-                button.textContent = button.dataset.loadingText ?? 'Saving…';
+                button.textContent = button.dataset.loadingText ?? t('Saving…');
             } else if (isSubmitter && button.tagName === 'INPUT') {
-                button.value = button.dataset.loadingText ?? 'Saving…';
+                button.value = button.dataset.loadingText ?? t('Saving…');
             }
 
             button.disabled = true;

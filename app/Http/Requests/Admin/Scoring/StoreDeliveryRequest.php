@@ -90,7 +90,7 @@ class StoreDeliveryRequest extends FormRequest
                 'integer',
                 function ($attribute, $value, $fail) use ($deliveries, $match, $innings) {
                     if ($value !== null && ! $deliveries->matchPlayerBelongsToTeam((int) $value, $match, $innings->batting_team_id)) {
-                        $fail('The striker must be a selected player from the batting team.');
+                        $fail(__('The striker must be a selected player from the batting team.'));
                     }
                 },
             ],
@@ -100,7 +100,7 @@ class StoreDeliveryRequest extends FormRequest
                 'different:striker_match_player_id',
                 function ($attribute, $value, $fail) use ($deliveries, $match, $innings) {
                     if ($value !== null && ! $deliveries->matchPlayerBelongsToTeam((int) $value, $match, $innings->batting_team_id)) {
-                        $fail('The non-striker must be a selected player from the batting team.');
+                        $fail(__('The non-striker must be a selected player from the batting team.'));
                     }
                 },
             ],
@@ -109,7 +109,7 @@ class StoreDeliveryRequest extends FormRequest
                 'integer',
                 function ($attribute, $value, $fail) use ($deliveries, $match, $innings) {
                     if ($value !== null && ! $deliveries->matchPlayerBelongsToTeam((int) $value, $match, $innings->bowling_team_id)) {
-                        $fail('The bowler must be a selected player from the bowling team.');
+                        $fail(__('The bowler must be a selected player from the bowling team.'));
                     }
                 },
                 function ($attribute, $value, $fail) use ($deliveries, $innings) {
@@ -120,7 +120,7 @@ class StoreDeliveryRequest extends FormRequest
                     $previousBowlerId = $deliveries->bowlerOfPreviousOver($innings);
 
                     if ($previousBowlerId !== null && $previousBowlerId === (int) $value) {
-                        $fail('The same bowler cannot bowl two overs in a row.');
+                        $fail(__('The same bowler cannot bowl two overs in a row.'));
                     }
                 },
             ],
@@ -133,13 +133,13 @@ class StoreDeliveryRequest extends FormRequest
                 'nullable', 'integer', 'min:0', 'max:6',
                 function ($attribute, $value, $fail) {
                     if ($value && $this->boolean('is_wide')) {
-                        $fail('Byes cannot be recorded on a wide.');
+                        $fail(__('Byes cannot be recorded on a wide.'));
                     }
                     if ($value && (int) $this->input('leg_bye_runs', 0) > 0) {
-                        $fail('A delivery cannot be both a bye and a leg-bye.');
+                        $fail(__('A delivery cannot be both a bye and a leg-bye.'));
                     }
                     if ($value && (int) $this->input('runs_off_bat', 0) > 0) {
-                        $fail('A delivery cannot have both bat runs and byes.');
+                        $fail(__('A delivery cannot have both bat runs and byes.'));
                     }
                 },
             ],
@@ -147,10 +147,10 @@ class StoreDeliveryRequest extends FormRequest
                 'nullable', 'integer', 'min:0', 'max:6',
                 function ($attribute, $value, $fail) {
                     if ($value && $this->boolean('is_wide')) {
-                        $fail('Leg-byes cannot be recorded on a wide.');
+                        $fail(__('Leg-byes cannot be recorded on a wide.'));
                     }
                     if ($value && (int) $this->input('runs_off_bat', 0) > 0) {
-                        $fail('A delivery cannot have both bat runs and leg-byes.');
+                        $fail(__('A delivery cannot have both bat runs and leg-byes.'));
                     }
                 },
             ],
@@ -163,7 +163,7 @@ class StoreDeliveryRequest extends FormRequest
                 'nullable', 'integer', 'min:0', 'max:11',
                 function ($attribute, $value, $fail) {
                     if ($value && $this->boolean('is_wide')) {
-                        $fail('A wide cannot carry bat runs.');
+                        $fail(__('A wide cannot carry bat runs.'));
                     }
                 },
             ],
@@ -185,8 +185,8 @@ class StoreDeliveryRequest extends FormRequest
                 function ($attribute, $value, $fail) use ($deliveries, $isFreeHit) {
                     if ($value && ! in_array($value, $deliveries->validWicketTypesForDelivery($this->boolean('is_wide'), $this->boolean('is_no_ball'), $isFreeHit), true)) {
                         $fail($isFreeHit
-                            ? 'Only Run Out or Obstructing the Field may dismiss the batter on a Free Hit.'
-                            : 'This dismissal type is not valid for this kind of delivery.');
+                            ? __('Only Run Out or Obstructing the Field may dismiss the batter on a Free Hit.')
+                            : __('This dismissal type is not valid for this kind of delivery.'));
                     }
                 },
             ],
@@ -207,7 +207,7 @@ class StoreDeliveryRequest extends FormRequest
                     [$strikerId, $nonStrikerId] = $this->effectiveStrikerAndNonStriker($deliveries, $innings);
 
                     if (! in_array((int) $value, [$strikerId, $nonStrikerId], true)) {
-                        $fail('The dismissed player must be the striker or non-striker on this delivery.');
+                        $fail(__('The dismissed player must be the striker or non-striker on this delivery.'));
                     }
                 },
             ],
@@ -222,19 +222,19 @@ class StoreDeliveryRequest extends FormRequest
                     }
 
                     if ($deliveries->dismissalRequiresFielder($wicketType) && ! $value) {
-                        $fail('A fielder is required for this dismissal type.');
+                        $fail(__('A fielder is required for this dismissal type.'));
 
                         return;
                     }
 
                     if ($deliveries->dismissalForbidsFielder($wicketType) && $value) {
-                        $fail('A fielder must not be recorded for this dismissal type.');
+                        $fail(__('A fielder must not be recorded for this dismissal type.'));
 
                         return;
                     }
 
                     if ($value && ! $deliveries->matchPlayerBelongsToTeam((int) $value, $match, $innings->bowling_team_id)) {
-                        $fail('The fielder must be a selected player from the bowling team.');
+                        $fail(__('The fielder must be a selected player from the bowling team.'));
                     }
                 },
             ],
@@ -244,7 +244,7 @@ class StoreDeliveryRequest extends FormRequest
                 Rule::in(['striker', 'non_striker']),
                 function ($attribute, $value, $fail) {
                     if ($value && ! in_array($this->input('wicket_type'), ['run_out', 'obstructing_field'], true)) {
-                        $fail('The survivor\'s end can only be confirmed for a run out or obstructing the field.');
+                        $fail(__('The survivor\'s end can only be confirmed for a run out or obstructing the field.'));
                     }
                 },
             ],

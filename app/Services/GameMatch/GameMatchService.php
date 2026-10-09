@@ -24,7 +24,7 @@ class GameMatchService
         } catch (QueryException $e) {
             if ((int) $e->getCode() === 23000) {
                 throw ValidationException::withMessages([
-                    'match_number' => 'This match number is already used in the selected edition.',
+                    'match_number' => __('This match number is already used in the selected edition.'),
                 ]);
             }
 
@@ -46,7 +46,7 @@ class GameMatchService
         } catch (QueryException $e) {
             if ((int) $e->getCode() === 23000) {
                 throw ValidationException::withMessages([
-                    'match_number' => 'This match number is already used in the selected edition.',
+                    'match_number' => __('This match number is already used in the selected edition.'),
                 ]);
             }
 

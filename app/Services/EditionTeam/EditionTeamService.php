@@ -32,7 +32,7 @@ class EditionTeamService
         } catch (QueryException $e) {
             if ((int) $e->getCode() === 23000) {
                 throw ValidationException::withMessages([
-                    'team_id' => 'This team is already participating in the selected edition.',
+                    'team_id' => __('This team is already participating in the selected edition.'),
                 ]);
             }
 

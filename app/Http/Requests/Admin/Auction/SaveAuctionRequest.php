@@ -38,7 +38,7 @@ abstract class SaveAuctionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'max_squad.gte' => 'The maximum squad cannot be smaller than the minimum squad.',
+            'max_squad.gte' => __('The maximum squad cannot be smaller than the minimum squad.'),
         ];
     }
 

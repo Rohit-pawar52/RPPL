@@ -37,7 +37,7 @@ class UndoService
             $lockedInnings = Innings::query()->whereKey($innings->id)->lockForUpdate()->firstOrFail();
 
             if (! $this->deliveries->isInningsUndoable($match, $lockedInnings)) {
-                return ['undone' => false, 'type' => null, 'message' => 'This innings can no longer be corrected.'];
+                return ['undone' => false, 'type' => null, 'message' => __('This innings can no longer be corrected.')];
             }
 
             $latestDelivery = Delivery::query()
@@ -55,7 +55,7 @@ class UndoService
                 ->first();
 
             if (! $latestDelivery && ! $latestEvent) {
-                return ['undone' => false, 'type' => null, 'message' => 'There is nothing to undo right now.'];
+                return ['undone' => false, 'type' => null, 'message' => __('There is nothing to undo right now.')];
             }
 
             $deliverySequence = $latestDelivery?->action_sequence ?? -1;
@@ -67,7 +67,7 @@ class UndoService
                 return [
                     'undone' => $ok,
                     'type' => 'delivery',
-                    'message' => $ok ? 'Last delivery undone successfully.' : 'There is no delivery to undo right now.',
+                    'message' => $ok ? __('Last delivery undone successfully.') : __('There is no delivery to undo right now.'),
                 ];
             }
 
@@ -94,7 +94,7 @@ class UndoService
         // missing, refusing is the safe failure mode rule 42.8 asks for,
         // never a guessed reconstruction.
         if ($affectsPendingState && ! is_array($beforeState)) {
-            return ['undone' => false, 'type' => $event->type, 'message' => 'This action cannot be safely undone.'];
+            return ['undone' => false, 'type' => $event->type, 'message' => __('This action cannot be safely undone.')];
         }
 
         $event->update(['undone_at' => now(), 'undone_by' => $performedBy->id]);
@@ -135,14 +135,14 @@ class UndoService
     private function undoMessageFor(string $type): string
     {
         return match ($type) {
-            ScoringEvent::TYPE_CHANGE_STRIKE => 'Strike correction undone.',
-            ScoringEvent::TYPE_RETIRED_HURT => 'Retired hurt undone.',
-            ScoringEvent::TYPE_RETIRED_OUT => 'Retired out undone.',
-            ScoringEvent::TYPE_BOWLER_CHANGE_MID_OVER => 'Mid-over bowler change undone.',
-            ScoringEvent::TYPE_NEW_BATTER_SELECTED => 'New batter selection undone.',
-            ScoringEvent::TYPE_OVER_BOWLER_SELECTED => 'Over bowler selection undone.',
-            ScoringEvent::TYPE_PENALTY_RUNS => 'Penalty runs award undone.',
-            default => 'Last action undone.',
+            ScoringEvent::TYPE_CHANGE_STRIKE => __('Strike correction undone.'),
+            ScoringEvent::TYPE_RETIRED_HURT => __('Retired hurt undone.'),
+            ScoringEvent::TYPE_RETIRED_OUT => __('Retired out undone.'),
+            ScoringEvent::TYPE_BOWLER_CHANGE_MID_OVER => __('Mid-over bowler change undone.'),
+            ScoringEvent::TYPE_NEW_BATTER_SELECTED => __('New batter selection undone.'),
+            ScoringEvent::TYPE_OVER_BOWLER_SELECTED => __('Over bowler selection undone.'),
+            ScoringEvent::TYPE_PENALTY_RUNS => __('Penalty runs award undone.'),
+            default => __('Last action undone.'),
         };
     }
 }

@@ -20,12 +20,12 @@
                 type="button"
                 class="scorer-over-ball scorer-over-ball-correctable sc-ball sc-ball-correctable sc-ball-{{ $kind }}"
                 data-delivery-id="{{ $ball['id'] }}"
-                title="Tap to correct this delivery"
+                title="{{ __('Tap to correct this delivery') }}"
             >{{ $label }}</button>
         @else
             <span class="sc-ball sc-ball-{{ $kind }}">{{ $label }}</span>
         @endif
     @endforeach
 @else
-    <span class="text-xs text-white/60">No deliveries yet.</span>
+    <span class="text-xs text-white/60">{{ __('No deliveries yet.') }}</span>
 @endif

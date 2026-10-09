@@ -70,7 +70,7 @@ class VenueController extends Controller
 
         return redirect()
             ->route('admin.venues.index')
-            ->with('success', 'Venue created successfully.');
+            ->with('success', __('Venue created successfully.'));
     }
 
     public function show(Venue $venue): View
@@ -104,7 +104,7 @@ class VenueController extends Controller
 
         return redirect()
             ->route('admin.venues.index')
-            ->with('success', 'Venue updated successfully.');
+            ->with('success', __('Venue updated successfully.'));
     }
 
     public function destroy(Venue $venue): RedirectResponse
@@ -114,11 +114,11 @@ class VenueController extends Controller
         if (! $this->venues->deleteVenue($venue)) {
             return redirect()
                 ->route('admin.venues.index')
-                ->with('error', 'This venue cannot be deleted because match history exists. Deactivate the venue instead if it should no longer be available.');
+                ->with('error', __('This venue cannot be deleted because match history exists. Deactivate the venue instead if it should no longer be available.'));
         }
 
         return redirect()
             ->route('admin.venues.index')
-            ->with('success', 'Venue deleted successfully.');
+            ->with('success', __('Venue deleted successfully.'));
     }
 }

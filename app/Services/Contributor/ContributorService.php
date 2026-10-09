@@ -149,11 +149,17 @@ class ContributorService
     {
         $first = $matches->first();
         $who = trim((string) $first->village) === ''
-            ? $first->name.' (no village recorded)'
+            ? __(':name (no village recorded)', ['name' => $first->name])
             : $first->name.' — '.$first->village;
-        $more = $matches->count() > 1 ? ' and '.($matches->count() - 1).' more like them' : '';
 
-        return "{$who}{$more} is already a contributor. Use that one from the list, or tick \"This is a different person\" and save again to add another.";
+        if ($matches->count() > 1) {
+            $who = __(':who and :count more like them', ['who' => $who, 'count' => $matches->count() - 1]);
+        }
+
+        return __(':who is already a contributor. Use that one from the list, or tick ":label" and save again to add another.', [
+            'who' => $who,
+            'label' => __('This is a different person'),
+        ]);
     }
 
     /**

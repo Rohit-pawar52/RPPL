@@ -4,11 +4,11 @@
      registrations), not editions.view, so the first two crumbs are links only for a role that may
      open the editions list and the hub. --}}
 @php $canOpenEditions = auth()->user()->can('viewAny', \App\Models\Edition::class); @endphp
-<nav aria-label="Season" class="mb-3 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+<nav aria-label="{{ __('Season') }}" class="mb-3 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
     @if($canOpenEditions)
-        <a href="{{ route('admin.editions.index') }}" class="hover:text-slate-800 hover:underline">Editions</a>
+        <a href="{{ route('admin.editions.index') }}" class="hover:text-slate-800 hover:underline">{{ __('Editions') }}</a>
     @else
-        <span>Editions</span>
+        <span>{{ __('Editions') }}</span>
     @endif
     <span class="text-slate-300" aria-hidden="true">&rsaquo;</span>
     @if(! empty($section))

@@ -69,7 +69,7 @@ class EditionTeamController extends Controller
 
         return redirect()
             ->route('admin.edition-teams.index')
-            ->with('success', 'Team added to edition successfully.');
+            ->with('success', __('Team added to edition successfully.'));
     }
 
     public function show(EditionTeam $editionTeam): View
@@ -91,11 +91,11 @@ class EditionTeamController extends Controller
         if (! $this->editionTeams->deleteEditionTeam($editionTeam)) {
             return redirect()
                 ->route('admin.edition-teams.index')
-                ->with('error', 'This team cannot be removed from the edition because tournament data already exists.');
+                ->with('error', __('This team cannot be removed from the edition because tournament data already exists.'));
         }
 
         return redirect()
             ->route('admin.edition-teams.index')
-            ->with('success', 'Team removed from edition successfully.');
+            ->with('success', __('Team removed from edition successfully.'));
     }
 }

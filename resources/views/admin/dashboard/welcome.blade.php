@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Dashboard')
+@section('title', __('Dashboard'))
 @section('bare', '1')
 
 {{-- Shown to a role that may enter the panel but has no dashboard of its own
@@ -9,7 +9,7 @@
 @section('content')
     @php
         $hour = (int) display_datetime(now(), 'G');
-        $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening');
+        $greeting = $hour < 12 ? __('Good morning') : ($hour < 17 ? __('Good afternoon') : __('Good evening'));
         $firstName = \Illuminate\Support\Str::before(trim(auth()->user()->name), ' ');
     @endphp
 
@@ -18,14 +18,13 @@
         <div class="relative">
             <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-dark">{{ display_datetime(now(), 'l, j F') }}</p>
             <h1 class="mt-1.5 break-words text-2xl font-bold tracking-tight sm:text-3xl">{{ $greeting }}, {{ $firstName }}</h1>
-            <p class="mt-2 text-[13px] text-white/70">You are signed in as {{ auth()->user()->role?->name }}.</p>
+            <p class="mt-2 text-[13px] text-white/70">{{ __('You are signed in as :role.', ['role' => auth()->user()->role?->name]) }}</p>
         </div>
     </section>
 
-    <x-admin.card title="Welcome" class="mt-6 max-w-2xl">
+    <x-admin.card :title="__('Welcome')" class="mt-6 max-w-2xl">
         <p class="text-[13px] leading-5 text-slate-600">
-            Use the sections in the sidebar, or press <kbd class="adm-kbd">Ctrl K</kbd> and type a few letters,
-            to get to the pages your role can open.
+            {!! __('Use the sections in the sidebar, or press :key and type a few letters, to get to the pages your role can open.', ['key' => '<kbd class="adm-kbd">Ctrl K</kbd>']) !!}
         </p>
     </x-admin.card>
 @endsection

@@ -50,11 +50,11 @@ class StoreNewsRequest extends FormRequest
     public static function imageMessages(): array
     {
         return [
-            'images.max' => 'You can attach at most '.News::MAX_IMAGES.' images to a news item.',
-            'images.*.image' => 'Each image must be a JPG, PNG or WebP file.',
-            'images.*.mimes' => 'Each image must be a JPG, PNG or WebP file.',
-            'images.*.max' => 'Each image must not be larger than 5 MB.',
-            'images.*.uploaded' => 'One of the images could not be uploaded. It may be larger than the server allows.',
+            'images.max' => __('You can attach at most :max images to a news item.', ['max' => News::MAX_IMAGES]),
+            'images.*.image' => __('Each image must be a JPG, PNG or WebP file.'),
+            'images.*.mimes' => __('Each image must be a JPG, PNG or WebP file.'),
+            'images.*.max' => __('Each image must not be larger than 5 MB.'),
+            'images.*.uploaded' => __('One of the images could not be uploaded. It may be larger than the server allows.'),
         ];
     }
 

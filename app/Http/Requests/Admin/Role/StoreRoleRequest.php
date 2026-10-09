@@ -53,13 +53,13 @@ class StoreRoleRequest extends FormRequest
                 function (string $attribute, mixed $value, Closure $fail) use ($ignore) {
                     // The slug is made from the name, so it needs something to make it from.
                     if (Str::slug($value) === '') {
-                        $fail('The name must contain at least one English letter or number.');
+                        $fail(__('The name must contain at least one English letter or number.'));
 
                         return;
                     }
 
                     if (app(RoleService::class)->nameIsTaken($value, $ignore)) {
-                        $fail('A role with this name (or one that reads the same) already exists.');
+                        $fail(__('A role with this name (or one that reads the same) already exists.'));
                     }
                 },
             ],
@@ -83,8 +83,8 @@ class StoreRoleRequest extends FormRequest
     public static function sharedMessages(): array
     {
         return [
-            'permissions.*.in' => 'One of the selected permissions is not valid.',
-            'permissions.*.string' => 'One of the selected permissions is not valid.',
+            'permissions.*.in' => __('One of the selected permissions is not valid.'),
+            'permissions.*.string' => __('One of the selected permissions is not valid.'),
         ];
     }
 }

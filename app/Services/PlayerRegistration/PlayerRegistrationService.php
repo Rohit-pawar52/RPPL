@@ -44,7 +44,7 @@ class PlayerRegistrationService
         } catch (QueryException $e) {
             if ((int) $e->getCode() === 23000) {
                 throw ValidationException::withMessages([
-                    'player_id' => 'This player is already registered for the selected edition.',
+                    'player_id' => __('This player is already registered for the selected edition.'),
                 ]);
             }
 

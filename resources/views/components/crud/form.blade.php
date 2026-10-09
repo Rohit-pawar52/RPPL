@@ -10,7 +10,7 @@
     method  POST (default) or PUT; files adds enctype for uploads.
     note    a small line shown left of the buttons on wide screens.
 --}}
-@props(['action', 'cancel', 'submit' => 'Save', 'method' => 'POST', 'files' => false, 'note' => null])
+@props(['action', 'cancel', 'submit' => __('Save'), 'method' => 'POST', 'files' => false, 'note' => null])
 
 <form method="POST" action="{{ $action }}" @if($files) enctype="multipart/form-data" @endif novalidate {{ $attributes }}>
     @csrf
@@ -22,7 +22,7 @@
 
     <x-admin.form-actions>
         <x-admin.button>{{ $submit }}</x-admin.button>
-        <x-admin.button :href="$cancel" variant="secondary">Cancel</x-admin.button>
+        <x-admin.button :href="$cancel" variant="secondary">{{ __('Cancel') }}</x-admin.button>
         @if($note)
             <p class="mr-auto hidden text-xs text-slate-500 md:block">{{ $note }}</p>
         @endif

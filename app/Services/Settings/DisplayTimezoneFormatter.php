@@ -24,9 +24,13 @@ class DisplayTimezoneFormatter
             return null;
         }
 
-        return $dateTime->copy()
-            ->setTimezone($this->settings->get('system.display_timezone'))
-            ->format($format);
+        $local = $dateTime->copy()->setTimezone($this->settings->get('system.display_timezone'));
+
+        // In English the plain format (exactly as stored output has always looked); in any other language
+        // the month and day names follow that language (03 अक्टू. 2026), digits and AM / PM unchanged.
+        return app()->getLocale() === 'en'
+            ? $local->format($format)
+            : $local->translatedFormat($format);
     }
 
     /**

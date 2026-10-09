@@ -44,7 +44,7 @@ class CreateOfflineSquadPlayerRequest extends FormRequest
      */
     public function messages(): array
     {
-        return ['phone.regex' => 'Enter a valid 10-digit Indian mobile number.'];
+        return ['phone.regex' => __('Enter a valid 10-digit Indian mobile number.')];
     }
 
     /**

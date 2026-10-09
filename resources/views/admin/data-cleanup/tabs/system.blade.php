@@ -14,22 +14,22 @@
 <section class="crud-card">
     <div class="crud-card-head">
         <div>
-            <h3 class="crud-card-title">Failed Jobs</h3>
-            <p class="crud-hint">Most recent first. Times shown in {{ $displayTimezone }}.</p>
+            <h3 class="crud-card-title">{{ __('Failed Jobs') }}</h3>
+            <p class="crud-hint">{{ __('Most recent first. Times shown in :timezone.', ['timezone' => $displayTimezone]) }}</p>
         </div>
-        <span class="crud-pill {{ $failedJobCount > 0 ? 'crud-pill-amber' : '' }}">{{ $failedJobCount }} total</span>
+        <span class="crud-pill {{ $failedJobCount > 0 ? 'crud-pill-amber' : '' }}">{{ __(':count total', ['count' => $failedJobCount]) }}</span>
     </div>
 
     <div class="crud-table-scroll">
         <table class="crud-table crud-stack">
             <thead>
                 <tr>
-                    <th>Failed At</th>
-                    <th>Job</th>
-                    <th class="hidden md:table-cell">Queue</th>
-                    <th class="hidden md:table-cell">Connection</th>
-                    <th>Error</th>
-                    <th class="text-right">Actions</th>
+                    <th>{{ __('Failed At') }}</th>
+                    <th>{{ __('Job') }}</th>
+                    <th class="hidden md:table-cell">{{ __('Queue') }}</th>
+                    <th class="hidden md:table-cell">{{ __('Connection') }}</th>
+                    <th>{{ __('Error') }}</th>
+                    <th class="text-right">{{ __('Actions') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -47,8 +47,8 @@
                             <div class="crud-actions">
                                 <a
                                     href="{{ route('admin.data-cleanup.failed-jobs.show', $failedJob->uuid) }}"
-                                    title="Details"
-                                    aria-label="View failed job details"
+                                    title="{{ __('Details') }}"
+                                    aria-label="{{ __('View failed job details') }}"
                                     class="crud-icon-btn"
                                 >
                                     <x-icon name="eye" class="h-4 w-4" />
@@ -57,7 +57,7 @@
                         </td>
                     </tr>
                 @empty
-                    <x-admin.empty table colspan="6" icon="shield">No failed jobs.</x-admin.empty>
+                    <x-admin.empty table colspan="6" icon="shield">{{ __('No failed jobs.') }}</x-admin.empty>
                 @endforelse
             </tbody>
         </table>
@@ -74,8 +74,8 @@
     <div class="crud-danger-head">
         <span class="crud-danger-icon"><x-icon name="trash" class="h-4 w-4" /></span>
         <div class="min-w-0">
-            <h3 class="crud-card-title">Delete Old Failed Jobs</h3>
-            <p class="crud-hint">{{ $failedJobCount }} total. Delete records before this date (selected date is not included) — times are interpreted in {{ $displayTimezone }}.</p>
+            <h3 class="crud-card-title">{{ __('Delete Old Failed Jobs') }}</h3>
+            <p class="crud-hint">{{ __(':count total. Delete records before this date (selected date is not included) — times are interpreted in :timezone.', ['count' => $failedJobCount, 'timezone' => $displayTimezone]) }}</p>
         </div>
     </div>
     <div class="crud-card-body">
@@ -83,28 +83,34 @@
             method="POST"
             action="{{ route('admin.data-cleanup.failed-jobs.destroy') }}"
             data-confirm-action
-            data-confirm-title="Delete old failed jobs?"
-            data-confirm-text="This permanently deletes every failed-job record that failed before the selected date. Pending/running queue work is never affected. This cannot be undone."
-            data-confirm-button-text="Yes, delete"
+            data-confirm-title="{{ __('Delete old failed jobs?') }}"
+            data-confirm-text="{{ __('This permanently deletes every failed-job record that failed before the selected date. Pending/running queue work is never affected. This cannot be undone.') }}"
+            data-confirm-button-text="{{ __('Yes, delete') }}"
         >
             @csrf
             @method('DELETE')
 
             <div class="flex flex-wrap items-end gap-3">
                 <div class="min-w-48 flex-1 sm:max-w-xs">
-                    <x-form.input name="before_date" label="Delete failed jobs from before" type="date" required data-cutoff-preview="failed-jobs" />
+                    <x-form.input name="before_date" :label="__('Delete failed jobs from before')" type="date" required data-cutoff-preview="failed-jobs" />
                 </div>
                 <button type="submit" class="btn btn-danger-soft mb-3.5">
-                    <x-icon name="trash" class="h-4 w-4" /> Delete failed jobs
+                    <x-icon name="trash" class="h-4 w-4" /> {{ __('Delete failed jobs') }}
                 </button>
             </div>
-            <p class="-mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600" data-cutoff-preview-result="failed-jobs">Select a date to see how many failed jobs this would affect.</p>
+            <p class="-mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600" data-cutoff-preview-result="failed-jobs">{{ __('Select a date to see how many failed jobs this would affect.') }}</p>
         </form>
     </div>
 </section>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // The texts this script shows, in the admin's language.
+        const text = {
+            noPreviewDate: @json(__('Could not calculate a preview for this date.')),
+            recordsDeleted: @json(__(':count record(s) would be deleted.')),
+        };
+
         document.querySelectorAll('[data-cutoff-preview]').forEach((input) => {
             const category = input.dataset.cutoffPreview;
             const result = document.querySelector(`[data-cutoff-preview-result="${category}"]`);
@@ -119,14 +125,14 @@
                     });
 
                     if (! response.ok) {
-                        result.textContent = 'Could not calculate a preview for this date.';
+                        result.textContent = text.noPreviewDate;
                         return;
                     }
 
                     const data = await response.json();
-                    result.textContent = `${data.count} record(s) would be deleted.`;
+                    result.textContent = text.recordsDeleted.replace(':count', data.count);
                 } catch (error) {
-                    result.textContent = 'Could not calculate a preview for this date.';
+                    result.textContent = text.noPreviewDate;
                 }
             });
         });

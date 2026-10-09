@@ -2,12 +2,12 @@
     @csrf
     @method('PUT')
 
-    <x-form.input name="email" label="Email" type="email" :value="$settings->get('contact.email')" maxlength="255" />
-    <x-form.input name="phone" label="Phone" :value="$settings->get('contact.phone')" maxlength="30" />
+    <x-form.input name="email" :label="__('Email')" type="email" :value="$settings->get('contact.email')" maxlength="255" />
+    <x-form.input name="phone" :label="__('Phone')" :value="$settings->get('contact.phone')" maxlength="30" />
     <x-form.input name="whatsapp" label="WhatsApp" :value="$settings->get('contact.whatsapp')" maxlength="30" />
 
     <div class="mb-3.5">
-        <label for="address" class="mb-1 block text-xs font-medium text-neutral-700">Address</label>
+        <label for="address" class="mb-1 block text-xs font-medium text-neutral-700">{{ __('Address') }}</label>
         <textarea
             id="address"
             name="address"
@@ -21,6 +21,6 @@
     </div>
 
     <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
-        Save changes
+        {{ __('Save changes') }}
     </button>
 </form>

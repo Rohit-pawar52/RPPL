@@ -1,20 +1,20 @@
 @extends('layouts.admin')
 
-@section('title', 'Transaction Details')
+@section('title', __('Transaction Details'))
 
 @section('content')
     @php $isIncome = $transaction->type === 'income'; @endphp
 
-    <x-crud.back :href="route('admin.edition-transactions.index')">Ledger</x-crud.back>
+    <x-crud.back :href="route('admin.edition-transactions.index')">{{ __('Ledger') }}</x-crud.back>
 
     <div class="space-y-4 lg:space-y-5">
         @if($transaction->contribution)
             <div class="crud-note crud-note-warn flex flex-wrap items-center justify-between gap-3">
                 <span>
-                    <span class="font-semibold">Created from contribution.</span>
-                    It is locked from manual editing/deletion here — a contribution and its ledger transaction are always changed together, only via the contribution itself.
+                    <span class="font-semibold">{{ __('Created from contribution.') }}</span>
+                    {{ __('It is locked from manual editing/deletion here — a contribution and its ledger transaction are always changed together, only via the contribution itself.') }}
                 </span>
-                <a href="{{ route('admin.edition-contributions.show', $transaction->contribution) }}" class="crud-link shrink-0 whitespace-nowrap">View Contribution &rarr;</a>
+                <a href="{{ route('admin.edition-contributions.show', $transaction->contribution) }}" class="crud-link shrink-0 whitespace-nowrap">{{ __('View Contribution') }} &rarr;</a>
             </div>
         @endif
 
@@ -32,25 +32,25 @@
                             <h2 class="crud-profile-name tabular-nums {{ $isIncome ? 'text-green-600!' : 'text-red-600!' }}">{{ $isIncome ? '+' : '−' }}{{ money($transaction->amount) }}</h2>
                             <x-status-badge :status="$transaction->type" />
                         </div>
-                        <p class="mt-1 text-sm text-slate-500">{{ $transaction->category ?: 'No category' }} &middot; {{ $transaction->transaction_date->format('d M Y') }}</p>
+                        <p class="mt-1 text-sm text-slate-500">{{ $transaction->category ?: __('No category') }} &middot; {{ $transaction->transaction_date->format('d M Y') }}</p>
                     </div>
                 </div>
 
                 @unless($transaction->contribution)
                     <div class="crud-profile-actions">
-                        <x-admin.button :href="route('admin.edition-transactions.edit', $transaction)" icon="pencil">Edit</x-admin.button>
+                        <x-admin.button :href="route('admin.edition-transactions.edit', $transaction)" icon="pencil">{{ __('Edit') }}</x-admin.button>
                     </div>
                 @endunless
             </div>
         </section>
 
-        <x-admin.card title="Details">
+        <x-admin.card :title="__('Details')">
             <dl class="crud-facts">
-                <x-crud.fact label="Edition">{{ $transaction->edition->name }}</x-crud.fact>
-                <x-crud.fact label="Date">{{ $transaction->transaction_date->format('d M Y') }}</x-crud.fact>
-                <x-crud.fact label="Category">{{ $transaction->category ?? '—' }}</x-crud.fact>
-                <x-crud.fact label="Recorded by">{{ $transaction->createdBy->name }}</x-crud.fact>
-                <x-crud.fact label="Description" class="col-span-2 sm:col-span-4">{{ $transaction->description ?? '—' }}</x-crud.fact>
+                <x-crud.fact :label="__('Edition')">{{ $transaction->edition->name }}</x-crud.fact>
+                <x-crud.fact :label="__('Date')">{{ $transaction->transaction_date->format('d M Y') }}</x-crud.fact>
+                <x-crud.fact :label="__('Category')">{{ $transaction->category ?? '—' }}</x-crud.fact>
+                <x-crud.fact :label="__('Recorded by')">{{ $transaction->createdBy->name }}</x-crud.fact>
+                <x-crud.fact :label="__('Description')" class="col-span-2 sm:col-span-4">{{ $transaction->description ?? '—' }}</x-crud.fact>
             </dl>
         </x-admin.card>
     </div>

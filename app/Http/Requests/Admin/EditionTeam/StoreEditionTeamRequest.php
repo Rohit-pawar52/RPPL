@@ -46,9 +46,9 @@ class StoreEditionTeamRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'edition_id.exists' => 'The selected edition is not currently accepting new team participation.',
-            'team_id.exists' => 'The selected team is not available for participation.',
-            'team_id.unique' => 'This team is already participating in the selected edition.',
+            'edition_id.exists' => __('The selected edition is not currently accepting new team participation.'),
+            'team_id.exists' => __('The selected team is not available for participation.'),
+            'team_id.unique' => __('This team is already participating in the selected edition.'),
         ];
     }
 }

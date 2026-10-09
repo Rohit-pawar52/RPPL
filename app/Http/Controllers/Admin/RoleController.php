@@ -66,7 +66,7 @@ class RoleController extends Controller
 
         return redirect()
             ->route('admin.roles.index')
-            ->with('success', "Role \"{$role->name}\" created. Give a login this role under Users.");
+            ->with('success', __('Role ":name" created. Give a login this role under Users.', ['name' => $role->name]));
     }
 
     public function show(Role $role): View
@@ -110,15 +110,15 @@ class RoleController extends Controller
 
         $redirect = redirect()
             ->route('admin.roles.index')
-            ->with('success', "Role \"{$role->name}\" updated.");
+            ->with('success', __('Role ":name" updated.', ['name' => $role->name]));
 
         // Make the consequence visible: without panel.access nobody with this role can sign in.
         $users = $role->users()->count();
 
         if ($users > 0 && ! $role->hasPermission('panel.access')) {
             $redirect->with('warning', $users === 1
-                ? '1 user has this role and can no longer sign in to the admin panel.'
-                : "{$users} users have this role and can no longer sign in to the admin panel.");
+                ? __('1 user has this role and can no longer sign in to the admin panel.')
+                : __(':count users have this role and can no longer sign in to the admin panel.', ['count' => $users]));
         }
 
         return $redirect;
@@ -133,13 +133,13 @@ class RoleController extends Controller
 
             return redirect()
                 ->route('admin.roles.index')
-                ->with('error', "The role \"{$role->name}\" cannot be deleted because "
-                    .($users === 1 ? '1 user still has' : "{$users} users still have")
-                    .' it. Give those users another role first.');
+                ->with('error', $users === 1
+                    ? __('The role ":name" cannot be deleted because 1 user still has it. Give those users another role first.', ['name' => $role->name])
+                    : __('The role ":name" cannot be deleted because :count users still have it. Give those users another role first.', ['name' => $role->name, 'count' => $users]));
         }
 
         return redirect()
             ->route('admin.roles.index')
-            ->with('success', "Role \"{$role->name}\" deleted.");
+            ->with('success', __('Role ":name" deleted.', ['name' => $role->name]));
     }
 }

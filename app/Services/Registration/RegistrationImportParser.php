@@ -8,6 +8,7 @@ use App\Support\DriveLink;
 use Carbon\Carbon;
 use DateTimeImmutable;
 use DateTimeZone;
+use Illuminate\Container\Container;
 use Throwable;
 
 /**
@@ -282,14 +283,14 @@ class RegistrationImportParser
         $shown = $this->shorten($raw);
 
         if ($digits === '') {
-            return [null, "mobile number '{$shown}' has no digits — left empty"];
+            return [null, $this->__("mobile number ':value' has no digits — left empty", ['value' => $shown])];
         }
 
         if (strlen($digits) > 15) {
-            return [null, "mobile number '{$shown}' is too long to be a phone number — left empty"];
+            return [null, $this->__("mobile number ':value' is too long to be a phone number — left empty", ['value' => $shown])];
         }
 
-        return [$digits, "mobile number '{$shown}' is not a valid 10-digit Indian mobile — saved as typed"];
+        return [$digits, $this->__("mobile number ':value' is not a valid 10-digit Indian mobile — saved as typed", ['value' => $shown])];
     }
 
     /**
@@ -304,7 +305,7 @@ class RegistrationImportParser
         }
 
         if (mb_strlen($email) > 255 || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            return [null, "email '{$this->shorten($email)}' is not a valid email address — not saved"];
+            return [null, $this->__("email ':value' is not a valid email address — not saved", ['value' => $this->shorten($email)])];
         }
 
         return [$email, null];
@@ -331,12 +332,11 @@ class RegistrationImportParser
             }
         }
 
-        return [null, sprintf(
-            "age '%s' could not be read as an age (%d-%d) — left empty",
-            $this->shorten($raw),
-            PlayerRegistration::AGE_MIN,
-            PlayerRegistration::AGE_MAX,
-        )];
+        return [null, $this->__("age ':value' could not be read as an age (:min-:max) — left empty", [
+            'value' => $this->shorten($raw),
+            'min' => PlayerRegistration::AGE_MIN,
+            'max' => PlayerRegistration::AGE_MAX,
+        ])];
     }
 
     /**
@@ -356,7 +356,7 @@ class RegistrationImportParser
             return [self::ROLES[$key], null];
         }
 
-        return [null, "role '{$this->shorten($raw)}' is not Batter / Bowler / All rounder / Wicket keeper — left empty"];
+        return [null, $this->__("role ':value' is not Batter / Bowler / All rounder / Wicket keeper — left empty", ['value' => $this->shorten($raw)])];
     }
 
     /**
@@ -383,7 +383,7 @@ class RegistrationImportParser
             return ['left_hand', null];
         }
 
-        return [null, "hand '{$this->shorten($raw)}' is not Right hand / Left hand — left empty"];
+        return [null, $this->__("hand ':value' is not Right hand / Left hand — left empty", ['value' => $this->shorten($raw)])];
     }
 
     /**
@@ -414,7 +414,7 @@ class RegistrationImportParser
             return ['none', null];
         }
 
-        return [null, "bowling arm '{$this->shorten($raw)}' is not Right arm / Left arm / None — left empty"];
+        return [null, $this->__("bowling arm ':value' is not Right arm / Left arm / None — left empty", ['value' => $this->shorten($raw)])];
     }
 
     /**
@@ -455,7 +455,7 @@ class RegistrationImportParser
             return [$link, null];
         }
 
-        return [null, "{$label} '{$this->shorten($raw)}' is not a Google Drive link — not saved"];
+        return [null, $this->__(":label ':value' is not a Google Drive link — not saved", ['label' => $label, 'value' => $this->shorten($raw)])];
     }
 
     private function parseExact(string $format, string $value): ?Carbon
@@ -495,5 +495,24 @@ class RegistrationImportParser
     private function shorten(string $value): string
     {
         return mb_strimwidth($value, 0, 40, '…');
+    }
+
+    /**
+     * The admin's language for a note (see lang/admin/ops/hi.json). The parser is also used without the framework
+     * (plain unit tests), where there is no translator: then the English text is used with its placeholders filled.
+     *
+     * @param  array<string, scalar|null>  $replace
+     */
+    private function __(string $text, array $replace = []): string
+    {
+        if (Container::getInstance()->bound('translator')) {
+            return __($text, $replace);
+        }
+
+        foreach ($replace as $name => $value) {
+            $text = str_replace(':'.$name, (string) $value, $text);
+        }
+
+        return $text;
     }
 }

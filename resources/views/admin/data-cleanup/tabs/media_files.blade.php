@@ -10,10 +10,10 @@
 <section class="crud-card">
     <div class="crud-card-body">
         <p class="mb-2 text-xs text-slate-500">
-            Lists uploaded files that no record refers to any more (for example a file left behind after its record was removed). Files that are still referenced are never listed, even if their video, photo, news post or rule is inactive or unpublished.
+            {{ __('Lists uploaded files that no record refers to any more (for example a file left behind after its record was removed). Files that are still referenced are never listed, even if their video, photo, news post or rule is inactive or unpublished.') }}
         </p>
         <p class="text-xs text-slate-500">
-            Files uploaded in the last {{ $mediaMinAgeHours }} hours are never treated as orphans, so an upload that is still being saved is safe. Deleting cannot be undone.
+            {{ __('Files uploaded in the last :hours hours are never treated as orphans, so an upload that is still being saved is safe. Deleting cannot be undone.', ['hours' => $mediaMinAgeHours]) }}
         </p>
     </div>
 
@@ -22,11 +22,11 @@
             <table class="crud-table">
                 <thead>
                     <tr>
-                        <th>Category</th>
-                        <th>Folder</th>
-                        <th class="text-right">Files</th>
-                        <th class="text-right">Orphaned</th>
-                        <th class="text-right">Action</th>
+                        <th>{{ __('Category') }}</th>
+                        <th>{{ __('Folder') }}</th>
+                        <th class="text-right">{{ __('Files') }}</th>
+                        <th class="text-right">{{ __('Orphaned') }}</th>
+                        <th class="text-right">{{ __('Action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -34,12 +34,12 @@
                         @php $orphanCount = count($scan['orphans']); @endphp
                         <tr class="align-top">
                             <td class="c-title">
-                                {{ $scan['label'] }}
+                                {{ __($scan['label']) }}
                                 @if($scan['recent'] > 0)
-                                    <span class="crud-meta">{{ $scan['recent'] }} recent upload(s) protected</span>
+                                    <span class="crud-meta">{{ __(':count recent upload(s) protected', ['count' => $scan['recent']]) }}</span>
                                 @endif
                                 @if($scan['skipped'] > 0)
-                                    <span class="crud-meta">{{ $scan['skipped'] }} unexpected file(s) ignored</span>
+                                    <span class="crud-meta">{{ __(':count unexpected file(s) ignored', ['count' => $scan['skipped']]) }}</span>
                                 @endif
                             </td>
                             <td class="font-mono text-[12px] text-slate-500">{{ $scan['directory'] }}/</td>
@@ -51,18 +51,18 @@
                                         method="POST"
                                         action="{{ route('admin.data-cleanup.media-files.destroy', $key) }}"
                                         data-confirm-action
-                                        data-confirm-title="Delete {{ $orphanCount }} orphaned file(s)?"
-                                        data-confirm-text="Only files that no record refers to are deleted, and this cannot be undone. No posts, photos, videos or other records are affected."
-                                        data-confirm-button-text="Yes, delete"
+                                        data-confirm-title="{{ __('Delete :count orphaned file(s)?', ['count' => $orphanCount]) }}"
+                                        data-confirm-text="{{ __('Only files that no record refers to are deleted, and this cannot be undone. No posts, photos, videos or other records are affected.') }}"
+                                        data-confirm-button-text="{{ __('Yes, delete') }}"
                                     >
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-danger-soft btn-sm">
-                                            <x-icon name="trash" class="h-4 w-4" /> Delete orphans
+                                            <x-icon name="trash" class="h-4 w-4" /> {{ __('Delete orphans') }}
                                         </button>
                                     </form>
                                 @else
-                                    <span class="text-[12px] text-slate-400">Nothing to clean</span>
+                                    <span class="text-[12px] text-slate-400">{{ __('Nothing to clean') }}</span>
                                 @endif
                             </td>
                         </tr>
@@ -70,13 +70,13 @@
                             <tr>
                                 <td colspan="5" class="bg-slate-50 px-4 py-2.5">
                                     <details>
-                                        <summary class="cursor-pointer text-[12px] font-medium text-slate-600">Preview the {{ $orphanCount }} file(s) that would be deleted</summary>
+                                        <summary class="cursor-pointer text-[12px] font-medium text-slate-600">{{ __('Preview the :count file(s) that would be deleted', ['count' => $orphanCount]) }}</summary>
                                         <ul class="mt-1.5 space-y-0.5 text-[11px] text-slate-500">
                                             @foreach(array_slice($scan['orphans'], 0, 25) as $path)
                                                 <li class="break-all">{{ $path }}</li>
                                             @endforeach
                                             @if($orphanCount > 25)
-                                                <li>&hellip; and {{ $orphanCount - 25 }} more</li>
+                                                <li>&hellip; {{ __('and :count more', ['count' => $orphanCount - 25]) }}</li>
                                             @endif
                                         </ul>
                                     </details>

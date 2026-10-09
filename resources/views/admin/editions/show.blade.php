@@ -5,12 +5,12 @@
 @section('actions')
     <a href="{{ route('admin.editions.report.pdf', $edition) }}" class="btn btn-secondary">
         <x-ops.icon name="download" class="h-4 w-4" />
-        Summary PDF
+        {{ __('Summary PDF') }}
     </a>
     @can('update', $edition)
         <a href="{{ route('admin.editions.edit', $edition) }}" class="btn btn-secondary">
             <x-icon name="pencil" class="h-4 w-4" />
-            Edit
+            {{ __('Edit') }}
         </a>
     @endcan
 @endsection
@@ -40,50 +40,50 @@
         $steps = [];
         if ($canOpen['teams']) {
             $steps['teams'] = [
-                'label' => 'Teams', 'icon' => 'shield',
+                'label' => __('Teams'), 'icon' => 'shield',
                 'value' => $edition->edition_teams_count,
-                'sub' => $edition->edition_teams_count < 2 ? 'Add at least two teams' : 'Teams playing this season',
-                'cta' => $edition->edition_teams_count < 2 ? 'Add teams' : 'Manage teams',
+                'sub' => $edition->edition_teams_count < 2 ? __('Add at least two teams') : __('Teams playing this season'),
+                'cta' => $edition->edition_teams_count < 2 ? __('Add teams') : __('Manage teams'),
                 'done' => $edition->edition_teams_count >= 2,
                 'href' => route('admin.editions.teams.index', $edition),
             ];
         }
         if ($canOpen['registrations']) {
             $steps['registrations'] = [
-                'label' => 'Registrations', 'icon' => 'clipboard',
+                'label' => __('Registrations'), 'icon' => 'clipboard',
                 'value' => $cards['registrations']['total'],
-                'sub' => $pending.' pending',
-                'cta' => $pending > 0 ? 'Check the pending ones' : 'View registrations',
+                'sub' => __(':count pending', ['count' => $pending]),
+                'cta' => $pending > 0 ? __('Check the pending ones') : __('View registrations'),
                 'done' => $cards['registrations']['total'] > 0 && $pending === 0,
                 'href' => route('admin.editions.registrations.index', $edition),
             ];
         }
         if ($canOpen['squads']) {
             $steps['squads'] = [
-                'label' => 'Squads', 'icon' => 'users',
+                'label' => __('Squads'), 'icon' => 'users',
                 'value' => $cards['squads']['players'],
-                'sub' => $withoutTeam.' without a team',
-                'cta' => $withoutTeam > 0 ? 'Put players in teams' : 'View squads',
+                'sub' => __(':count without a team', ['count' => $withoutTeam]),
+                'cta' => $withoutTeam > 0 ? __('Put players in teams') : __('View squads'),
                 'done' => $cards['squads']['players'] > 0 && $withoutTeam === 0,
                 'href' => route('admin.editions.squads.index', $edition),
             ];
         }
         if ($canOpen['matches']) {
             $steps['matches'] = [
-                'label' => 'Matches', 'icon' => 'trophy',
+                'label' => __('Matches'), 'icon' => 'trophy',
                 'value' => $edition->matches_count,
-                'sub' => $cards['matches']['played'].' played · '.$remaining.' to play',
-                'cta' => $edition->matches_count === 0 ? 'Schedule matches' : 'Open the fixtures',
+                'sub' => __(':played played · :remaining to play', ['played' => $cards['matches']['played'], 'remaining' => $remaining]),
+                'cta' => $edition->matches_count === 0 ? __('Schedule matches') : __('Open the fixtures'),
                 'done' => $edition->matches_count > 0 && $remaining === 0,
                 'href' => route('admin.editions.matches.index', $edition),
             ];
         }
         if ($canOpen['auction']) {
             $steps['auction'] = [
-                'label' => 'Auction', 'icon' => 'gavel',
-                'value' => $auction ? ucfirst($auction->status) : 'Not set up',
-                'sub' => $auction ? $auction->lots()->count().' players in the pool' : 'Players bid for by points',
-                'cta' => $auction ? 'Open the auction' : 'Set up the auction',
+                'label' => __('Auction'), 'icon' => 'gavel',
+                'value' => $auction ? ucfirst(__($auction->status)) : __('Not set up'),
+                'sub' => $auction ? __(':count players in the pool', ['count' => $auction->lots()->count()]) : __('Players bid for by points'),
+                'cta' => $auction ? __('Open the auction') : __('Set up the auction'),
                 'done' => $auction && $auction->status === 'completed',
                 'href' => route('admin.auctions.show', $edition),
             ];
@@ -95,13 +95,13 @@
     {{-- The season at a glance. --}}
     <header class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-gradient-to-br from-navy-900 to-navy-800 px-4 py-4 text-white shadow-raised sm:px-6">
         <div class="min-w-0 flex-1">
-            <p class="sc-kicker">Season {{ $edition->year }}</p>
+            <p class="sc-kicker">{{ __('Season :year', ['year' => $edition->year]) }}</p>
             <h2 class="truncate text-2xl font-bold tracking-tight">{{ $edition->name }}</h2>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <x-status-badge :status="$edition->status" />
             @if($edition->registration_open)
-                <span class="ops-pill ops-pill-green">Registration open</span>
+                <span class="ops-pill ops-pill-green">{{ __('Registration open') }}</span>
             @endif
         </div>
     </header>
@@ -138,9 +138,9 @@
                             </p>
                         </div>
                         @if($step['done'])
-                            <span class="ops-pill ops-pill-green">Done</span>
+                            <span class="ops-pill ops-pill-green">{{ __('Done') }}</span>
                         @elseif($isNext)
-                            <span class="ops-pill ops-pill-amber">Next</span>
+                            <span class="ops-pill ops-pill-amber">{{ __('Next') }}</span>
                         @endif
                     </div>
                     <div>
@@ -158,17 +158,17 @@
                 <div class="group relative flex flex-col gap-3 rounded-xl border border-line bg-white p-4 shadow-card transition hover:-translate-y-px hover:shadow-raised sm:p-5">
                     <div class="flex items-center gap-3">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500"><x-icon name="currency" class="h-4 w-4" /></span>
-                        <p class="text-[13px] font-semibold text-slate-600">Finance</p>
+                        <p class="text-[13px] font-semibold text-slate-600">{{ __('Finance') }}</p>
                     </div>
                     <div>
                         <p class="text-3xl font-bold leading-8 tracking-tight tabular-nums text-slate-900">{{ money($financeSummary['balance']) }}</p>
-                        <p class="mt-0.5 text-xs text-slate-500">{{ 'In '.money($financeSummary['income']).' · Out '.money($financeSummary['expense']) }}</p>
+                        <p class="mt-0.5 text-xs text-slate-500">{{ __('In :income · Out :expense', ['income' => money($financeSummary['income']), 'expense' => money($financeSummary['expense'])]) }}</p>
                     </div>
                     <div class="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[13px] font-semibold">
                         <a href="{{ route('admin.edition-transactions.index', ['edition_id' => $edition->id]) }}" class="inline-flex items-center gap-1 text-link after:absolute after:inset-0 after:content-[''] hover:text-link-hover">
-                            Open the books <x-ops.icon name="arrow-right" class="h-4 w-4" />
+                            {{ __('Open the books') }} <x-ops.icon name="arrow-right" class="h-4 w-4" />
                         </a>
-                        <a href="{{ route('admin.edition-contributions.index', ['edition_id' => $edition->id]) }}" class="relative z-10 font-medium text-slate-500 hover:text-link hover:underline">Contributions {{ money($contributionSummary['total']) }}</a>
+                        <a href="{{ route('admin.edition-contributions.index', ['edition_id' => $edition->id]) }}" class="relative z-10 font-medium text-slate-500 hover:text-link hover:underline">{{ __('Contributions :amount', ['amount' => money($contributionSummary['total'])]) }}</a>
                     </div>
                 </div>
             @endif

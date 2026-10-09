@@ -41,7 +41,7 @@ class DeleteRegistrationDocumentsRequest extends FormRequest
                     $edition = Edition::find($value);
 
                     if ($edition && $edition->registration_open) {
-                        $fail('Registration documents cannot be cleaned up for an edition that is still open for public registration.');
+                        $fail(__('Registration documents cannot be cleaned up for an edition that is still open for public registration.'));
                     }
                 },
             ],
