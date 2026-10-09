@@ -299,25 +299,25 @@ class InningsService
 
             if ($strikerId === $nonStrikerId) {
                 throw ValidationException::withMessages([
-                    'non_striker_match_player_id' => 'The striker and non-striker must be different players.',
+                    'non_striker_match_player_id' => __('The striker and non-striker must be different players.'),
                 ]);
             }
 
             if (! $this->deliveries->matchPlayerBelongsToTeam($strikerId, $match, $locked->batting_team_id)) {
                 throw ValidationException::withMessages([
-                    'striker_match_player_id' => 'The striker must be a selected player from the batting team.',
+                    'striker_match_player_id' => __('The striker must be a selected player from the batting team.'),
                 ]);
             }
 
             if (! $this->deliveries->matchPlayerBelongsToTeam($nonStrikerId, $match, $locked->batting_team_id)) {
                 throw ValidationException::withMessages([
-                    'non_striker_match_player_id' => 'The non-striker must be a selected player from the batting team.',
+                    'non_striker_match_player_id' => __('The non-striker must be a selected player from the batting team.'),
                 ]);
             }
 
             if (! $this->deliveries->matchPlayerBelongsToTeam($bowlerId, $match, $locked->bowling_team_id)) {
                 throw ValidationException::withMessages([
-                    'bowler_match_player_id' => 'The bowler must be a selected player from the bowling team.',
+                    'bowler_match_player_id' => __('The bowler must be a selected player from the bowling team.'),
                 ]);
             }
 

@@ -2,11 +2,11 @@
 <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-slate-50 p-3 sm:p-4">
     <div class="min-w-0">
         <p class="text-xs font-semibold text-slate-700">
-            Innings {{ $innings->innings_number }} &mdash; {{ $innings->battingTeam->team->name }} batting
+            {{ __('Innings :number — :team batting', ['number' => $innings->innings_number, 'team' => $innings->battingTeam->team->name]) }}
         </p>
         <p class="mt-0.5 text-xl font-bold tabular-nums tracking-tight text-slate-900">
             {{ $innings->total_runs }}/{{ $innings->total_wickets }}
-            <span class="text-xs font-medium text-slate-500">({{ $innings->oversDisplay() }} overs)</span>
+            <span class="text-xs font-medium text-slate-500">({{ __(':overs overs', ['overs' => $innings->oversDisplay()]) }})</span>
         </p>
     </div>
     <div class="flex items-center gap-2">
@@ -19,7 +19,7 @@
                     class="btn btn-primary"
                 >
                     <x-icon name="chart-bar" class="h-4 w-4" />
-                    Score Innings
+                    {{ __('Score Innings') }}
                 </a>
             @endif
         @endcan

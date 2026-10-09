@@ -1,11 +1,11 @@
 @extends('layouts.admin')
 
-@section('title', 'Auction console · '.$edition->name)
+@section('title', __('Auction console').' · '.$edition->name)
 
-@section('subtitle', 'Call a player, take the bids, sell or hold. Every amount is in points.')
+@section('subtitle', __('Call a player, take the bids, sell or hold. Every amount is in points.'))
 
 @section('actions')
-    <x-admin.button :href="route('admin.auctions.show', $edition)" variant="secondary" icon="cog">Set-up and rules</x-admin.button>
+    <x-admin.button :href="route('admin.auctions.show', $edition)" variant="secondary" icon="cog">{{ __('Set-up and rules') }}</x-admin.button>
 @endsection
 
 @section('content')
@@ -47,57 +47,57 @@
 
         <div class="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_23rem]">
             <div class="min-w-0 space-y-4">
-                <section id="ac-lot" aria-label="Player on the block"></section>
+                <section id="ac-lot" aria-label="{{ __('Player on the block') }}"></section>
 
-                <section class="ac-card" aria-label="Bid amount">
+                <section class="ac-card" aria-label="{{ __('Bid amount') }}">
                     <div class="flex flex-wrap items-center gap-2">
-                        <label for="ac-amount" class="text-sm font-semibold text-slate-800">Bid this amount</label>
+                        <label for="ac-amount" class="text-sm font-semibold text-slate-800">{{ __('Bid this amount') }}</label>
                         <input
                             id="ac-amount"
                             type="number"
                             inputmode="numeric"
                             min="1"
                             step="500"
-                            placeholder="next step"
+                            placeholder="{{ __('next step') }}"
                             class="ops-input min-h-11 w-36 text-base tabular-nums"
                         />
-                        <button type="button" data-action="clear-amount" class="min-h-10 rounded-lg px-3 text-xs font-medium text-slate-500 hover:bg-slate-100">Clear</button>
+                        <button type="button" data-action="clear-amount" class="min-h-10 rounded-lg px-3 text-xs font-medium text-slate-500 hover:bg-slate-100">{{ __('Clear') }}</button>
                         <span id="ac-chips" class="flex flex-wrap items-center gap-2"></span>
                     </div>
                     <p class="mt-2 text-[11px] text-slate-400">
-                        Leave it empty and a team's button bids the next step. To jump, type an amount or tap a chip, then tap the team.
+                        {{ __("Leave it empty and a team's button bids the next step. To jump, type an amount or tap a chip, then tap the team.") }}
                     </p>
                 </section>
 
-                <section id="ac-teams" aria-label="Teams"></section>
+                <section id="ac-teams" aria-label="{{ __('Teams') }}"></section>
             </div>
 
             <aside class="min-w-0 space-y-4">
-                <section class="ac-card" aria-label="Call a player">
-                    <label for="ac-search" class="text-sm font-semibold text-slate-800">Find a waiting or hold player</label>
+                <section class="ac-card" aria-label="{{ __('Call a player') }}">
+                    <label for="ac-search" class="text-sm font-semibold text-slate-800">{{ __('Find a waiting or hold player') }}</label>
                     <div class="relative mt-1.5">
                         <x-ops.icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                             id="ac-search"
                             type="search"
                             autocomplete="off"
-                            placeholder="Type a name or village…"
+                            placeholder="{{ __('Type a name or village…') }}"
                             class="ops-input min-h-11 pl-9"
                         />
                     </div>
                     <div id="ac-results" class="mt-2"></div>
                 </section>
 
-                <section id="ac-bids" class="ac-card" aria-label="Bids on this player"></section>
-                <section class="ac-card" aria-label="Sold players">
-                    <label for="ac-sold-search" class="text-sm font-semibold text-slate-800">Sold players <span id="ac-sold-count" class="font-normal text-slate-400"></span></label>
+                <section id="ac-bids" class="ac-card" aria-label="{{ __('Bids on this player') }}"></section>
+                <section class="ac-card" aria-label="{{ __('Sold players') }}">
+                    <label for="ac-sold-search" class="text-sm font-semibold text-slate-800">{{ __('Sold players') }} <span id="ac-sold-count" class="font-normal text-slate-400"></span></label>
                     <div class="relative mt-1.5">
                         <x-ops.icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                             id="ac-sold-search"
                             type="search"
                             autocomplete="off"
-                            placeholder="Find a sale by player, team or village…"
+                            placeholder="{{ __('Find a sale by player, team or village…') }}"
                             class="ops-input min-h-11 pl-9"
                         />
                     </div>
@@ -105,12 +105,12 @@
                 </section>
 
                 <details class="ac-card">
-                    <summary class="flex min-h-10 cursor-pointer items-center text-sm font-semibold text-slate-800">Someone turned up on the day? Add a player</summary>
+                    <summary class="flex min-h-10 cursor-pointer items-center text-sm font-semibold text-slate-800">{{ __('Someone turned up on the day? Add a player') }}</summary>
                     <form id="ac-walkin" class="mt-2 space-y-2" novalidate>
-                        <input name="name" required maxlength="255" placeholder="Full name" aria-label="Full name" class="ops-input min-h-11" />
-                        <input name="phone" required maxlength="20" inputmode="tel" placeholder="Mobile number" aria-label="Mobile number" class="ops-input min-h-11" />
-                        <button type="submit" class="btn btn-secondary w-full">Register and add to the waiting players</button>
-                        <p class="text-[11px] text-slate-400">They are registered for this season as paid and wait with the others — call them like anyone else.</p>
+                        <input name="name" required maxlength="255" placeholder="{{ __('Full name') }}" aria-label="{{ __('Full name') }}" class="ops-input min-h-11" />
+                        <input name="phone" required maxlength="20" inputmode="tel" placeholder="{{ __('Mobile number') }}" aria-label="{{ __('Mobile number') }}" class="ops-input min-h-11" />
+                        <button type="submit" class="btn btn-secondary w-full">{{ __('Register and add to the waiting players') }}</button>
+                        <p class="text-[11px] text-slate-400">{{ __('They are registered for this season as paid and wait with the others — call them like anyone else.') }}</p>
                     </form>
                 </details>
             </aside>

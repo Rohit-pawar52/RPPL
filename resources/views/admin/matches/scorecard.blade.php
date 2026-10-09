@@ -1,17 +1,17 @@
 @extends('layouts.admin')
 
-@section('title', 'Scorecard')
+@section('title', __('Scorecard'))
 
 @section('content')
     <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
         <a href="{{ route('admin.matches.show', $match) }}" class="ops-back">
             <x-ops.icon name="arrow-left" class="h-3.5 w-3.5" />
-            Back to match
+            {{ __('Back to match') }}
         </a>
         @if($match->innings()->exists())
             <a href="{{ route('public.matches.scorecard.pdf', $match) }}" class="btn btn-secondary btn-sm">
                 <x-ops.icon name="download" class="h-3.5 w-3.5" />
-                Download PDF
+                {{ __('Download PDF') }}
             </a>
         @endif
     </div>
@@ -27,7 +27,7 @@
             <x-status-badge :status="$match->match_status" />
         </div>
         <h2 class="mt-2 break-words text-2xl font-bold tracking-tight">
-            {{ $match->teamA->team->name }} <span class="font-normal text-white/50">vs</span> {{ $match->teamB->team->name }}
+            {{ $match->teamA->team->name }} <span class="font-normal text-white/50">{{ __('vs') }}</span> {{ $match->teamB->team->name }}
         </h2>
 
         @if($match->match_status === 'completed' && $match->match_result)
@@ -39,7 +39,7 @@
         @include('shared.scorecard._innings', ['card' => $card])
     @empty
         <x-admin.empty icon="document-chart" class="ops-card mt-4 py-12">
-            No innings started yet.
+            {{ __('No innings started yet.') }}
         </x-admin.empty>
     @endforelse
 @endsection

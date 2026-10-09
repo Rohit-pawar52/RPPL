@@ -1,19 +1,19 @@
 @extends('layouts.admin')
 
-@section('title', 'Playing XI')
+@section('title', __('Playing XI'))
 
 @section('content')
     <div class="mb-3">
         <a href="{{ route('admin.matches.show', $match) }}" class="ops-back">
             <x-ops.icon name="arrow-left" class="h-3.5 w-3.5" />
-            Back to match
+            {{ __('Back to match') }}
         </a>
     </div>
 
     <header class="ops-card ops-card-body">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <h2 class="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
-                {{ $match->teamA->team->name }} vs {{ $match->teamB->team->name }} &mdash; Playing XI
+                {{ $match->teamA->team->name }} {{ __('vs') }} {{ $match->teamB->team->name }} &mdash; {{ __('Playing XI') }}
             </h2>
             <x-status-badge :status="$match->match_status" />
         </div>
@@ -23,13 +23,13 @@
             {{ display_datetime($match->scheduled_at, 'd M Y, h:i A') }}
         </p>
         @if($canModify)
-            <p class="mt-3 text-xs text-slate-500">Tick 11 players for each team and save that team. Captain and wicketkeeper are set after saving.</p>
+            <p class="mt-3 text-xs text-slate-500">{{ __('Tick 11 players for each team and save that team. Captain and wicketkeeper are set after saving.') }}</p>
         @endif
     </header>
 
     @unless($canModify)
         <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-            The Playing XI for this match is locked and can no longer be changed.
+            {{ __('The Playing XI for this match is locked and can no longer be changed.') }}
         </div>
     @endunless
 
@@ -59,6 +59,9 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const selectedText = @json(__(':count / :max selected'));
+            const maxText = @json(__('Maximum 11 players can be selected.'));
+
             document.querySelectorAll('[data-xi-panel]').forEach((panel) => {
                 const maxPlayers = 11;
                 const checkboxes = () => Array.from(panel.querySelectorAll('.xi-checkbox'));
@@ -75,7 +78,7 @@
                 function refreshCounterAndSave() {
                     const count = selectedCount();
 
-                    if (counterEl) counterEl.textContent = `${count} / ${maxPlayers} selected`;
+                    if (counterEl) counterEl.textContent = selectedText.replace(':count', count).replace(':max', maxPlayers);
 
                     if (saveButton) saveButton.disabled = count !== maxPlayers;
                 }
@@ -84,14 +87,14 @@
                     if (window.Swal) {
                         window.Swal.fire({
                             icon: 'warning',
-                            text: 'Maximum 11 players can be selected.',
+                            text: maxText,
                             toast: true,
                             position: 'top-end',
                             timer: 2200,
                             showConfirmButton: false,
                         });
                     } else {
-                        window.alert('Maximum 11 players can be selected.');
+                        window.alert(maxText);
                     }
                 }
 

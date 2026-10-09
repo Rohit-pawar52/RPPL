@@ -1,18 +1,18 @@
 @extends('layouts.admin')
 
-@section('title', 'Match Details')
+@section('title', __('Match Details'))
 
 @section('actions')
     @if($match->innings_count > 0)
         <a href="{{ route('admin.matches.scorecard', $match) }}" class="btn btn-secondary">
             <x-icon name="document-chart" class="h-4 w-4" />
-            View Scorecard
+            {{ __('View Scorecard') }}
         </a>
     @endif
     @can('update', $match)
         <a href="{{ route('admin.matches.edit', $match) }}" class="btn btn-secondary">
             <x-icon name="pencil" class="h-4 w-4" />
-            Edit
+            {{ __('Edit') }}
         </a>
     @endcan
 @endsection
@@ -39,17 +39,17 @@
         };
 
         [$nextTitle, $nextHint] = match (true) {
-            $step === 'xi' => ['Choose the Playing XI', 'Both teams need their players selected before the toss.'],
-            $step === 'flow' && $status === 'scheduled' => ['Start the toss', 'The Playing XI is ready. Start the toss, then record who won it.'],
-            $step === 'flow' && ! $tossSaved => ['Record the toss', 'Pick the toss winner and what they chose.'],
-            $step === 'flow' => ['Start the match', 'The toss is saved. Starting locks the Playing XI and the toss.'],
-            $step === 'innings' && ! $first => ['Start the first innings', 'The match is live. Start innings 1 to begin scoring.'],
-            $step === 'innings' && $first->status === 'live' => ['Innings 1 is live', 'Keep scoring ball by ball.'],
-            $step === 'innings' && ! $second => ['Start the second innings', 'Innings 1 is complete.'],
-            $step === 'innings' && $second->status === 'live' => ['Innings 2 is live', 'Keep scoring ball by ball.'],
-            $step === 'result' => ['Finalize the result', 'Both innings are complete. Check the expected result and finalize.'],
-            $step === 'done' => ['Match completed', $match->match_result ?: 'The result is recorded.'],
-            default => ['This match is '.$status, 'No further steps.'],
+            $step === 'xi' => [__('Choose the Playing XI'), __('Both teams need their players selected before the toss.')],
+            $step === 'flow' && $status === 'scheduled' => [__('Start the toss'), __('The Playing XI is ready. Start the toss, then record who won it.')],
+            $step === 'flow' && ! $tossSaved => [__('Record the toss'), __('Pick the toss winner and what they chose.')],
+            $step === 'flow' => [__('Start the match'), __('The toss is saved. Starting locks the Playing XI and the toss.')],
+            $step === 'innings' && ! $first => [__('Start the first innings'), __('The match is live. Start innings 1 to begin scoring.')],
+            $step === 'innings' && $first->status === 'live' => [__('Innings 1 is live'), __('Keep scoring ball by ball.')],
+            $step === 'innings' && ! $second => [__('Start the second innings'), __('Innings 1 is complete.')],
+            $step === 'innings' && $second->status === 'live' => [__('Innings 2 is live'), __('Keep scoring ball by ball.')],
+            $step === 'result' => [__('Finalize the result'), __('Both innings are complete. Check the expected result and finalize.')],
+            $step === 'done' => [__('Match completed'), $match->match_result ?: __('The result is recorded.')],
+            default => [__('This match is :status', ['status' => __($status)]), __('No further steps.')],
         };
 
         $stepClass = fn (string $key) => $step === $key ? 'ring-2 ring-brand' : '';
@@ -60,7 +60,7 @@
     <div class="mb-3">
         <a href="{{ route('admin.matches.index') }}" class="ops-back">
             <x-ops.icon name="arrow-left" class="h-3.5 w-3.5" />
-            Back to matches
+            {{ __('Back to matches') }}
         </a>
     </div>
 
@@ -69,29 +69,29 @@
         <div class="flex flex-wrap items-start justify-between gap-3">
             <p class="sc-kicker">
                 {{ $match->edition->name }}
-                @if($match->match_number) &middot; Match {{ $match->match_number }} @endif
-                @if($match->match_stage) &middot; {{ ucwords(str_replace('_', ' ', $match->match_stage)) }} @endif
+                @if($match->match_number) &middot; {{ __('Match :number', ['number' => $match->match_number]) }} @endif
+                @if($match->match_stage) &middot; {{ __(ucwords(str_replace('_', ' ', $match->match_stage))) }} @endif
             </p>
             <x-status-badge :status="$status" />
         </div>
         <h2 class="mt-2 break-words text-2xl font-bold tracking-tight sm:text-3xl">
-            {{ $teamAName }} <span class="font-normal text-white/50">vs</span> {{ $teamBName }}
+            {{ $teamAName }} <span class="font-normal text-white/50">{{ __('vs') }}</span> {{ $teamBName }}
         </h2>
         <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-xs sm:grid-cols-4">
             <div>
-                <dt class="sc-kicker">Venue</dt>
-                <dd class="mt-0.5 text-[13px] font-medium">{{ $match->venue->name ?? 'TBD' }}</dd>
+                <dt class="sc-kicker">{{ __('Venue') }}</dt>
+                <dd class="mt-0.5 text-[13px] font-medium">{{ $match->venue->name ?? __('TBD') }}</dd>
             </div>
             <div>
-                <dt class="sc-kicker">Scheduled</dt>
+                <dt class="sc-kicker">{{ __('Scheduled') }}</dt>
                 <dd class="mt-0.5 text-[13px] font-medium">{{ display_datetime($match->scheduled_at, 'd M Y, h:i A') }}</dd>
             </div>
             <div>
-                <dt class="sc-kicker">Overs per innings</dt>
+                <dt class="sc-kicker">{{ __('Overs per innings') }}</dt>
                 <dd class="mt-0.5 text-[13px] font-medium tabular-nums">{{ $match->overs_per_innings }}</dd>
             </div>
             <div>
-                <dt class="sc-kicker">Started / Completed</dt>
+                <dt class="sc-kicker">{{ __('Started / Completed') }}</dt>
                 <dd class="mt-0.5 text-[13px] font-medium">
                     {{ display_datetime($match->started_at, 'd M Y, h:i A') ?? '—' }}
                     /
@@ -104,9 +104,9 @@
                 @foreach(array_filter([$first, $second]) as $innings)
                     <div class="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-white/10 px-3 py-2.5">
                         <div class="min-w-0">
-                            <p class="sc-kicker truncate">Innings {{ $innings->innings_number }} &middot; {{ $innings->battingTeam->team->name }}</p>
+                            <p class="sc-kicker truncate">{{ __('Innings :number', ['number' => $innings->innings_number]) }} &middot; {{ $innings->battingTeam->team->name }}</p>
                             <p class="text-xl font-bold tabular-nums">{{ $innings->total_runs }}/{{ $innings->total_wickets }}
-                                <span class="text-xs font-medium text-white/70">({{ $innings->oversDisplay() }} ov)</span></p>
+                                <span class="text-xs font-medium text-white/70">({{ __(':overs ov', ['overs' => $innings->oversDisplay()]) }})</span></p>
                         </div>
                         <x-status-badge :status="$innings->status" />
                     </div>
@@ -116,23 +116,23 @@
     </header>
 
     {{-- What to do next. --}}
-    <section class="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-brand/30 bg-brand-soft px-4 py-3 sm:px-5" aria-label="Next step">
+    <section class="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-brand/30 bg-brand-soft px-4 py-3 sm:px-5" aria-label="{{ __('Next step') }}">
         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-brand-fg"><x-ops.icon name="{{ in_array($step, ['done', 'closed'], true) ? 'check' : 'flag' }}" class="h-5 w-5" /></span>
         <div class="min-w-0 flex-1 basis-48">
-            <p class="ops-kicker !text-brand">{{ in_array($step, ['done', 'closed'], true) ? 'Status' : 'Next step' }}</p>
+            <p class="ops-kicker !text-brand">{{ in_array($step, ['done', 'closed'], true) ? __('Status') : __('Next step') }}</p>
             <p class="text-[15px] font-semibold text-slate-900">{{ $nextTitle }}</p>
             <p class="text-xs text-slate-600">{{ $nextHint }}</p>
         </div>
         @if($canScoreLive)
-            <a href="{{ route('admin.matches.innings.score', [$match, $liveInnings]) }}" class="btn btn-primary btn-lg max-sm:w-full"><x-ops.icon name="bolt" /> Score innings {{ $liveInnings->innings_number }}</a>
+            <a href="{{ route('admin.matches.innings.score', [$match, $liveInnings]) }}" class="btn btn-primary btn-lg max-sm:w-full"><x-ops.icon name="bolt" /> {{ __('Score innings :number', ['number' => $liveInnings->innings_number]) }}</a>
         @elseif($step === 'xi')
-            <a href="{{ route('admin.matches.players.index', $match) }}" class="btn btn-primary btn-lg max-sm:w-full"><x-icon name="users" class="h-4 w-4" /> Choose Playing XI</a>
+            <a href="{{ route('admin.matches.players.index', $match) }}" class="btn btn-primary btn-lg max-sm:w-full"><x-icon name="users" class="h-4 w-4" /> {{ __('Choose Playing XI') }}</a>
         @elseif($step === 'flow' && $canFlow)
-            <a href="#step-flow" class="btn btn-primary btn-lg max-sm:w-full">Go to the step <x-ops.icon name="chevron-down" /></a>
+            <a href="#step-flow" class="btn btn-primary btn-lg max-sm:w-full">{{ __('Go to the step') }} <x-ops.icon name="chevron-down" /></a>
         @elseif($step === 'innings' && $canInnings)
-            <a href="#step-innings" class="btn btn-primary btn-lg max-sm:w-full">Go to the step <x-ops.icon name="chevron-down" /></a>
+            <a href="#step-innings" class="btn btn-primary btn-lg max-sm:w-full">{{ __('Go to the step') }} <x-ops.icon name="chevron-down" /></a>
         @elseif($step === 'result')
-            <a href="#step-innings" class="btn btn-primary btn-lg max-sm:w-full">Go to the step <x-ops.icon name="chevron-down" /></a>
+            <a href="#step-innings" class="btn btn-primary btn-lg max-sm:w-full">{{ __('Go to the step') }} <x-ops.icon name="chevron-down" /></a>
         @endif
     </section>
 
@@ -143,17 +143,17 @@
                 <div class="flex items-center gap-3">
                     <span class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">1</span>
                     <div>
-                        <h3 class="ops-title">Playing XI</h3>
+                        <h3 class="ops-title">{{ __('Playing XI') }}</h3>
                         <p class="text-xs text-slate-500">
-                            {{ $teamAName }}: {{ $teamASelectedCount }} selected
+                            {{ __(':team: :count selected', ['team' => $teamAName, 'count' => $teamASelectedCount]) }}
                             &middot;
-                            {{ $teamBName }}: {{ $teamBSelectedCount }} selected
+                            {{ __(':team: :count selected', ['team' => $teamBName, 'count' => $teamBSelectedCount]) }}
                         </p>
                     </div>
                 </div>
                 <a href="{{ route('admin.matches.players.index', $match) }}" class="btn btn-secondary btn-sm">
                     <x-icon name="users" class="h-3.5 w-3.5" />
-                    Manage Playing XI
+                    {{ __('Manage Playing XI') }}
                 </a>
             </div>
         </section>
@@ -164,14 +164,14 @@
                 <div class="ops-card-head">
                     <div class="flex items-center gap-3">
                         <span class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">2</span>
-                        <h3 class="ops-title">Match Flow</h3>
+                        <h3 class="ops-title">{{ __('Match Flow') }}</h3>
                     </div>
-                    @if($step === 'flow')<span class="ops-pill ops-pill-amber">Do this now</span>@endif
+                    @if($step === 'flow')<span class="ops-pill ops-pill-amber">{{ __('Do this now') }}</span>@endif
                 </div>
                 <div class="ops-card-body">
                     @if($match->match_status === 'scheduled')
                         <p class="mb-3 text-xs text-slate-500">
-                            Team A: {{ $teamASelectedCount }} selected &middot; Team B: {{ $teamBSelectedCount }} selected
+                            {{ __('Team A: :count selected', ['count' => $teamASelectedCount]) }} &middot; {{ __('Team B: :count selected', ['count' => $teamBSelectedCount]) }}
                         </p>
 
                         <form method="POST" action="{{ route('admin.matches.start-toss', $match) }}">
@@ -181,12 +181,12 @@
                                 class="btn btn-primary btn-lg max-sm:w-full"
                                 @disabled(! $canStartToss)
                             >
-                                Start Toss
+                                {{ __('Start Toss') }}
                             </button>
                         </form>
 
                         @unless($canStartToss)
-                            <p class="mt-2 text-xs text-amber-700">Both teams must have selected players before starting the toss.</p>
+                            <p class="mt-2 text-xs text-amber-700">{{ __('Both teams must have selected players before starting the toss.') }}</p>
                         @endunless
 
                         @can('cancelMatch', $match)
@@ -194,7 +194,7 @@
                                 method="POST"
                                 action="{{ route('admin.matches.cancel', $match) }}"
                                 class="mt-4 border-t border-line pt-4"
-                                onsubmit="event.preventDefault(); window.confirmAction({title: 'Cancel this match?', text: 'Cancel this scheduled match? This cannot be undone.', confirmButtonText: 'Yes, cancel match'}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
+                                onsubmit="event.preventDefault(); window.confirmAction({title: {{ Js::from(__('Cancel this match?')) }}, text: {{ Js::from(__('Cancel this scheduled match? This cannot be undone.')) }}, confirmButtonText: {{ Js::from(__('Yes, cancel match')) }}}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
                             >
                                 @csrf
                                 <button
@@ -202,7 +202,7 @@
                                     class="btn btn-danger-soft"
                                     @disabled(! $canCancelMatch)
                                 >
-                                    Cancel Match
+                                    {{ __('Cancel Match') }}
                                 </button>
                             </form>
                         @endcan
@@ -212,8 +212,8 @@
                             @method('PUT')
                             <x-form.select
                                 name="toss_winner_team_id"
-                                label="Toss winner"
-                                placeholder="Select team"
+                                :label="__('Toss winner')"
+                                :placeholder="__('Select team')"
                                 :options="[
                                     $match->edition_team_a_id => $match->teamA->team->name,
                                     $match->edition_team_b_id => $match->teamB->team->name,
@@ -222,14 +222,14 @@
                             />
                             <x-form.select
                                 name="toss_decision"
-                                label="Decision"
-                                placeholder="Select"
-                                :options="['bat' => 'Bat', 'bowl' => 'Bowl']"
+                                :label="__('Decision')"
+                                :placeholder="__('Select')"
+                                :options="['bat' => __('Bat'), 'bowl' => __('Bowl')]"
                                 :value="$match->toss_decision"
                             />
                             <div class="mb-3.5">
                                 <button type="submit" class="btn btn-primary min-h-10 max-sm:w-full">
-                                    Save Toss
+                                    {{ __('Save Toss') }}
                                 </button>
                             </div>
                         </form>
@@ -240,7 +240,7 @@
                                     method="POST"
                                     action="{{ route('admin.matches.start', $match) }}"
                                     id="start-match-form"
-                                    onsubmit="event.preventDefault(); window.confirmAction({title: 'Start this match?', text: 'This locks the Playing XI and toss for this match.', confirmButtonText: 'Yes, start match'}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
+                                    onsubmit="event.preventDefault(); window.confirmAction({title: {{ Js::from(__('Start this match?')) }}, text: {{ Js::from(__('This locks the Playing XI and toss for this match.')) }}, confirmButtonText: {{ Js::from(__('Yes, start match')) }}}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
                                 >
                                     @csrf
                                     <button
@@ -248,12 +248,12 @@
                                         class="btn btn-primary btn-lg max-sm:w-full"
                                         @disabled(! $canStartMatch)
                                     >
-                                        Start Match
+                                        {{ __('Start Match') }}
                                     </button>
                                 </form>
 
                                 @unless($canStartMatch)
-                                    <p class="mt-2 text-xs text-amber-700">Both teams must have selected players before starting the match.</p>
+                                    <p class="mt-2 text-xs text-amber-700">{{ __('Both teams must have selected players before starting the match.') }}</p>
                                 @endunless
                             </div>
                         @endif
@@ -263,7 +263,7 @@
                                 <form
                                     method="POST"
                                     action="{{ route('admin.matches.abandon', $match) }}"
-                                    onsubmit="event.preventDefault(); window.confirmAction({title: 'Abandon this match?', text: 'Existing scoring data will be preserved.', confirmButtonText: 'Yes, abandon match'}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
+                                    onsubmit="event.preventDefault(); window.confirmAction({title: {{ Js::from(__('Abandon this match?')) }}, text: {{ Js::from(__('Existing scoring data will be preserved.')) }}, confirmButtonText: {{ Js::from(__('Yes, abandon match')) }}}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
                                 >
                                     @csrf
                                     <button
@@ -271,34 +271,36 @@
                                         class="btn btn-danger-soft"
                                         @disabled(! $canAbandonMatch)
                                     >
-                                        Abandon Match
+                                        {{ __('Abandon Match') }}
                                     </button>
                                 </form>
                             </div>
                         @endcan
                     @else
                         <p class="text-xs text-slate-500">
-                            Status: <span class="font-semibold capitalize text-slate-800">{{ $match->match_status }}</span>
+                            {{ __('Status') }}: <span class="font-semibold capitalize text-slate-800">{{ __($match->match_status) }}</span>
                             @if($match->started_at)
-                                &middot; Started: {{ display_datetime($match->started_at, 'd M Y, h:i A') }}
+                                &middot; {{ __('Started:') }} {{ display_datetime($match->started_at, 'd M Y, h:i A') }}
                             @endif
                         </p>
 
                         @if($match->tossWinner)
                             <p class="mt-1 text-xs text-slate-500">
-                                Toss: {{ $match->tossWinner->team->name }} won and chose to {{ $match->toss_decision }}
+                                {{ $match->toss_decision === 'bat'
+                                    ? __('Toss: :team won and chose to bat', ['team' => $match->tossWinner->team->name])
+                                    : __('Toss: :team won and chose to bowl', ['team' => $match->tossWinner->team->name]) }}
                             </p>
                         @endif
 
                         @if($match->match_status === 'live')
-                            <p class="mt-1 text-xs text-slate-400">Playing XI locked.</p>
+                            <p class="mt-1 text-xs text-slate-400">{{ __('Playing XI locked.') }}</p>
 
                             @can('abandonMatch', $match)
                                 <form
                                     method="POST"
                                     action="{{ route('admin.matches.abandon', $match) }}"
                                     class="mt-4 border-t border-line pt-4"
-                                    onsubmit="event.preventDefault(); window.confirmAction({title: 'Abandon this match?', text: 'Existing scoring data will be preserved.', confirmButtonText: 'Yes, abandon match'}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
+                                    onsubmit="event.preventDefault(); window.confirmAction({title: {{ Js::from(__('Abandon this match?')) }}, text: {{ Js::from(__('Existing scoring data will be preserved.')) }}, confirmButtonText: {{ Js::from(__('Yes, abandon match')) }}}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
                                 >
                                     @csrf
                                     <button
@@ -306,7 +308,7 @@
                                         class="btn btn-danger-soft"
                                         @disabled(! $canAbandonMatch)
                                     >
-                                        Abandon Match
+                                        {{ __('Abandon Match') }}
                                     </button>
                                 </form>
                             @endcan
@@ -322,19 +324,19 @@
                 <div class="ops-card-head">
                     <div class="flex items-center gap-3">
                         <span class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">3</span>
-                        <h3 class="ops-title">Innings</h3>
+                        <h3 class="ops-title">{{ __('Innings') }}</h3>
                     </div>
-                    @if($step === 'innings' || $step === 'result')<span class="ops-pill ops-pill-amber">Do this now</span>@endif
+                    @if($step === 'innings' || $step === 'result')<span class="ops-pill ops-pill-amber">{{ __('Do this now') }}</span>@endif
                 </div>
                 <div class="ops-card-body">
                     @if(! $match->firstInnings)
-                        <p class="text-xs text-slate-500">No innings started.</p>
+                        <p class="text-xs text-slate-500">{{ __('No innings started.') }}</p>
 
                         @if($firstInningsPreview)
                             <p class="mt-2 text-xs text-slate-500">
-                                First batting: <span class="font-semibold text-slate-800">{{ $firstInningsPreview['battingTeamName'] }}</span>
+                                {{ __('First batting:') }} <span class="font-semibold text-slate-800">{{ $firstInningsPreview['battingTeamName'] }}</span>
                                 &middot;
-                                Bowling: <span class="font-semibold text-slate-800">{{ $firstInningsPreview['bowlingTeamName'] }}</span>
+                                {{ __('Bowling:') }} <span class="font-semibold text-slate-800">{{ $firstInningsPreview['bowlingTeamName'] }}</span>
                             </p>
                         @endif
 
@@ -345,7 +347,7 @@
                                 class="btn btn-primary btn-lg max-sm:w-full"
                                 @disabled(! $canStartFirstInnings)
                             >
-                                Start First Innings
+                                {{ __('Start First Innings') }}
                             </button>
                         </form>
                     @else
@@ -365,7 +367,7 @@
 
                         @if(! $match->secondInnings)
                             <p class="mt-4 text-xs text-slate-500">
-                                Next batting: <span class="font-semibold text-slate-800">{{ $match->firstInnings->bowlingTeam->team->name }}</span>
+                                {{ __('Next batting:') }} <span class="font-semibold text-slate-800">{{ $match->firstInnings->bowlingTeam->team->name }}</span>
                             </p>
                             <form method="POST" action="{{ route('admin.matches.innings.second.start', $match) }}" class="mt-2">
                                 @csrf
@@ -374,7 +376,7 @@
                                     class="btn btn-primary btn-lg max-sm:w-full"
                                     @disabled(! $canStartSecondInnings)
                                 >
-                                    Start Second Innings
+                                    {{ __('Start Second Innings') }}
                                 </button>
                             </form>
                         @elseif($match->secondInnings->status === 'live')
@@ -397,7 +399,7 @@
                             @can('finalizeResult', $match)
                                 @if($resultPreview)
                                     <div class="mt-4 rounded-xl border border-line bg-slate-50 p-4">
-                                        <p class="ops-kicker">Expected result:</p>
+                                        <p class="ops-kicker">{{ __('Expected result:') }}</p>
                                         <p class="mt-1 text-lg font-bold tracking-tight text-slate-900">{{ $resultPreview['match_result'] }}</p>
                                     </div>
 
@@ -405,7 +407,7 @@
                                         method="POST"
                                         action="{{ route('admin.matches.finalize', $match) }}"
                                         class="mt-3"
-                                        onsubmit="event.preventDefault(); window.confirmAction({title: 'Finalize match?', text: 'This will mark the match as completed and lock further scoring.', confirmButtonText: 'Yes, finalize'}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
+                                        onsubmit="event.preventDefault(); window.confirmAction({title: {{ Js::from(__('Finalize match?')) }}, text: {{ Js::from(__('This will mark the match as completed and lock further scoring.')) }}, confirmButtonText: {{ Js::from(__('Yes, finalize')) }}}).then((result) => { if (result.isConfirmed) { this.submit(); } });"
                                     >
                                         @csrf
                                         <button
@@ -413,14 +415,14 @@
                                             class="btn btn-primary btn-lg max-sm:w-full"
                                             @disabled(! $canFinalize)
                                         >
-                                            Finalize Match
+                                            {{ __('Finalize Match') }}
                                         </button>
                                     </form>
                                 @else
-                                    <p class="mt-3 text-xs text-slate-500">Match result pending.</p>
+                                    <p class="mt-3 text-xs text-slate-500">{{ __('Match result pending.') }}</p>
                                 @endif
                             @else
-                                <p class="mt-3 text-xs text-slate-500">Match result pending.</p>
+                                <p class="mt-3 text-xs text-slate-500">{{ __('Match result pending.') }}</p>
                             @endcan
                         @endif
                     @endif
@@ -431,35 +433,41 @@
         {{-- Toss and result --}}
         @if($match->toss_winner_team_id || $match->winner_team_id || $match->match_result)
             <section class="ops-card">
-                <div class="ops-card-head"><h3 class="ops-title">Toss &amp; Result</h3></div>
+                <div class="ops-card-head"><h3 class="ops-title">{{ __('Toss & Result') }}</h3></div>
                 <div class="ops-card-body">
                     <dl class="grid grid-cols-2 gap-x-4 gap-y-4 text-xs sm:grid-cols-4">
                         <div>
-                            <dt class="ops-kicker">Toss</dt>
+                            <dt class="ops-kicker">{{ __('Toss') }}</dt>
                             <dd class="mt-0.5 text-[13px] font-medium text-slate-800">
                                 @if($match->tossWinner)
-                                    {{ $match->tossWinner->team->name }} chose to {{ $match->toss_decision ?? '—' }}
+                                    @if($match->toss_decision === 'bat')
+                                        {{ __(':team chose to bat', ['team' => $match->tossWinner->team->name]) }}
+                                    @elseif($match->toss_decision === 'bowl')
+                                        {{ __(':team chose to bowl', ['team' => $match->tossWinner->team->name]) }}
+                                    @else
+                                        {{ $match->tossWinner->team->name }} {{ __('chose to') }} —
+                                    @endif
                                 @else
                                     —
                                 @endif
                             </dd>
                         </div>
                         <div>
-                            <dt class="ops-kicker">Winner</dt>
+                            <dt class="ops-kicker">{{ __('Winner') }}</dt>
                             <dd class="mt-0.5 text-[13px] font-medium text-slate-800">{{ $match->winner->team->name ?? '—' }}</dd>
                         </div>
                         <div>
-                            <dt class="ops-kicker">Margin</dt>
+                            <dt class="ops-kicker">{{ __('Margin') }}</dt>
                             <dd class="mt-0.5 text-[13px] font-medium text-slate-800">
                                 @if($match->win_margin && $match->win_margin_type)
-                                    {{ $match->win_margin }} {{ $match->win_margin_type }}
+                                    {{ $match->win_margin }} {{ __($match->win_margin_type) }}
                                 @else
                                     —
                                 @endif
                             </dd>
                         </div>
                         <div>
-                            <dt class="ops-kicker">Result</dt>
+                            <dt class="ops-kicker">{{ __('Result') }}</dt>
                             <dd class="mt-0.5 text-[13px] font-medium text-slate-800">{{ $match->match_result ?? '—' }}</dd>
                         </div>
                     </dl>
@@ -474,9 +482,9 @@
                     @if($resultNotificationStatus !== 'not_applicable')
                         <div class="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4">
                             <p class="text-xs text-slate-500">
-                                Result Notification:
+                                {{ __('Result Notification:') }}
                                 <span class="font-semibold text-slate-800">
-                                    {{ match($resultNotificationStatus) { 'pending' => 'Not sent', 'dispatched' => 'Queued', 'completed' => 'Completed' } }}
+                                    {{ match($resultNotificationStatus) { 'pending' => __('Not sent'), 'dispatched' => __('Queued'), 'completed' => __('Completed') } }}
                                 </span>
                             </p>
 
@@ -485,7 +493,7 @@
                                     <form method="POST" action="{{ route('admin.matches.resend-result-notification', $match) }}">
                                         @csrf
                                         <button type="submit" class="btn btn-secondary btn-sm">
-                                            Send Result Notification
+                                            {{ __('Send Result Notification') }}
                                         </button>
                                     </form>
                                 @endif
@@ -501,10 +509,10 @@
                                 class="mt-4 grid gap-x-3 border-t border-line pt-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
                             >
                                 @csrf
-                                <x-form.input name="reason" label="Reason for reopening this match (admin only)" placeholder="e.g. Scoring error found after finalization" />
+                                <x-form.input name="reason" :label="__('Reason for reopening this match (admin only)')" :placeholder="__('e.g. Scoring error found after finalization')" />
                                 <div class="mb-3.5">
                                     <button type="submit" class="btn btn-danger-soft min-h-10 max-sm:w-full">
-                                        Reopen Match
+                                        {{ __('Reopen Match') }}
                                     </button>
                                 </div>
                             </form>

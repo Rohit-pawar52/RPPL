@@ -83,7 +83,7 @@ class SeasonRegistrationController extends Controller
         );
 
         if ($edition->status === 'completed') {
-            return $back->with('error', 'This season is completed, so players cannot be added to a team.');
+            return $back->with('error', __('This season is completed, so players cannot be added to a team.'));
         }
 
         $ids = collect((array) $request->input('selected'))
@@ -93,14 +93,14 @@ class SeasonRegistrationController extends Controller
             ->values();
 
         if ($ids->isEmpty()) {
-            return $back->with('error', 'Tick at least one player to add.');
+            return $back->with('error', __('Tick at least one player to add.'));
         }
 
         $teamId = $request->input('edition_team_id');
         $editionTeam = is_numeric($teamId) ? EditionTeam::with('team')->find((int) $teamId) : null;
 
         if (! $editionTeam) {
-            return $back->with('error', 'Choose the team to add the players to.');
+            return $back->with('error', __('Choose the team to add the players to.'));
         }
 
         // A team of another season is simply not found.
@@ -110,7 +110,7 @@ class SeasonRegistrationController extends Controller
         $skipped = $ids->count() - $added;
 
         if ($added === 0) {
-            return $back->with('error', 'No players were added: they are already in a team, inactive, or not registered for this season.');
+            return $back->with('error', __('No players were added: they are already in a team, inactive, or not registered for this season.'));
         }
 
         $message = ($added === 1 ? '1 player' : "{$added} players").' added to '.$editionTeam->team->name.'.';

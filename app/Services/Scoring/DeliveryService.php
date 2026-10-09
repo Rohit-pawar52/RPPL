@@ -265,7 +265,7 @@ class DeliveryService
 
             if (! $this->canRecordDelivery($match, $lockedInnings)) {
                 throw ValidationException::withMessages([
-                    'delivery' => 'This delivery cannot be recorded right now.',
+                    'delivery' => __('This delivery cannot be recorded right now.'),
                 ]);
             }
 
@@ -387,13 +387,13 @@ class DeliveryService
 
             if ($state['first_ball']) {
                 throw ValidationException::withMessages([
-                    'delivery' => 'This innings has not been set up yet — select the opening striker, non-striker, and bowler first.',
+                    'delivery' => __('This innings has not been set up yet — select the opening striker, non-striker, and bowler first.'),
                 ]);
             }
 
             if ($state['requires_replacement']) {
                 throw ValidationException::withMessages([
-                    'delivery' => 'A new batter must be selected for the vacant end before the next delivery.',
+                    'delivery' => __('A new batter must be selected for the vacant end before the next delivery.'),
                 ]);
             }
 
@@ -406,7 +406,7 @@ class DeliveryService
 
             if ($state['awaiting_new_over_bowler'] || empty($state['bowler_id'])) {
                 throw ValidationException::withMessages([
-                    'delivery' => 'A bowler must be selected for this over before the next delivery.',
+                    'delivery' => __('A bowler must be selected for this over before the next delivery.'),
                 ]);
             }
 
@@ -540,7 +540,7 @@ class DeliveryService
 
         if ($previousBowlerId !== null && $previousBowlerId === $bowlerMatchPlayerId) {
             throw ValidationException::withMessages([
-                'bowler_match_player_id' => 'The same bowler cannot bowl two overs in a row.',
+                'bowler_match_player_id' => __('The same bowler cannot bowl two overs in a row.'),
             ]);
         }
     }
@@ -726,18 +726,18 @@ class DeliveryService
             $lockedDelivery = Delivery::query()->whereKey($delivery->id)->lockForUpdate()->firstOrFail();
 
             if ((int) $lockedDelivery->innings_id !== (int) $lockedInnings->id) {
-                throw ValidationException::withMessages(['delivery' => 'This delivery does not belong to this innings.']);
+                throw ValidationException::withMessages(['delivery' => __('This delivery does not belong to this innings.')]);
             }
 
             if (! $this->isInningsUndoable($match, $lockedInnings)) {
-                throw ValidationException::withMessages(['delivery' => 'This innings can no longer be corrected.']);
+                throw ValidationException::withMessages(['delivery' => __('This innings can no longer be corrected.')]);
             }
 
             $window = $this->correctableDeliveries($lockedInnings);
 
             if (! $window->contains('id', $lockedDelivery->id)) {
                 throw ValidationException::withMessages([
-                    'delivery' => 'Only the latest '.self::CORRECTION_WINDOW.' deliveries of this innings can be corrected.',
+                    'delivery' => __('Only the latest :count deliveries of this innings can be corrected.', ['count' => self::CORRECTION_WINDOW]),
                 ]);
             }
 
@@ -748,7 +748,7 @@ class DeliveryService
 
             if (! $isLatest && ($isWide !== (bool) $lockedDelivery->is_wide || $isNoBall !== (bool) $lockedDelivery->is_no_ball)) {
                 throw ValidationException::withMessages([
-                    'delivery' => 'Wide/No Ball can only be changed on the most recent delivery — changing it here would invalidate the legality and Free Hit sequencing of deliveries already recorded after it.',
+                    'delivery' => __('Wide/No Ball can only be changed on the most recent delivery — changing it here would invalidate the legality and Free Hit sequencing of deliveries already recorded after it.'),
                 ]);
             }
 
@@ -807,7 +807,7 @@ class DeliveryService
 
             if (! $isLatest && $this->wouldChangeDownstreamState($lockedDelivery, $newAttributes)) {
                 throw ValidationException::withMessages([
-                    'delivery' => 'This correction would change what a later delivery already assumed (who was on strike, who was due to bat next, or the bowler for the next over) — only the most recent delivery can carry that kind of change.',
+                    'delivery' => __('This correction would change what a later delivery already assumed (who was on strike, who was due to bat next, or the bowler for the next over) — only the most recent delivery can carry that kind of change.'),
                 ]);
             }
 
@@ -1051,7 +1051,7 @@ class DeliveryService
 
         if (in_array($submittedStriker, $dismissed, true) || in_array($submittedNonStriker, $dismissed, true)) {
             throw ValidationException::withMessages([
-                'striker_match_player_id' => 'A player already dismissed or retired out in this innings cannot return to the crease.',
+                'striker_match_player_id' => __('A player already dismissed or retired out in this innings cannot return to the crease.'),
             ]);
         }
 
@@ -1068,7 +1068,7 @@ class DeliveryService
 
             if (! $survivorSubmittedCorrectly) {
                 throw ValidationException::withMessages([
-                    'striker_match_player_id' => 'Selected striker/non-striker do not match the expected batting ends.',
+                    'striker_match_player_id' => __('Selected striker/non-striker do not match the expected batting ends.'),
                 ]);
             }
 
@@ -1076,7 +1076,7 @@ class DeliveryService
 
             if ($newBatterId === $state['survivor_id']) {
                 throw ValidationException::withMessages([
-                    'striker_match_player_id' => 'The replacement batter must be a new player, not the surviving batter.',
+                    'striker_match_player_id' => __('The replacement batter must be a new player, not the surviving batter.'),
                 ]);
             }
 
@@ -1085,7 +1085,7 @@ class DeliveryService
 
         if ($submittedStriker !== $state['striker_id'] || $submittedNonStriker !== $state['non_striker_id']) {
             throw ValidationException::withMessages([
-                'striker_match_player_id' => 'Selected striker/non-striker do not match the expected batting ends.',
+                'striker_match_player_id' => __('Selected striker/non-striker do not match the expected batting ends.'),
             ]);
         }
     }
@@ -1098,19 +1098,19 @@ class DeliveryService
     private function assertParticipantsValid(GameMatch $match, Innings $innings, array $data, bool $isWide, bool $isNoBall, bool $isFreeHit): void
     {
         if (! $this->matchPlayerBelongsToTeam($data['striker_match_player_id'], $match, $innings->batting_team_id)) {
-            throw ValidationException::withMessages(['striker_match_player_id' => 'The striker must be a selected player from the batting team.']);
+            throw ValidationException::withMessages(['striker_match_player_id' => __('The striker must be a selected player from the batting team.')]);
         }
 
         if (! $this->matchPlayerBelongsToTeam($data['non_striker_match_player_id'], $match, $innings->batting_team_id)) {
-            throw ValidationException::withMessages(['non_striker_match_player_id' => 'The non-striker must be a selected player from the batting team.']);
+            throw ValidationException::withMessages(['non_striker_match_player_id' => __('The non-striker must be a selected player from the batting team.')]);
         }
 
         if ((int) $data['striker_match_player_id'] === (int) $data['non_striker_match_player_id']) {
-            throw ValidationException::withMessages(['non_striker_match_player_id' => 'The striker and non-striker must be different players.']);
+            throw ValidationException::withMessages(['non_striker_match_player_id' => __('The striker and non-striker must be different players.')]);
         }
 
         if (! $this->matchPlayerBelongsToTeam($data['bowler_match_player_id'], $match, $innings->bowling_team_id)) {
-            throw ValidationException::withMessages(['bowler_match_player_id' => 'The bowler must be a selected player from the bowling team.']);
+            throw ValidationException::withMessages(['bowler_match_player_id' => __('The bowler must be a selected player from the bowling team.')]);
         }
 
         if (empty($data['is_wicket'])) {
@@ -1120,27 +1120,27 @@ class DeliveryService
         $dismissedId = (int) ($data['dismissed_match_player_id'] ?? 0);
 
         if (! in_array($dismissedId, [(int) $data['striker_match_player_id'], (int) $data['non_striker_match_player_id']], true)) {
-            throw ValidationException::withMessages(['dismissed_match_player_id' => 'The dismissed player must be the striker or non-striker on this delivery.']);
+            throw ValidationException::withMessages(['dismissed_match_player_id' => __('The dismissed player must be the striker or non-striker on this delivery.')]);
         }
 
         $wicketType = $data['wicket_type'] ?? null;
 
         if (! $wicketType || ! in_array($wicketType, $this->validWicketTypesForDelivery($isWide, $isNoBall, $isFreeHit), true)) {
-            throw ValidationException::withMessages(['wicket_type' => 'This dismissal type is not valid for this kind of delivery.']);
+            throw ValidationException::withMessages(['wicket_type' => __('This dismissal type is not valid for this kind of delivery.')]);
         }
 
         $fielderId = $data['fielder_match_player_id'] ?? null;
 
         if ($this->dismissalRequiresFielder($wicketType) && ! $fielderId) {
-            throw ValidationException::withMessages(['fielder_match_player_id' => 'A fielder is required for this dismissal type.']);
+            throw ValidationException::withMessages(['fielder_match_player_id' => __('A fielder is required for this dismissal type.')]);
         }
 
         if ($this->dismissalForbidsFielder($wicketType) && $fielderId) {
-            throw ValidationException::withMessages(['fielder_match_player_id' => 'A fielder must not be recorded for this dismissal type.']);
+            throw ValidationException::withMessages(['fielder_match_player_id' => __('A fielder must not be recorded for this dismissal type.')]);
         }
 
         if ($fielderId && ! $this->matchPlayerBelongsToTeam($fielderId, $match, $innings->bowling_team_id)) {
-            throw ValidationException::withMessages(['fielder_match_player_id' => 'The fielder must be a selected player from the bowling team.']);
+            throw ValidationException::withMessages(['fielder_match_player_id' => __('The fielder must be a selected player from the bowling team.')]);
         }
     }
 

@@ -53,7 +53,7 @@ class MatchPlayerService
 
         if (! in_array($teamPlayer->edition_team_id, $participatingTeamIds, true)) {
             throw ValidationException::withMessages([
-                'team_player_id' => 'The selected player does not belong to either team in this match.',
+                'team_player_id' => __('The selected player does not belong to either team in this match.'),
             ]);
         }
 
@@ -64,7 +64,7 @@ class MatchPlayerService
 
         if ($alreadySelected >= 11) {
             throw ValidationException::withMessages([
-                'team_player_id' => 'This team already has 11 players selected — the Playing XI cannot exceed 11.',
+                'team_player_id' => __('This team already has 11 players selected — the Playing XI cannot exceed 11.'),
             ]);
         }
 
@@ -76,7 +76,7 @@ class MatchPlayerService
         } catch (QueryException $e) {
             if ((int) $e->getCode() === 23000) {
                 throw ValidationException::withMessages([
-                    'team_player_id' => 'This player is already selected for this match.',
+                    'team_player_id' => __('This player is already selected for this match.'),
                 ]);
             }
 
@@ -117,7 +117,7 @@ class MatchPlayerService
 
         if (! in_array($editionTeam->id, $participatingTeamIds, true)) {
             throw ValidationException::withMessages([
-                'edition_team_id' => 'The selected team does not belong to this match.',
+                'edition_team_id' => __('The selected team does not belong to this match.'),
             ]);
         }
 
@@ -125,13 +125,13 @@ class MatchPlayerService
 
         if (count($uniqueIds) !== count($teamPlayerIds)) {
             throw ValidationException::withMessages([
-                'team_player_ids' => 'The same player cannot be selected twice.',
+                'team_player_ids' => __('The same player cannot be selected twice.'),
             ]);
         }
 
         if (count($uniqueIds) !== 11) {
             throw ValidationException::withMessages([
-                'team_player_ids' => 'Exactly 11 players must be selected.',
+                'team_player_ids' => __('Exactly 11 players must be selected.'),
             ]);
         }
 
@@ -139,7 +139,7 @@ class MatchPlayerService
 
         if ($squadCount !== 11) {
             throw ValidationException::withMessages([
-                'team_player_ids' => 'One or more selected players do not belong to this team\'s squad.',
+                'team_player_ids' => __('One or more selected players do not belong to this team\'s squad.'),
             ]);
         }
 
@@ -163,7 +163,7 @@ class MatchPlayerService
             foreach ($toRemove as $matchPlayer) {
                 if ($this->hasDeliveryHistory($matchPlayer)) {
                     throw ValidationException::withMessages([
-                        'team_player_ids' => 'A previously selected player already has scoring history and cannot be removed.',
+                        'team_player_ids' => __('A previously selected player already has scoring history and cannot be removed.'),
                     ]);
                 }
             }

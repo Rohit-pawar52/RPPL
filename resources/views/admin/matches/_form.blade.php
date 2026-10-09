@@ -24,24 +24,24 @@
 <div class="space-y-4" data-match-form>
     {{-- Who plays --}}
     <section class="ops-card">
-        <div class="ops-card-head"><h3 class="ops-title">Who is playing</h3></div>
+        <div class="ops-card-head"><h3 class="ops-title">{{ __('Who is playing') }}</h3></div>
         <div class="ops-card-body">
             @if($fixedEdition)
-                <p class="mb-4 text-[13px] text-slate-600">Season: <span class="font-semibold text-slate-800">{{ $fixedEdition->name }}</span></p>
+                <p class="mb-4 text-[13px] text-slate-600">{{ __('Season') }}: <span class="font-semibold text-slate-800">{{ $fixedEdition->name }}</span></p>
 
                 <div class="grid gap-x-4 sm:grid-cols-2">
                     <x-form.select
                         name="edition_team_a_id"
-                        label="Team A"
-                        placeholder="Select Team A"
+                        :label="__('Team A')"
+                        :placeholder="__('Select Team A')"
                         :options="$editionTeams->mapWithKeys(fn ($editionTeam) => [$editionTeam->id => $editionTeam->team->name])"
                         :value="''"
                         required
                     />
                     <x-form.select
                         name="edition_team_b_id"
-                        label="Team B"
-                        placeholder="Select Team B"
+                        :label="__('Team B')"
+                        :placeholder="__('Select Team B')"
                         :options="$editionTeams->mapWithKeys(fn ($editionTeam) => [$editionTeam->id => $editionTeam->team->name])"
                         :value="''"
                         required
@@ -50,8 +50,8 @@
             @elseif($canChangeIdentity)
                 <x-form.select
                     name="edition_id"
-                    label="Edition"
-                    placeholder="Select an edition"
+                    :label="__('Edition')"
+                    :placeholder="__('Select an edition')"
                     :options="$editions->pluck('name', 'id')"
                     :value="$match->edition_id ?? ($defaults['edition_id'] ?? '')"
                     required
@@ -60,40 +60,40 @@
                 <div class="grid gap-x-4 sm:grid-cols-2">
                     <x-form.select
                         name="edition_team_a_id"
-                        label="Team A"
-                        placeholder="Select Team A"
+                        :label="__('Team A')"
+                        :placeholder="__('Select Team A')"
                         :options="$editionTeams->mapWithKeys(fn ($editionTeam) => [$editionTeam->id => $editionTeam->edition->name.' — '.$editionTeam->team->name])"
                         :value="$match->edition_team_a_id ?? ''"
                         required
                     />
                     <x-form.select
                         name="edition_team_b_id"
-                        label="Team B"
-                        placeholder="Select Team B"
+                        :label="__('Team B')"
+                        :placeholder="__('Select Team B')"
                         :options="$editionTeams->mapWithKeys(fn ($editionTeam) => [$editionTeam->id => $editionTeam->edition->name.' — '.$editionTeam->team->name])"
                         :value="$match->edition_team_b_id ?? ''"
                         required
                     />
                 </div>
-                <p class="-mt-1 text-[11px] text-slate-400">Choosing an edition shortens the team lists to that season's teams.</p>
+                <p class="-mt-1 text-[11px] text-slate-400">{{ __("Choosing an edition shortens the team lists to that season's teams.") }}</p>
             @else
                 <div class="grid gap-3 sm:grid-cols-3">
                     <div>
-                        <p class="ops-kicker mb-1">Edition</p>
+                        <p class="ops-kicker mb-1">{{ __('Edition') }}</p>
                         <p class="rounded-lg border border-line bg-slate-50 px-3 py-2.5 text-[13px] text-slate-700">{{ $match->edition->name }}</p>
                     </div>
                     <div>
-                        <p class="ops-kicker mb-1">Team A</p>
+                        <p class="ops-kicker mb-1">{{ __('Team A') }}</p>
                         <p class="rounded-lg border border-line bg-slate-50 px-3 py-2.5 text-[13px] text-slate-700">{{ $match->teamA->team->name }}</p>
                     </div>
                     <div>
-                        <p class="ops-kicker mb-1">Team B</p>
+                        <p class="ops-kicker mb-1">{{ __('Team B') }}</p>
                         <p class="rounded-lg border border-line bg-slate-50 px-3 py-2.5 text-[13px] text-slate-700">{{ $match->teamB->team->name }}</p>
                     </div>
                 </div>
                 <p class="mt-2 flex items-start gap-1.5 text-[11px] text-slate-400">
                     <x-ops.icon name="lock" class="mt-0.5 h-3.5 w-3.5" />
-                    Edition and teams cannot be changed because squad or scoring data already exists for this match.
+                    {{ __('Edition and teams cannot be changed because squad or scoring data already exists for this match.') }}
                 </p>
             @endif
         </div>
@@ -101,21 +101,21 @@
 
     {{-- When and where --}}
     <section class="ops-card">
-        <div class="ops-card-head"><h3 class="ops-title">When and where</h3></div>
+        <div class="ops-card-head"><h3 class="ops-title">{{ __('When and where') }}</h3></div>
         <div class="ops-card-body">
             <div class="grid gap-x-4 sm:grid-cols-2">
                 <x-form.input
                     name="scheduled_at"
-                    label="Scheduled at"
+                    :label="__('Scheduled at')"
                     type="datetime-local"
                     :value="$match?->scheduled_at ? display_datetime($match->scheduled_at, 'Y-m-d\TH:i') : old('scheduled_at', $suggestedAt)"
-                    :help="$suggestedAt ? 'Suggested: the day after the season\'s latest match. Change it if needed.' : null"
+                    :help="$suggestedAt ? __('Suggested: the day after the season\'s latest match. Change it if needed.') : null"
                     required
                 />
                 <x-form.select
                     name="venue_id"
-                    label="Venue"
-                    placeholder="No venue / TBD"
+                    :label="__('Venue')"
+                    :placeholder="__('No venue / TBD')"
                     :options="$venues->pluck('name', 'id')"
                     :value="$match->venue_id ?? ($defaults['venue_id'] ?? '')"
                 />
@@ -125,12 +125,12 @@
 
     {{-- Format --}}
     <section class="ops-card">
-        <div class="ops-card-head"><h3 class="ops-title">Format</h3></div>
+        <div class="ops-card-head"><h3 class="ops-title">{{ __('Format') }}</h3></div>
         <div class="ops-card-body">
             <div class="grid gap-x-4 sm:grid-cols-3">
                 <x-form.input
                     name="match_number"
-                    label="Match number"
+                    :label="__('Match number')"
                     type="number"
                     min="1"
                     :value="$match->match_number ?? ($defaults['match_number'] ?? '')"
@@ -138,7 +138,7 @@
                 <div>
                     <x-form.input
                         name="overs_per_innings"
-                        label="Overs per innings"
+                        :label="__('Overs per innings')"
                         type="number"
                         min="1"
                         max="50"
@@ -146,7 +146,7 @@
                     />
                     {{-- Overs differ from match to match (6, 8 or 10 most often): one tap fills the box. --}}
                     <div class="-mt-2 mb-3.5 flex flex-wrap items-center gap-1.5" data-overs-picks>
-                        <span class="text-[11px] text-slate-400">Quick pick:</span>
+                        <span class="text-[11px] text-slate-400">{{ __('Quick pick:') }}</span>
                         @foreach([6, 8, 10, 12, 15, 20] as $overs)
                             <button type="button" data-overs="{{ $overs }}" class="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-2 text-[12px] font-semibold text-slate-600 transition hover:border-brand hover:text-brand">{{ $overs }}</button>
                         @endforeach
@@ -154,9 +154,9 @@
                 </div>
                 <x-form.select
                     name="match_stage"
-                    label="Match stage"
-                    placeholder="Not set"
-                    :options="collect($stages)->mapWithKeys(fn ($stage) => [$stage => ucwords(str_replace('_', ' ', $stage))])"
+                    :label="__('Match stage')"
+                    :placeholder="__('Not set')"
+                    :options="collect($stages)->mapWithKeys(fn ($stage) => [$stage => __(ucwords(str_replace('_', ' ', $stage)))])"
                     :value="$match->match_stage ?? ''"
                 />
             </div>
@@ -177,11 +177,11 @@
     @endphp
 
     <section class="ops-card">
-        <div class="ops-card-head"><h3 class="ops-title">Match Reminder</h3></div>
+        <div class="ops-card-head"><h3 class="ops-title">{{ __('Match Reminder') }}</h3></div>
         <div class="ops-card-body">
             @if($reminderAlreadySent)
                 <p class="rounded-lg bg-slate-50 px-3 py-2 text-[12px] text-slate-500">
-                    A reminder for this match has already been sent.
+                    {{ __('A reminder for this match has already been sent.') }}
                 </p>
             @else
                 <label class="flex min-h-10 items-center gap-2 text-[13px] font-medium text-slate-700">
@@ -192,13 +192,13 @@
                         {{ $reminderChecked ? 'checked' : '' }}
                         class="h-4 w-4 rounded border-slate-300"
                     />
-                    Send reminder before match
+                    {{ __('Send reminder before match') }}
                 </label>
 
                 <div class="mt-2 max-w-48">
                     <x-form.input
                         name="reminder_minutes_before"
-                        label="Reminder before (minutes)"
+                        :label="__('Reminder before (minutes)')"
                         type="number"
                         min="1"
                         max="1440"
@@ -206,7 +206,7 @@
                     />
                 </div>
                 <p class="-mt-2 text-[11px] text-slate-400">
-                    Only used when "Send reminder before match" is checked.
+                    {{ __('Only used when "Send reminder before match" is checked.') }}
                 </p>
                 @error('reminder_minutes_before')
                     <p class="mt-1 text-xs text-red-600">{{ $message }}</p>

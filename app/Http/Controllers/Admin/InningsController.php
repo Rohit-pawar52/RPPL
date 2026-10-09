@@ -31,7 +31,7 @@ class InningsController extends Controller
         if (! $this->innings->startFirstInnings($match)) {
             return redirect()
                 ->route('admin.matches.show', $match)
-                ->with('error', 'The first innings cannot be started for this match right now.');
+                ->with('error', __('The first innings cannot be started for this match right now.'));
         }
 
         $this->broadcastMatchUpdated($match->id);
@@ -43,7 +43,7 @@ class InningsController extends Controller
         // match page.
         return redirect()
             ->route('admin.matches.innings.score', [$match, $match->fresh()->firstInnings])
-            ->with('success', 'First innings started — select the opening striker, non-striker, and bowler.');
+            ->with('success', __('First innings started — select the opening striker, non-striker, and bowler.'));
     }
 
     /**
@@ -67,14 +67,14 @@ class InningsController extends Controller
         )) {
             return redirect()
                 ->route('admin.matches.innings.score', [$match, $innings])
-                ->with('error', 'This innings cannot be set up right now.');
+                ->with('error', __('This innings cannot be set up right now.'));
         }
 
         $this->broadcastMatchUpdated($match->id);
 
         return redirect()
             ->route('admin.matches.innings.score', [$match, $innings])
-            ->with('success', 'Innings is ready — scoring can begin.');
+            ->with('success', __('Innings is ready — scoring can begin.'));
     }
 
     public function complete(CompleteInningsRequest $request, GameMatch $match, Innings $innings): RedirectResponse
@@ -88,14 +88,14 @@ class InningsController extends Controller
         if (! $this->innings->completeInnings($match, $innings, $request->validated('reason'))) {
             return redirect()
                 ->route('admin.matches.show', $match)
-                ->with('error', 'This innings cannot be completed right now.');
+                ->with('error', __('This innings cannot be completed right now.'));
         }
 
         $this->broadcastMatchUpdated($match->id);
 
         return redirect()
             ->route('admin.matches.show', $match)
-            ->with('success', 'Innings completed successfully.');
+            ->with('success', __('Innings completed successfully.'));
     }
 
     /**
@@ -110,14 +110,14 @@ class InningsController extends Controller
         if (! $this->innings->reopenInnings($match, $innings, $request->validated('reason'), $request->user())) {
             return redirect()
                 ->route('admin.matches.show', $match)
-                ->with('error', 'This innings cannot be reopened right now.');
+                ->with('error', __('This innings cannot be reopened right now.'));
         }
 
         $this->broadcastMatchUpdated($match->id);
 
         return redirect()
             ->route('admin.matches.show', $match)
-            ->with('success', 'Innings reopened successfully.');
+            ->with('success', __('Innings reopened successfully.'));
     }
 
     public function startSecond(GameMatch $match): RedirectResponse
@@ -127,7 +127,7 @@ class InningsController extends Controller
         if (! $this->innings->startSecondInnings($match)) {
             return redirect()
                 ->route('admin.matches.show', $match)
-                ->with('error', 'The second innings cannot be started for this match right now.');
+                ->with('error', __('The second innings cannot be started for this match right now.'));
         }
 
         $this->broadcastMatchUpdated($match->id);
@@ -137,7 +137,7 @@ class InningsController extends Controller
         // it independently needs its own explicit opening setup.
         return redirect()
             ->route('admin.matches.innings.score', [$match, $match->fresh()->secondInnings])
-            ->with('success', 'Second innings started — select the opening striker, non-striker, and bowler.');
+            ->with('success', __('Second innings started — select the opening striker, non-striker, and bowler.'));
     }
 
     /**

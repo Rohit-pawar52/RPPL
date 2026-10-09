@@ -41,15 +41,15 @@ class MatchFlowController extends Controller
 
         if (! $this->matchFlow->startToss($match)) {
             $message = $match->fresh()->match_status !== 'scheduled'
-                ? 'This match has already started and can no longer be modified.'
-                : 'Both teams must have selected players before starting the toss.';
+                ? __('This match has already started and can no longer be modified.')
+                : __('Both teams must have selected players before starting the toss.');
 
             return redirect()->route('admin.matches.show', $match)->with('error', $message);
         }
 
         return redirect()
             ->route('admin.matches.show', $match)
-            ->with('success', 'Toss phase started successfully.');
+            ->with('success', __('Toss phase started successfully.'));
     }
 
     public function recordToss(RecordTossRequest $request, GameMatch $match): RedirectResponse
@@ -59,12 +59,12 @@ class MatchFlowController extends Controller
         if (! $this->matchFlow->recordToss($match, $request->validated())) {
             return redirect()
                 ->route('admin.matches.show', $match)
-                ->with('error', 'The toss can only be recorded during the toss phase.');
+                ->with('error', __('The toss can only be recorded during the toss phase.'));
         }
 
         return redirect()
             ->route('admin.matches.show', $match)
-            ->with('success', 'Toss recorded successfully.');
+            ->with('success', __('Toss recorded successfully.'));
     }
 
     public function startMatch(GameMatch $match): RedirectResponse
@@ -75,9 +75,9 @@ class MatchFlowController extends Controller
             $fresh = $match->fresh();
 
             $message = match (true) {
-                $fresh->match_status !== 'toss' => 'This match has already started and can no longer be modified.',
-                ! $fresh->toss_winner_team_id || ! $fresh->toss_decision => 'Record the toss winner and decision before starting the match.',
-                default => 'Both teams must have selected players before starting the match.',
+                $fresh->match_status !== 'toss' => __('This match has already started and can no longer be modified.'),
+                ! $fresh->toss_winner_team_id || ! $fresh->toss_decision => __('Record the toss winner and decision before starting the match.'),
+                default => __('Both teams must have selected players before starting the match.'),
             };
 
             return redirect()->route('admin.matches.show', $match)->with('error', $message);
@@ -87,7 +87,7 @@ class MatchFlowController extends Controller
 
         return redirect()
             ->route('admin.matches.show', $match)
-            ->with('success', 'Match started successfully.');
+            ->with('success', __('Match started successfully.'));
     }
 
     public function cancel(GameMatch $match): RedirectResponse
@@ -97,14 +97,14 @@ class MatchFlowController extends Controller
         if (! $this->matchFlow->cancelMatch($match)) {
             return redirect()
                 ->route('admin.matches.show', $match)
-                ->with('error', 'This match can no longer be cancelled.');
+                ->with('error', __('This match can no longer be cancelled.'));
         }
 
         $this->broadcastMatchUpdated($match->id);
 
         return redirect()
             ->route('admin.matches.show', $match)
-            ->with('success', 'Match cancelled successfully.');
+            ->with('success', __('Match cancelled successfully.'));
     }
 
     public function abandon(GameMatch $match): RedirectResponse
@@ -114,14 +114,14 @@ class MatchFlowController extends Controller
         if (! $this->matchFlow->abandonMatch($match)) {
             return redirect()
                 ->route('admin.matches.show', $match)
-                ->with('error', 'This match cannot be abandoned right now.');
+                ->with('error', __('This match cannot be abandoned right now.'));
         }
 
         $this->broadcastMatchUpdated($match->id);
 
         return redirect()
             ->route('admin.matches.show', $match)
-            ->with('success', 'Match abandoned successfully.');
+            ->with('success', __('Match abandoned successfully.'));
     }
 
     public function finalize(Request $request, GameMatch $match): RedirectResponse
@@ -131,7 +131,7 @@ class MatchFlowController extends Controller
         if (! $this->results->finalizeMatch($match)) {
             return redirect()
                 ->route('admin.matches.show', $match)
-                ->with('error', 'This match cannot be finalized right now.');
+                ->with('error', __('This match cannot be finalized right now.'));
         }
 
         $this->broadcastMatchUpdated($match->id);
@@ -145,7 +145,7 @@ class MatchFlowController extends Controller
 
         return redirect()
             ->route('admin.matches.show', $match)
-            ->with('success', 'Match finalized successfully.');
+            ->with('success', __('Match finalized successfully.'));
     }
 
     /**
@@ -160,7 +160,7 @@ class MatchFlowController extends Controller
         if (! $this->results->recordSuperOverResult($match, $winner, $request->validated('reason'), $request->user())) {
             return redirect()
                 ->route('admin.matches.show', $match)
-                ->with('error', 'A Super Over result can only be recorded for a match tied after both innings are completed.');
+                ->with('error', __('A Super Over result can only be recorded for a match tied after both innings are completed.'));
         }
 
         $this->broadcastMatchUpdated($match->id);
@@ -169,7 +169,7 @@ class MatchFlowController extends Controller
 
         return redirect()
             ->route('admin.matches.show', $match)
-            ->with('success', 'Super Over result recorded successfully.');
+            ->with('success', __('Super Over result recorded successfully.'));
     }
 
     /**
@@ -189,8 +189,8 @@ class MatchFlowController extends Controller
         return redirect()
             ->route('admin.matches.show', $match)
             ->with($dispatched ? 'success' : 'error', $dispatched
-                ? 'Result notification queued.'
-                : 'Result notification could not be sent right now (it may already have been sent, or the match is not eligible).');
+                ? __('Result notification queued.')
+                : __('Result notification could not be sent right now (it may already have been sent, or the match is not eligible).'));
     }
 
     /**
@@ -203,14 +203,14 @@ class MatchFlowController extends Controller
         if (! $this->results->reopenMatch($match, $request->validated('reason'), $request->user())) {
             return redirect()
                 ->route('admin.matches.show', $match)
-                ->with('error', 'This match cannot be reopened right now.');
+                ->with('error', __('This match cannot be reopened right now.'));
         }
 
         $this->broadcastMatchUpdated($match->id);
 
         return redirect()
             ->route('admin.matches.show', $match)
-            ->with('success', 'Match reopened for correction.');
+            ->with('success', __('Match reopened for correction.'));
     }
 
     /**

@@ -204,7 +204,7 @@ class GameMatchController extends Controller
 
         return redirect()
             ->route('admin.matches.index')
-            ->with('success', 'Match created successfully.');
+            ->with('success', __('Match created successfully.'));
     }
 
     public function show(GameMatch $match): View
@@ -305,7 +305,7 @@ class GameMatchController extends Controller
 
         return redirect()
             ->route('admin.matches.index')
-            ->with('success', 'Match updated successfully.');
+            ->with('success', __('Match updated successfully.'));
     }
 
     public function destroy(GameMatch $match): RedirectResponse
@@ -315,12 +315,12 @@ class GameMatchController extends Controller
         if (! $this->matches->deleteMatch($match)) {
             return redirect()
                 ->route('admin.matches.index')
-                ->with('error', 'This match cannot be deleted because match data already exists.');
+                ->with('error', __('This match cannot be deleted because match data already exists.'));
         }
 
         return redirect()
             ->route('admin.matches.index')
-            ->with('success', 'Match deleted successfully.');
+            ->with('success', __('Match deleted successfully.'));
     }
 
     private function eligibleEditionTeams()

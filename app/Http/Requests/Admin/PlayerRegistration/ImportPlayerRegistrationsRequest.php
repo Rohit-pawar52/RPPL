@@ -50,8 +50,8 @@ class ImportPlayerRegistrationsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'edition_id.exists' => 'The selected edition is not currently accepting registrations.',
-            'csv_file.extensions' => 'The file must be an Excel (.xlsx) or CSV file.',
+            'edition_id.exists' => __('The selected edition is not currently accepting registrations.'),
+            'csv_file.extensions' => __('The file must be an Excel (.xlsx) or CSV file.'),
         ];
     }
 }

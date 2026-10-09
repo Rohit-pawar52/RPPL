@@ -49,9 +49,9 @@ class StorePlayerRegistrationRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'edition_id.exists' => 'The selected edition is not currently accepting registrations.',
-            'player_id.exists' => 'The selected player is not available for registration.',
-            'player_id.unique' => 'This player is already registered for the selected edition.',
+            'edition_id.exists' => __('The selected edition is not currently accepting registrations.'),
+            'player_id.exists' => __('The selected player is not available for registration.'),
+            'player_id.unique' => __('This player is already registered for the selected edition.'),
         ];
     }
 }

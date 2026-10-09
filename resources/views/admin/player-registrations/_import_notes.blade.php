@@ -18,7 +18,7 @@
 
     @if($skipped)
         <div>
-            <p class="mb-1 font-medium text-slate-800">Rows not imported</p>
+            <p class="mb-1 font-medium text-slate-800">{{ __('Rows not imported') }}</p>
             <ul class="max-h-56 list-disc space-y-0.5 overflow-y-auto pl-4">
                 @foreach($skipped as $line)
                     <li>{{ $line }}</li>
@@ -29,10 +29,9 @@
 
     @if($adjustments)
         <div>
-            <p class="mb-1 font-medium text-slate-800">Imported, but worth a look</p>
+            <p class="mb-1 font-medium text-slate-800">{{ __('Imported, but worth a look') }}</p>
             <p class="mb-1 text-slate-500">
-                These values were cleaned up, left empty, or matched to an existing player. Each one can be corrected
-                from that registration's Edit page.
+                {{ __("These values were cleaned up, left empty, or matched to an existing player. Each one can be corrected from that registration's Edit page.") }}
             </p>
             <ul class="max-h-72 list-disc space-y-0.5 overflow-y-auto pl-4">
                 @foreach($adjustments as $line)

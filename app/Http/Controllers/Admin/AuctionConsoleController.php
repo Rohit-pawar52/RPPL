@@ -39,7 +39,7 @@ class AuctionConsoleController extends Controller
         if ($auction->isDraft()) {
             return redirect()
                 ->route('admin.auctions.show', $edition)
-                ->with('error', 'Start the auction before opening the console.');
+                ->with('error', __('Start the auction before opening the console.'));
         }
 
         return view('admin.auctions.console', [
@@ -65,7 +65,7 @@ class AuctionConsoleController extends Controller
 
         return $this->respond($auction, function () use ($auction) {
             if ($this->auctions->callRandom($auction) === null) {
-                return 'Nobody is waiting. Start the next round to bring the hold players back.';
+                return __('Nobody is waiting. Start the next round to bring the hold players back.');
             }
 
             return null;
@@ -98,7 +98,7 @@ class AuctionConsoleController extends Controller
             $team = EditionTeam::query()->where('edition_id', $auction->edition_id)->find($data['team_id']);
 
             if (! $team) {
-                throw ValidationException::withMessages(['bid' => 'That team is not in this season.']);
+                throw ValidationException::withMessages(['bid' => __('That team is not in this season.')]);
             }
 
             $this->auctions->placeBid(
@@ -160,7 +160,7 @@ class AuctionConsoleController extends Controller
 
             $this->auctions->returnToWaiting($auction, $lot);
 
-            return "{$name} is back among the waiting players.";
+            return __(':name is back among the waiting players.', ['name' => $name]);
         });
     }
 
@@ -171,7 +171,11 @@ class AuctionConsoleController extends Controller
         return $this->respond($auction, function () use ($auction) {
             $back = $this->auctions->startNextRound($auction);
 
-            return $back === 1 ? 'Round '.($auction->fresh()->round).' started — 1 player is back.' : 'Round '.($auction->fresh()->round)." started — {$back} players are back.";
+            $round = $auction->fresh()->round;
+
+            return $back === 1
+                ? __('Round :round started — 1 player is back.', ['round' => $round])
+                : __('Round :round started — :count players are back.', ['round' => $round, 'count' => $back]);
         });
     }
 
@@ -210,7 +214,7 @@ class AuctionConsoleController extends Controller
         return $this->respond($auction, function () use ($auction) {
             $result = $this->auctions->refreshPool($auction);
 
-            return "Pool updated: {$result['added']} added, {$result['removed']} removed.";
+            return __('Pool updated: :added added, :removed removed.', ['added' => $result['added'], 'removed' => $result['removed']]);
         });
     }
 
@@ -225,7 +229,7 @@ class AuctionConsoleController extends Controller
         return $this->respond($auction, function () use ($auction, $data) {
             $lot = $this->auctions->addWalkInPlayer($auction, $data['name'], $data['phone']);
 
-            return $lot->playerRegistration->player->name.' is added to the waiting players.';
+            return __(':name is added to the waiting players.', ['name' => $lot->playerRegistration->player->name]);
         });
     }
 
@@ -288,6 +292,6 @@ class AuctionConsoleController extends Controller
     private function lotOf(Auction $auction, int $lotId): AuctionLot
     {
         return $auction->lots()->find($lotId)
-            ?? throw ValidationException::withMessages(['stale' => 'That player is no longer part of this auction. The screen has been refreshed.']);
+            ?? throw ValidationException::withMessages(['stale' => __('That player is no longer part of this auction. The screen has been refreshed.')]);
     }
 }

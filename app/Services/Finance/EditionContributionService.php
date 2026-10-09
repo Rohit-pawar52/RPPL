@@ -94,7 +94,7 @@ class EditionContributionService
 
         if (! $contributor) {
             throw ValidationException::withMessages([
-                'contributor_id' => 'The selected contributor must be active.',
+                'contributor_id' => __('The selected contributor must be active.'),
             ]);
         }
 
