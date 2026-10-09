@@ -41,14 +41,34 @@ return [
             'report' => false,
         ],
 
-        'public' => [
-            'driver' => 'local',
-            'root' => env('PUBLIC_DISK_ROOT', storage_path('app/public')),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
-            'visibility' => 'public',
-            'throw' => false,
-            'report' => false,
-        ],
+        // Every picture the site shows lives on this disk. By default it is the local storage/app/public
+        // folder. On a host whose disk is wiped on every restart (Render's free plan) set
+        // PUBLIC_DISK_DRIVER=s3 and the PUBLIC_S3_* variables to keep uploads in any S3-compatible bucket
+        // (Supabase Storage, Cloudflare R2, Backblaze B2 ...) instead; unset them again and mount a
+        // persistent disk when moving to a paid plan. Nothing else in the code changes either way.
+        'public' => env('PUBLIC_DISK_DRIVER', 'local') === 's3'
+            ? [
+                'driver' => 's3',
+                'key' => env('PUBLIC_S3_KEY'),
+                'secret' => env('PUBLIC_S3_SECRET'),
+                'region' => env('PUBLIC_S3_REGION', 'us-east-1'),
+                'bucket' => env('PUBLIC_S3_BUCKET'),
+                'endpoint' => env('PUBLIC_S3_ENDPOINT'),
+                // The public address files are served from (the bucket's public base URL, no trailing slash).
+                'url' => rtrim((string) env('PUBLIC_S3_URL'), '/'),
+                'use_path_style_endpoint' => (bool) env('PUBLIC_S3_PATH_STYLE', true),
+                // A failed upload must be an error, not a saved path that points at nothing.
+                'throw' => true,
+                'report' => false,
+            ]
+            : [
+                'driver' => 'local',
+                'root' => env('PUBLIC_DISK_ROOT', storage_path('app/public')),
+                'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+                'visibility' => 'public',
+                'throw' => false,
+                'report' => false,
+            ],
 
         's3' => [
             'driver' => 's3',
