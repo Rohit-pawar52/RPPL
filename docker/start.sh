@@ -46,6 +46,18 @@ if [ "$USERS" = "0" ]; then
   php artisan tinker --no-ansi --execute='\Illuminate\Support\Facades\DB::transaction(fn () => \Illuminate\Support\Facades\Artisan::call("db:seed", ["--force" => true]));'
 fi
 
+# Optional, one-off: empty the demo / test tournament data (accounts, settings, sponsors and pages stay; the
+# seeders stay in the code). Set CLEAR_DEMO_DATA to any value in the Render dashboard and redeploy. The value
+# is a one-time token: while it stays the same, later restarts skip it, so leaving it set can never wipe the
+# site again; a new value runs it again. To get the demo data back for testing, set LOAD_DEMO_DATA=true (the
+# seeders are safe to re-run) and remove it again afterwards.
+if [ -n "$CLEAR_DEMO_DATA" ]; then
+  php artisan rppl:clear-demo-data --force --token="$CLEAR_DEMO_DATA" || echo "WARNING: rppl:clear-demo-data failed (see above); the demo data is still there." >&2
+fi
+if [ "$LOAD_DEMO_DATA" = "true" ]; then
+  php artisan db:seed --force || echo "WARNING: loading the demo data failed (see above)." >&2
+fi
+
 # Secure admin bootstrap (php artisan rppl:ensure-admin). There is no built-in admin login and no
 # default password. A "usable" admin is an ACTIVE admin whose password is not a published one: the demo
 # dataset loaded above brings admin@rppl.test / scorer@rppl.test (password "password"), and sites
