@@ -9,8 +9,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * The homepage contributors slider (up to 20, then "View more") and the full list page behind it. Recognition
- * only: name, village and picture, never an amount.
+ * The homepage contributors slider (up to 20, then "View more") and the full list page behind it. Each card
+ * shows the name, village, picture and what the person gave this season.
  */
 class ContributorsSliderTest extends TestCase
 {
@@ -24,7 +24,7 @@ class ContributorsSliderTest extends TestCase
         return $contributor;
     }
 
-    public function test_the_home_page_shows_name_and_village_with_the_default_picture_and_no_amount(): void
+    public function test_the_home_page_shows_name_village_default_picture_and_each_persons_own_amount(): void
     {
         $edition = Edition::factory()->create(['status' => 'active']);
         $this->give($edition, 'Ramesh Patil', 'Shirur', 123456);
@@ -36,10 +36,10 @@ class ContributorsSliderTest extends TestCase
             ->assertSee('Shirur')
             ->assertSee('Old Giver')
             ->assertSee('images/default-user.jpeg', false)
-            // Only the season's total is shown (123456 + 100), never one person's amount.
-            ->assertSee('Total contributed in')
-            ->assertSee(money(123556), false)
-            ->assertDontSee(money(123456), false)
+            // Each person's own amount for the season, not a grand total.
+            ->assertSee(money(123456), false)
+            ->assertSee(money(100), false)
+            ->assertDontSee(money(123556), false)
             ->assertDontSee(route('public.contributors.index', ['edition_id' => $edition->id]), false);
     }
 

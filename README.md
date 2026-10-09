@@ -100,7 +100,7 @@ Every page of the public website and the admin panel was redesigned on one desig
 
 ### Contributors on the home page
 
-Just above the footer the home page shows a swipeable slider of the current season's contributors (picture, name and village; the default picture when there is none, and no amount ever). Up to 20 are shown; when there are more, a "View more" link and card open the full list at `/contributors`, which also has season chips. English and Hindi.
+Just above the footer the home page shows a swipeable slider of the current season's contributors (picture, name, village and what each person gave this season; the default picture when there is none). Up to 20 are shown; when there are more, a "View more" link and card open the full list at `/contributors`, which also has season chips. English and Hindi.
 
 ### Admin panel in Hindi and English
 
