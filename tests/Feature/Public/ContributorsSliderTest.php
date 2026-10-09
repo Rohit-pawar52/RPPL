@@ -36,8 +36,10 @@ class ContributorsSliderTest extends TestCase
             ->assertSee('Shirur')
             ->assertSee('Old Giver')
             ->assertSee('images/default-user.jpeg', false)
-            ->assertDontSee('123456')
-            ->assertDontSee('1,23,456')
+            // Only the season's total is shown (123456 + 100), never one person's amount.
+            ->assertSee('Total contributed in')
+            ->assertSee(money(123556), false)
+            ->assertDontSee(money(123456), false)
             ->assertDontSee(route('public.contributors.index', ['edition_id' => $edition->id]), false);
     }
 
