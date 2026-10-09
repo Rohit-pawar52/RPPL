@@ -1,5 +1,14 @@
 @import 'tailwindcss';
 
+/* UI refresh: the shared kit, then one file per area (each owned by one person). */
+@import './ux/kit.css';
+@import './ux/public-shell.css';
+@import './ux/public-matches.css';
+@import './ux/public-content.css';
+@import './ux/admin-shell.css';
+@import './ux/admin-crud.css';
+@import './ux/admin-ops.css';
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
@@ -19,6 +28,27 @@
     --color-navy-700: #1b4d68;
     --color-surface: #f3f6f9;
     --color-line: #e2e8ee;
+
+    /* The admin-editable theme as Tailwind utilities (bg-action, text-brand,
+       hover:bg-hover ...). They point at the runtime variables written by
+       layouts/partials/theme-vars, so a colour changed in Settings reaches
+       every one of them with no build. Use these for BRAND and ACTION
+       colours; green / red / amber stay for meanings (paid, failed, ...). */
+    --color-brand: var(--rppl-primary);
+    --color-brand-hover: var(--rppl-primary-hover);
+    --color-brand-soft: var(--rppl-primary-soft);
+    --color-brand-fg: var(--rppl-primary-fg);
+    --color-action: var(--rppl-button);
+    --color-action-hover: var(--rppl-button-hover);
+    --color-action-fg: var(--rppl-button-fg);
+    --color-link: var(--rppl-primary);
+    --color-link-hover: var(--rppl-link-hover);
+    --color-hover: var(--rppl-hover-bg);
+    --color-accent-dark: var(--rppl-accent-on-dark);
+
+    --shadow-card: 0 1px 2px rgb(15 34 51 / 0.05), 0 1px 3px rgb(15 34 51 / 0.04);
+    --shadow-raised: 0 4px 12px -2px rgb(15 34 51 / 0.1), 0 2px 4px -2px rgb(15 34 51 / 0.06);
+    --shadow-pop: 0 12px 32px -8px rgb(15 34 51 / 0.22), 0 4px 10px -4px rgb(15 34 51 / 0.1);
 }
 
 /*
@@ -38,15 +68,20 @@
  * use.
  */
 :root {
-    --rppl-primary: #2563eb;
+    --rppl-primary: #15803d;
     --rppl-primary-hover: color-mix(in srgb, var(--rppl-primary) 85%, black);
     --rppl-primary-soft: color-mix(in srgb, var(--rppl-primary) 12%, white);
     --rppl-primary-fg: #ffffff;
-    --rppl-secondary: #737373;
-    --rppl-button: #2563eb;
+    --rppl-secondary: #64748b;
+    --rppl-link-hover: color-mix(in srgb, var(--rppl-primary) 80%, black);
+    --rppl-button: #15803d;
     --rppl-button-hover: color-mix(in srgb, var(--rppl-button) 85%, black);
     --rppl-button-fg: #ffffff;
-    --rppl-announcement-bg: #2563eb;
+    --rppl-hover-bg: color-mix(in srgb, var(--rppl-primary) 7%, white);
+    --rppl-accent-on-dark: color-mix(in srgb, var(--rppl-primary) 55%, white);
+    --rppl-radius-btn: 0.625rem;
+    --rppl-header: #0b2e3f;
+    --rppl-announcement-bg: #15803d;
     --rppl-announcement-text: #ffffff;
 }
 
@@ -60,6 +95,7 @@
 .theme-button {
     background-color: var(--rppl-button);
     color: var(--rppl-button-fg);
+    border-radius: var(--rppl-radius-btn);
 }
 .theme-button:hover {
     background-color: var(--rppl-button-hover);
@@ -90,7 +126,7 @@
     color: var(--rppl-primary);
 }
 .theme-link:hover {
-    color: var(--rppl-primary-hover);
+    color: var(--rppl-link-hover);
 }
 
 .theme-hover-primary:hover {
@@ -285,15 +321,20 @@
         @apply text-[11px] font-semibold uppercase tracking-wider text-slate-400;
     }
     .pub-link {
-        @apply font-medium text-green-700 hover:text-green-800 hover:underline;
+        @apply font-medium text-link hover:text-link-hover hover:underline;
     }
 
     /* Buttons */
+    /* Buttons follow the admin-set button colour, hover colour, text colour
+       and corner shape (Settings > General > Theme). See also .btn in
+       css/ux/kit.css, the same look under a shorter name. */
     .pub-btn {
-        @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-green-600 px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-green-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:cursor-not-allowed disabled:opacity-60;
+        @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap bg-action px-3.5 py-2 text-[13px] font-semibold text-action-fg transition hover:bg-action-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action disabled:cursor-not-allowed disabled:opacity-60;
+        border-radius: var(--rppl-radius-btn);
     }
     .pub-btn-outline {
-        @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:cursor-not-allowed disabled:opacity-60;
+        @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap border border-slate-300 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 transition hover:border-brand hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-60;
+        border-radius: var(--rppl-radius-btn);
     }
     .pub-btn-sm {
         @apply px-2.5 py-1.5 text-xs;
@@ -343,7 +384,7 @@
         @apply -mb-px whitespace-nowrap border-b-2 border-transparent px-3 py-2.5 text-[13px] font-medium text-slate-500 transition hover:text-slate-900;
     }
     .pub-tab-active {
-        @apply border-green-600 font-semibold text-green-700 hover:text-green-700;
+        @apply border-brand font-semibold text-brand hover:text-brand;
     }
 
     /* Tables: always wrap in .pub-table-wrap so they scroll instead of
@@ -362,7 +403,7 @@
         @apply border-t border-line px-3 py-2.5 text-slate-700;
     }
     .pub-table tbody tr:hover td {
-        @apply bg-slate-50/60;
+        @apply bg-hover;
     }
 
     /* Empty / placeholder states */
@@ -502,7 +543,7 @@ details[open] > .rppl-pop {
     }
     .adm-link-active {
         @apply bg-white/10 text-white;
-        box-shadow: inset 3px 0 0 #4ade80;
+        box-shadow: inset 3px 0 0 var(--rppl-accent-on-dark);
     }
     .adm-children {
         @apply mb-1 ml-[19px] mt-0.5 space-y-0.5 border-l border-white/10 pl-2;
@@ -512,7 +553,7 @@ details[open] > .rppl-pop {
     }
     .adm-sublink-active {
         @apply bg-white/10 font-medium text-white;
-        box-shadow: inset 2px 0 0 #4ade80;
+        box-shadow: inset 2px 0 0 var(--rppl-accent-on-dark);
     }
     .adm-group > summary {
         list-style: none;

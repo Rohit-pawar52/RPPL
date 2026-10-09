@@ -3,52 +3,55 @@
     $faviconPath = $settings->get('general.favicon_path');
 @endphp
 
-<form method="POST" action="{{ route('admin.settings.general.update') }}" enctype="multipart/form-data" novalidate>
+<form method="POST" action="{{ route('admin.settings.general.update') }}" enctype="multipart/form-data" novalidate class="space-y-5">
     @csrf
     @method('PUT')
 
-    <x-form.input name="application_name" label="Application Name" :value="$settings->get('general.application_name')" required maxlength="150" />
-    <x-form.input name="short_name" label="Short Name" :value="$settings->get('general.short_name')" required maxlength="30" />
-    <x-form.input name="tagline" label="Tagline" :value="$settings->get('general.tagline')" maxlength="255" />
+    {{-- Who the site is --}}
+    <section class="rounded-xl border border-line bg-white">
+        <div class="border-b border-line px-4 py-3">
+            <h2 class="text-sm font-semibold text-slate-900">Identity</h2>
+            <p class="mt-0.5 text-[12px] text-slate-500">The name, tagline, logo and favicon shown across the website and the admin panel.</p>
+        </div>
+        <div class="grid gap-x-6 p-4 lg:grid-cols-2">
+            <div>
+                <x-form.input name="application_name" label="Application Name" :value="$settings->get('general.application_name')" required maxlength="150" />
+                <x-form.input name="short_name" label="Short Name" :value="$settings->get('general.short_name')" required maxlength="30" />
+                <x-form.input name="tagline" label="Tagline" :value="$settings->get('general.tagline')" maxlength="255" />
+            </div>
+            <div class="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+                <x-form.image-upload
+                    name="logo"
+                    label="Logo"
+                    :current="$logoPath"
+                    kind="image"
+                    box-class="h-20 w-20 rounded-xl"
+                    empty-text="Click the picture to add a logo"
+                    remove-name="remove_logo"
+                    remove-label="Remove logo"
+                    help="PNG, JPG or WebP. Shown in the site header."
+                />
 
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <x-form.color name="primary_color" label="Primary Color" :value="$settings->get('general.primary_color')" />
-        <x-form.color name="secondary_color" label="Secondary Color" :value="$settings->get('general.secondary_color')" />
-        <x-form.color name="button_color" label="Button Color" :value="$settings->get('general.button_color')" />
+                <x-form.image-upload
+                    name="favicon"
+                    label="Favicon"
+                    :current="$faviconPath"
+                    kind="image"
+                    box-class="h-14 w-14 rounded-lg"
+                    accept=".ico,image/png"
+                    empty-text="Click the picture to add a favicon"
+                    remove-name="remove_favicon"
+                    remove-label="Remove favicon"
+                    help="An .ico or PNG file. Shown in the browser tab."
+                />
+            </div>
+        </div>
+    </section>
+
+    {{-- How the site looks: every colour, the hover colours and the button shape --}}
+    @include('admin.settings.tabs._theme')
+
+    <div class="sticky bottom-3 z-10 flex justify-end">
+        <button type="submit" class="btn btn-primary btn-lg shadow-raised">Save changes</button>
     </div>
-
-    <p class="mb-1 text-[11px] font-medium text-neutral-500">Announcement ticker (public website)</p>
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <x-form.color name="announcement_background_color" label="Announcement Background Color" :value="$settings->get('general.announcement_background_color')" />
-        <x-form.color name="announcement_text_color" label="Announcement Text Color" :value="$settings->get('general.announcement_text_color')" />
-    </div>
-
-    <x-form.image-upload
-        name="logo"
-        label="Logo"
-        :current="$logoPath"
-        kind="image"
-        box-class="h-20 w-20 rounded-xl"
-        empty-text="Click the picture to add a logo"
-        remove-name="remove_logo"
-        remove-label="Remove logo"
-        help="PNG, JPG or WebP. Shown in the site header."
-    />
-
-    <x-form.image-upload
-        name="favicon"
-        label="Favicon"
-        :current="$faviconPath"
-        kind="image"
-        box-class="h-14 w-14 rounded-lg"
-        accept=".ico,image/png"
-        empty-text="Click the picture to add a favicon"
-        remove-name="remove_favicon"
-        remove-label="Remove favicon"
-        help="An .ico or PNG file. Shown in the browser tab."
-    />
-
-    <button type="submit" class="rounded-md theme-button px-3 py-2 text-[13px] font-medium">
-        Save changes
-    </button>
 </form>

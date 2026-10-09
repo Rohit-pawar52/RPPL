@@ -32,7 +32,10 @@ return [
 
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app/private'),
+            // PRIVATE_DISK_ROOT / PUBLIC_DISK_ROOT exist so a throwaway copy of the app
+            // (screenshots, experiments) can write its uploads somewhere that is not the
+            // real storage folder. Leave them unset in a real environment.
+            'root' => env('PRIVATE_DISK_ROOT', storage_path('app/private')),
             'serve' => true,
             'throw' => false,
             'report' => false,
@@ -40,7 +43,7 @@ return [
 
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
+            'root' => env('PUBLIC_DISK_ROOT', storage_path('app/public')),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,

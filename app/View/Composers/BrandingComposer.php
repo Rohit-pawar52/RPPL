@@ -44,7 +44,16 @@ class BrandingComposer
             primaryForegroundColor: ForegroundContrast::for($primaryColor),
             secondaryColor: $this->sanitizedColor('general.secondary_color'),
             buttonColor: $buttonColor,
-            buttonForegroundColor: ForegroundContrast::for($buttonColor),
+            buttonForegroundColor: $this->optionalColor('general.button_text_color') ?? ForegroundContrast::for($buttonColor),
+            buttonHoverColor: $this->optionalColor('general.button_hover_color'),
+            linkHoverColor: $this->optionalColor('general.link_hover_color'),
+            hoverColor: $this->optionalColor('general.hover_color'),
+            headerColor: $this->sanitizedColor('general.header_color'),
+            buttonRadius: match ($this->settings->get('general.button_shape')) {
+                'square' => '0.25rem',
+                'pill' => '9999px',
+                default => '0.625rem',
+            },
             announcementBackgroundColor: $this->sanitizedColor('general.announcement_background_color'),
             announcementTextColor: $this->sanitizedColor('general.announcement_text_color'),
         ));
@@ -64,6 +73,17 @@ class BrandingComposer
      * validated admin form) falls back to SettingsRegistry's own
      * default rather than ever reaching a <style> block unchecked.
      */
+    /**
+     * An optional color setting: a genuine #RRGGBB string, or null when
+     * the admin left it empty (or the stored value is malformed).
+     */
+    private function optionalColor(string $key): ?string
+    {
+        $value = $this->settings->get($key);
+
+        return HexColor::isValid($value) ? $value : null;
+    }
+
     private function sanitizedColor(string $key): string
     {
         return HexColor::sanitize($this->settings->get($key), SettingsRegistry::default($key));
