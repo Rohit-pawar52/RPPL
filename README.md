@@ -98,6 +98,10 @@ Every page of the public website and the admin panel was redesigned on one desig
 - **Customisable without code:** Settings → General → *Theme* (see *Global settings* below) stores the colours in the database; every button, link, hover and the dark shell follows them.
 - For developers: the buttons are the `.btn` family (`resources/css/ux/kit.css`), brand colours are the Tailwind utilities `bg-action`, `text-brand`, `text-link`, `hover:bg-hover`, `bg-navy-*` (never a hardcoded green for something that is "the brand"), shared admin pieces are `<x-admin.button|card|empty|form-actions|quick-links>`, `<x-form.*>`, `<x-table-filters>`, `<x-stat-card>`, and each area has its own stylesheet in `resources/css/ux/`. Dates stay in one format (`03 Oct 2026, 12:20 AM`) wherever a year matters.
 
+### Contributors on the home page
+
+Just above the footer the home page shows a swipeable slider of the current season's contributors (picture, name and village; the default picture when there is none, and no amount ever). Up to 20 are shown; when there are more, a "View more" link and card open the full list at `/contributors`, which also has season chips. English and Hindi.
+
 ### Admin panel in Hindi and English
 
 Every admin screen (and the sign-in page) works in English or Hindi. Each user chooses their own language with the **EN | हिन्दी** switch in the top bar (in the account menu on phones, and under the sign-in card); it is saved on the account, so a scorer can work in Hindi while the admin stays in English, on any device. The public website keeps its own separate language switch. Menus, buttons, tables, forms, messages, validation errors, confirmation dialogs, the scoring keypad and the auction bar are all translated, and month and day names in dates follow the language. What an admin types (news, names, rules) is shown as written, and PDF / CSV exports stay English.

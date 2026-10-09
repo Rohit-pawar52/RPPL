@@ -19,13 +19,13 @@ use App\Models\EditionContribution;
 class ContributorRankingService
 {
     /**
-     * @return list<array{position: int, is_top_ten: bool, name: string, total_amount: float, photo_path: ?string}>
+     * @return list<array{position: int, is_top_ten: bool, name: string, village: ?string, total_amount: float, photo_path: ?string}>
      */
     public function getEditionRanking(Edition $edition): array
     {
         $contributions = EditionContribution::query()
             ->where('edition_id', $edition->id)
-            ->with('contributor:id,name,photo_path')
+            ->with('contributor:id,name,village,photo_path')
             ->get(['id', 'contributor_id', 'amount']);
 
         $totals = [];
@@ -41,7 +41,7 @@ class ContributorRankingService
             // many rows can drift; summing whole paise cannot.
             $cents = (int) round(((float) $contribution->amount) * 100);
 
-            $totals[$contributor->id] ??= ['name' => $contributor->name, 'cents' => 0, 'photo_path' => $contributor->photo_path];
+            $totals[$contributor->id] ??= ['name' => $contributor->name, 'village' => $contributor->village, 'cents' => 0, 'photo_path' => $contributor->photo_path];
             $totals[$contributor->id]['cents'] += $cents;
         }
 
@@ -49,6 +49,7 @@ class ContributorRankingService
             ->map(fn (array $row, int $contributorId) => [
                 'key' => $contributorId,
                 'name' => $row['name'],
+                'village' => $row['village'],
                 'cents' => $row['cents'],
                 'photo_path' => $row['photo_path'],
             ])
@@ -67,6 +68,7 @@ class ContributorRankingService
                     'position' => $position,
                     'is_top_ten' => $position <= 10,
                     'name' => $row['name'],
+                    'village' => filled($row['village']) ? trim($row['village']) : null,
                     // PHP's `/` returns an int, not a float, when the
                     // division happens to be exact (e.g. 500000/100) —
                     // cast explicitly so callers always get the
