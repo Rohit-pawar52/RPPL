@@ -4,7 +4,8 @@
      so the header never reserves dead space. Message text always goes
      through {{ }}, never {!! !!} — announcements are plain text only,
      emoji/Unicode render fine, a literal <script> tag is displayed as
-     text, never executed. --}}
+     text, never executed. A small megaphone chip sits over the left edge
+     so the bar reads as "news" at a glance. --}}
 @if($activeAnnouncements->isNotEmpty())
     @php
         $combinedLength = $activeAnnouncements->sum(fn ($announcement) => mb_strlen($announcement->message));
@@ -13,7 +14,10 @@
         // ticker still scrolls at a sane pace.
         $duration = max(15, min(60, (int) round($combinedLength * 0.18)));
     @endphp
-    <div class="rppl-ticker" role="region" aria-label="{{ __('directory.announcements.label') }}">
+    <div class="rppl-ticker relative" role="region" aria-label="{{ __('directory.announcements.label') }}">
+        <span class="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center px-3 shadow-[8px_0_8px_-4px_rgb(0_0_0_/_0.12)]" style="background-color: var(--rppl-announcement-bg);" aria-hidden="true">
+            <x-icon name="megaphone" class="h-4 w-4" />
+        </span>
         <div class="rppl-ticker-track" style="--rppl-ticker-duration: {{ $duration }}s;">
             <span class="rppl-ticker-content">
                 @foreach($activeAnnouncements as $announcement)
