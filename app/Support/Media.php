@@ -17,7 +17,7 @@ use Throwable;
  *  - 'image' — default.png, for anything that is not a person;
  *  - 'user'  — default-user.jpeg, for a person (a player, a contributor).
  *
- * The browser-side half of this (a picture that exists but fails to load)
+ * On a remote bucket the file is not checked server-side (see existingUrl()). The browser-side half of this (a picture that exists but fails to load)
  * is the small script in layouts/partials/image-fallback.blade.php.
  */
 class Media
@@ -52,6 +52,13 @@ class Media
 
         try {
             $disk = Storage::disk('public');
+
+            // On a remote bucket (PUBLIC_DISK_DRIVER=s3) asking "does it exist?" is a network call per
+            // picture, which would make every page slow. The saved path is trusted; a picture that
+            // really is missing falls back to the default one in the browser (image-fallback script).
+            if (config('filesystems.disks.public.driver') !== 'local') {
+                return $disk->url($path);
+            }
 
             return $disk->exists($path) ? $disk->url($path) : null;
         } catch (Throwable) {

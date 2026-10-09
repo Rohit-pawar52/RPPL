@@ -427,10 +427,29 @@ There is no built-in admin login. On every start `php artisan rppl:ensure-admin 
 Locally the same command works with `ADMIN_EMAIL` / `ADMIN_PASSWORD` set in `.env`, e.g. `ADMIN_EMAIL=me@example.com ADMIN_PASSWORD='a long password' php artisan rppl:ensure-admin`.
 
 Good to know on the free plan:
-- Files uploaded through the admin panel (sponsor ads, photos, branding, payment proofs) live on the container's disk, which Render wipes on every restart/redeploy. Use a paid persistent disk or external storage before relying on uploads.
-- There is no queue worker, cron or Reverb. Queued work runs inline (`sync`), live scores/auction updates fall back to polling, and the reminder scheduler only runs if you set `RUN_SCHEDULER=true` (runs it once a minute inside the container, while the service is awake).
+- Files uploaded through the admin panel live on the container's disk, which Render wipes on every restart/redeploy. **Pictures** (player and team photos, logos, ads, news and photo gallery images, the site logo, the UPI QR) can be kept for free in an S3-compatible bucket: see *Keeping pictures on the free plan* below. **Private files** (payment screenshots and other registration documents) stay on the container disk, so on the free plan they are lost on a restart; download what you need, or move to a paid plan with a persistent disk.
+- There is no queue worker, cron or Reverb. Queued work runs inline (`sync`), live scores/auction updates fall back to polling, and the reminder scheduler runs if you set `RUN_SCHEDULER=true` (once a minute inside the container, **only while the service is awake**). To keep a free service awake, point a free uptime monitor (UptimeRobot, cron-job.org) at `https://<your-service>.onrender.com/up` every 10 minutes; one free service then fits in Render's 750 free hours a month.
 - The service sleeps after ~15 minutes without traffic and the first request after that can take 30–60 seconds; a 419 "page expired" right after a long idle period is normal (the session was lost).
 - Render's free PostgreSQL expires about 30 days after creation — export a backup (`pg_dump`) or move to a paid database before then.
+
+#### Keeping pictures on the free plan (free bucket)
+
+Set these on the Render web service and redeploy; pictures then go to the bucket instead of the container disk, so a restart no longer loses them. Any S3-compatible bucket works; **Supabase Storage** is free without a card:
+
+1. At supabase.com create a free project. *Storage → New bucket*: name `rppl`, switch **Public bucket** on.
+2. *Project Settings → Storage → S3 connection*: enable it and create an access key. Note the endpoint (`https://<project-ref>.supabase.co/storage/v1/s3`), the region and the key id / secret.
+3. In Render, add:
+
+| Variable | Value |
+| --- | --- |
+| `PUBLIC_DISK_DRIVER` | `s3` |
+| `PUBLIC_S3_KEY` / `PUBLIC_S3_SECRET` | the access key id / secret from step 2 |
+| `PUBLIC_S3_REGION` | the project's region, e.g. `ap-south-1` |
+| `PUBLIC_S3_BUCKET` | `rppl` |
+| `PUBLIC_S3_ENDPOINT` | `https://<project-ref>.supabase.co/storage/v1/s3` |
+| `PUBLIC_S3_URL` | `https://<project-ref>.supabase.co/storage/v1/object/public/rppl` |
+
+Pictures uploaded before this are on the old disk and are gone; upload them again. A picture whose file is missing shows the default picture, as before. **Moving to a paid plan needs no code change:** either keep these variables, or remove all `PUBLIC_*` ones and add a Render persistent disk mounted at `/var/www/html/storage/app`, which keeps both the pictures and the private files.
 
 ## Demo data
 
