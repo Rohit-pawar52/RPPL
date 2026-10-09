@@ -39,5 +39,7 @@
         @include('public.home._media-cards')
 
         <x-ad-slot tier="mini" />
+
+        @include('public.home._contributors')
     </div>
 @endsection
