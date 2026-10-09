@@ -7,13 +7,13 @@
 <form
     method="POST"
     action="{{ route('admin.matches.innings.complete', [$match, $innings]) }}"
-    class="mt-3 flex flex-wrap items-end gap-2"
+    class="mt-4 grid gap-x-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
 >
     @csrf
-    <div class="min-w-[220px] flex-1">
-        <x-form.input name="reason" label="Reason for completing this innings now" placeholder="e.g. Bad light, umpire's decision" />
+    <x-form.input name="reason" label="Reason for completing this innings now" placeholder="e.g. Bad light, umpire's decision" />
+    <div class="mb-3.5">
+        <button type="submit" class="btn btn-secondary min-h-10 max-sm:w-full">
+            Complete Innings
+        </button>
     </div>
-    <button type="submit" class="mb-3.5 rounded-md theme-button px-3 py-1.5 text-[13px] font-medium">
-        Complete Innings
-    </button>
 </form>

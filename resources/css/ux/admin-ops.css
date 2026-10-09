@@ -1,0 +1,240 @@
+/*
+ * Admin matches, scoring, registrations, seasons and the auction console.
+ * One file for the whole area; every class is prefixed `ops-` (or `rq-`,
+ * `sc-`, `ac-` for the work queue, the scoring console and the auction
+ * console) so nothing here can clash with another area. Colours come from the
+ * admin theme (brand / action / hover / navy) - green, red, amber and sky are
+ * kept only for meanings (paid, failed, pending, info, a four, a six).
+ */
+@layer components {
+    /* ---------- surfaces and type ---------- */
+    .ops-card {
+        @apply rounded-xl border border-line bg-white shadow-card;
+    }
+    .ops-card-head {
+        @apply flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3 sm:px-5;
+    }
+    .ops-card-body {
+        @apply p-4 sm:p-5;
+    }
+    .ops-title {
+        @apply text-base font-semibold tracking-tight text-slate-900;
+    }
+    .ops-kicker {
+        @apply text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+    .ops-hint {
+        @apply text-xs text-slate-500;
+    }
+    .ops-link {
+        @apply font-medium text-link hover:text-link-hover hover:underline;
+    }
+    .ops-back {
+        @apply inline-flex min-h-9 items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800;
+    }
+
+    /* ---------- fields written by hand on these pages ---------- */
+    .ops-input {
+        @apply min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-800 placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30;
+    }
+    .ops-label {
+        @apply mb-1 block text-xs font-medium text-slate-600;
+    }
+
+    /* ---------- filter chips (status as the filter) ---------- */
+    .ops-chip {
+        @apply inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-white px-3.5 text-[13px] font-medium text-slate-600 transition hover:border-slate-300 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+    .ops-chip-active {
+        @apply border-brand bg-brand-soft text-brand;
+    }
+    .ops-chip-count {
+        @apply rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold tabular-nums leading-5 text-slate-500;
+    }
+    .ops-chip-active .ops-chip-count {
+        @apply bg-white/70 text-brand;
+    }
+    .ops-chips {
+        @apply -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0;
+        scrollbar-width: none;
+    }
+    .ops-chips::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* ---------- pills for meaning (paid / pending / live ...) ---------- */
+    .ops-pill {
+        @apply inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold leading-4 ring-1 ring-inset;
+    }
+    .ops-pill-green {
+        @apply bg-green-50 text-green-700 ring-green-200;
+    }
+    .ops-pill-amber {
+        @apply bg-amber-50 text-amber-700 ring-amber-200;
+    }
+    .ops-pill-red {
+        @apply bg-red-50 text-red-700 ring-red-200;
+    }
+    .ops-pill-sky {
+        @apply bg-sky-50 text-sky-700 ring-sky-200;
+    }
+    .ops-pill-slate {
+        @apply bg-slate-100 text-slate-600 ring-slate-200;
+    }
+
+    /* ---------- a sticky bar for the main action(s) of a form ---------- */
+    .ops-savebar {
+        @apply sticky bottom-0 z-20 -mx-4 mt-6 flex flex-wrap items-center gap-2 border-t border-line bg-white/90 px-4 py-3 backdrop-blur lg:-mx-6 lg:px-6;
+    }
+
+    /* ---------- thumbnails that open the lightbox ---------- */
+    .ops-thumb {
+        @apply relative block shrink-0 overflow-hidden rounded-lg border border-line bg-slate-50 transition hover:border-brand hover:shadow-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+    .ops-thumb img {
+        @apply h-full w-full object-cover;
+    }
+    .ops-initials {
+        @apply flex shrink-0 select-none items-center justify-center rounded-full bg-brand-soft text-sm font-semibold uppercase text-brand;
+    }
+
+    /* ---------- a small "..." menu on a row ---------- */
+    .ops-menu {
+        @apply absolute right-0 top-full z-30 mt-1 w-40 rounded-xl border border-line bg-white p-1 shadow-pop;
+    }
+    .ops-menu-item {
+        @apply flex min-h-10 items-center gap-2 rounded-lg px-3 text-left text-[13px] font-medium text-slate-700 hover:bg-hover;
+    }
+
+    /* ---------- registrations: the payment work queue ---------- */
+    .rq-row {
+        @apply relative grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3 p-3 transition hover:bg-hover/50 sm:p-4 lg:grid-cols-[auto_minmax(0,2fr)_minmax(0,1.3fr)_minmax(0,1.4fr)_15rem] lg:gap-x-4;
+    }
+    .rq-row > :not(.rq-wide):nth-child(n + 2) {
+        @apply max-lg:col-start-2;
+    }
+    .rq-row > .rq-wide {
+        @apply col-span-full;
+    }
+
+    /* ---------- live scoring console ---------- */
+    .sc-board {
+        @apply rounded-2xl bg-gradient-to-br from-navy-900 to-navy-800 p-4 text-white shadow-raised sm:p-5;
+    }
+    .sc-kicker {
+        @apply text-[11px] font-semibold uppercase tracking-wide text-white/60;
+    }
+    .sc-score {
+        @apply text-5xl font-bold leading-none tracking-tight tabular-nums sm:text-6xl;
+    }
+    .sc-chip {
+        @apply inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tabular-nums text-white;
+    }
+    .sc-chip-warn {
+        @apply bg-amber-300 text-amber-950;
+    }
+    .sc-seat {
+        @apply min-w-0 rounded-xl bg-white/10 px-3 py-2;
+    }
+    .sc-seat-on {
+        @apply bg-white/20 ring-1 ring-inset ring-white/40;
+    }
+    .sc-seat-label {
+        @apply text-[10px] font-semibold uppercase tracking-wide text-white/60;
+    }
+    .sc-name {
+        @apply block truncate text-xs font-semibold text-white sm:text-[13px];
+    }
+    .sc-fig {
+        @apply block text-lg font-bold leading-6 tabular-nums text-white;
+    }
+    .sc-fig i {
+        @apply ml-1 text-xs font-medium not-italic text-white/70;
+    }
+    .sc-ball {
+        @apply inline-flex h-9 min-w-9 select-none items-center justify-center rounded-full bg-white/15 px-1.5 text-xs font-bold tabular-nums text-white;
+    }
+    .sc-ball-dot {
+        @apply bg-white/10 text-white/60;
+    }
+    .sc-ball-four {
+        @apply bg-sky-300 text-sky-950;
+    }
+    .sc-ball-six {
+        @apply bg-green-300 text-green-950;
+    }
+    .sc-ball-extra {
+        @apply bg-amber-300 text-amber-950;
+    }
+    .sc-ball-wicket {
+        @apply bg-red-500 text-white;
+    }
+    .sc-ball-correctable {
+        @apply cursor-pointer ring-2 ring-white/70 transition hover:ring-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white;
+    }
+
+    /* the run keys: a fixed bar at the bottom on phones and tablets, a card on wide screens */
+    .sc-pad {
+        @apply fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 px-3 pt-3 shadow-pop backdrop-blur lg:static lg:z-auto lg:rounded-2xl lg:border lg:bg-white lg:p-4 lg:shadow-card;
+        padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+    .sc-keys {
+        @apply mx-auto grid max-w-2xl grid-cols-6 gap-2;
+    }
+    .sc-key {
+        @apply relative flex min-h-14 select-none items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white text-xl font-bold text-slate-800 shadow-sm transition active:scale-95 active:bg-slate-100 disabled:opacity-40 lg:min-h-16;
+        touch-action: manipulation;
+    }
+    .sc-key-four {
+        @apply border-sky-300 bg-sky-50 text-sky-800;
+    }
+    .sc-key-six {
+        @apply border-green-300 bg-green-50 text-green-800;
+    }
+    .sc-key-extra {
+        @apply border-amber-300 bg-amber-50 text-base text-amber-800;
+    }
+    .sc-key-wicket {
+        @apply border-red-600 bg-red-600 text-white active:bg-red-700;
+    }
+    .sc-key-undo {
+        @apply text-sm font-semibold text-slate-600;
+    }
+    .sc-plus {
+        @apply absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-bold text-amber-700 shadow-sm ring-1 ring-amber-400;
+    }
+    .sc-panel {
+        @apply mx-auto mb-3 max-h-[55vh] max-w-2xl overflow-y-auto rounded-xl border border-line bg-slate-50 p-3;
+    }
+    .sc-pick {
+        @apply inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition active:scale-95;
+        touch-action: manipulation;
+    }
+    .sc-pick[aria-pressed='true'] {
+        @apply border-brand bg-brand-soft text-brand;
+    }
+    .sc-pick-red[aria-pressed='true'] {
+        @apply border-red-500 bg-red-50 text-red-700;
+    }
+
+    /* ---------- auction console ---------- */
+    .ac-card {
+        @apply rounded-xl border border-line bg-white p-3 shadow-card sm:p-4;
+    }
+    .ac-actionbar {
+        @apply fixed inset-x-0 bottom-0 z-30 grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2 border-t border-line bg-white/95 px-3 pt-3 shadow-pop backdrop-blur xl:static xl:z-auto xl:mt-3 xl:rounded-2xl xl:border xl:bg-white xl:p-3 xl:shadow-card;
+        padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+    .ac-sell {
+        @apply min-h-14 rounded-xl bg-green-600 px-4 text-base font-bold text-white transition hover:bg-green-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400;
+        touch-action: manipulation;
+    }
+    .ac-hold {
+        @apply min-h-14 rounded-xl border border-amber-300 bg-amber-50 px-5 text-base font-semibold text-amber-800 transition hover:bg-amber-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+        touch-action: manipulation;
+    }
+    .ac-undo {
+        @apply min-h-14 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+        touch-action: manipulation;
+    }
+}

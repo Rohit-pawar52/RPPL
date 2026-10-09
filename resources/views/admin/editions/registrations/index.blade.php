@@ -10,138 +10,163 @@
 @section('content')
     @include('admin.editions._crumbs', ['edition' => $edition, 'section' => 'Registrations'])
 
-    @php $canBulkAdd = $canAdd && $editionTeams->isNotEmpty(); @endphp
+    @php
+        $canBulkAdd = $canAdd && $editionTeams->isNotEmpty();
+        $statusCounts = \App\Models\PlayerRegistration::query()
+            ->where('edition_id', $edition->id)
+            ->selectRaw('payment_status, count(*) as total')
+            ->groupBy('payment_status')
+            ->pluck('total', 'payment_status');
+        $activeStatus = $filters['payment_status'] ?? '';
+        $statusTabs = ['' => 'All'] + collect(\App\Models\PlayerRegistration::PAYMENT_STATUSES)->mapWithKeys(fn ($s) => [$s => ucfirst($s)])->all();
+        $withoutTeamActive = ($filters['team'] ?? '') === $withoutTeamValue;
+    @endphp
 
-    <div class="mb-3">
-        <x-table-filters :action="route('admin.editions.registrations.index', $edition)" :filters="$filters" :per-page="$perPage">
-            <input
-                type="text"
-                name="search"
-                value="{{ $filters['search'] ?? '' }}"
-                placeholder="Search registration #, name, phone, village&hellip;"
-                class="w-full max-w-[220px] rounded-md border border-slate-300 px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100"
-            />
+    <div class="space-y-3">
+        <nav class="ops-chips" aria-label="Payment status">
+            @foreach($statusTabs as $value => $label)
+                @php $count = $value === '' ? $statusCounts->sum() : (int) ($statusCounts[$value] ?? 0); @endphp
+                <a
+                    href="{{ request()->fullUrlWithQuery(['payment_status' => $value === '' ? null : $value, 'page' => null]) }}"
+                    @class(['ops-chip', 'ops-chip-active' => $activeStatus === $value])
+                    @if($activeStatus === $value) aria-current="page" @endif
+                >{{ $label }} <span class="ops-chip-count">{{ $count }}</span></a>
+            @endforeach
+            <a
+                href="{{ request()->fullUrlWithQuery(['team' => $withoutTeamActive ? null : $withoutTeamValue, 'page' => null]) }}"
+                @class(['ops-chip', 'ops-chip-active' => $withoutTeamActive])
+            >Without a team</a>
+        </nav>
 
-            <select name="payment_status" aria-label="Payment status" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100">
-                <option value="">All payment statuses</option>
-                @foreach(\App\Models\PlayerRegistration::PAYMENT_STATUSES as $status)
-                    <option value="{{ $status }}" @selected(($filters['payment_status'] ?? '') === $status)>{{ ucfirst($status) }}</option>
-                @endforeach
-            </select>
-
-            <select name="team" aria-label="Team" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100">
+        <form method="GET" action="{{ route('admin.editions.registrations.index', $edition) }}" class="flex flex-wrap items-center gap-2">
+            @if($activeStatus !== '')<input type="hidden" name="payment_status" value="{{ $activeStatus }}" />@endif
+            <div class="relative min-w-0 flex-1 basis-56 sm:max-w-md">
+                <x-ops.icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                    type="search"
+                    name="search"
+                    value="{{ $filters['search'] ?? '' }}"
+                    enterkeyhint="search"
+                    placeholder="Search name, phone, reg. no. or village"
+                    aria-label="Search registrations"
+                    class="ops-input pl-9"
+                />
+            </div>
+            <select name="team" onchange="this.form.submit()" aria-label="Team" class="ops-input w-auto max-w-44 sm:max-w-none">
                 <option value="">All teams</option>
-                <option value="{{ $withoutTeamValue }}" @selected(($filters['team'] ?? '') === $withoutTeamValue)>Without a team</option>
+                <option value="{{ $withoutTeamValue }}" @selected($withoutTeamActive)>Without a team</option>
                 @foreach($editionTeams as $editionTeam)
                     <option value="{{ $editionTeam->id }}" @selected(($filters['team'] ?? '') === (string) $editionTeam->id)>{{ $editionTeam->team->name }}</option>
                 @endforeach
             </select>
-        </x-table-filters>
-    </div>
-
-    @if(! $canAdd)
-        <p class="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            This season is completed, so players cannot be added to a team.
-        </p>
-    @elseif($editionTeams->isEmpty())
-        <p class="mb-3 text-xs text-slate-500">
-            @can('viewAny', \App\Models\EditionTeam::class)
-                No teams in this season yet &mdash; <a href="{{ route('admin.editions.teams.index', $edition) }}" class="font-medium text-green-700 hover:underline">add teams</a> to put players in them.
-            @else
-                No teams in this season yet.
-            @endcan
-        </p>
-    @else
-        {{-- Bulk "Add to team": the row checkboxes below belong to this form
-             through their form="" attribute. The button appears once at
-             least one player is ticked. --}}
-        <form id="add-to-team-form" method="POST" action="{{ route('admin.editions.registrations.add-to-team', $edition) }}" class="mb-3 flex flex-wrap items-center gap-2">
-            @csrf
-            @foreach(array_merge($filters, ['per_page' => request('per_page'), 'page' => request('page')]) as $name => $value)
-                @if(filled($value))
-                    <input type="hidden" name="{{ $name }}" value="{{ $value }}" />
-                @endif
-            @endforeach
-
-            <select name="edition_team_id" required aria-label="Team to add the ticked players to" class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:border-green-500 focus:ring-green-100">
-                <option value="">Add ticked players to&hellip;</option>
-                @foreach($editionTeams as $editionTeam)
-                    <option value="{{ $editionTeam->id }}">{{ $editionTeam->team->name }}</option>
+            <select name="per_page" onchange="this.form.submit()" aria-label="Rows per page" class="ops-input w-auto">
+                @foreach([10, 20, 50, 100, 200] as $option)
+                    <option value="{{ $option }}" @selected((int) $perPage === $option)>{{ $option }} / page</option>
                 @endforeach
             </select>
-            <button
-                type="submit"
-                id="add-to-team-button"
-                data-label="Add to team ({count})"
-                hidden
-                class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-green-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-green-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
-            >Add to team</button>
+            <button type="submit" class="btn btn-secondary min-h-10">Search</button>
+            @if(array_filter($filters))
+                <a href="{{ route('admin.editions.registrations.index', $edition) }}" class="ops-link text-[13px]">Clear all</a>
+            @endif
         </form>
-    @endif
 
-    <x-admin.card :title="'Registrations in '.$edition->name.' ('.$registrations->total().')'" flush>
-        <div class="overflow-x-auto" @if($canBulkAdd) data-row-selection="#add-to-team-button" @endif>
-            <table class="w-full min-w-[640px] text-left text-[13px]">
-                <thead class="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-400">
-                    <tr>
-                        <th class="w-8 px-4 py-2">
-                            @if($canBulkAdd)
-                                <input type="checkbox" data-select-all aria-label="Select all players without a team on this page" />
+        @if(! $canAdd)
+            <p class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                This season is completed, so players cannot be added to a team.
+            </p>
+        @elseif($editionTeams->isEmpty())
+            <p class="text-xs text-slate-500">
+                @can('viewAny', \App\Models\EditionTeam::class)
+                    No teams in this season yet &mdash; <a href="{{ route('admin.editions.teams.index', $edition) }}" class="font-medium text-link hover:underline">add teams</a> to put players in them.
+                @else
+                    No teams in this season yet.
+                @endcan
+            </p>
+        @else
+            {{-- Bulk "Add to team": the row checkboxes below belong to this form
+                 through their form="" attribute. The button appears once at
+                 least one player is ticked. --}}
+            <form id="add-to-team-form" method="POST" action="{{ route('admin.editions.registrations.add-to-team', $edition) }}" class="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-white px-3 py-2.5 shadow-card">
+                @csrf
+                @foreach(array_merge($filters, ['per_page' => request('per_page'), 'page' => request('page')]) as $name => $value)
+                    @if(filled($value))
+                        <input type="hidden" name="{{ $name }}" value="{{ $value }}" />
+                    @endif
+                @endforeach
+
+                <x-ops.icon name="users" class="h-4 w-4 text-slate-400" />
+                <select name="edition_team_id" required aria-label="Team to add the ticked players to" class="ops-input w-auto min-w-48 flex-1 sm:flex-none">
+                    <option value="">Add ticked players to&hellip;</option>
+                    @foreach($editionTeams as $editionTeam)
+                        <option value="{{ $editionTeam->id }}">{{ $editionTeam->team->name }}</option>
+                    @endforeach
+                </select>
+                <button
+                    type="submit"
+                    id="add-to-team-button"
+                    data-label="Add to team ({count})"
+                    hidden
+                    class="btn btn-primary min-h-10"
+                >Add to team</button>
+                <span class="text-xs text-slate-400">Tick players below who are not in a team yet.</span>
+            </form>
+        @endif
+
+        <section class="ops-card" @if($canBulkAdd) data-row-selection="#add-to-team-button" @endif>
+            <div class="flex items-center gap-3 border-b border-line px-3 py-2 sm:px-4">
+                @if($canBulkAdd)
+                    <label class="flex min-h-9 cursor-pointer items-center gap-2 text-xs font-medium text-slate-500">
+                        <input type="checkbox" data-select-all class="h-4 w-4 rounded border-slate-300" aria-label="Select all players without a team on this page" />
+                        Select all without a team
+                    </label>
+                @endif
+                <h3 class="ops-title ml-0 text-[13px]">Registrations in {{ $edition->name }} ({{ $registrations->total() }})</h3>
+            </div>
+
+            <div class="divide-y divide-line">
+                @forelse($registrations as $registration)
+                    @php
+                        $teamPlayer = $registration->teamPlayer;
+                        $selectable = $canBulkAdd && ! $teamPlayer && $registration->player->is_active;
+                    @endphp
+                    <div class="relative flex flex-wrap items-center gap-x-3 gap-y-2 p-3 transition hover:bg-hover/50 sm:p-4">
+                        <div class="relative z-10 flex w-5 shrink-0 justify-center">
+                            @if($selectable)
+                                <input
+                                    type="checkbox"
+                                    data-row-checkbox
+                                    form="add-to-team-form"
+                                    name="selected[]"
+                                    value="{{ $registration->id }}"
+                                    class="h-4 w-4 rounded border-slate-300"
+                                    aria-label="Select {{ $registration->player->name }}"
+                                />
                             @endif
-                        </th>
-                        <th class="px-4 py-2 font-medium">Registration #</th>
-                        <th class="px-4 py-2 font-medium">Player</th>
-                        <th class="hidden px-4 py-2 font-medium md:table-cell">Mobile</th>
-                        <th class="px-4 py-2 font-medium">Payment</th>
-                        <th class="px-4 py-2 font-medium">Team</th>
-                        <th class="hidden px-4 py-2 font-medium lg:table-cell">Registered</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @forelse($registrations as $registration)
-                        @php
-                            $teamPlayer = $registration->teamPlayer;
-                            $selectable = $canBulkAdd && ! $teamPlayer && $registration->player->is_active;
-                        @endphp
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-4 py-1.5">
-                                @if($selectable)
-                                    <input
-                                        type="checkbox"
-                                        data-row-checkbox
-                                        form="add-to-team-form"
-                                        name="selected[]"
-                                        value="{{ $registration->id }}"
-                                        aria-label="Select {{ $registration->player->name }}"
-                                    />
-                                @endif
-                            </td>
-                            <td class="px-4 py-1.5 font-mono text-[12px] text-slate-600">
-                                <a href="{{ route('admin.player-registrations.show', $registration) }}" class="hover:underline">{{ $registration->registration_number }}</a>
-                            </td>
-                            <td class="px-4 py-1.5 font-medium text-slate-800">
-                                <a href="{{ route('admin.player-registrations.show', $registration) }}" class="hover:underline">{{ $registration->player->name }}</a>
-                                @unless($registration->player->is_active)
-                                    <span class="ml-1 text-[10px] font-normal text-slate-400">(inactive)</span>
-                                @endunless
-                                @if($registration->village)
-                                    <span class="block text-[11px] font-normal text-slate-400">{{ $registration->village }}</span>
-                                @endif
-                            </td>
-                            <td class="hidden px-4 py-1.5 text-slate-600 md:table-cell">{{ $registration->player->phone ?? '—' }}</td>
-                            <td class="px-4 py-1.5"><x-status-badge :status="$registration->payment_status" /></td>
-                            <td class="px-4 py-1.5 text-slate-600">{{ $teamPlayer?->editionTeam->team->name ?? '—' }}</td>
-                            <td class="hidden px-4 py-1.5 text-slate-500 lg:table-cell">{{ display_datetime($registration->registered_at, 'd M Y') ?? '—' }}</td>
-                        </tr>
-                    @empty
-                        <x-admin.empty table colspan="7">No registrations found.</x-admin.empty>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </x-admin.card>
+                        </div>
+                        <x-media-image :path="$registration->player->photo_path" kind="user" alt="" loading="lazy" class="h-10 w-10 shrink-0 rounded-full bg-slate-100 object-cover" />
+                        <div class="min-w-0 flex-1 basis-44">
+                            <a href="{{ route('admin.player-registrations.show', $registration) }}" class="block truncate text-sm font-semibold text-slate-900 after:absolute after:inset-0 after:content-[''] hover:underline">{{ $registration->player->name }}</a>
+                            <p class="truncate text-xs text-slate-500">
+                                <span class="font-mono text-[11px]">{{ $registration->registration_number }}</span>
+                                @if($registration->player->phone) &middot; {{ $registration->player->phone }} @endif
+                                @if($registration->village) &middot; {{ $registration->village }} @endif
+                                @unless($registration->player->is_active) &middot; <span class="text-slate-400">inactive</span> @endunless
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <x-status-badge :status="$registration->payment_status" />
+                            <span class="min-w-24 text-xs text-slate-600">{{ $teamPlayer?->editionTeam->team->name ?? '—' }}</span>
+                            <span class="hidden text-xs tabular-nums text-slate-400 lg:inline">{{ display_datetime($registration->registered_at, 'd M Y') ?? '—' }}</span>
+                        </div>
+                    </div>
+                @empty
+                    <x-admin.empty icon="clipboard" class="py-12">No registrations found.</x-admin.empty>
+                @endforelse
+            </div>
+        </section>
 
-    <div class="mt-3">
-        {{ $registrations->links() }}
+        <div>
+            {{ $registrations->links() }}
+        </div>
     </div>
 @endsection

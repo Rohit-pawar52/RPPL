@@ -3,23 +3,22 @@
 @section('title', 'Edit Registration')
 
 @section('content')
-    <div class="mb-4">
-        <a href="{{ route('admin.player-registrations.index') }}" class="text-xs text-slate-500 hover:text-slate-700">
-            &larr; Back to registrations
+    <div class="mb-3">
+        <a href="{{ route('admin.player-registrations.show', $registration) }}" class="ops-back">
+            <x-ops.icon name="arrow-left" class="h-3.5 w-3.5" />
+            Back to the registration
         </a>
     </div>
 
-    <div class="max-w-2xl rounded-lg border border-slate-200 bg-white p-4">
-        <form method="POST" action="{{ route('admin.player-registrations.update', $registration) }}" novalidate>
-            @csrf
-            @method('PUT')
+    <form method="POST" action="{{ route('admin.player-registrations.update', $registration) }}" class="max-w-3xl" novalidate>
+        @csrf
+        @method('PUT')
 
-            @include('admin.player-registrations._form')
+        @include('admin.player-registrations._form')
 
-            <div class="mt-4 flex items-center gap-2">
-                <x-admin.button>Save changes</x-admin.button>
-                <x-admin.button href="{{ route('admin.player-registrations.index') }}" variant="secondary">Cancel</x-admin.button>
-            </div>
-        </form>
-    </div>
+        <div class="ops-savebar">
+            <button type="submit" class="btn btn-primary btn-lg max-sm:flex-1">Save changes</button>
+            <a href="{{ route('admin.player-registrations.show', $registration) }}" class="btn btn-secondary btn-lg">Cancel</a>
+        </div>
+    </form>
 @endsection

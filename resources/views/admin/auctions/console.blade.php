@@ -37,20 +37,21 @@
         ],
     ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) !!}</script>
 
-    <div id="auction-console" class="space-y-4">
-        <div id="ac-toolbar" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5"></div>
+    {{-- Room under the fixed Sell / Hold bar on a phone or tablet. --}}
+    <div id="auction-console" class="space-y-4 pb-28 xl:pb-0">
+        <div id="ac-toolbar" class="ac-card flex flex-wrap items-center justify-between gap-x-4 gap-y-2"></div>
 
         <div id="ac-pool"></div>
 
-        <div id="ac-notice" class="hidden rounded-md border px-3 py-2 text-[13px]" role="status" aria-live="polite"></div>
+        <div id="ac-notice" class="hidden" role="status" aria-live="polite"></div>
 
-        <div class="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <div class="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_23rem]">
             <div class="min-w-0 space-y-4">
                 <section id="ac-lot" aria-label="Player on the block"></section>
 
-                <section class="rounded-lg border border-slate-200 bg-white p-3" aria-label="Bid amount">
+                <section class="ac-card" aria-label="Bid amount">
                     <div class="flex flex-wrap items-center gap-2">
-                        <label for="ac-amount" class="text-xs font-medium text-slate-700">Bid this amount</label>
+                        <label for="ac-amount" class="text-sm font-semibold text-slate-800">Bid this amount</label>
                         <input
                             id="ac-amount"
                             type="number"
@@ -58,12 +59,12 @@
                             min="1"
                             step="500"
                             placeholder="next step"
-                            class="h-9 w-36 rounded-md border border-slate-300 px-2.5 text-[13px] tabular-nums focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100"
+                            class="ops-input min-h-11 w-36 text-base tabular-nums"
                         />
-                        <button type="button" data-action="clear-amount" class="rounded-md px-2 py-1 text-xs text-slate-500 hover:bg-slate-100">Clear</button>
-                        <span id="ac-chips" class="flex flex-wrap items-center gap-1.5"></span>
+                        <button type="button" data-action="clear-amount" class="min-h-10 rounded-lg px-3 text-xs font-medium text-slate-500 hover:bg-slate-100">Clear</button>
+                        <span id="ac-chips" class="flex flex-wrap items-center gap-2"></span>
                     </div>
-                    <p class="mt-1.5 text-[11px] text-slate-400">
+                    <p class="mt-2 text-[11px] text-slate-400">
                         Leave it empty and a team's button bids the next step. To jump, type an amount or tap a chip, then tap the team.
                     </p>
                 </section>
@@ -72,37 +73,43 @@
             </div>
 
             <aside class="min-w-0 space-y-4">
-                <section class="rounded-lg border border-slate-200 bg-white p-3" aria-label="Call a player">
-                    <label for="ac-search" class="text-xs font-medium text-slate-700">Find a waiting or hold player</label>
-                    <input
-                        id="ac-search"
-                        type="search"
-                        autocomplete="off"
-                        placeholder="Type a name or village…"
-                        class="mt-1 h-9 w-full rounded-md border border-slate-300 px-2.5 text-[13px] focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100"
-                    />
+                <section class="ac-card" aria-label="Call a player">
+                    <label for="ac-search" class="text-sm font-semibold text-slate-800">Find a waiting or hold player</label>
+                    <div class="relative mt-1.5">
+                        <x-ops.icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                            id="ac-search"
+                            type="search"
+                            autocomplete="off"
+                            placeholder="Type a name or village…"
+                            class="ops-input min-h-11 pl-9"
+                        />
+                    </div>
                     <div id="ac-results" class="mt-2"></div>
                 </section>
 
-                <section id="ac-bids" class="rounded-lg border border-slate-200 bg-white p-3" aria-label="Bids on this player"></section>
-                <section class="rounded-lg border border-slate-200 bg-white p-3" aria-label="Sold players">
-                    <label for="ac-sold-search" class="text-xs font-medium text-slate-700">Sold players <span id="ac-sold-count" class="font-normal text-slate-400"></span></label>
-                    <input
-                        id="ac-sold-search"
-                        type="search"
-                        autocomplete="off"
-                        placeholder="Find a sale by player, team or village…"
-                        class="mt-1 h-9 w-full rounded-md border border-slate-300 px-2.5 text-[13px] focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100"
-                    />
+                <section id="ac-bids" class="ac-card" aria-label="Bids on this player"></section>
+                <section class="ac-card" aria-label="Sold players">
+                    <label for="ac-sold-search" class="text-sm font-semibold text-slate-800">Sold players <span id="ac-sold-count" class="font-normal text-slate-400"></span></label>
+                    <div class="relative mt-1.5">
+                        <x-ops.icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                            id="ac-sold-search"
+                            type="search"
+                            autocomplete="off"
+                            placeholder="Find a sale by player, team or village…"
+                            class="ops-input min-h-11 pl-9"
+                        />
+                    </div>
                     <div id="ac-sold" class="mt-2"></div>
                 </section>
 
-                <details class="rounded-lg border border-slate-200 bg-white p-3">
-                    <summary class="cursor-pointer text-xs font-medium text-slate-700">Someone turned up on the day? Add a player</summary>
+                <details class="ac-card">
+                    <summary class="flex min-h-10 cursor-pointer items-center text-sm font-semibold text-slate-800">Someone turned up on the day? Add a player</summary>
                     <form id="ac-walkin" class="mt-2 space-y-2" novalidate>
-                        <input name="name" required maxlength="255" placeholder="Full name" aria-label="Full name" class="h-9 w-full rounded-md border border-slate-300 px-2.5 text-[13px] focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100" />
-                        <input name="phone" required maxlength="20" inputmode="tel" placeholder="Mobile number" aria-label="Mobile number" class="h-9 w-full rounded-md border border-slate-300 px-2.5 text-[13px] focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100" />
-                        <button type="submit" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Register and add to the waiting players</button>
+                        <input name="name" required maxlength="255" placeholder="Full name" aria-label="Full name" class="ops-input min-h-11" />
+                        <input name="phone" required maxlength="20" inputmode="tel" placeholder="Mobile number" aria-label="Mobile number" class="ops-input min-h-11" />
+                        <button type="submit" class="btn btn-secondary w-full">Register and add to the waiting players</button>
                         <p class="text-[11px] text-slate-400">They are registered for this season as paid and wait with the others — call them like anyone else.</p>
                     </form>
                 </details>
