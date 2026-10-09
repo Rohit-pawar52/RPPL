@@ -4,6 +4,14 @@
 @section('subtitle', 'Choose a new password for your own account.')
 
 @section('content')
+    @if(! empty($publicPassword))
+        {{-- Amber stays fixed in the theme because it carries meaning (see the README). --}}
+        <div class="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-[13px] leading-5 text-amber-900" role="alert">
+            <p class="font-semibold">This login still uses a publicly known password.</p>
+            <p class="mt-1">Anyone who has read the project's instructions could sign in with it. Choose a new password below; nothing else in the admin panel opens until you do.</p>
+        </div>
+    @endif
+
     <div class="grid gap-6 lg:grid-cols-3 lg:items-start">
         <x-admin.card title="Your password" class="lg:col-span-2">
             <form method="POST" action="{{ route('admin.account.password.update') }}" novalidate class="max-w-lg">

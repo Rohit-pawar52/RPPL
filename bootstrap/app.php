@@ -5,6 +5,7 @@ use App\Console\Commands\DispatchMatchReminders;
 use App\Console\Commands\DispatchRegistrationClosingReminders;
 use App\Console\Commands\DispatchScheduledAnnouncements;
 use App\Console\Commands\DispatchTournamentDayReminders;
+use App\Http\Middleware\EnsurePasswordIsPrivate;
 use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -84,6 +85,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'active' => EnsureUserIsActive::class,
+            'private-password' => EnsurePasswordIsPrivate::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
