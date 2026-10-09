@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Support\PublicLogins;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 /**
@@ -147,12 +149,43 @@ class PublicPasswordTest extends TestCase
         $this->get(route('admin.dashboard'))->assertOk();
     }
 
-    public function test_the_rule_is_off_unless_the_site_runs_in_production_or_it_is_switched_on(): void
+    /**
+     * What the shipped config decides for each environment, worked out in a separate PHP process so the real
+     * environment variables apply (a deployed site that copied APP_ENV=local from .env.example, or has APP_ENV
+     * unset, once left the protection silently OFF while the site was public).
+     *
+     * @return array<string, array{0: array<string, string|false>, 1: bool}>
+     */
+    public static function environments(): array
     {
-        $config = require config_path('admin.php');
+        return [
+            'production' => [['APP_ENV' => 'production'], true],
+            'staging is as public as production' => [['APP_ENV' => 'staging'], true],
+            'APP_ENV unset' => [['APP_ENV' => false], true],
+            'a development machine' => [['APP_ENV' => 'local'], false],
+            'the test suite' => [['APP_ENV' => 'testing'], false],
+            'explicitly switched off in production' => [['APP_ENV' => 'production', 'ADMIN_FORCE_PRIVATE_PASSWORD' => 'false'], false],
+            'explicitly switched on locally' => [['APP_ENV' => 'local', 'ADMIN_FORCE_PRIVATE_PASSWORD' => 'true'], true],
+        ];
+    }
 
-        // These tests run with APP_ENV=testing and no ADMIN_FORCE_PRIVATE_PASSWORD, so the shipped default is off.
-        $this->assertFalse($config['force_private_password']);
+    /**
+     * @param  array<string, string|false>  $environment  false = the variable is not set at all
+     */
+    #[DataProvider('environments')]
+    public function test_the_rule_is_on_everywhere_except_a_development_machine_unless_overridden(array $environment, bool $expected): void
+    {
+        $code = 'function env($key, $default = null) { $v = getenv($key); return $v === false ? $default : $v; } '
+            .'echo json_encode((require $argv[1])["force_private_password"]);';
+
+        $process = new Process(
+            [PHP_BINARY, '-r', $code, config_path('admin.php')],
+            null,
+            ['APP_ENV' => false, 'ADMIN_FORCE_PRIVATE_PASSWORD' => false, ...$environment]
+        );
+        $process->mustRun();
+
+        $this->assertSame($expected, json_decode($process->getOutput()));
     }
 
     public function test_the_published_list_is_what_the_demo_seeder_and_the_bootstrap_command_use(): void
