@@ -26,7 +26,11 @@ class RolePermissionsMigrationTest extends TestCase
      */
     private function olderSite(): void
     {
-        Artisan::call('migrate:rollback', ['--step' => 1, '--force' => true]);
+        // That one migration, not "the latest" (later migrations keep being added after it).
+        Artisan::call('migrate:rollback', [
+            '--path' => 'database/migrations/2026_10_08_100000_create_role_permissions_table.php',
+            '--force' => true,
+        ]);
 
         $this->assertFalse(Schema::hasTable('role_permissions'), 'the role_permissions migration should have been rolled back');
 

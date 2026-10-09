@@ -7,7 +7,26 @@
     <div class="crud-main">
         <x-admin.card title="Contributor details">
             <x-form.input name="name" label="Name" :value="$contributor->name ?? ''" required autofocus />
+            @php $villageHelp = 'Tells two people with the same name apart in every list, on the receipt and in the exports.'; @endphp
+            @if($contributor)
+                {{-- Optional when editing: a contributor recorded before villages were kept has none. --}}
+                <x-form.input name="village" label="Village" :value="$contributor->village ?? ''" maxlength="100" placeholder="e.g. Shirur" :help="$villageHelp" />
+            @else
+                <x-form.input name="village" label="Village" :value="''" required maxlength="100" placeholder="e.g. Shirur" :help="$villageHelp" />
+            @endif
             <x-form.input name="phone" label="Phone" type="tel" inputmode="tel" :value="$contributor->phone ?? ''" />
+            <x-form.input name="address" label="Address (optional)" :value="$contributor->address ?? ''" maxlength="255" placeholder="Tehsil, district, landmark - anything else that helps" />
+
+            @if(! $contributor && $errors->has('confirm_duplicate'))
+                {{-- Shown only after the "already in the list" warning: the admin has to say it is somebody else. --}}
+                <div class="crud-note crud-note-warn mb-3.5" role="alert">
+                    <p>{{ $errors->first('confirm_duplicate') }}</p>
+                    <label class="mt-2 flex items-center gap-2 text-[13px] font-medium text-slate-800">
+                        <input type="checkbox" name="confirm_duplicate" value="1" class="rounded border-slate-300" @checked(old('confirm_duplicate'))>
+                        This is a different person
+                    </label>
+                </div>
+            @endif
         </x-admin.card>
     </div>
 

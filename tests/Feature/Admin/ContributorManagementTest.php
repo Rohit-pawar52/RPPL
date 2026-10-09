@@ -55,7 +55,7 @@ class ContributorManagementTest extends TestCase
         $this->actingAs($admin)->get(route('admin.contributors.create'))->assertOk();
 
         $this->actingAs($admin)
-            ->post(route('admin.contributors.store'), ['name' => 'Ganesh Patil', 'phone' => '9876500002'])
+            ->post(route('admin.contributors.store'), ['name' => 'Ganesh Patil', 'village' => 'Shirur', 'phone' => '9876500002'])
             ->assertRedirect(route('admin.contributors.index'));
 
         $contributor = Contributor::firstWhere('name', 'Ganesh Patil');
@@ -87,6 +87,7 @@ class ContributorManagementTest extends TestCase
         $this->actingAs($this->admin())
             ->post(route('admin.contributors.store'), [
                 'name' => 'Suresh Deshmukh',
+                'village' => 'Shirur',
                 'committee_member_id' => $member->id,
             ])
             ->assertRedirect(route('admin.contributors.index'));
@@ -169,6 +170,7 @@ class ContributorManagementTest extends TestCase
         $this->actingAs($this->admin())
             ->post(route('admin.contributors.store'), [
                 'name' => 'Photo Contributor',
+                'village' => 'Shirur',
                 'photo' => $this->fakePhoto(),
             ])
             ->assertRedirect(route('admin.contributors.index'));
@@ -184,7 +186,7 @@ class ContributorManagementTest extends TestCase
         Storage::fake('public');
 
         $this->actingAs($this->admin())
-            ->post(route('admin.contributors.store'), ['name' => 'No Photo Contributor'])
+            ->post(route('admin.contributors.store'), ['name' => 'No Photo Contributor', 'village' => 'Shirur'])
             ->assertRedirect(route('admin.contributors.index'));
 
         $contributor = Contributor::firstWhere('name', 'No Photo Contributor');

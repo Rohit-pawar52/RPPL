@@ -32,6 +32,8 @@ class Contributor extends Model
     protected $fillable = [
         'name',
         'phone',
+        'village',
+        'address',
         'committee_member_id',
         'is_active',
         'photo_path',
@@ -42,6 +44,18 @@ class Contributor extends Model
         return [
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * How a person is told apart from someone with the same name: "Ramesh Patil — Shirur", or just the
+     * name for a contributor recorded before villages were kept. Used wherever contributors are picked
+     * from a list. (Admin-side only: the public Top Contributors list shows name and photo, nothing else.)
+     */
+    public function label(): string
+    {
+        $village = trim((string) $this->village);
+
+        return $village === '' ? $this->name : $this->name.' — '.$village;
     }
 
     /**

@@ -50,7 +50,7 @@
                     <select id="committee-contributor" name="contributor_id" required class="crud-field w-full">
                         <option value="" disabled selected>Select a contributor</option>
                         @forelse($addableContributors as $contributor)
-                            <option value="{{ $contributor->id }}">{{ $contributor->name }}</option>
+                            <option value="{{ $contributor->id }}">{{ $contributor->label() }}</option>
                         @empty
                             <option value="" disabled>No addable contributors — every active contributor is already on this committee</option>
                         @endforelse
@@ -87,6 +87,9 @@
                                     @else
                                         {{ $row['contributor']->name }}
                                     @endcan
+                                    @if(filled($row['contributor']->village))
+                                        <span class="crud-meta">{{ $row['contributor']->village }}</span>
+                                    @endif
                                     <span class="crud-meta md:hidden">Paid {{ money($row['paid']) }} of {{ money($row['target']) }}</span>
                                 </td>
                                 <td class="hidden text-right tabular-nums md:table-cell">{{ money($row['target']) }}</td>

@@ -7,7 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\EditionContribution\StoreEditionContributionRequest;
 use App\Models\Contributor;
 use App\Models\Edition;
+use App\Models\EditionCommitteeMember;
 use App\Models\EditionContribution;
+use App\Services\Contributor\ContributorService;
 use App\Services\Finance\CommitteeDuesService;
 use App\Services\Finance\EditionContributionService;
 use App\Support\CsvSafe;
@@ -67,7 +69,7 @@ class EditionContributionController extends Controller
             'direction' => $direction,
             'perPage' => $perPage,
             'editions' => Edition::orderByDesc('year')->get(['id', 'name']),
-            'contributors' => Contributor::orderBy('name')->get(['id', 'name']),
+            'contributors' => Contributor::orderBy('name')->get(['id', 'name', 'village']),
             'totalContributions' => $totalContributions,
         ]);
     }
@@ -130,9 +132,11 @@ class EditionContributionController extends Controller
 
             fwrite($handle, "\xEF\xBB\xBF");
 
+            // "Contributor Village" is appended at the end, so the columns that were already there keep their
+            // place for anybody who reads this file into a spreadsheet or another tool.
             fputcsv($handle, [
                 'Reference', 'Contributor Name', 'Source', 'Amount',
-                'Contribution Date', 'Notes', 'Recorded By', 'Transaction ID',
+                'Contribution Date', 'Notes', 'Recorded By', 'Transaction ID', 'Contributor Village',
             ]);
 
             $query->chunkById(200, function ($contributions) use ($handle) {
@@ -146,6 +150,7 @@ class EditionContributionController extends Controller
                         $contribution->notes ?? '',
                         $contribution->createdBy->name,
                         $contribution->edition_transaction_id,
+                        $contribution->contributor?->village ?? '',
                     ]));
                 }
             });
@@ -160,9 +165,15 @@ class EditionContributionController extends Controller
     {
         $this->authorize('create', EditionContribution::class);
 
+        $user = request()->user();
+
         return view('admin.edition-contributions.create', [
             'editions' => Edition::orderByDesc('year')->get(['id', 'name']),
-            'contributors' => Contributor::active()->orderBy('name')->get(['id', 'name']),
+            'contributors' => Contributor::active()->orderBy('name')->get(['id', 'name', 'village']),
+            // Somebody not in the list is added from this same form; the option is only offered to a role that
+            // may add contributors (and, for the committee tick, manage the committee).
+            'canAddContributor' => $user->can('create', Contributor::class),
+            'canAddToCommittee' => $user->can('create', EditionCommitteeMember::class),
         ]);
     }
 
@@ -170,11 +181,40 @@ class EditionContributionController extends Controller
     {
         $this->authorize('create', EditionContribution::class);
 
-        $this->contributions->createContribution($request->validated(), $request->user()->id);
+        $contribution = $this->contributions->createContribution($request->contributionData(), $request->user()->id);
 
         return redirect()
             ->route('admin.edition-contributions.index')
-            ->with('success', 'Contribution recorded successfully.');
+            ->with('success', $request->isNewContributor()
+                ? 'Contribution recorded, and '.$contribution->contributor->name.' was added to the contributors.'
+                : 'Contribution recorded successfully.');
+    }
+
+    /**
+     * "Is this person already in the list?" for the new-contributor panel of the contribution form, so a
+     * possible duplicate is shown while the name is still being typed (the save checks again). Only name and
+     * village are returned - the same two things the contributor list on that form already shows - and only
+     * to a role that may record contributions.
+     */
+    public function contributorLookup(Request $request, ContributorService $contributors): JsonResponse
+    {
+        $this->authorize('create', EditionContribution::class);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'village' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        return response()->json([
+            'matches' => $contributors->possibleDuplicates($validated['name'], $validated['village'] ?? null)
+                ->take(5)
+                ->map(fn (Contributor $contributor) => [
+                    'id' => $contributor->id,
+                    'label' => $contributor->label(),
+                    'active' => $contributor->is_active,
+                ])
+                ->values(),
+        ]);
     }
 
     /**
@@ -323,7 +363,10 @@ class EditionContributionController extends Controller
             ->when($filters['contributor_id'] ?? null, fn ($query, $id) => $query->where('contributor_id', $id))
             ->when(
                 $filters['search'] ?? null,
-                fn ($query, $search) => $query->whereHas('contributor', fn ($query) => $query->where('name', 'like', '%'.$search.'%'))
+                fn ($query, $search) => $query->whereHas('contributor', fn ($query) => $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('village', 'like', '%'.$search.'%');
+                }))
             )
             ->tap(fn ($query) => $this->dateRangeFilter($query, 'contributed_at', $filters['from_date'] ?? null, $filters['to_date'] ?? null));
     }

@@ -84,6 +84,17 @@ class EditionContribution extends Model
     }
 
     /**
+     * The contributor's village, when it is known: what tells two people with the same name apart on the
+     * receipt and in the admin lists. Null for a contributor recorded before villages were kept.
+     */
+    public function contributorVillage(): ?string
+    {
+        $village = trim((string) $this->contributor?->village);
+
+        return $village === '' ? null : $village;
+    }
+
+    /**
      * A short label for admin display — Phase 3.48: derived from whether
      * this contributor is a committee member of THIS contribution's
      * edition (an edition-specific fact), never from which FK happens to

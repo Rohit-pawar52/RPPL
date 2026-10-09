@@ -314,6 +314,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('edition-contributions/export-selected', [EditionContributionController::class, 'exportSelected'])->name('edition-contributions.export-selected');
         Route::post('edition-contributions/receipts/selected', [EditionContributionController::class, 'receiptsSelectedPdf'])->name('edition-contributions.receipts.selected');
         Route::get('edition-contributions/dues-preview', [EditionContributionController::class, 'duesPreview'])->name('edition-contributions.dues-preview');
+        // "Is this person already in the list?" while a new contributor is being typed into the contribution form.
+        Route::get('edition-contributions/contributor-lookup', [EditionContributionController::class, 'contributorLookup'])->name('edition-contributions.contributor-lookup');
         // No edit/update: a contribution's financial history is never
         // silently rewritten (see EditionContributionController).
         Route::resource('edition-contributions', EditionContributionController::class)->only([

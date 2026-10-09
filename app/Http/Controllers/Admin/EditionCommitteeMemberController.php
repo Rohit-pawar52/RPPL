@@ -45,7 +45,7 @@ class EditionCommitteeMemberController extends Controller
             'target' => $this->dues->target(),
             'previousEdition' => $edition ? $this->memberships->previousEdition($edition) : null,
             'addableContributors' => $edition
-                ? Contributor::active()->whereNotIn('id', $currentMemberIds)->orderBy('name')->get(['id', 'name'])
+                ? Contributor::active()->whereNotIn('id', $currentMemberIds)->orderBy('name')->get(['id', 'name', 'village'])
                 : collect(),
         ]);
     }

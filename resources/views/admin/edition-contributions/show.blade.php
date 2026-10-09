@@ -24,6 +24,9 @@
                             @else
                                 <span class="font-medium text-slate-700">{{ $contribution->contributorName() }}</span>
                             @endcan
+                            @if($contribution->contributorVillage())
+                                ({{ $contribution->contributorVillage() }})
+                            @endif
                             &middot; {{ $contribution->contributed_at->format('d M Y') }}
                         </p>
                     </div>
