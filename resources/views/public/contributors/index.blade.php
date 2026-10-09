@@ -39,6 +39,7 @@
                         @if($row['village'])
                             <span class="mt-0.5 block truncate text-xs text-slate-500" title="{{ $row['village'] }}">{{ $row['village'] }}</span>
                         @endif
+                        <span class="mt-1.5 inline-block rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-semibold text-brand">{{ money($row['total_amount']) }}</span>
                     </span>
                 </div>
             @endforeach

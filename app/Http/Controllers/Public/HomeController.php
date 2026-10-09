@@ -115,8 +115,6 @@ class HomeController extends Controller
             'highlights' => $highlights,
             'contributors' => array_slice($contributorRanking, 0, self::CONTRIBUTORS_IN_SLIDER),
             'contributorsTotal' => count($contributorRanking),
-            // The season's overall figure only; what each person gave is never shown.
-            'contributionsSum' => (float) array_sum(array_column($contributorRanking, 'total_amount')),
             // Not edition-scoped: the tournament's own clips, news and photos.
             'latestVideos' => Video::query()->active()->ordered()->limit(self::MEDIA_ITEMS)->get(),
             'latestNews' => News::query()->visible()->with('coverImage')->ordered()->limit(self::MEDIA_ITEMS)->get(),
