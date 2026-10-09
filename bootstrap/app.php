@@ -82,6 +82,14 @@ return Application::configure(basePath: dirname(__DIR__))
         // This app has no public-facing "login" route, only admin.login,
         // so the framework's default guest/auth redirect targets (which
         // assume a route named "login") must be pointed at it explicitly.
+        // Local only: a dev tunnel (VS Code / Dev Tunnels, ngrok) serves HTTPS and forwards plain HTTP to the
+        // local server. Trusting its X-Forwarded-* headers makes forms and redirects use https:// and the
+        // tunnel's address instead of http://, which otherwise turns a login POST into a GET and loops back
+        // to the login page. Production (Render) gets HTTPS from docker/apache-render.conf and is unchanged.
+        if (env('APP_ENV') === 'local') {
+            $middleware->trustProxies(at: '*');
+        }
+
         $middleware->redirectGuestsTo(fn () => route('admin.login'));
         $middleware->redirectUsersTo(fn () => route('admin.dashboard'));
 
