@@ -60,7 +60,7 @@ final class Permissions
             'matches.run' => ['Run match day: toss, playing XI, start match and innings, abandon', true, ['scorer']],
             'scoring.score' => ['Score ball by ball (record and undo deliveries)', true, ['scorer']],
             'matches.finalize' => ['Finalize a match result', true, ['scorer']],
-            'matches.reopen' => ['Reopen a finalized match', true, []],
+            'matches.reopen' => ['Reopen a finalized match', true, ['scorer']],
         ],
         'Tournament setup' => [
             'editions.view' => ['View editions and their teams', true, []],

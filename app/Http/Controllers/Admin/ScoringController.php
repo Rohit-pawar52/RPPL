@@ -17,7 +17,10 @@ use App\Models\EditionTeam;
 use App\Models\GameMatch;
 use App\Models\Innings;
 use App\Models\MatchPlayer;
+use App\Models\User;
+use App\Services\GameMatch\MatchResultService;
 use App\Services\Innings\InningsService;
+use App\Services\MatchResult\MatchResultNotificationService;
 use App\Services\Scoring\DeliveryService;
 use App\Services\Scoring\LiveScoringStateService;
 use App\Services\Scoring\ScoringEventService;
@@ -42,6 +45,8 @@ class ScoringController extends Controller
         private readonly InningsService $inningsService,
         private readonly LiveScoringStateService $liveState,
         private readonly UndoService $undo,
+        private readonly MatchResultService $results,
+        private readonly MatchResultNotificationService $resultNotifications,
     ) {}
 
     /**
@@ -184,6 +189,7 @@ class ScoringController extends Controller
         );
 
         $this->broadcastMatchUpdated($match->id);
+        $this->finalizeWhenDecided($match, $request->user());
 
         return redirect()
             ->route('admin.matches.innings.score', [$match, $innings])
@@ -297,9 +303,11 @@ class ScoringController extends Controller
         // same recordDelivery() transaction, not a second mutation.
         $this->broadcastMatchUpdated($match->id);
 
-        $message = $innings->fresh()->status === 'completed'
-            ? 'Delivery recorded. Innings completed.'
-            : 'Delivery recorded successfully.';
+        $message = $this->finalizeWhenDecided($match, $request->user())
+            ? 'Delivery recorded. Innings completed and the match result is final.'
+            : ($innings->fresh()->status === 'completed'
+                ? 'Delivery recorded. Innings completed.'
+                : 'Delivery recorded successfully.');
 
         if ($request->wantsJson()) {
             return response()->json(['message' => $message, 'state' => $this->liveState->getState($match, $innings)]);
@@ -368,11 +376,43 @@ class ScoringController extends Controller
         );
 
         $this->broadcastMatchUpdated($match->id);
+        $this->finalizeWhenDecided($match, $request->user());
 
         return response()->json([
             'message' => 'Delivery corrected successfully.',
             'state' => $this->liveState->getState($match, $innings),
         ]);
+    }
+
+    /**
+     * After a write that can end the chase: when the result is now certain the match finalizes by itself (see
+     * MatchResultService::finalizeIfDecided), the public page is told and the result notification goes out, exactly
+     * what the Finalize button does. Never lets a problem here turn an already-saved ball into an error: a failure is
+     * reported and the Finalize button stays available.
+     */
+    private function finalizeWhenDecided(GameMatch $match, ?User $user): bool
+    {
+        try {
+            if (! $this->results->finalizeIfDecided($match)) {
+                return false;
+            }
+        } catch (Throwable $e) {
+            report($e);
+
+            return false;
+        }
+
+        $this->broadcastMatchUpdated($match->id);
+
+        try {
+            if ($user) {
+                $this->resultNotifications->dispatchIfDue($match->id, $user);
+            }
+        } catch (Throwable $e) {
+            report($e);
+        }
+
+        return true;
     }
 
     /**
