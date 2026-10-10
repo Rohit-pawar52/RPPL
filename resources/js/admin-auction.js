@@ -14,6 +14,10 @@ import { t } from './i18n';
  * page (they keep typed text); everything else is redrawn.
  */
 const POLL_MS = 4000;
+
+// A tap or a refresh that gets no answer (a weak hall connection) is given up after this long, so the console
+// never stays stuck on "busy" and ignores every later tap.
+const REQUEST_TIMEOUT_MS = 15000;
 const CHIP_KEY = 'rppl.auction.chips';
 const DEFAULT_CHIPS = [5000, 10000, 25000, 50000];
 
@@ -43,7 +47,36 @@ if (dataEl && root) {
         amount: document.getElementById('ac-amount'),
         search: document.getElementById('ac-search'),
         walkIn: document.getElementById('ac-walkin'),
+        role: document.getElementById('ac-role'),
+        offline: document.getElementById('ac-offline'),
+        undoSale: document.getElementById('ac-undo-sale'),
+        playerDialog: document.getElementById('ac-player-dialog'),
+        playerForm: document.getElementById('ac-player-form'),
     };
+
+    // The last sale, kept ten seconds so it can be taken back with one tap; and whether the connection is down.
+    let lastSale = null;
+    let undoTimer = null;
+    let failures = 0;
+
+    function setOffline(off) {
+        el.offline.classList.toggle('hidden', !off);
+    }
+
+    function hideUndoSale() {
+        lastSale = null;
+        window.clearTimeout(undoTimer);
+        el.undoSale.classList.add('hidden');
+        el.undoSale.innerHTML = '';
+    }
+
+    function showUndoSale(sale) {
+        lastSale = sale;
+        window.clearTimeout(undoTimer);
+        el.undoSale.classList.remove('hidden');
+        el.undoSale.innerHTML = `<div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900"><span class="font-medium">${esc(t(':player sold to :team for :amount points.', { player: sale.name, team: sale.team, amount: pts(sale.amount) }))}</span><button type="button" data-action="undo-sale" class="btn btn-secondary btn-sm min-h-10">${t('Undo sale')}</button></div>`;
+        undoTimer = window.setTimeout(hideUndoSale, 10000);
+    }
 
     // ----- Small helpers ----------------------------------------------------
 
@@ -133,6 +166,15 @@ if (dataEl && root) {
      * The same checks the server makes, only to label the button; the
      * server still decides.
      */
+    /** "Bat 2 · Bowl 1 · AR 0 · WK 1": what the team has and still lacks. */
+    function roleLine(team) {
+        const labels = { batter: t('Bat'), bowler: t('Bowl'), all_rounder: t('AR'), wicket_keeper: t('WK') };
+
+        return Object.keys(labels)
+            .map((role) => `${esc(labels[role])} <b class="tabular-nums ${(team.roles && team.roles[role]) ? 'text-slate-800' : 'text-amber-600'}">${(team.roles && team.roles[role]) || 0}</b>`)
+            .join(' · ');
+    }
+
     function teamAction(team) {
         const lot = state.lot;
 
@@ -292,6 +334,11 @@ if (dataEl && root) {
         const hasBid = lot.current_bid !== null;
         const live = auction.status === 'live';
 
+        const otherTeams = state.teams.filter((team) => !(lot.leading_team && lot.leading_team.id === team.id) && !team.full);
+        const wrongTeam = hasBid && live && otherTeams.length
+            ? `<details class="mt-3 text-white/80"><summary class="cursor-pointer text-xs font-medium">${t('Wrong team? Move the last bid')}</summary><div class="mt-2 flex flex-wrap gap-1.5">${otherTeams.map((team) => `<button type="button" data-action="fix-bid" data-team="${team.id}" class="rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold text-white hover:bg-white/20">${esc(team.name)}</button>`).join('')}</div></details>`
+            : '';
+
         el.lot.innerHTML = `
             <div class="rounded-2xl bg-gradient-to-br from-navy-900 to-navy-800 p-4 text-white shadow-raised sm:p-6">
                 <div class="flex flex-wrap items-start gap-4">
@@ -313,7 +360,10 @@ if (dataEl && root) {
                     <p class="text-right text-base font-semibold ${hasBid ? 'text-green-100' : 'text-white/60'}">${hasBid ? esc(lot.leading_team.name) : t('No bid yet')}</p>
                 </div>
 
-                <div class="mt-3 text-right">
+                ${wrongTeam}
+
+                <div class="mt-3 flex flex-wrap justify-end gap-1">
+                    <button type="button" data-action="edit-player" class="rounded-lg px-3 py-2 text-xs font-medium text-white/70 hover:bg-white/10 hover:text-white">${t('Edit details')}</button>
                     <button type="button" data-action="release" ${live ? '' : 'disabled'} class="rounded-lg px-3 py-2 text-xs font-medium text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-40">${t('Wrong player? Put back')}</button>
                 </div>
             </div>
@@ -353,6 +403,7 @@ if (dataEl && root) {
                         ${t('Max bid')} <b class="tabular-nums text-slate-800">${team.full ? '—' : pts(team.max_bid)}</b>
                         ${team.still_needed > 0 ? ` · ${t('needs :count more', { count: team.still_needed })}` : ''}
                     </p>
+                    <p class="mt-0.5 text-[11px] text-slate-500">${roleLine(team)}</p>
                     <button type="button" data-action="bid" data-team="${team.id}" ${action.enabled ? '' : 'disabled'} class="mt-2.5 flex min-h-14 w-full items-center justify-center rounded-xl px-2 text-center text-sm font-bold leading-tight transition active:scale-[0.98] ${buttonStyle} disabled:cursor-not-allowed">${esc(action.label)}</button>
                     <details data-squad="${team.id}" class="mt-2" ${open ? 'open' : ''}>
                         <summary class="flex min-h-9 cursor-pointer items-center text-xs text-slate-500 hover:text-slate-800">${t('Squad (:count)', { count: team.players.length })}</summary>
@@ -437,6 +488,10 @@ if (dataEl && root) {
                     <button type="button" data-action="take-back" data-lot="${sale.lot_id}" ${running ? '' : 'disabled'} title="${esc(t('Out of the team, waiting again'))}" class="btn btn-danger-soft btn-sm min-h-10 disabled:opacity-40">${t('Take back')}</button>`;
             }
 
+            if (!sale.locked && !sale.orphan) {
+                actions = `<button type="button" data-action="edit-price" data-lot="${sale.lot_id}" ${running ? '' : 'disabled'} class="btn btn-secondary btn-sm min-h-10 disabled:opacity-40">${t('Edit price')}</button>${actions}`;
+            }
+
             return `
                 <li class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 py-2.5">
                     <span class="min-w-0">
@@ -499,13 +554,36 @@ if (dataEl && root) {
         root.classList.add('opacity-70');
 
         try {
-            const response = await axios.post(urls[name], body, { headers: { Accept: 'application/json' } });
+            const response = await axios.post(urls[name], body, { headers: { Accept: 'application/json' }, timeout: REQUEST_TIMEOUT_MS });
+            setOffline(false);
             apply(response.data.state);
             notify(response.data.message);
 
             return response.data;
         } catch (error) {
             const data = error.response && error.response.data;
+            const status = error.response && error.response.status;
+
+            // The sign-in or the page's security token has expired (a long idle time, or the host woke up): a
+            // reload gets a fresh one and loses nothing, the auction itself lives on the server.
+            if (status === 419 || status === 401) {
+                notify(t('This page has expired. Reloading…'), 'error');
+                window.setTimeout(() => window.location.reload(), 1500);
+
+                return { ok: false };
+            }
+
+            if (!error.response && error.code !== 'ECONNABORTED' && error.code !== 'ETIMEDOUT') {
+                setOffline(true);
+            }
+
+            // No answer in time: the tap may or may not have gone through, so show what the server has now.
+            if (!error.response && (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT')) {
+                notify(t('No reply from the server. Check the screen, then try again.'), 'error');
+                refreshAfterTimeout();
+
+                return { ok: false };
+            }
 
             if (data && data.state) {
                 apply(data.state);
@@ -585,8 +663,13 @@ if (dataEl && root) {
         const result = await send(name, { lot_id: lot.id, version: lot.version, ...extra });
 
         if (result && result.ok && name === 'sell' && before.leading_team) {
-            notify(t(':player sold to :team for :amount points.', { player: before.name, team: before.leading_team.name, amount: pts(before.current_bid) }));
+            showUndoSale({ lot_id: before.id, name: before.name, team: before.leading_team.name, amount: before.current_bid });
         }
+    }
+
+    // After a request timed out: ask for the real state once the console is free again.
+    function refreshAfterTimeout() {
+        window.setTimeout(() => poll(), 800);
     }
 
     async function poll() {
@@ -595,12 +678,18 @@ if (dataEl && root) {
         }
 
         try {
-            const response = await axios.get(urls.state, { headers: { Accept: 'application/json' } });
+            const response = await axios.get(urls.state, { headers: { Accept: 'application/json' }, timeout: REQUEST_TIMEOUT_MS });
+            failures = 0;
+            setOffline(false);
             if (!busy) {
                 apply(response.data.state);
             }
         } catch (error) {
-            // A missed refresh is harmless; the next one catches up.
+            // A missed refresh is harmless; the next one catches up. Two in a row means the connection is down.
+            failures += 1;
+            if (failures >= 2) {
+                setOffline(true);
+            }
         }
     }
 
@@ -616,7 +705,7 @@ if (dataEl && root) {
 
         switch (action) {
             case 'random':
-                await send('random');
+                await send('random', { role: el.role ? el.role.value : '' });
                 break;
             case 'call':
                 await send('call', { lot_id: Number(target.dataset.lot) });
@@ -653,6 +742,42 @@ if (dataEl && root) {
                     : t('Take this player back? The points return to the team and the player waits again.');
                 if (window.confirm(text)) {
                     await send('take-back', { lot_id: Number(target.dataset.lot) });
+                }
+                break;
+            }
+            case 'undo-sale': {
+                if (!lastSale) {
+                    break;
+                }
+                const id = lastSale.lot_id;
+                hideUndoSale();
+                await send('reopen', { lot_id: id });
+                break;
+            }
+            case 'edit-player': {
+                if (!state.lot) {
+                    break;
+                }
+                el.playerForm.elements.name.value = state.lot.name || '';
+                el.playerForm.elements.village.value = state.lot.village || '';
+                el.playerForm.elements.primary_role.value = state.lot.role_key || '';
+                el.playerDialog.showModal();
+                break;
+            }
+            case 'close-player':
+                el.playerDialog.close();
+                break;
+            case 'fix-bid':
+                if (state.lot) {
+                    await send('fix-bid', { lot_id: state.lot.id, version: state.lot.version, team_id: Number(target.dataset.team) });
+                }
+                break;
+            case 'edit-price': {
+                const sale = state.sold.find((row) => row.lot_id === Number(target.dataset.lot));
+                const answer = window.prompt(t('New price for :player (points):', { player: sale ? sale.name : '' }), sale ? String(sale.amount) : '');
+                const amount = answer === null ? NaN : parseInt(answer.replace(/[^0-9]/g, ''), 10);
+                if (Number.isInteger(amount) && amount > 0) {
+                    await send('price', { lot_id: Number(target.dataset.lot), amount });
                 }
                 break;
             }
@@ -713,6 +838,24 @@ if (dataEl && root) {
         }
     }, true);
 
+    window.addEventListener('offline', () => setOffline(true));
+    window.addEventListener('online', () => {
+        failures = 0;
+        setOffline(false);
+        poll();
+    });
+
+    el.playerForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const form = new FormData(el.playerForm);
+        if (!state.lot) {
+            el.playerDialog.close();
+            return;
+        }
+        el.playerDialog.close();
+        await send('player', { lot_id: state.lot.id, name: form.get('name'), village: form.get('village'), primary_role: form.get('primary_role') });
+    });
+
     el.amount.addEventListener('input', renderTeams);
     el.search.addEventListener('input', renderResults);
     el.soldSearch.addEventListener('input', renderSold);
@@ -720,7 +863,7 @@ if (dataEl && root) {
     el.walkIn.addEventListener('submit', async (event) => {
         event.preventDefault();
         const form = new FormData(el.walkIn);
-        const result = await send('walk-in', { name: form.get('name'), phone: form.get('phone') });
+        const result = await send('walk-in', { name: form.get('name'), phone: form.get('phone'), village: form.get('village'), role: form.get('role') });
         if (result && result.ok) {
             el.walkIn.reset();
         }

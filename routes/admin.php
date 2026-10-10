@@ -104,6 +104,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('auctions/{edition}/pause', [AuctionController::class, 'pause'])->name('auctions.pause');
         Route::post('auctions/{edition}/resume', [AuctionController::class, 'resume'])->name('auctions.resume');
         Route::post('auctions/{edition}/complete', [AuctionController::class, 'complete'])->name('auctions.complete');
+        Route::post('auctions/{edition}/reset', [AuctionController::class, 'reset'])->name('auctions.reset');
+        Route::get('auctions/{edition}/export/{what}', [AuctionController::class, 'export'])->whereIn('what', ['results', 'bids', 'events'])->name('auctions.export');
+        Route::get('auctions/{edition}/results.pdf', [AuctionController::class, 'resultsPdf'])->name('auctions.results-pdf');
 
         // The live console: one page that draws itself from a state array,
         // and one small JSON endpoint per action, each returning the fresh
@@ -126,6 +129,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('resume', [AuctionConsoleController::class, 'resume'])->name('resume');
             Route::post('pool', [AuctionConsoleController::class, 'pool'])->name('pool');
             Route::post('walk-in', [AuctionConsoleController::class, 'walkIn'])->name('walk-in');
+            Route::post('player', [AuctionConsoleController::class, 'player'])->name('player');
+            Route::post('fix-bid', [AuctionConsoleController::class, 'fixBid'])->name('fix-bid');
+            Route::post('price', [AuctionConsoleController::class, 'price'])->name('price');
         });
 
         // Public page-view analytics (read side of the page_views capture).

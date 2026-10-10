@@ -187,7 +187,7 @@
                         $canVerify = auth()->user()->can('update', $registration);
                     @endphp
                     <div class="rq-row" data-rq-row>
-                        <div class="relative z-10 self-start pt-1 lg:self-center lg:pt-0">
+                        <div class="relative z-10 self-start pt-1 xl:self-center xl:pt-0">
                             <input
                                 type="checkbox"
                                 data-row-checkbox
@@ -246,9 +246,10 @@
                                     <span class="truncate font-medium text-slate-600">{{ $registration->edition->name }}</span>
                                 @endif
                             </div>
-                            <p class="truncate tabular-nums" title="{{ display_datetime($registration->registered_at, 'd M Y, h:i A') }}">
+                            {{-- Fee, then the date on the same line when it fits and on the next when it does not. --}}
+                            <p class="tabular-nums">
                                 {{ $registration->registration_fee !== null ? money($registration->registration_fee) : '—' }}
-                                &middot; {{ display_datetime($registration->registered_at, 'd M Y, h:i A') ?? '—' }}
+                                <span class="whitespace-nowrap">&middot; {{ display_datetime($registration->registered_at, 'd M Y, h:i A') ?? '—' }}</span>
                             </p>
                             @if($status === 'failed' && $registration->payment_failure_reason)
                                 <p class="line-clamp-2 leading-4 text-red-600">{{ $registration->payment_failure_reason }}</p>
@@ -256,24 +257,24 @@
                         </div>
 
                         {{-- One-tap decisions --}}
-                        <div class="relative z-10 flex items-center gap-2 lg:justify-end">
+                        <div class="relative z-10 flex items-center gap-2 xl:justify-end">
                             @if($canVerify)
                                 @if($status !== 'paid' && $status !== 'refunded')
-                                    <form method="POST" action="{{ route('admin.player-registrations.mark-paid', $registration) }}" class="max-lg:flex-1">
+                                    <form method="POST" action="{{ route('admin.player-registrations.mark-paid', $registration) }}" class="max-xl:flex-1">
                                         @csrf
-                                        <button type="submit" class="btn btn-primary btn-sm min-h-10 w-full lg:min-h-9">
+                                        <button type="submit" class="btn btn-primary btn-sm min-h-10 w-full xl:min-h-9">
                                             <x-ops.icon name="check" /> {{ __('Mark paid') }}
                                         </button>
                                     </form>
                                 @endif
                                 @if($status !== 'failed' && $status !== 'refunded')
-                                    <button type="button" data-fail-toggle class="btn btn-danger-soft btn-sm min-h-10 max-lg:flex-1 lg:min-h-9" aria-expanded="false">
+                                    <button type="button" data-fail-toggle class="btn btn-danger-soft btn-sm min-h-10 max-xl:flex-1 xl:min-h-9" aria-expanded="false">
                                         <x-ops.icon name="x" /> {{ __('Mark failed') }}
                                     </button>
                                 @endif
                             @endif
                             <details class="relative" data-more>
-                                <summary class="btn btn-ghost btn-icon btn-sm min-h-10 w-10 cursor-pointer list-none lg:min-h-9 lg:w-9" aria-label="{{ __('More actions for :name', ['name' => $player->name]) }}">
+                                <summary class="btn btn-ghost btn-icon btn-sm min-h-10 w-10 cursor-pointer list-none xl:min-h-9 xl:w-9" aria-label="{{ __('More actions for :name', ['name' => $player->name]) }}">
                                     <x-ops.icon name="dots" class="h-5 w-5" />
                                 </summary>
                                 <div class="ops-menu">

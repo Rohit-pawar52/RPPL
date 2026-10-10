@@ -150,6 +150,7 @@ if (dataEl && root) {
                 <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
                     ${title}
                     <a href="${esc(bigUrl())}" class="btn btn-secondary btn-sm shrink-0">${monitorIcon}${esc(t.big_screen)}</a>
+                    <button type="button" data-share class="btn btn-secondary btn-sm shrink-0">${esc(t.share)}</button>
                 </div>`;
         }
 
@@ -264,7 +265,7 @@ if (dataEl && root) {
             return '';
         }
 
-        return `<div class="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl ${k.sold} px-4 py-2.5 ${big ? 'text-[clamp(1.1rem,2vw,2.5rem)]' : 'text-sm'} font-semibold shadow-raised"><span class="rounded bg-white/20 px-2 py-0.5 text-xs font-bold tracking-wide">${esc(t.sold)}</span>${esc(sale.name)} → ${esc(sale.team || '')} · ${pts(sale.amount)} ${esc(t.pts)}</div>`;
+        return `<div class="auc-pop mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl ${k.sold} px-4 py-2.5 ${big ? 'text-[clamp(1.1rem,2vw,2.5rem)]' : 'text-sm'} font-semibold shadow-raised"><span class="rounded bg-white/20 px-2 py-0.5 text-xs font-bold tracking-wide">${esc(t.sold)}</span>${esc(sale.name)} → ${esc(sale.team || '')} · ${pts(sale.amount)} ${esc(t.pts)}</div>`;
     }
 
     /** The player on the block on the projector: name across the full width, the bid beneath. */
@@ -353,7 +354,7 @@ if (dataEl && root) {
         }
 
         if (sale) {
-            return `<div class="rounded-2xl ${k.sold} ${fill} ${big ? 'p-12' : 'p-8'} text-center shadow-raised">
+            return `<div class="auc-pop rounded-2xl ${k.sold} ${fill} ${big ? 'p-12' : 'p-8'} text-center shadow-raised">
                 <p class="${big ? 'text-[clamp(1.5rem,2.6vw,3.5rem)]' : 'text-lg'} font-bold tracking-[0.3em]">${esc(t.sold)}</p>
                 <p class="mt-3 ${big ? 'text-[clamp(3rem,6.5vw,8rem)]' : 'text-3xl sm:text-4xl'} font-bold">${esc(sale.name)}</p>
                 <p class="mt-3 ${big ? 'text-[clamp(1.5rem,3.4vw,4.5rem)]' : 'text-xl'} font-semibold">${esc(tr('sold_to', { team: sale.team || '' }))}</p>
@@ -368,6 +369,15 @@ if (dataEl && root) {
 
     // ----- The teams ---------------------------------------------------------------------
 
+    /** "Bat 2 · Bowl 1 · AR 0 · WK 1": what each team has and still lacks. */
+    function roleLine(team) {
+        const short = t.roles_short || {};
+
+        return Object.keys(short)
+            .map((role) => `${esc(short[role])} <b class="tabular-nums ${(team.roles && team.roles[role]) ? k.soft : 'text-amber-600'}">${(team.roles && team.roles[role]) || 0}</b>`)
+            .join(' · ');
+    }
+
     function teams() {
         const max = state.auction.max_squad;
 
@@ -376,7 +386,7 @@ if (dataEl && root) {
             const leading = state.lot && state.lot.leading_team === team.name;
             const top = team.players.find((p) => p.amount !== null);
             const squad = team.players.length
-                ? `<details data-squad="${esc(team.name)}" class="mt-2 border-t border-line pt-2" ${openSquads.has(team.name) ? 'open' : ''}><summary class="cursor-pointer text-[11px] font-semibold ${k.muted} hover:text-slate-800">${esc(t.squad)} (${team.players.length})</summary><ul class="mt-1.5 space-y-1 text-[11px] ${k.soft}">${team.players.map((p) => `<li class="flex justify-between gap-2"><span class="truncate">${esc(p.name)}</span><span class="tabular-nums">${p.amount === null ? '—' : pts(p.amount)}</span></li>`).join('')}</ul></details>`
+                ? `<details data-squad="${esc(team.name)}" class="mt-2 border-t border-line pt-2" ${openSquads.has(team.name) ? 'open' : ''}><summary class="cursor-pointer text-[11px] font-semibold ${k.muted} hover:text-slate-800">${esc(t.squad)} (${team.players.length})</summary><ul class="mt-1.5 space-y-1 text-[11px] ${k.soft}">${team.players.map((p) => `<li class="flex justify-between gap-2"><span class="truncate">${esc(p.name)}${p.village ? ` <span class="opacity-60">· ${esc(p.village)}</span>` : ''}</span><span class="tabular-nums">${p.amount === null ? '—' : pts(p.amount)}</span></li>`).join('')}</ul></details>`
                 : '';
 
             return `
@@ -389,6 +399,7 @@ if (dataEl && root) {
                     <p class="mt-2.5 text-2xl font-bold leading-none tabular-nums ${k.title}">${pts(team.left)} <span class="text-[11px] font-medium ${k.muted}">${esc(t.left)}</span></p>
                     <div class="mt-2 h-1.5 overflow-hidden rounded-full ${k.bar}" aria-hidden="true"><div class="h-full rounded-full ${k.fill} transition-all duration-500" style="width: ${usedPct}%"></div></div>
                     <p class="mt-2 text-[11px] ${k.muted}"><span class="font-semibold tabular-nums ${team.still_needed > 0 ? 'text-amber-600' : k.soft}">${esc(tr('players_count', { count: team.count, max }))}</span>${team.still_needed > 0 ? ` · ${esc(tr('needs_more', { count: team.still_needed }))}` : ''}</p>
+                    <p class="mt-0.5 text-[11px] ${k.muted}" title="${esc(t.roles_title || '')}">${roleLine(team)}</p>
                     <p class="mt-0.5 truncate text-[11px] ${k.muted}">${esc(t.spent)} ${pts(team.spent)}${top ? ` · ${esc(t.top_buy)}: ${esc(top.name)} (${pts(top.amount)})` : ''}</p>
                     ${squad}
                 </div>`;
@@ -479,7 +490,7 @@ if (dataEl && root) {
         const bidsLabel = hasBids ? (sale.bids === 1 ? t.bids_one : tr('bids_count', { count: sale.bids })) : '';
         const summary = `
             <span class="w-6 shrink-0 text-center text-xs tabular-nums text-slate-400">${number}</span>
-            <span class="min-w-0 flex-1"><span class="block truncate text-[13px] font-semibold text-slate-900">${esc(sale.name)}</span><span class="block truncate text-[11px] text-slate-500">${esc([sale.team, sale.role].filter(Boolean).join(' · '))}</span></span>
+            <span class="min-w-0 flex-1"><span class="block truncate text-[13px] font-semibold text-slate-900">${esc(sale.name)}</span><span class="block truncate text-[11px] text-slate-500">${esc([sale.village, sale.team, sale.role].filter(Boolean).join(' · '))}</span></span>
             <span class="shrink-0 text-right"><span class="block text-sm font-bold tabular-nums text-slate-900">${pts(sale.amount)} <span class="text-[11px] font-normal text-slate-400">${esc(t.pts)}</span></span>${hasBids ? `<span class="block text-[11px] text-slate-500">${esc(bidsLabel)}</span>` : ''}</span>`;
 
         if (!hasBids) {
@@ -736,4 +747,29 @@ if (dataEl && root) {
     startRealtime();
     window.setInterval(() => refresh(), pollSeconds * 1000);
     document.addEventListener('visibilitychange', () => refresh(true));
+
+    // Share the live page: the phone's own share sheet when there is one, else copy the link.
+    document.addEventListener('click', async (event) => {
+        const button = event.target.closest('[data-share]');
+        if (!button) {
+            return;
+        }
+
+        const url = `${window.location.origin}${window.location.pathname}`;
+
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: document.title, url });
+
+                return;
+            }
+
+            await navigator.clipboard.writeText(url);
+            const label = button.textContent;
+            button.textContent = t.link_copied;
+            window.setTimeout(() => { button.textContent = label; }, 1600);
+        } catch (error) {
+            // Cancelled or not allowed: nothing to do.
+        }
+    });
 }

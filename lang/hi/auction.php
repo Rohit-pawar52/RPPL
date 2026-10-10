@@ -47,6 +47,15 @@ return [
     'connection_lost' => 'कनेक्शन टूटा — फिर कोशिश हो रही है…',
     'needs_js' => 'नीलामी लाइव देखने के लिए JavaScript चालू करें।',
     'big_screen' => 'बड़ी स्क्रीन',
+    'share' => 'शेयर करें',
+    'link_copied' => 'लिंक कॉपी हो गया',
+    'roles_title' => 'स्क्वॉड में बल्लेबाज़ · गेंदबाज़ · ऑलराउंडर · विकेटकीपर',
+    'roles_short' => [
+        'batter' => 'बैट',
+        'bowler' => 'बॉल',
+        'all_rounder' => 'ऑल',
+        'wicket_keeper' => 'WK',
+    ],
     'back_to_page' => 'वापस',
 
     // The numbers, the lists and the bidding detail

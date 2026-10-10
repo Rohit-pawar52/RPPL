@@ -49,6 +49,15 @@ return [
     'connection_lost' => 'Connection lost — trying again…',
     'needs_js' => 'Turn on JavaScript to follow the auction live.',
     'big_screen' => 'Big screen',
+    'share' => 'Share',
+    'link_copied' => 'Link copied',
+    'roles_title' => 'Batters · bowlers · all-rounders · wicket keepers in the squad',
+    'roles_short' => [
+        'batter' => 'Bat',
+        'bowler' => 'Bowl',
+        'all_rounder' => 'AR',
+        'wicket_keeper' => 'WK',
+    ],
     'back_to_page' => 'Back',
 
     // The numbers, the lists and the bidding detail

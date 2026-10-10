@@ -95,6 +95,11 @@ class Auction extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function events(): HasMany
+    {
+        return $this->hasMany(AuctionEvent::class);
+    }
+
     public function lots(): HasMany
     {
         return $this->hasMany(AuctionLot::class);

@@ -205,7 +205,7 @@ class AuctionSetupPageTest extends TestCase
 
     public function test_the_seasons_list_shows_each_auction_state(): void
     {
-        $other = Edition::factory()->create(['name' => 'Old Season', 'year' => 2020, 'status' => 'completed']);
+        $other = Edition::factory()->create(['name' => 'Old Season', 'year' => $this->edition->year - 1, 'status' => 'completed']);
         Auction::factory()->live()->create(['edition_id' => $this->edition->id]);
 
         $this->actingAs($this->admin)->get(route('admin.auctions.index'))

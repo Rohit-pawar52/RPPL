@@ -9,5 +9,8 @@ return [
         'name,phone,email,registration_fee,payment_status,registered_at',
     ],
     'patterns' => [],
-    'files' => [],
+    'files' => [
+        // The printable result is a PDF, English like the season report (a Hindi PDF needs a Devanagari font).
+        'admin/auctions/results-pdf.blade.php',
+    ],
 ];

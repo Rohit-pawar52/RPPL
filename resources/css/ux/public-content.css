@@ -9,6 +9,19 @@
  * important-warning).
  */
 @layer components {
+    /* ---------- The auction's SOLD banner pops in ---------- */
+    @keyframes auc-pop {
+        0% { opacity: 0; transform: scale(0.88); }
+        60% { opacity: 1; transform: scale(1.04); }
+        100% { transform: scale(1); }
+    }
+    .auc-pop {
+        animation: auc-pop 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .auc-pop { animation: none; }
+    }
+
     /* ---------- Page chrome ---------- */
     .pc-toolbar {
         @apply mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between;

@@ -14,6 +14,26 @@ RUN npm ci
 COPY . .
 # resources/css/app.css makes Tailwind scan the framework's pagination views too.
 COPY --from=vendor /app/vendor/laravel/framework/src/Illuminate/Pagination/resources vendor/laravel/framework/src/Illuminate/Pagination/resources
+
+# Push notifications: the browser's Firebase settings are baked into the JavaScript (and into
+# firebase-messaging-sw.js) at BUILD time from VITE_FIREBASE_*. There is no .env in the image, so the
+# values only get here if they are declared as build arguments (Render passes a service's environment
+# variables to the Docker build as build arguments). They are public web-config values, not secrets;
+# left unset, push stays switched off and everything else is unaffected.
+ARG VITE_FIREBASE_API_KEY
+ARG VITE_FIREBASE_AUTH_DOMAIN
+ARG VITE_FIREBASE_PROJECT_ID
+ARG VITE_FIREBASE_STORAGE_BUCKET
+ARG VITE_FIREBASE_MESSAGING_SENDER_ID
+ARG VITE_FIREBASE_APP_ID
+ARG VITE_FIREBASE_VAPID_KEY
+ENV VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY \
+    VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN \
+    VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID \
+    VITE_FIREBASE_STORAGE_BUCKET=$VITE_FIREBASE_STORAGE_BUCKET \
+    VITE_FIREBASE_MESSAGING_SENDER_ID=$VITE_FIREBASE_MESSAGING_SENDER_ID \
+    VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
+    VITE_FIREBASE_VAPID_KEY=$VITE_FIREBASE_VAPID_KEY
 RUN npm run build
 
 # ---- 3. The app: Apache + PHP ----
