@@ -195,8 +195,10 @@ function renderThisOver(deliveries) {
         : '';
 
     return `
-        <p class="mx-over-label">${escapeHtml(fill(I18N.overN, { n: Number(overKey) + 1 }))}</p>
-        <div class="mx-over-balls">${balls}</div>
+        <div class="mx-over-row">
+            <p class="mx-over-label">${escapeHtml(fill(I18N.overN, { n: Number(overKey) + 1 }))}</p>
+            <div class="mx-over-balls">${balls}</div>
+        </div>
         <ul class="mx-over-facts">
             <li><span>${escapeHtml(I18N.lastBall)}</span> ${escapeHtml(lastBall)}</li>
             ${wicketLine}
@@ -295,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // The score header sits above the root; everything is found by id / hook.
-    const heroEl = document.querySelector('.mx-hero');
+    const heroEl = document.getElementById('live-score-card') ?? document.querySelector('.mx-hero');
     const thisOverEl = document.getElementById('live-this-over');
     const deliveriesEl = document.getElementById('live-deliveries');
     const resultEl = document.getElementById('live-match-result');

@@ -232,7 +232,7 @@
         @apply grid size-7 min-w-7 shrink-0 place-items-center rounded-full bg-slate-100 px-1.5 text-[11px] font-bold tabular-nums text-slate-600;
     }
     .mx-ball-lg {
-        @apply size-10 min-w-10 text-sm;
+        @apply size-8 min-w-8 text-[13px];
     }
     .mx-ball-four {
         @apply bg-indigo-600 text-white;
@@ -288,14 +288,101 @@
         @apply min-w-0 text-slate-700;
     }
 
+    /* ---- Compact score card of the Live tab ---- */
+    .mx-lsc {
+        @apply space-y-2 p-3 sm:p-3.5;
+    }
+    .mx-lsc.mx-hero-live {
+        @apply ring-1 ring-green-500/30;
+    }
+    .mx-lsc-top {
+        @apply flex items-center gap-2.5;
+    }
+    .mx-lsc-context {
+        @apply flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+    .mx-lsc-context > span + span::before {
+        content: '\00b7';
+        @apply mr-1.5 text-slate-300;
+    }
+    .mx-lsc-share {
+        @apply grid size-7 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-800;
+    }
+    .mx-lsc-share.is-done {
+        @apply bg-green-100 text-green-700;
+    }
+    .mx-lsc-team {
+        @apply flex items-center gap-2.5;
+    }
+    .mx-lsc-name {
+        @apply flex min-w-0 flex-1 items-center gap-2 text-[15px] font-semibold leading-tight text-slate-900;
+    }
+    .mx-lsc .mx-batting-tag {
+        @apply shrink-0 bg-green-100 text-green-700 max-sm:hidden;
+    }
+    /* On a phone the word is dropped for a green dot, to leave room for the name. */
+    .mx-lsc-team[data-batting] .mx-lsc-name::before {
+        content: '';
+        @apply size-2 shrink-0 rounded-full bg-green-500 sm:hidden;
+    }
+    .mx-lsc-score {
+        @apply grid shrink-0 grid-cols-[auto_auto] items-baseline justify-end gap-x-2 text-right sm:flex sm:flex-wrap;
+    }
+    .mx-lsc-runs {
+        @apply text-xl font-bold leading-none tabular-nums text-slate-900;
+    }
+    .mx-lsc-overs {
+        @apply text-xs tabular-nums text-slate-500;
+    }
+    .mx-lsc .mx-crr {
+        @apply text-green-700 max-sm:col-span-2;
+    }
+    .mx-lsc-team[data-batting] .mx-lsc-runs {
+        @apply text-brand;
+    }
+    .mx-lsc-team[data-outcome='won'] .mx-lsc-name::after {
+        content: '\2713';
+        @apply text-sm text-green-600;
+    }
+    .mx-lsc-result {
+        @apply rounded-lg bg-green-50 px-3 py-1.5 text-[13px] font-semibold text-green-800;
+    }
+    .mx-lsc .mx-chase {
+        @apply rounded-lg bg-green-50 px-3 py-2;
+    }
+    .mx-lsc .mx-chase-headline {
+        @apply text-[13px] text-green-800;
+    }
+    .mx-lsc .mx-chase-bar {
+        @apply mt-1.5 h-1 bg-green-200;
+    }
+    .mx-lsc .mx-chase-bar > span {
+        @apply bg-green-600;
+    }
+    .mx-lsc .mx-chase-grid {
+        @apply mt-1.5 flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-left;
+    }
+    .mx-lsc .mx-chase-grid > div {
+        @apply flex items-baseline gap-1 bg-transparent p-0 ring-0;
+    }
+    .mx-lsc .mx-chase-grid dt {
+        @apply text-[10px] text-slate-500;
+    }
+    .mx-lsc .mx-chase-grid dd {
+        @apply mt-0 text-[13px] text-slate-900;
+    }
+
     .mx-over-label {
         @apply text-[11px] font-semibold uppercase tracking-wider text-slate-400;
     }
+    .mx-over-row {
+        @apply flex flex-wrap items-center gap-x-3 gap-y-1.5;
+    }
     .mx-over-balls {
-        @apply mt-2 flex flex-wrap gap-2;
+        @apply flex flex-wrap gap-1.5;
     }
     .mx-over-facts {
-        @apply mt-4 space-y-1.5 border-t border-line pt-3 text-[13px] text-slate-700;
+        @apply mt-2 space-y-0.5 border-t border-line pt-2 text-[12.5px] text-slate-700;
     }
     .mx-over-facts li > span {
         @apply mr-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400;

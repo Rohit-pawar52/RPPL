@@ -405,6 +405,21 @@ class LiveMatchTest extends TestCase
             ->assertDontSee('9998887771');
     }
 
+    public function test_the_live_tab_has_a_small_score_card_instead_of_the_big_header_and_no_match_details(): void
+    {
+        [$match] = $this->matchWithInningsAndPlayers();
+
+        $this->get(route('public.matches.live', $match))
+            ->assertOk()
+            ->assertSee('id="live-score-card"', false)
+            ->assertSee('data-live-team', false)
+            ->assertDontSee('mx-hero-glow', false)
+            ->assertDontSee('Match Details');
+
+        // The other tabs keep the full header.
+        $this->get(route('public.matches.scorecard', $match))->assertOk()->assertSee('mx-hero-glow', false);
+    }
+
     public function test_there_is_no_board_once_the_innings_is_over(): void
     {
         [$match, $innings] = $this->matchWithInningsAndPlayers();

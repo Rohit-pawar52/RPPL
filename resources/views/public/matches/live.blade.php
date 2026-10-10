@@ -49,19 +49,24 @@
         ];
     @endphp
 
-    @include('public.matches._header', ['match' => $match, 'active' => 'live', 'liveStatus' => true, 'liveData' => $liveData])
+    @include('public.matches._match-tabs', ['match' => $match, 'active' => 'live'])
+    @include('public.matches._hero-scripts')
 
     <div
         id="live-match-root"
-        class="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-4"
+        class="mt-3 grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start lg:gap-4"
         data-match-id="{{ $match->id }}"
         data-live-data-url="{{ route('public.matches.live-data', $match) }}"
         data-should-poll="{{ $liveData['should_poll'] ? '1' : '0' }}"
         data-i18n="{{ json_encode($i18n, JSON_UNESCAPED_UNICODE) }}"
     >
-        {{-- On a phone the two columns flatten into one list: board, a sponsor, this over, commentary, a sponsor, details. --}}
+        {{-- Two thirds / one third on a desktop. On a phone the columns flatten into one list: score, board, a sponsor, this over, commentary, a sponsor. --}}
         <div class="contents lg:block lg:min-w-0 lg:space-y-3">
-            <section id="live-board-card" class="pub-card order-1 overflow-hidden {{ $liveData['board'] ? '' : 'hidden' }}" aria-label="{{ __('ux_public_matches.live.batter') }} / {{ __('ux_public_matches.live.bowler') }}">
+            <div class="order-1">
+                @include('public.matches._live-score', ['match' => $match, 'liveData' => $liveData])
+            </div>
+
+            <section id="live-board-card" class="pub-card order-2 overflow-hidden {{ $liveData['board'] ? '' : 'hidden' }}" aria-label="{{ __('ux_public_matches.live.batter') }} / {{ __('ux_public_matches.live.bowler') }}">
                 <div id="live-board" class="mx-lb-wrap">
                     @if($liveData['board'])
                         @include('public.matches._live-board', ['board' => $liveData['board']])
@@ -69,8 +74,8 @@
                 </div>
             </section>
 
-            <section class="pub-card order-3 overflow-hidden">
-                <header class="pub-card-head">
+            <section class="pub-card order-4 overflow-hidden">
+                <header class="pub-card-head !py-2">
                     <h2 class="pub-card-title">{{ __('matches.live.this_over') }}</h2>
                     @if($liveData['should_poll'])
                         <span class="inline-flex items-center gap-1.5 pub-meta">
@@ -78,12 +83,12 @@
                         </span>
                     @endif
                 </header>
-                <div id="live-this-over" class="p-4 sm:p-5">
+                <div id="live-this-over" class="px-3 py-2.5 sm:px-4">
                     @include('public.matches._live-over', ['deliveries' => $deliveries])
                 </div>
             </section>
 
-            <section class="pub-card order-4 overflow-hidden">
+            <section class="pub-card order-5 overflow-hidden">
                 <header class="pub-card-head">
                     <h2 class="pub-card-title">{{ __('matches.live.commentary') }}</h2>
                 </header>
@@ -97,12 +102,9 @@
             </section>
         </div>
 
-        <aside class="contents lg:block lg:min-w-0 lg:space-y-3">
-            <x-ad-side class="order-2" :offset="0" />
-            <x-ad-side class="order-5" :offset="1" />
-            <div class="order-6">
-                @include('public.matches._details', ['match' => $match])
-            </div>
+        <aside class="contents lg:sticky lg:top-24 lg:block lg:min-w-0 lg:space-y-3">
+            <x-ad-side class="order-3" :offset="0" />
+            <x-ad-side class="order-6" :offset="1" />
         </aside>
     </div>
 

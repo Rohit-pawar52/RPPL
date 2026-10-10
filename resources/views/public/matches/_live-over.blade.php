@@ -16,6 +16,7 @@
 @endphp
 
 @if($latest)
+    <div class="mx-over-row">
     <p class="mx-over-label">{{ __('ux_public_matches.live.over_n', ['n' => (int) $overKey + 1]) }}</p>
     <div class="mx-over-balls">
         @foreach($thisOver as $delivery)
@@ -31,6 +32,7 @@
             @endphp
             <span class="mx-ball mx-ball-lg mx-ball-{{ $kind }}">{{ $label }}</span>
         @endforeach
+    </div>
     </div>
     <ul class="mx-over-facts">
         <li>
