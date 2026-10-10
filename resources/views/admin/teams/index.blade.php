@@ -43,6 +43,9 @@
                                 <x-crud.thumb :path="$team->logo_path" kind="image" size="sm" />
                             </td>
                             <td class="c-title">
+                                @if($team->color)
+                                    <span class="mr-1 inline-block h-2.5 w-2.5 rounded-full align-middle ring-1 ring-black/10" style="background: {{ $team->color }}" title="{{ __('Team colour') }}"></span>
+                                @endif
                                 <a href="{{ route('admin.teams.show', $team) }}" class="crud-row-link">{{ $team->name }}</a>
                                 @if($team->short_name)
                                     <span class="ml-1 text-[11px] font-normal text-slate-400">({{ $team->short_name }})</span>

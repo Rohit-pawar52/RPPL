@@ -12,6 +12,11 @@
     </div>
 
     <div class="crud-aside">
+        <x-admin.card :title="__('Team colour')">
+            <x-form.color name="color" :label="__('Colour')" :value="$team->color ?? ''" nullable fallback="#94a3b8" />
+            <p class="mt-1.5 text-[12px] text-slate-500">{{ __('Used for this team on the auction page, the big screen and the results. Leave it on Auto to get one from the palette.') }}</p>
+        </x-admin.card>
+
         <x-admin.card :title="__('Logo')">
             <x-form.image-upload
                 name="logo"

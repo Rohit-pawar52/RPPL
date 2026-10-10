@@ -293,6 +293,21 @@ class PublicAuctionDetailsTest extends TestCase
         $this->assertMatchesRegularExpression('/^#[0-9a-f]{6}$/', $bids[0]['color']);
     }
 
+    public function test_a_team_wears_the_colour_chosen_for_it_and_automatic_ones_never_copy_it(): void
+    {
+        $this->beta->team->update(['color' => '#ABCDEF']);
+        $this->paid('Coloured');
+        $auction = $this->liveAuction();
+        $lot = $this->service->callLot($auction, $this->lotOf($auction, 'Coloured'));
+        $this->service->placeBid($auction, $lot, $this->alpha, $lot->fresh()->version, 500);
+        $this->service->placeBid($auction, $lot, $this->beta, $lot->fresh()->version, 1000);
+
+        $colours = collect($this->state()['teams'])->pluck('color', 'name');
+        $this->assertSame('#abcdef', $colours[$this->beta->team->name]);
+        $this->assertNotSame('#abcdef', $colours[$this->alpha->team->name]);
+        $this->assertSame('#abcdef', $this->state()['lot']['leading_color']);
+    }
+
     public function test_with_live_bids_off_no_bid_count_or_history_is_given_but_the_result_still_is(): void
     {
         $this->paid('Quiet Sale');

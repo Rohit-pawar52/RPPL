@@ -644,9 +644,9 @@ class ScoringUpgradeTest extends TestCase
         $this->assertSame('Light improved, resuming play', $event->reason);
     }
 
-    // ----- Rule 17: reopen finalized match, admin only -----
+    // ----- Rule 17: reopen finalized match, admin and scorer, with a reason -----
 
-    public function test_reopening_a_finalized_match_is_admin_only_and_requires_a_reason(): void
+    public function test_reopening_a_finalized_match_needs_the_permission_and_a_reason(): void
     {
         $match = GameMatch::factory()->create([
             'match_status' => 'completed',
@@ -654,7 +654,9 @@ class ScoringUpgradeTest extends TestCase
             'match_result' => 'Team A won by 10 runs',
         ]);
 
-        $this->actingAs($this->scorer())
+        // Someone who may not reopen (a scorer whose role had the right taken away) is refused.
+        $limited = User::factory()->create(['role_id' => Role::create(['name' => 'Limited', 'slug' => 'limited'])->id]);
+        $this->actingAs($limited)
             ->post(route('admin.matches.reopen', $match), ['reason' => 'Scoring error found'])
             ->assertForbidden();
 

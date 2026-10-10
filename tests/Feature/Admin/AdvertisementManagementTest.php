@@ -110,6 +110,13 @@ class AdvertisementManagementTest extends TestCase
         $this->assertSame('banner', Advertisement::firstWhere('title', 'No choice')->format);
         $this->assertNull(Advertisement::firstWhere('title', 'Main')->format);
 
+        // The live match page's side box is a spot of its own, with its own picture size.
+        $this->actingAs($admin)->post(route('admin.advertisements.store'), $this->payload(['title' => 'A side box', 'format' => 'side']))->assertSessionHasNoErrors();
+        $side = Advertisement::firstWhere('title', 'A side box');
+        $this->assertSame('side', $side->format);
+        $this->assertSame('normal-side', $side->spotKey());
+        $this->actingAs($admin)->get(route('admin.advertisements.create'))->assertSeeInOrder(['Normal sponsor — side box', '600 × 500 px', '6 : 5']);
+
         $this->actingAs($admin)->post(route('admin.advertisements.store'), $this->payload(['format' => 'poster']))->assertSessionHasErrors('format');
 
         // Moving a Normal ad to another level clears its spot.

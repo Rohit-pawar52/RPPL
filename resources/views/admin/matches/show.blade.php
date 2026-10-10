@@ -509,7 +509,7 @@
                                 class="mt-4 grid gap-x-3 border-t border-line pt-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
                             >
                                 @csrf
-                                <x-form.input name="reason" :label="__('Reason for reopening this match (admin only)')" :placeholder="__('e.g. Scoring error found after finalization')" />
+                                <x-form.input name="reason" :label="__('Reason for reopening this match')" :placeholder="__('e.g. Scoring error found after finalization')" />
                                 <div class="mb-3.5">
                                     <button type="submit" class="btn btn-danger-soft min-h-10 max-sm:w-full">
                                         {{ __('Reopen Match') }}

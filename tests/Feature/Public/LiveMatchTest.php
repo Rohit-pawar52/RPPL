@@ -362,7 +362,76 @@ class LiveMatchTest extends TestCase
         DB::disableQueryLog();
 
         // 30 recent deliveries must not cause 30x relationship queries —
-        // a generous ceiling, not a tight budget.
-        $this->assertLessThan(20, $queryCount);
+        // a generous ceiling, not a tight budget. (The batting / bowling board reads the innings' scorecard
+        // once, in a fixed number of queries, however many balls there are.)
+        $this->assertLessThan(45, $queryCount);
+    }
+
+    // ----- Who is batting and bowling now -----
+
+    public function test_the_live_payload_names_the_batters_the_bowler_and_their_figures_and_the_page_shows_them(): void
+    {
+        [$match, $innings, $striker, $nonStriker, $bowler, $batterPlayer, $bowlerPlayer] = $this->matchWithInningsAndPlayers();
+        $base = ['striker_match_player_id' => $striker->id, 'non_striker_match_player_id' => $nonStriker->id, 'bowler_match_player_id' => $bowler->id];
+
+        // 4, 6, a dot ball, then a wide: striker 10 off 3, 11 runs and 0.3 overs for the bowler.
+        foreach ([['runs_off_bat' => 4], ['runs_off_bat' => 6], ['runs_off_bat' => 0], ['is_wide' => true, 'runs_off_bat' => 0]] as $ball) {
+            $this->ball($match, $innings, array_merge($base, $ball));
+        }
+
+        $board = $this->getJson(route('public.matches.live-data', $match))->assertOk()->json('board');
+
+        $this->assertSame($batterPlayer->name, $board['batters'][0]['name']);
+        $this->assertTrue($board['batters'][0]['on_strike']);
+        $this->assertSame(10, $board['batters'][0]['runs']);
+        $this->assertSame(3, $board['batters'][0]['balls']);
+        $this->assertSame(1, $board['batters'][0]['fours']);
+        $this->assertSame(1, $board['batters'][0]['sixes']);
+        $this->assertFalse($board['batters'][1]['on_strike']);
+
+        $this->assertSame($bowlerPlayer->name, $board['bowlers'][0]['name']);
+        $this->assertTrue($board['bowlers'][0]['current']);
+        $this->assertSame('0.3', $board['bowlers'][0]['overs']);
+        $this->assertSame(11, $board['bowlers'][0]['runs']);
+        $this->assertSame(['runs' => 11, 'balls' => 3], $board['partnership']);
+        $this->assertNull($board['last_wicket']);
+
+        // The first page load already carries the same table, and nothing private rides along.
+        $this->get(route('public.matches.live', $match))
+            ->assertOk()
+            ->assertSee($batterPlayer->name)
+            ->assertSee($bowlerPlayer->name)
+            ->assertSee('Partnership')
+            ->assertDontSee('9998887771');
+    }
+
+    public function test_the_live_tab_has_a_small_score_card_instead_of_the_big_header_and_no_match_details(): void
+    {
+        [$match] = $this->matchWithInningsAndPlayers();
+
+        $this->get(route('public.matches.live', $match))
+            ->assertOk()
+            ->assertSee('id="live-score-card"', false)
+            ->assertSee('data-live-team', false)
+            ->assertDontSee('mx-hero-glow', false)
+            ->assertDontSee('Match Details');
+
+        // The Scorecard, Squads and Match Info tabs are laid out the same way.
+        $this->get(route('public.matches.scorecard', $match))
+            ->assertOk()
+            ->assertSee('id="live-score-card"', false)
+            ->assertDontSee('mx-hero-glow', false);
+        foreach (['public.matches.squads', 'public.matches.show'] as $route) {
+            $this->get(route($route, $match))->assertOk()->assertSee('id="live-score-card"', false)->assertDontSee('mx-hero-glow', false);
+        }
+    }
+
+    public function test_there_is_no_board_once_the_innings_is_over(): void
+    {
+        [$match, $innings] = $this->matchWithInningsAndPlayers();
+        $innings->update(['status' => 'completed']);
+
+        $this->assertNull($this->getJson(route('public.matches.live-data', $match))->assertOk()->json('board'));
+        $this->get(route('public.matches.live', $match))->assertOk()->assertDontSee('mx-lb-facts', false);
     }
 }

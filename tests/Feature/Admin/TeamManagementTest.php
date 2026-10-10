@@ -147,6 +147,25 @@ class TeamManagementTest extends TestCase
         $this->assertDatabaseHas('teams', ['id' => $team->id, 'name' => 'New Name']);
     }
 
+    public function test_a_team_colour_is_saved_tidied_and_can_be_cleared_back_to_automatic(): void
+    {
+        $admin = $this->admin();
+        $team = Team::factory()->create();
+
+        $this->actingAs($admin)->put(route('admin.teams.update', $team), ['name' => $team->name, 'is_active' => 1, 'color' => '#E11D48']);
+        $this->assertSame('#e11d48', $team->fresh()->color);
+
+        // A request that says nothing about the colour keeps it; an empty colour means "automatic" again.
+        $this->actingAs($admin)->put(route('admin.teams.update', $team), ['name' => $team->name, 'is_active' => 1]);
+        $this->assertSame('#e11d48', $team->fresh()->color);
+
+        $this->actingAs($admin)->put(route('admin.teams.update', $team), ['name' => $team->name, 'is_active' => 1, 'color' => '']);
+        $this->assertNull($team->fresh()->color);
+
+        $this->actingAs($admin)->put(route('admin.teams.update', $team), ['name' => $team->name, 'is_active' => 1, 'color' => 'red'])
+            ->assertSessionHasErrors('color');
+    }
+
     public function test_admin_can_deactivate_team(): void
     {
         $team = Team::factory()->create();

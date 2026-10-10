@@ -320,6 +320,20 @@ class AuctionDayToolsTest extends TestCase
             ->assertOk()->assertSee('Ready for the auction day?')->assertSee('All good');
     }
 
+    public function test_the_check_warns_when_two_teams_have_colours_that_look_alike(): void
+    {
+        $auction = $this->service->create($this->edition);
+        $this->alpha->team->update(['color' => '#e11d48']);
+        $this->beta->team->update(['color' => '#e31f4a']);
+
+        $items = collect(app(AuctionReadinessService::class)->check($auction)['items']);
+        $this->assertTrue($items->contains(fn ($i) => $i['level'] === 'warn' && str_contains($i['title'], 'look alike')));
+
+        $this->beta->team->update(['color' => '#0ea5e9']);
+        $items = collect(app(AuctionReadinessService::class)->check($auction->fresh())['items']);
+        $this->assertFalse($items->contains(fn ($i) => str_contains($i['title'], 'look alike')));
+    }
+
     // ----- Downloads --------------------------------------------------------------------------
 
     public function test_the_result_the_bids_and_the_log_download_and_the_pdf_opens(): void

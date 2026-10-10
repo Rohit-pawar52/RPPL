@@ -54,6 +54,45 @@ class SponsorAdsTest extends TestCase
             ->assertSee('Our sponsors');
     }
 
+    public function test_the_live_match_side_boxes_share_the_side_ads_between_them_and_never_show_other_spots(): void
+    {
+        Advertisement::factory()->side()->create(['title' => 'Side A', 'media_path' => 'ads/a.jpg', 'weight' => 5]);
+        Advertisement::factory()->side()->create(['title' => 'Side B', 'media_path' => 'ads/b.jpg', 'weight' => 4]);
+        Advertisement::factory()->side()->create(['title' => 'Side C', 'media_path' => 'ads/c.jpg', 'weight' => 3]);
+        Advertisement::factory()->side()->create(['media_path' => 'ads/off.jpg', 'status' => 'inactive']);
+        Advertisement::factory()->card()->create(['media_path' => 'ads/card.jpg']);
+        Advertisement::factory()->create(['media_path' => 'ads/banner.jpg']);
+
+        // Box 1 takes the 1st and 3rd ad, box 2 the 2nd, so the two never show the same one at once.
+        $first = (string) $this->blade('<x-ad-side :offset="0" />');
+        $second = (string) $this->blade('<x-ad-side :offset="1" />');
+
+        $this->assertStringContainsString('ads/a.jpg', $first);
+        $this->assertStringContainsString('ads/c.jpg', $first);
+        $this->assertStringNotContainsString('ads/b.jpg', $first);
+        $this->assertStringContainsString('ads/b.jpg', $second);
+        $this->assertStringNotContainsString('ads/a.jpg', $second);
+
+        foreach ([$first, $second] as $html) {
+            $this->assertStringNotContainsString('ads/off.jpg', $html);
+            $this->assertStringNotContainsString('ads/card.jpg', $html);
+            $this->assertStringNotContainsString('ads/banner.jpg', $html);
+            $this->assertStringNotContainsString('<a ', $html);
+        }
+    }
+
+    public function test_a_side_box_with_no_ad_for_it_leaves_no_gap(): void
+    {
+        $this->blade('<x-ad-side :offset="0" />')->assertDontSee('data-ad-side', false);
+    }
+
+    public function test_one_side_ad_fills_the_first_box_only(): void
+    {
+        Advertisement::factory()->side()->create(['media_path' => 'ads/only.jpg']);
+        $this->blade('<x-ad-side :offset="0" />')->assertSee('ads/only.jpg', false);
+        $this->blade('<x-ad-side :offset="1" />')->assertDontSee('data-ad-side', false);
+    }
+
     public function test_ads_are_display_only_with_no_link_around_them(): void
     {
         Advertisement::factory()->main()->create(['media_path' => 'ads/main.jpg']);

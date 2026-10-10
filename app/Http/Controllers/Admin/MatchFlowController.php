@@ -194,7 +194,7 @@ class MatchFlowController extends Controller
     }
 
     /**
-     * Reopen a finalized match (frozen S02 rule 17) — admin only.
+     * Reopen a finalized match (frozen S02 rule 17) — admin and scorer (`matches.reopen`).
      */
     public function reopen(ReopenMatchRequest $request, GameMatch $match): RedirectResponse
     {

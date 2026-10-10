@@ -12,10 +12,21 @@
     radios + group-has); from md up both sit side by side.
 --}}
 @section('content')
-    @include('public.matches._header', ['match' => $match, 'active' => 'squads'])
+    {{-- Same shape as the Live and Scorecard tabs: tabs first, a small score card, the squads in the wide column and the
+         sponsor boxes in the narrow one. --}}
+    <div class="-mt-3 lg:-mt-6">
+        @include('public.matches._match-tabs', ['match' => $match, 'active' => 'squads'])
+    </div>
+    @include('public.matches._hero-scripts')
 
-    <div class="group/squad mt-4">
-        <div class="mx-seg mb-4 md:hidden" role="radiogroup" aria-label="{{ __('matches.squads.playing_xi') }}">
+    <div class="mt-2 grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start lg:gap-4">
+    <div class="contents lg:block lg:min-w-0 lg:space-y-3">
+    <div class="order-1">
+        @include('public.matches._live-score', ['match' => $match, 'liveData' => $liveData])
+    </div>
+
+    <div class="group/squad order-3 min-w-0">
+        <div class="mx-seg mb-3 md:hidden" role="radiogroup" aria-label="{{ __('matches.squads.playing_xi') }}">
             @foreach([[$match->teamA, 'a'], [$match->teamB, 'b']] as [$editionTeam, $key])
                 <label class="mx-seg-item">
                     <input type="radio" name="squad-team" value="{{ $key }}" class="sr-only" {{ $key === 'a' ? 'checked' : '' }}>
@@ -25,7 +36,7 @@
             @endforeach
         </div>
 
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
             @foreach([[$match->teamA, $teamAPlayers, 'a'], [$match->teamB, $teamBPlayers, 'b']] as [$editionTeam, $players, $key])
                 @if($key === 'a')
                     <section class="pub-card overflow-hidden max-md:group-has-[input[value='b']:checked]/squad:hidden">
@@ -83,5 +94,12 @@
                 </section>
             @endforeach
         </div>
+    </div>
+    </div>
+
+    <aside class="contents lg:sticky lg:top-24 lg:block lg:min-w-0 lg:space-y-3">
+        <x-ad-side class="order-2" :offset="0" />
+        <x-ad-side class="order-4" :offset="1" />
+    </aside>
     </div>
 @endsection

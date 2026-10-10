@@ -62,6 +62,38 @@ class MatchResultService
     }
 
     /**
+     * Finalizes the match by itself the moment its result is certain: the chasing side reached the target, or the
+     * second innings ran out of overs / wickets, with the first innings completed too. Called by the scoring screen
+     * after every write that can end the chase (a ball, a correction, penalty runs).
+     *
+     * Deliberately cautious: a second innings that was ended by hand (rain, a forced stop) is left for a person to
+     * finalize, because its totals may not be the whole story; and a tied match is never decided here, because that
+     * needs a Super Over winner. Both stay exactly as before: the Finalize / Super Over buttons on the match page.
+     * A wrong result is not a trap: the match can be reopened (by the admin or the scorer) and finalized again.
+     *
+     * @return bool true when this call finalized the match
+     */
+    public function finalizeIfDecided(GameMatch $match): bool
+    {
+        $fresh = GameMatch::query()->with(['firstInnings', 'secondInnings'])->find($match->id);
+
+        if (! $fresh || ! $this->canFinalize($fresh) || $fresh->secondInnings->completion_type !== 'automatic') {
+            return false;
+        }
+
+        $result = $this->calculateResult(
+            $fresh->firstInnings->load('battingTeam.team'),
+            $fresh->secondInnings->load('battingTeam.team'),
+        );
+
+        if ($result === null || $result['result_type'] === 'tied') {
+            return false;
+        }
+
+        return $this->finalizeMatch($fresh);
+    }
+
+    /**
      * Pure calculation from two completed innings — no I/O, so the
      * match show page's result preview and finalizeMatch() itself
      * always agree, by construction, on what the result is. Returns
@@ -259,8 +291,9 @@ class MatchResultService
     }
 
     /**
-     * Reopen a finalized match (frozen S02 rule 17): ADMIN ONLY (see
-     * GameMatchPolicy::reopenResult()). Clears the previously-derived
+     * Reopen a finalized match (frozen S02 rule 17): needs the
+     * `matches.reopen` permission (admin always; the scorer by default, see
+     * GameMatchPolicy::reopenResult()), a reason, and has no time limit. Clears the previously-derived
      * result so the admin can reopen/correct the relevant innings via
      * InningsService::reopenInnings(), re-record or undo deliveries, and
      * then re-run finalizeMatch() (or recordSuperOverResult()) as

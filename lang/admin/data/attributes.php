@@ -13,6 +13,7 @@ return [
     'photo' => 'फ़ोटो',
     'logo' => 'लोगो',
     'short_name' => 'छोटा नाम',
+    'color' => 'रंग',
     'is_active' => 'स्थिति',
     'village' => 'गाँव',
     'address' => 'पता',

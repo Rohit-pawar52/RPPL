@@ -66,9 +66,40 @@
         background: var(--tc, #f59e0b);
     }
     .auc-team {
-        border: 1px solid var(--color-line);
-        border-left: 3px solid var(--tc, #cbd5e1);
-        background: linear-gradient(90deg, color-mix(in srgb, var(--tc, #cbd5e1) 11%, white), white 60%);
+        border: 1px solid color-mix(in srgb, var(--tc, #cbd5e1) 45%, white);
+        background: color-mix(in srgb, var(--tc, #cbd5e1) 6%, white);
+    }
+    /* The franchise-style header of a team card: its colour, with the logo, name and purse on top. */
+    .auc-team-head {
+        @apply relative flex items-center gap-2.5 px-3 py-2 text-white;
+        background: linear-gradient(120deg, var(--tc, #475569), color-mix(in srgb, var(--tc, #475569) 68%, black));
+    }
+    .auc-team-head-light {
+        color: #0f172a;
+        background: linear-gradient(120deg, var(--tc), color-mix(in srgb, var(--tc) 72%, white));
+    }
+    .auc-team-used {
+        @apply absolute inset-x-0 bottom-0 block h-[3px] bg-black/15;
+    }
+    .auc-team-used > span {
+        @apply block h-full bg-white/80 transition-all duration-500;
+    }
+    .auc-lead-on {
+        background: rgb(255 255 255 / 0.95);
+        color: var(--tc, #b45309);
+    }
+    .auc-team-head-light .auc-lead-on {
+        background: #0f172a;
+        color: #fff;
+    }
+    .auc-dot {
+        @apply h-[7px] w-[7px] rounded-full bg-slate-200;
+    }
+    .auc-dot-on {
+        background: var(--tc, #475569);
+    }
+    .auc-dot-need {
+        @apply bg-transparent ring-1 ring-inset ring-amber-400;
     }
     .auc-glow {
         border-color: var(--tc);
