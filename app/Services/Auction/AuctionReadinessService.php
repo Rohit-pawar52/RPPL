@@ -14,7 +14,7 @@ use Illuminate\Support\Collection;
  */
 class AuctionReadinessService
 {
-    public function __construct(private readonly AuctionService $auctions) {}
+    public function __construct(private readonly AuctionService $auctions, private readonly AuctionStateService $states) {}
 
     /**
      * @return array{items: list<array{level: string, title: string, detail: ?string}>, errors: int, warnings: int}
@@ -104,6 +104,14 @@ class AuctionReadinessService
             ? $this->ok(__('Every team has a logo.'))
             : $this->warn(__(':count teams have no logo.', ['count' => $noLogo->count()]), $noLogo->map(fn (array $row) => $row['edition_team']->team->name)->implode(', '));
 
+        $alike = $this->alikeColors($auction);
+        $items[] = $alike === []
+            ? $this->ok(__('Every team has a colour of its own.'))
+            : $this->warn(
+                __(':count pairs of teams have colours that look alike.', ['count' => count($alike)]),
+                implode(', ', $alike).'. '.__("Change a team's colour on its Edit page (Teams) so the room can tell them apart."),
+            );
+
         $items[] = $auction->show_live_bids
             ? $this->ok(__('Live bids are shown on the website.'))
             : $this->warn(__('Live bids are hidden on the website.'), __('Visitors see who is on the block but not the bids. Change it in the rules below if you want them shown.'));
@@ -129,6 +137,32 @@ class AuctionReadinessService
         $more = $missing->count() > 6 ? ' '.__('and :count more', ['count' => $missing->count() - 6]) : '';
 
         return $this->warn(str_replace(':count', (string) $missing->count(), $warnTitle), $detail.' '.$names.$more);
+    }
+
+    /**
+     * Pairs of teams whose colours are hard to tell apart on a screen ("A and B").
+     *
+     * @return list<string>
+     */
+    private function alikeColors(Auction $auction): array
+    {
+        $colors = $this->states->teamColors($auction);
+        $names = array_keys($colors);
+        $rgb = fn (string $hex) => [hexdec(substr($hex, 1, 2)), hexdec(substr($hex, 3, 2)), hexdec(substr($hex, 5, 2))];
+        $pairs = [];
+
+        foreach ($names as $i => $first) {
+            foreach (array_slice($names, $i + 1) as $second) {
+                [$r1, $g1, $b1] = $rgb($colors[$first]);
+                [$r2, $g2, $b2] = $rgb($colors[$second]);
+
+                if (sqrt(($r1 - $r2) ** 2 + ($g1 - $g2) ** 2 + ($b1 - $b2) ** 2) < 60) {
+                    $pairs[] = $first.' & '.$second;
+                }
+            }
+        }
+
+        return $pairs;
     }
 
     /**

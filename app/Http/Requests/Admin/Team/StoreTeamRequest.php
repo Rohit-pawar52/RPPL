@@ -24,6 +24,7 @@ class StoreTeamRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255', 'unique:teams,name'],
             'short_name' => ['nullable', 'string', 'max:20'],
+            'color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'logo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
         ];
     }

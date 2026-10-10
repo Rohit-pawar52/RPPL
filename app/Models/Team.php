@@ -15,6 +15,7 @@ class Team extends Model
         'name',
         'short_name',
         'logo_path',
+        'color',
         'is_active',
     ];
 
