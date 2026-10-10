@@ -194,6 +194,30 @@ class AuctionController extends Controller
     }
 
     /**
+     * Opens a completed auction again (paused, with the unsold players waiting). Typing REOPEN confirms.
+     */
+    public function reopen(Request $request, Edition $edition): RedirectResponse
+    {
+        $auction = $this->auctionOf($edition);
+        $this->authorize('update', $auction);
+
+        $request->validate(['confirm_reopen' => ['required', 'in:REOPEN']], [
+            'confirm_reopen.required' => __('Type REOPEN to confirm.'),
+            'confirm_reopen.in' => __('Type REOPEN to confirm.'),
+        ]);
+
+        try {
+            $result = $this->auctions->reopen($auction);
+        } catch (ValidationException $e) {
+            return $this->failed($edition, $e);
+        }
+
+        return redirect()
+            ->route('admin.auctions.show', $edition)
+            ->with('success', __('The auction was reopened and is paused: :count players are waiting again. Resume it when you are ready.', ['count' => $result['returned']]));
+    }
+
+    /**
      * A spreadsheet (CSV, opens in Excel) of the result, the bids, the activity log or the squads: the auction's
      * story outside the database, also the safety copy.
      */

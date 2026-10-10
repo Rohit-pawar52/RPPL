@@ -105,6 +105,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('auctions/{edition}/resume', [AuctionController::class, 'resume'])->name('auctions.resume');
         Route::post('auctions/{edition}/complete', [AuctionController::class, 'complete'])->name('auctions.complete');
         Route::post('auctions/{edition}/reset', [AuctionController::class, 'reset'])->name('auctions.reset');
+        Route::post('auctions/{edition}/reopen', [AuctionController::class, 'reopen'])->name('auctions.reopen');
         Route::get('auctions/{edition}/export/{what}', [AuctionController::class, 'export'])->whereIn('what', ['results', 'bids', 'events'])->name('auctions.export');
         Route::get('auctions/{edition}/results.pdf', [AuctionController::class, 'resultsPdf'])->name('auctions.results-pdf');
 

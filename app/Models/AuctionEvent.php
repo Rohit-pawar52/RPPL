@@ -54,6 +54,8 @@ class AuctionEvent extends Model
 
     public const RESET = 'reset';
 
+    public const REOPENED = 'reopened';
+
     protected $fillable = [
         'auction_id',
         'auction_lot_id',
@@ -107,6 +109,7 @@ class AuctionEvent extends Model
                 : __('The auction rules were changed.'),
             self::COMPLETED => __('The auction was completed; :count players were left unsold.', ['count' => $this->amount ?? 0]),
             self::RESET => __('The auction was reset for a fresh start.'),
+            self::REOPENED => __('The auction was reopened; :count players came back to waiting.', ['count' => $this->amount ?? 0]),
             default => $this->type,
         };
     }

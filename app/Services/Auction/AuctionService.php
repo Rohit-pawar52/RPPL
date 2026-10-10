@@ -411,6 +411,54 @@ class AuctionService
         });
     }
 
+    /**
+     * Opens a completed auction again, for the day someone pressed Complete too early (or a late player turns up).
+     *
+     * Everything that was decided stays: sold players keep their team and price, nothing is deleted. Completing
+     * turned everyone still waiting into "unsold" (nothing else ever does), so those players go back to waiting.
+     * The auction comes back PAUSED, so nothing can happen by a stray tap until the auctioneer resumes it. The
+     * pool is then brought in line with the registrations and the squads, so a player who was put in a team by
+     * hand in the meantime is not offered again. Refused unless the auction is completed and its season is not.
+     *
+     * @return array{returned: int}
+     */
+    public function reopen(Auction $auction): array
+    {
+        return DB::transaction(function () use ($auction) {
+            $auction = $this->lockAuction($auction);
+
+            if (! $auction->isCompleted()) {
+                $this->fail('auction', __('Only a completed auction can be reopened.'));
+            }
+
+            if (Edition::query()->whereKey($auction->edition_id)->value('status') === 'completed') {
+                $this->fail('auction', __('This season is completed, so its auction cannot be reopened.'));
+            }
+
+            $returned = $auction->lots()
+                ->where('status', AuctionLot::UNSOLD)
+                ->update([
+                    'status' => AuctionLot::PENDING,
+                    'current_bid' => null,
+                    'leading_edition_team_id' => null,
+                    'team_player_id' => null,
+                    'called_at' => null,
+                    'sold_at' => null,
+                    'round' => $auction->round,
+                    'version' => DB::raw('version + 1'),
+                ]);
+
+            $auction->update(['status' => Auction::STATUS_PAUSED, 'completed_at' => null, 'current_lot_id' => null]);
+
+            // Players put in a team by hand since, or whose payment changed, leave / join the waiting players.
+            $this->refreshPool($auction);
+
+            $this->logEvent($auction, AuctionEvent::REOPENED, null, null, $returned);
+
+            return ['returned' => $returned];
+        });
+    }
+
     // ----- Teams ------------------------------------------------------------
 
     /**
