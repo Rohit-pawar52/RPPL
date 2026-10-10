@@ -416,8 +416,12 @@ class LiveMatchTest extends TestCase
             ->assertDontSee('mx-hero-glow', false)
             ->assertDontSee('Match Details');
 
-        // The other tabs keep the full header.
-        $this->get(route('public.matches.scorecard', $match))->assertOk()->assertSee('mx-hero-glow', false);
+        // The Scorecard tab is laid out the same way; Squads and Match Info keep the full header.
+        $this->get(route('public.matches.scorecard', $match))
+            ->assertOk()
+            ->assertSee('id="live-score-card"', false)
+            ->assertDontSee('mx-hero-glow', false);
+        $this->get(route('public.matches.squads', $match))->assertOk()->assertSee('mx-hero-glow', false);
     }
 
     public function test_there_is_no_board_once_the_innings_is_over(): void

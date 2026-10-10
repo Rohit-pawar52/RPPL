@@ -90,6 +90,8 @@ class MatchController extends Controller
         return view('public.matches.scorecard', [
             'match' => $match,
             'inningsScorecards' => $this->scorecards->getMatchScorecard($match),
+            // The small score card on top is the Live tab's one (here without live updates).
+            'liveData' => $this->liveMatch->getLiveMatchData($match),
         ]);
     }
 

@@ -469,14 +469,37 @@
 
     /* ---- Scorecard ---------------------------------------------------- */
     .mx-innings {
-        @apply mt-4 overflow-hidden rounded-xl border border-line bg-white shadow-card;
+        @apply mt-3 overflow-hidden rounded-xl border border-line bg-white shadow-card;
         scroll-margin-top: 8rem;
     }
     .mx-innings-head {
-        @apply flex items-center justify-between gap-3 border-b border-line p-4 sm:px-5;
+        @apply flex items-center justify-between gap-3 border-b border-line bg-slate-50/70 px-3 py-2.5 sm:px-4;
     }
     .mx-innings-note {
         @apply border-b border-line bg-slate-50 px-4 py-2 text-xs text-slate-500 sm:px-5;
+    }
+    /* The innings switcher: one round pill per innings, the one on show filled. */
+    .mx-pills {
+        @apply flex flex-wrap gap-2;
+    }
+    .mx-pill {
+        @apply inline-flex min-h-9 min-w-0 cursor-pointer items-center gap-2 rounded-full bg-white px-3.5 text-[13px] font-semibold text-slate-600 shadow-card ring-1 ring-line transition-colors hover:text-slate-900;
+    }
+    .mx-pill:has(input:checked) {
+        @apply bg-action text-action-fg ring-0;
+    }
+    .mx-pill:has(input:focus-visible) {
+        @apply outline-2 outline-offset-2 outline-brand;
+    }
+    .mx-pills + * {
+        @apply mt-0;
+    }
+    /* Tighter rows inside an innings, so a whole innings needs less scrolling. */
+    .mx-innings .mx-table thead th {
+        @apply py-1.5;
+    }
+    .mx-innings .mx-table tbody td {
+        @apply py-2;
     }
     .mx-scroll {
         @apply overflow-x-auto;

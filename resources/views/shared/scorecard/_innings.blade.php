@@ -32,18 +32,20 @@
 <section id="innings-{{ $innings->innings_number }}" class="mx-innings">
     <header class="mx-innings-head">
         <div class="flex min-w-0 items-center gap-3">
-            <x-mx.team-logo :team="$innings->battingTeam->team" size="md" />
+            <x-mx.team-logo :team="$innings->battingTeam->team" size="sm" />
             <div class="min-w-0">
                 <h3 class="truncate text-[15px] font-semibold tracking-tight text-slate-900">{{ $innings->battingTeam->team->name }}</h3>
                 <p class="mt-0.5 flex items-center gap-2 text-xs text-slate-500">
                     {{ __('ux_public_matches.scorecard.innings_n', ['n' => $innings->innings_number]) }}
-                    <x-public.status-pill :status="$inningsInterrupted ? $match->match_status : $innings->status" />
+                    @if($inningsInterrupted || $innings->status !== 'completed')
+                        <x-public.status-pill :status="$inningsInterrupted ? $match->match_status : $innings->status" />
+                    @endif
                 </p>
             </div>
         </div>
         <p class="shrink-0 text-right">
-            <span class="block text-2xl font-bold leading-none tracking-tight tabular-nums text-slate-900">{{ $innings->total_runs }}/{{ $innings->total_wickets }}</span>
-            <span class="mt-1 block text-xs text-slate-500">({{ $innings->oversDisplay() }} overs)</span>
+            <span class="block text-xl font-bold leading-none tracking-tight tabular-nums text-slate-900">{{ $innings->total_runs }}/{{ $innings->total_wickets }}</span>
+            <span class="mt-0.5 block text-xs text-slate-500">({{ $innings->oversDisplay() }} overs)</span>
         </p>
     </header>
 
