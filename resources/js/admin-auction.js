@@ -14,6 +14,10 @@ import { t } from './i18n';
  * page (they keep typed text); everything else is redrawn.
  */
 const POLL_MS = 4000;
+
+// A tap or a refresh that gets no answer (a weak hall connection) is given up after this long, so the console
+// never stays stuck on "busy" and ignores every later tap.
+const REQUEST_TIMEOUT_MS = 15000;
 const CHIP_KEY = 'rppl.auction.chips';
 const DEFAULT_CHIPS = [5000, 10000, 25000, 50000];
 
@@ -499,13 +503,31 @@ if (dataEl && root) {
         root.classList.add('opacity-70');
 
         try {
-            const response = await axios.post(urls[name], body, { headers: { Accept: 'application/json' } });
+            const response = await axios.post(urls[name], body, { headers: { Accept: 'application/json' }, timeout: REQUEST_TIMEOUT_MS });
             apply(response.data.state);
             notify(response.data.message);
 
             return response.data;
         } catch (error) {
             const data = error.response && error.response.data;
+            const status = error.response && error.response.status;
+
+            // The sign-in or the page's security token has expired (a long idle time, or the host woke up): a
+            // reload gets a fresh one and loses nothing, the auction itself lives on the server.
+            if (status === 419 || status === 401) {
+                notify(t('This page has expired. Reloading…'), 'error');
+                window.setTimeout(() => window.location.reload(), 1500);
+
+                return { ok: false };
+            }
+
+            // No answer in time: the tap may or may not have gone through, so show what the server has now.
+            if (!error.response && (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT')) {
+                notify(t('No reply from the server. Check the screen, then try again.'), 'error');
+                refreshAfterTimeout();
+
+                return { ok: false };
+            }
 
             if (data && data.state) {
                 apply(data.state);
@@ -589,13 +611,18 @@ if (dataEl && root) {
         }
     }
 
+    // After a request timed out: ask for the real state once the console is free again.
+    function refreshAfterTimeout() {
+        window.setTimeout(() => poll(), 800);
+    }
+
     async function poll() {
         if (busy || document.visibilityState === 'hidden') {
             return;
         }
 
         try {
-            const response = await axios.get(urls.state, { headers: { Accept: 'application/json' } });
+            const response = await axios.get(urls.state, { headers: { Accept: 'application/json' }, timeout: REQUEST_TIMEOUT_MS });
             if (!busy) {
                 apply(response.data.state);
             }

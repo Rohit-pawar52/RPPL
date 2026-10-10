@@ -215,6 +215,15 @@ class AuctionStateService
      *
      * @return array<string, mixed>
      */
+    /**
+     * The village the player gave when registering, shown beside the name so two people with the same name can be
+     * told apart (null when none was given).
+     */
+    private function villageOf(PlayerRegistration $registration): ?string
+    {
+        return filled($registration->village) ? trim($registration->village) : null;
+    }
+
     private function publicPerson(PlayerRegistration $registration): array
     {
         return array_diff_key($this->person($registration), ['registration_id' => true]);
@@ -249,6 +258,7 @@ class AuctionStateService
                 'players' => ($squads[$team->id] ?? collect())
                     ->map(fn (TeamPlayer $teamPlayer) => [
                         'name' => $teamPlayer->playerRegistration->player->name,
+                        'village' => $this->villageOf($teamPlayer->playerRegistration),
                         'role' => $teamPlayer->playerRegistration->player->primary_role
                             ? (Player::PRIMARY_ROLE_LABELS[$teamPlayer->playerRegistration->player->primary_role] ?? null)
                             : null,
@@ -279,6 +289,7 @@ class AuctionStateService
             ->map(fn (AuctionLot $lot) => [
                 'key' => $lot->id,
                 'name' => $lot->playerRegistration->player->name,
+                'village' => $this->villageOf($lot->playerRegistration),
                 'role' => $this->roleLabel($lot->playerRegistration->player),
                 'team' => $lot->teamPlayer?->editionTeam->team->name,
                 'amount' => $this->soldAmount($lot),
@@ -389,6 +400,7 @@ class AuctionStateService
                 ->take(5)
                 ->map(fn (AuctionLot $lot) => [
                     'name' => $lot->playerRegistration->player->name,
+                    'village' => $this->villageOf($lot->playerRegistration),
                     'team' => $lot->teamPlayer?->editionTeam->team->name,
                     'amount' => $this->soldAmount($lot),
                 ])
@@ -465,7 +477,7 @@ class AuctionStateService
             'role' => $player->primary_role ? (Player::PRIMARY_ROLE_LABELS[$player->primary_role] ?? $player->primary_role) : null,
             'batting' => $player->batting_style ? ucfirst(str_replace('_', '-', $player->batting_style)) : null,
             'bowling' => $player->bowling_style && $player->bowling_style !== 'none' ? ucfirst(str_replace('_', ' ', $player->bowling_style)) : null,
-            'village' => $registration->village,
+            'village' => $this->villageOf($registration),
         ];
     }
 
@@ -600,7 +612,7 @@ class AuctionStateService
             'lot_id' => $lot->id,
             'number' => $lots->count() - $index,
             'name' => $lot->playerRegistration->player->name,
-            'village' => $lot->playerRegistration->village,
+            'village' => $this->villageOf($lot->playerRegistration),
             'team' => $lot->teamPlayer?->editionTeam->team->name,
             'amount' => $this->soldAmount($lot),
             'bids' => (int) $lot->standing_bids_count,

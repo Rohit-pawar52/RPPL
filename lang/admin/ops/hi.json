@@ -1055,5 +1055,7 @@
     ":count player": ":count खिलाड़ी",
     ":count players": ":count खिलाड़ी",
     ":count row": ":count पंक्ति",
-    ":count rows": ":count पंक्तियाँ"
+    ":count rows": ":count पंक्तियाँ",
+    "This page has expired. Reloading…": "यह पेज पुराना हो गया है। फिर से लोड हो रहा है…",
+    "No reply from the server. Check the screen, then try again.": "सर्वर से जवाब नहीं आया। स्क्रीन देख लें, फिर दोबारा कोशिश करें।"
 }

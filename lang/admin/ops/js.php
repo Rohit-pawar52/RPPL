@@ -87,6 +87,8 @@ return [
     'Nobody is sold yet.',
     'edit',
     'Something went wrong. Check your connection and try again.',
+    'This page has expired. Reloading…',
+    'No reply from the server. Check the screen, then try again.',
     'Over the limit',
     'Allow it anyway?',
     'Override',

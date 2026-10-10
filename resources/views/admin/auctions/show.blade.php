@@ -132,7 +132,7 @@
             </div>
         </section>
 
-        <div class="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
+        <div class="mt-4 grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
             <section class="ops-card">
                 <div class="ops-card-head"><h3 class="ops-title">{{ __('Rules and team purses') }}</h3></div>
                 <div class="ops-card-body">
@@ -140,7 +140,7 @@
                         @csrf
                         @method('PUT')
 
-                        <fieldset @disabled(! $editable)>
+                        <fieldset @disabled(! $editable) class="min-w-0">
                             @include('admin.auctions._settings', ['values' => [
                                 'team_purse' => $auction->team_purse,
                                 'min_bid' => $auction->min_bid,

@@ -134,6 +134,32 @@ class PublicAuctionDetailsTest extends TestCase
         $this->assertSame(16, $state['counts']['sold']);
     }
 
+    public function test_the_village_is_shown_wherever_a_player_is_listed_so_namesakes_can_be_told_apart(): void
+    {
+        $first = $this->paid('Ramesh Patil');
+        $first->update(['village' => 'Shirur']);
+        $second = $this->paid('Ramesh Patil');
+        $second->update(['village' => '  Baramati  ']);
+        $this->paid('No Village')->update(['village' => null]);
+        $auction = $this->liveAuction();
+
+        $this->service->callLot($auction, $auction->lots()->where('player_registration_id', $second->id)->firstOrFail());
+        $state = $this->state();
+        $this->assertSame('Baramati', $state['lot']['village']);
+
+        $lot = $auction->lots()->where('player_registration_id', $first->id)->firstOrFail();
+        $this->service->release($auction, $auction->lots()->where('player_registration_id', $second->id)->firstOrFail(), $auction->lots()->where('player_registration_id', $second->id)->firstOrFail()->version);
+        $this->service->callLot($auction, $lot);
+        $this->service->placeBid($auction, $lot, $this->alpha, $lot->fresh()->version, 500);
+        $this->service->sell($auction, $lot, $lot->fresh()->version);
+
+        $state = $this->state();
+        // The sold list, the team's squad and the name alone when there is no village.
+        $this->assertSame('Shirur', $state['sales'][0]['village']);
+        $this->assertSame('Shirur', collect($state['teams'])->flatMap(fn ($team) => $team['players'])->firstWhere('name', 'Ramesh Patil')['village']);
+        $this->assertNull(collect($state['upcoming'] ?? [])->firstWhere('name', 'No Village')['village'] ?? null);
+    }
+
     public function test_a_price_corrected_on_the_squad_page_is_what_the_website_shows(): void
     {
         $this->paid('Corrected Price');

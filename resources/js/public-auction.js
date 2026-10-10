@@ -376,7 +376,7 @@ if (dataEl && root) {
             const leading = state.lot && state.lot.leading_team === team.name;
             const top = team.players.find((p) => p.amount !== null);
             const squad = team.players.length
-                ? `<details data-squad="${esc(team.name)}" class="mt-2 border-t border-line pt-2" ${openSquads.has(team.name) ? 'open' : ''}><summary class="cursor-pointer text-[11px] font-semibold ${k.muted} hover:text-slate-800">${esc(t.squad)} (${team.players.length})</summary><ul class="mt-1.5 space-y-1 text-[11px] ${k.soft}">${team.players.map((p) => `<li class="flex justify-between gap-2"><span class="truncate">${esc(p.name)}</span><span class="tabular-nums">${p.amount === null ? '—' : pts(p.amount)}</span></li>`).join('')}</ul></details>`
+                ? `<details data-squad="${esc(team.name)}" class="mt-2 border-t border-line pt-2" ${openSquads.has(team.name) ? 'open' : ''}><summary class="cursor-pointer text-[11px] font-semibold ${k.muted} hover:text-slate-800">${esc(t.squad)} (${team.players.length})</summary><ul class="mt-1.5 space-y-1 text-[11px] ${k.soft}">${team.players.map((p) => `<li class="flex justify-between gap-2"><span class="truncate">${esc(p.name)}${p.village ? ` <span class="opacity-60">· ${esc(p.village)}</span>` : ''}</span><span class="tabular-nums">${p.amount === null ? '—' : pts(p.amount)}</span></li>`).join('')}</ul></details>`
                 : '';
 
             return `
@@ -479,7 +479,7 @@ if (dataEl && root) {
         const bidsLabel = hasBids ? (sale.bids === 1 ? t.bids_one : tr('bids_count', { count: sale.bids })) : '';
         const summary = `
             <span class="w-6 shrink-0 text-center text-xs tabular-nums text-slate-400">${number}</span>
-            <span class="min-w-0 flex-1"><span class="block truncate text-[13px] font-semibold text-slate-900">${esc(sale.name)}</span><span class="block truncate text-[11px] text-slate-500">${esc([sale.team, sale.role].filter(Boolean).join(' · '))}</span></span>
+            <span class="min-w-0 flex-1"><span class="block truncate text-[13px] font-semibold text-slate-900">${esc(sale.name)}</span><span class="block truncate text-[11px] text-slate-500">${esc([sale.village, sale.team, sale.role].filter(Boolean).join(' · '))}</span></span>
             <span class="shrink-0 text-right"><span class="block text-sm font-bold tabular-nums text-slate-900">${pts(sale.amount)} <span class="text-[11px] font-normal text-slate-400">${esc(t.pts)}</span></span>${hasBids ? `<span class="block text-[11px] text-slate-500">${esc(bidsLabel)}</span>` : ''}</span>`;
 
         if (!hasBids) {
