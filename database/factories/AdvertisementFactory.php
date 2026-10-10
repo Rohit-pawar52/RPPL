@@ -44,6 +44,11 @@ class AdvertisementFactory extends Factory
         return $this->state(['format' => Advertisement::FORMAT_CARD]);
     }
 
+    public function side(): static
+    {
+        return $this->state(['format' => Advertisement::FORMAT_SIDE]);
+    }
+
     public function mini(): static
     {
         return $this->state(['tier' => Advertisement::TIER_MINI]);

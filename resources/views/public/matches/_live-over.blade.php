@@ -12,11 +12,11 @@
         ->takeWhile(fn ($delivery) => explode('.', (string) $delivery['ball_label'])[0] === $overKey)
         ->reverse()
         ->values();
-    $lastWicket = collect($deliveries)->firstWhere('is_wicket', true);
 @endphp
 
 @if($latest)
-    <p class="mx-over-label">{{ __('ux_public_matches.live.over_n', ['n' => (int) $overKey + 1]) }}</p>
+    <div class="mx-over-row">
+    <p class="mx-over-label">{{ __('matches.live.this_over') }} <span>{{ __('ux_public_matches.live.over_n', ['n' => (int) $overKey + 1]) }}</span></p>
     <div class="mx-over-balls">
         @foreach($thisOver as $delivery)
             @php
@@ -32,18 +32,8 @@
             <span class="mx-ball mx-ball-lg mx-ball-{{ $kind }}">{{ $label }}</span>
         @endforeach
     </div>
-    <ul class="mx-over-facts">
-        <li>
-            <span>{{ __('ux_public_matches.live.last_ball') }}</span>
-            {{ __('matches.centre.bowler_to_striker', ['bowler' => $latest['bowler'], 'striker' => $latest['striker']]) }}
-        </li>
-        @if($lastWicket)
-            <li>
-                <span>{{ __('ux_public_matches.live.last_wicket') }}</span>
-                {{ $lastWicket['dismissed_player'] ?? $lastWicket['striker'] }} ({{ $lastWicket['ball_label'] }})
-            </li>
-        @endif
-    </ul>
+    <p class="mx-over-last"><b>{{ __('ux_public_matches.live.last_ball') }}</b> {{ __('matches.centre.bowler_to_striker', ['bowler' => $latest['bowler'], 'striker' => $latest['striker']]) }}</p>
+    </div>
 @else
     <p class="pub-empty">{{ __('ux_public_matches.live.no_deliveries') }}</p>
 @endif

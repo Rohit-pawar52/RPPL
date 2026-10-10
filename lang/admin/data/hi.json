@@ -660,5 +660,11 @@
     "Searching...": "खोजा जा रहा है...",
     "No place found. Try a different search.": "कोई जगह नहीं मिली। दूसरा नाम लिखकर खोजें।",
     "Found. Click the map to drop the pin on the exact spot.": "जगह मिल गई। सही जगह पर पिन लगाने के लिए नक्शे पर क्लिक करें।",
-    "Search is unavailable right now. You can still click the map or type the coordinates.": "अभी खोज उपलब्ध नहीं है। आप नक्शे पर क्लिक करके या कोऑर्डिनेट लिखकर जगह चुन सकते हैं।"
+    "Search is unavailable right now. You can still click the map or type the coordinates.": "अभी खोज उपलब्ध नहीं है। आप नक्शे पर क्लिक करके या कोऑर्डिनेट लिखकर जगह चुन सकते हैं।",
+    "Team colour": "टीम का रंग",
+    "Colour": "रंग",
+    "Used for this team on the auction page, the big screen and the results. Leave it on Auto to get one from the palette.": "नीलामी पेज, बड़ी स्क्रीन और नतीजों में इस टीम के लिए यही रंग दिखता है। Auto छोड़ेंगे तो पैलेट से अपने आप एक रंग मिलेगा।",
+    "Every team has a colour of its own.": "हर टीम का अपना अलग रंग है।",
+    ":count pairs of teams have colours that look alike.": ":count जोड़ी टीमों के रंग एक जैसे दिखते हैं।",
+    "Change a team's colour on its Edit page (Teams) so the room can tell them apart.": "टीम का रंग उसके Edit पेज (टीमें) पर बदलें, ताकि हॉल में लोग उन्हें अलग पहचान सकें।"
 }

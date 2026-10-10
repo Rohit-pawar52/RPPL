@@ -244,7 +244,7 @@ class TournamentPermissionsTest extends TestCase
 
         // The scorer used to be "admin or scorer" for exactly these and admin-only for the rest.
         $scorerMay = [
-            GameMatch::class => ['viewAny', 'view', 'manageMatchFlow', 'manageInnings', 'abandonMatch', 'score', 'finalizeResult'],
+            GameMatch::class => ['viewAny', 'view', 'manageMatchFlow', 'manageInnings', 'abandonMatch', 'score', 'finalizeResult', 'reopenResult'],
             MatchPlayer::class => ['viewAny', 'create', 'update'],
         ];
 
@@ -408,7 +408,7 @@ class TournamentPermissionsTest extends TestCase
         $this->assertSame('scheduled', $match->fresh()->match_status);
     }
 
-    public function test_the_built_in_scorer_can_still_score_and_finalize_but_not_schedule_matches_manage_teams_or_reopen(): void
+    public function test_the_built_in_scorer_can_score_finalize_and_reopen_but_not_schedule_matches_or_manage_teams(): void
     {
         $scorer = $this->builtIn('scorer');
 
@@ -428,9 +428,10 @@ class TournamentPermissionsTest extends TestCase
         $this->actingAs($scorer)->get(route('admin.matches.create'))->assertForbidden();
         $this->actingAs($scorer)->get(route('admin.teams.index'))->assertForbidden();
         $this->actingAs($scorer)->post(route('admin.teams.store'), ['name' => 'Delhi Capitals'])->assertForbidden();
+        // A wrong result is the scorer's to take back, at once and with no time limit.
         $this->actingAs($scorer)
             ->post(route('admin.matches.reopen', $finished), ['reason' => 'Scoring error found'])
-            ->assertForbidden();
-        $this->assertSame('completed', $finished->fresh()->match_status);
+            ->assertRedirect(route('admin.matches.show', $finished));
+        $this->assertSame('live', $finished->fresh()->match_status);
     }
 }

@@ -133,7 +133,7 @@ class MatchLocalizationTest extends TestCase
 
         $hindi->assertOk();
         $hindi->assertSee('स्कोरकार्ड');
-        $hindi->assertSee('सभी मैच'); // back link, public.common.all_matches
+        $hindi->assertSee('ओवर'); // the score card's overs, matches.common.overs_count
         // shared/scorecard/_innings.blade.php is also the ADMIN scorecard
         // partial and is deliberately not localized — its column headers
         // stay English on the public Hindi page too.

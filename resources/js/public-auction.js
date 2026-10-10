@@ -132,6 +132,19 @@ if (dataEl && root) {
         return tcValue(color) ? `style="--tc:${tcValue(color)}"` : '';
     }
 
+    /** True when a colour is light enough that white lettering on it would be hard to read. */
+    function isLight(color) {
+        const hex = tcValue(color);
+
+        if (!hex) {
+            return false;
+        }
+
+        const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+
+        return (0.299 * r + 0.587 * g + 0.114 * b) > 170;
+    }
+
     const crownIcon = '<svg class="h-3 w-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5L3 7z" /></svg>';
     const shareIcon = '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" /><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4" /></svg>';
     const pinIcon = '<svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.5 7-11.5A7 7 0 0 0 5 9.5C5 14.5 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.5" /></svg>';
@@ -475,13 +488,17 @@ if (dataEl && root) {
 
     function teams() {
         const max = state.auction.max_squad;
-        const chevron = '<svg class="h-3.5 w-3.5 shrink-0 text-slate-400 transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>';
+        const min = Math.min(state.auction.min_squad || 0, max);
+        const chevron = '<svg class="h-4 w-4 shrink-0 opacity-70 transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>';
 
         const rows = state.teams.map((team) => {
             const usedPct = team.purse > 0 ? Math.min(100, Math.round(((team.purse - team.left) / team.purse) * 100)) : 0;
             const leading = state.lot && state.lot.leading_team === team.name;
             const bought = team.players.filter((p) => p.amount !== null);
             const earlier = team.players.filter((p) => p.amount === null);
+
+            // One dot per squad place: bought (the team's colour), still needed to reach the minimum (amber ring), spare.
+            const dots = Array.from({ length: max }, (_, i) => `<span class="auc-dot ${i < team.count ? 'auc-dot-on' : i < min ? 'auc-dot-need' : ''}"></span>`).join('');
 
             // What this auction bought (with the price), then the players who were already in the squad.
             const boughtList = bought.length
@@ -492,23 +509,30 @@ if (dataEl && root) {
                 : '';
 
             return `
-                <details class="group auc-team overflow-hidden rounded-lg shadow-card ${leading ? 'auc-glow' : ''}" ${tc(team.color)} data-squad="${esc(team.name)}" ${openSquads.has(team.name) ? 'open' : ''}>
-                    <summary class="flex cursor-pointer list-none items-center gap-2.5 px-2.5 py-2 [&::-webkit-details-marker]:hidden">
-                        <span class="relative h-7 w-7 shrink-0 overflow-hidden rounded-full bg-white ring-2 ring-[color:var(--tc,#cbd5e1)]"><img src="${esc(team.logo || '')}" alt="" data-fallback="image" class="h-full w-full object-cover" /></span>
-                        <span class="min-w-0 flex-1">
-                            <span class="flex items-center justify-between gap-2"><span class="flex min-w-0 items-center gap-1.5"><span class="truncate text-[12.5px] font-bold ${k.title}" title="${esc(team.name)}">${esc(team.name)}</span>${leading ? `<span class="auc-lead" title="${esc(t.current_bid)}">${crownIcon}</span>` : ''}</span><span class="shrink-0 text-[13px] font-extrabold tabular-nums ${k.title}">${pts(team.left)}</span></span>
-                            <span class="mt-1.5 flex items-center gap-2"><span class="block h-1.5 flex-1 overflow-hidden rounded-full bg-black/5" aria-hidden="true"><span class="block h-full rounded-full transition-all duration-500" style="width: ${Math.max(usedPct, usedPct > 0 ? 4 : 0)}%; background: var(--tc, var(--rppl-primary))"></span></span><span class="shrink-0 text-[10px] font-bold tabular-nums ${team.still_needed > 0 ? 'text-amber-600' : k.muted}" title="${esc(tr('players_count', { count: team.count, max }))}">${team.count}/${max}</span></span>
-                        </span>
-                        ${chevron}
+                <details class="group auc-team overflow-hidden rounded-xl shadow-card ${leading ? 'auc-glow' : ''}" ${tc(team.color)} data-squad="${esc(team.name)}" ${openSquads.has(team.name) ? 'open' : ''}>
+                    <summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                        <div class="auc-team-head ${isLight(team.color) ? 'auc-team-head-light' : ''}">
+                            <span class="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-white ring-2 ring-white/70"><img src="${esc(team.logo || '')}" alt="" data-fallback="image" class="h-full w-full object-cover" /></span>
+                            <span class="min-w-0 flex-1">
+                                <span class="flex items-center gap-1.5"><span class="truncate text-[13px] font-bold leading-tight" title="${esc(team.name)}">${esc(team.name)}</span>${leading ? `<span class="auc-lead auc-lead-on" title="${esc(t.current_bid)}">${crownIcon}</span>` : ''}</span>
+                                <span class="block text-[10px] font-medium leading-tight opacity-80">${esc(tr('players_count', { count: team.count, max }))}</span>
+                            </span>
+                            <span class="shrink-0 text-right leading-tight"><span class="block text-[15px] font-extrabold tabular-nums">${pts(team.left)}</span><span class="block text-[9px] font-semibold uppercase tracking-wide opacity-75">${esc(t.left)}</span></span>
+                            ${chevron}
+                            <span class="auc-team-used" aria-hidden="true"><span style="width: ${Math.max(usedPct, usedPct > 0 ? 3 : 0)}%"></span></span>
+                        </div>
+                        <div class="flex items-center gap-2 px-3 py-1.5">
+                            <span class="flex flex-1 flex-wrap gap-[3px]" aria-hidden="true">${dots}</span>
+                            ${team.still_needed > 0 ? `<span class="shrink-0 text-[10px] font-semibold text-amber-600">${esc(tr('needs_more', { count: team.still_needed }))}</span>` : ''}
+                        </div>
                     </summary>
-                    <div class="border-t border-black/5 bg-white/80 px-2.5 py-2 text-[10.5px] ${k.soft}">
+                    <div class="border-t border-black/5 bg-white/80 px-3 py-2 text-[10.5px] ${k.soft}">
                         <div class="flex flex-wrap gap-1">${[['batter', 'Bat'], ['bowler', 'Bowl'], ['all_rounder', 'AR'], ['wicket_keeper', 'WK']].map(([role]) => {
                             const label = (t.roles_short || {})[role] || role;
                             const n = (team.roles && team.roles[role]) || 0;
 
                             return `<span class="rounded-full px-2 py-0.5 text-[10px] font-semibold ${n ? 'bg-slate-100 text-slate-700' : 'bg-amber-50 text-amber-700'}">${esc(label)} <b class="tabular-nums">${n}</b></span>`;
-                        }).join('')}</div>
-                        <p class="mt-1.5 ${k.muted}">${team.still_needed > 0 ? `<span class="font-semibold text-amber-600">${esc(tr('needs_more', { count: team.still_needed }))}</span> · ` : ''}${esc(t.spent)} <b class="tabular-nums ${k.title}">${pts(team.spent)}</b></p>
+                        }).join('')}<span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">${esc(t.spent)} <b class="tabular-nums">${pts(team.spent)}</b></span></div>
                         <div class="mt-1.5 max-h-56 overflow-y-auto pr-0.5">${boughtList}${earlierList}</div>
                     </div>
                 </details>`;
@@ -517,7 +541,7 @@ if (dataEl && root) {
         return `
             <section aria-label="${esc(t.teams)}" class="order-2 lg:order-none lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:sticky lg:top-20">
                 <h2 class="mb-1.5 flex items-baseline justify-between text-sm font-bold tracking-tight ${k.title}"><span>${esc(t.teams)}</span><span class="text-[10px] font-medium ${k.muted}">${esc(t.left)}</span></h2>
-                <div class="space-y-1.5">${rows.join('')}</div>
+                <div class="space-y-2">${rows.join('')}</div>
             </section>`;
     }
 

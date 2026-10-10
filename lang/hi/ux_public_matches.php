@@ -20,6 +20,7 @@ return [
 
     'match' => [
         'batting' => 'बल्लेबाज़ी',
+        'yet_to_bat' => 'अभी बल्लेबाज़ी बाकी',
         'share' => 'यह मैच शेयर करें',
         'link_copied' => 'लिंक कॉपी हो गया',
         'starts_in' => 'शुरू होने में',
@@ -53,6 +54,22 @@ return [
         'last_ball' => 'आख़िरी गेंद',
         'last_wicket' => 'आख़िरी विकेट',
         'no_deliveries' => 'अभी कोई गेंद दर्ज नहीं हुई।',
+        'batter' => 'बल्लेबाज़',
+        'bowler' => 'गेंदबाज़',
+        'col_runs' => 'R',
+        'col_balls' => 'B',
+        'col_fours' => '4s',
+        'col_sixes' => '6s',
+        'col_sr' => 'SR',
+        'col_overs' => 'O',
+        'col_conceded' => 'R',
+        'col_wickets' => 'W',
+        'col_eco' => 'Eco',
+        'partnership' => 'साझेदारी',
+        'last_wkt' => 'आख़िरी विकेट',
+        'last_wkt_at' => ':runs (:balls) · :over ओवर में :score',
+        'on_strike' => 'स्ट्राइक पर',
+        'sponsored' => 'प्रायोजित',
     ],
 
     'scorecard' => [

@@ -73,6 +73,7 @@ class MatchController extends Controller
 
         return view('public.matches.show', [
             'match' => $match,
+            'liveData' => $this->liveMatch->getLiveMatchData($match),
         ]);
     }
 
@@ -90,6 +91,8 @@ class MatchController extends Controller
         return view('public.matches.scorecard', [
             'match' => $match,
             'inningsScorecards' => $this->scorecards->getMatchScorecard($match),
+            // The small score card on top is the Live tab's one (here without live updates).
+            'liveData' => $this->liveMatch->getLiveMatchData($match),
         ]);
     }
 
@@ -140,6 +143,7 @@ class MatchController extends Controller
 
         return view('public.matches.squads', [
             'match' => $match,
+            'liveData' => $this->liveMatch->getLiveMatchData($match),
             'teamAPlayers' => $selected->get($match->edition_team_a_id) ?? collect(),
             'teamBPlayers' => $selected->get($match->edition_team_b_id) ?? collect(),
         ]);

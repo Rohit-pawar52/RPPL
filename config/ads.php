@@ -22,6 +22,12 @@ return [
     'banner_hidden_seconds' => (int) env('ADS_BANNER_HIDDEN_SECONDS', 0),
 
     /*
+     * The side boxes on the live match page rotate through every live Side box sponsor: each one stays this many
+     * seconds, then the next takes its place. 0 keeps the first one fixed.
+     */
+    'side_rotate_seconds' => (int) env('ADS_SIDE_ROTATE_SECONDS', 12),
+
+    /*
      * The sponsor pop-up on the player auction page: it opens by itself
      * `popup_first_seconds` after the page opens, stays for
      * `popup_visible_seconds`, then comes back every `popup_interval_seconds`

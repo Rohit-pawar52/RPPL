@@ -163,13 +163,13 @@ class EndToEndTournamentFlowTest extends TestCase
         $this->assertSame(12, $secondInnings->total_runs);
         $this->assertLessThan(6, $secondInnings->legal_balls, 'the chase must finish mid-over, proving automatic completion fired on the target being reached rather than on overs running out');
 
-        // Automatic innings completion must never finalize the match itself.
-        $this->assertSame('live', $match->fresh()->match_status);
-
-        // ----- Finalize -----
-        $this->actingAs($admin)->post(route('admin.matches.finalize', $match))->assertRedirect();
-
+        // The ball that settles the chase finalizes the match by itself (the Finalize button stays for the cases that
+        // need a person: a tie, or an innings ended by hand).
         $match = $match->fresh();
+        $this->assertSame('completed', $match->match_status);
+        $this->actingAs($admin)->post(route('admin.matches.finalize', $match))->assertRedirect(); // too late: refused, nothing changes
+        $this->assertSame($match->match_result, $match->fresh()->match_result);
+
         $this->assertSame('completed', $match->match_status);
         $this->assertSame($teamB->id, $match->winner_team_id);
         $this->assertSame('won', $match->result_type);

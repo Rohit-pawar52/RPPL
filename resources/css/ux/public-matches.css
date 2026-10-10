@@ -41,7 +41,7 @@
         @apply bg-green-500/30 text-green-200;
     }
     .mx-hero-context {
-        @apply mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400;
+        @apply mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10.5px] font-semibold uppercase tracking-wider text-slate-400;
     }
     .mx-hero-context > span + span::before {
         content: '\00b7';
@@ -54,10 +54,10 @@
         @apply items-center gap-x-3;
     }
     .mx-team-name {
-        @apply line-clamp-2 text-base font-semibold leading-tight text-white sm:text-lg;
+        @apply line-clamp-2 text-[15px] font-semibold leading-tight text-white sm:text-base;
     }
     .mx-team-meta {
-        @apply mt-1 flex min-h-5 items-center gap-2 text-xs text-slate-400;
+        @apply mt-0.5 flex min-h-4 items-center gap-2 text-xs text-slate-400;
     }
     .mx-batting-tag {
         @apply rounded-full bg-green-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-300;
@@ -66,10 +66,10 @@
         @apply text-right;
     }
     .mx-score {
-        @apply text-3xl font-bold leading-none tracking-tight tabular-nums text-white sm:text-4xl;
+        @apply text-2xl font-bold leading-none tracking-tight tabular-nums text-white sm:text-3xl;
     }
     .mx-overs {
-        @apply mt-1 text-xs tabular-nums text-slate-400;
+        @apply mt-0.5 text-xs tabular-nums text-slate-400;
     }
     .mx-crr {
         @apply mt-0.5 text-[11px] font-semibold tabular-nums text-green-300;
@@ -96,7 +96,7 @@
     }
 
     .mx-result {
-        @apply rounded-lg bg-white/10 px-3 py-2 text-center text-sm font-semibold text-white;
+        @apply rounded-lg bg-white/10 px-3 py-1.5 text-center text-[13px] font-semibold text-white;
     }
     .mx-hero-meta {
         @apply flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-slate-300;
@@ -144,7 +144,7 @@
         }
         .mx-vs::before,
         .mx-vs::after {
-            @apply h-8 w-px flex-none;
+            @apply h-4 w-px flex-none;
         }
         .mx-result {
             @apply text-left;
@@ -199,6 +199,10 @@
     .mx-facts {
         @apply space-y-3.5;
     }
+    /* In the wide column of the Match Info tab the facts sit two to a row. */
+    .mx-facts-wide {
+        @apply grid gap-x-6 gap-y-3.5 space-y-0 sm:grid-cols-2;
+    }
     .mx-fact {
         @apply flex items-start gap-3;
     }
@@ -232,7 +236,7 @@
         @apply grid size-7 min-w-7 shrink-0 place-items-center rounded-full bg-slate-100 px-1.5 text-[11px] font-bold tabular-nums text-slate-600;
     }
     .mx-ball-lg {
-        @apply size-10 min-w-10 text-sm;
+        @apply size-8 min-w-8 text-[13px];
     }
     .mx-ball-four {
         @apply bg-indigo-600 text-white;
@@ -246,17 +250,193 @@
     .mx-ball-extra {
         @apply bg-amber-100 text-amber-800;
     }
+    /* ---- Batting and bowling right now (Live tab) ---- */
+    .mx-lb {
+        @apply w-full table-fixed border-collapse text-[12.5px] tabular-nums sm:text-[13px];
+    }
+    .mx-lb th {
+        @apply bg-slate-100 px-2 py-1.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500;
+    }
+    .mx-lb th:first-child,
+    .mx-lb td:first-child {
+        @apply w-[40%] pl-3 text-left sm:w-[44%] sm:pl-4;
+    }
+    .mx-lb td {
+        @apply border-b border-line px-1.5 py-1.5 text-right text-slate-700 sm:px-2;
+    }
+    .mx-lb-name {
+        @apply truncate font-semibold text-slate-900;
+    }
+    .mx-lb-strong {
+        @apply font-bold text-slate-900;
+    }
+    .mx-lb-star {
+        @apply ml-0.5 font-bold text-brand;
+    }
+    .mx-lb tr.is-strike .mx-lb-name {
+        @apply text-brand;
+    }
+    .mx-lb-empty {
+        @apply py-3 text-center text-slate-400;
+    }
+    /* Partnership | last wicket on one line (wraps on a narrow phone, the bar goes with it). */
+    .mx-lb-facts {
+        @apply flex flex-wrap items-baseline gap-y-0.5 px-3 py-2 text-[13px] max-sm:flex-col max-sm:items-start sm:px-4;
+    }
+    .mx-lb-facts > div {
+        @apply flex min-w-0 flex-wrap gap-x-1.5;
+    }
+    .mx-lb-facts > div + div::before {
+        content: '|';
+        @apply mx-2.5 text-slate-300 max-sm:hidden;
+    }
+    .mx-lb-facts dt {
+        @apply text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+    .mx-lb-facts dd {
+        @apply min-w-0 text-slate-700;
+    }
+
+    /* ---- Compact score card of the Live tab ---- */
+    .mx-lsc {
+        @apply space-y-1.5 px-3 py-2.5 sm:px-3.5;
+    }
+    .mx-lsc.mx-hero-live {
+        @apply ring-1 ring-green-500/30;
+    }
+    .mx-lsc-top {
+        @apply flex items-center gap-2.5;
+    }
+    .mx-lsc-context {
+        @apply flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+    }
+    .mx-lsc-context > span + span::before {
+        content: '\00b7';
+        @apply mr-1.5 text-slate-300;
+    }
+    .mx-lsc-share {
+        @apply grid size-7 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-800;
+    }
+    .mx-lsc-share {
+        @apply relative;
+    }
+    .mx-lsc-share.is-done {
+        @apply bg-green-100 text-green-700;
+    }
+    /* "Link copied" shows for a moment under the button. */
+    .mx-lsc-share.is-done::after {
+        content: attr(title);
+        @apply pointer-events-none absolute right-0 top-full z-10 mt-1.5 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white shadow-raised;
+    }
+    /* Two teams side by side on a tablet / desktop (name above its score), one line each on a phone. */
+    .mx-lsc-teams {
+        @apply grid gap-y-1.5 sm:grid-cols-2 sm:gap-x-4;
+    }
+    .mx-lsc-team {
+        @apply grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2.5 sm:grid-cols-[auto_minmax(0,1fr)];
+    }
+    .mx-lsc-team > .mx-logo {
+        @apply col-start-1 row-start-1 sm:row-span-2;
+    }
+    .mx-lsc-name {
+        @apply col-start-2 row-start-1 flex min-w-0 items-center gap-2 text-[15px] font-semibold leading-tight text-slate-900;
+    }
+    .mx-lsc-score,
+    .mx-lsc-yet {
+        @apply col-start-3 row-start-1 sm:col-start-2 sm:row-start-2;
+    }
+    .mx-lsc-yet {
+        @apply text-xs text-slate-400;
+    }
+    .mx-lsc .mx-batting-tag {
+        @apply shrink-0 bg-green-100 text-green-700 max-sm:hidden;
+    }
+    /* On a phone the word is dropped for a green dot, to leave room for the name. */
+    .mx-lsc-team[data-batting] .mx-lsc-name::before {
+        content: '';
+        @apply size-2 shrink-0 rounded-full bg-green-500 sm:hidden;
+    }
+    .mx-lsc-score {
+        @apply grid shrink-0 grid-cols-[auto_auto] items-baseline justify-end gap-x-2 text-right sm:flex sm:flex-wrap sm:justify-start sm:text-left;
+    }
+    .mx-lsc-runs {
+        @apply text-xl font-bold leading-none tabular-nums text-slate-900;
+    }
+    .mx-lsc-overs {
+        @apply text-xs tabular-nums text-slate-500;
+    }
+    .mx-lsc .mx-crr {
+        @apply text-green-700 max-sm:col-span-2;
+    }
+    .mx-lsc-team[data-batting] .mx-lsc-runs {
+        @apply text-brand;
+    }
+    .mx-lsc-team[data-outcome='won'] .mx-lsc-name::after {
+        content: '\2713';
+        @apply text-sm text-green-600;
+    }
+    .mx-lsc-result {
+        @apply rounded-lg bg-green-50 px-3 py-1 text-[13px] font-semibold text-green-800;
+    }
+    /* The chase: the sentence and its four numbers share a line on a tablet / desktop, the bar runs under both. */
+    .mx-lsc .mx-chase {
+        @apply grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-lg bg-green-50 px-3 py-1.5;
+    }
+    .mx-lsc .mx-chase-headline {
+        @apply col-span-2 sm:col-span-1;
+    }
+    .mx-lsc .mx-chase-grid {
+        @apply col-span-2 row-start-2 sm:col-span-1 sm:col-start-2 sm:row-start-1;
+    }
+    .mx-lsc .mx-chase-bar {
+        @apply col-span-2 row-start-3 sm:row-start-2;
+    }
+    .mx-lsc .mx-chase-headline {
+        @apply text-[13px] text-green-800;
+    }
+    .mx-lsc .mx-chase-bar {
+        @apply mt-0 h-1 bg-green-200;
+    }
+    .mx-lsc .mx-chase-bar > span {
+        @apply bg-green-600;
+    }
+    .mx-lsc .mx-chase-grid {
+        @apply mt-0 flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-left sm:justify-end;
+    }
+    .mx-lsc .mx-chase-grid > div {
+        @apply flex items-baseline gap-1 bg-transparent p-0 ring-0;
+    }
+    .mx-lsc .mx-chase-grid dt {
+        @apply text-[10px] text-slate-500;
+    }
+    .mx-lsc .mx-chase-grid dd {
+        @apply mt-0 text-[13px] text-slate-900;
+    }
+
     .mx-over-label {
         @apply text-[11px] font-semibold uppercase tracking-wider text-slate-400;
     }
+    .mx-over-row {
+        @apply flex flex-wrap items-center gap-x-3 gap-y-1.5;
+    }
     .mx-over-balls {
-        @apply mt-2 flex flex-wrap gap-2;
+        @apply flex flex-wrap gap-1.5;
     }
-    .mx-over-facts {
-        @apply mt-4 space-y-1.5 border-t border-line pt-3 text-[13px] text-slate-700;
+    .mx-over-label > span {
+        @apply ml-1 font-medium normal-case tracking-normal text-slate-400;
     }
-    .mx-over-facts li > span {
-        @apply mr-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400;
+    /* The over in progress sits under the board, in the same card: label, balls, and the last ball at the right. */
+    .mx-over-box {
+        @apply border-t border-line bg-slate-50/60 px-3 py-2 sm:px-4;
+    }
+    .mx-lb-wrap.hidden + .mx-over-box {
+        @apply border-t-0;
+    }
+    .mx-over-last {
+        @apply min-w-0 basis-full text-[12.5px] leading-snug text-slate-700 sm:basis-auto sm:flex-1 sm:text-right;
+    }
+    .mx-over-last b {
+        @apply mr-1 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400;
     }
     .mx-feed-row {
         @apply flex items-start gap-3 border-b border-line px-4 py-3 text-[13px] last:border-b-0 sm:px-5;
@@ -293,14 +473,37 @@
 
     /* ---- Scorecard ---------------------------------------------------- */
     .mx-innings {
-        @apply mt-4 overflow-hidden rounded-xl border border-line bg-white shadow-card;
+        @apply mt-3 overflow-hidden rounded-xl border border-line bg-white shadow-card;
         scroll-margin-top: 8rem;
     }
     .mx-innings-head {
-        @apply flex items-center justify-between gap-3 border-b border-line p-4 sm:px-5;
+        @apply flex items-center justify-between gap-3 border-b border-line bg-slate-50/70 px-3 py-2.5 sm:px-4;
     }
     .mx-innings-note {
         @apply border-b border-line bg-slate-50 px-4 py-2 text-xs text-slate-500 sm:px-5;
+    }
+    /* The innings switcher: one round pill per innings, the one on show filled. */
+    .mx-pills {
+        @apply flex flex-wrap gap-2;
+    }
+    .mx-pill {
+        @apply inline-flex min-h-9 min-w-0 cursor-pointer items-center gap-2 rounded-full bg-white px-3.5 text-[13px] font-semibold text-slate-600 shadow-card ring-1 ring-line transition-colors hover:text-slate-900;
+    }
+    .mx-pill:has(input:checked) {
+        @apply bg-action text-action-fg ring-0;
+    }
+    .mx-pill:has(input:focus-visible) {
+        @apply outline-2 outline-offset-2 outline-brand;
+    }
+    .mx-pills + * {
+        @apply mt-0;
+    }
+    /* Tighter rows inside an innings, so a whole innings needs less scrolling. */
+    .mx-innings .mx-table thead th {
+        @apply py-1.5;
+    }
+    .mx-innings .mx-table tbody td {
+        @apply py-2;
     }
     .mx-scroll {
         @apply overflow-x-auto;

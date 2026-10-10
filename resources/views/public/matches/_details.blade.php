@@ -1,6 +1,6 @@
-{{-- Match Details card - existing match fields only. Expects $match. The toss sits in the score header. --}}
+{{-- Match Details card - existing match fields only. Expects $match (tossWinner.team loaded when there is a toss). --}}
 <x-public.card :title="__('matches.info.details')">
-    <dl class="mx-facts">
+    <dl @class(['mx-facts', 'mx-facts-wide' => $wide ?? false])>
         <div class="mx-fact">
             <span class="mx-fact-icon"><x-icon name="trophy" class="size-4" /></span>
             <div class="min-w-0">
@@ -33,6 +33,15 @@
                 <dd>{{ display_datetime($match->scheduled_at, 'd M Y, h:i A') }}</dd>
             </div>
         </div>
+        @if($match->tossWinner)
+            <div class="mx-fact">
+                <span class="mx-fact-icon"><x-icon name="trophy" class="size-4" /></span>
+                <div class="min-w-0">
+                    <dt>{{ __('matches.info.toss') }}</dt>
+                    <dd>{{ __('matches.info.toss_result', ['team' => $match->tossWinner->team->name, 'decision' => __('matches.info.toss_decision.'.$match->toss_decision)]) }}</dd>
+                </div>
+            </div>
+        @endif
         <div class="mx-fact">
             <span class="mx-fact-icon"><x-icon name="map-pin" class="size-4" /></span>
             <div class="min-w-0">

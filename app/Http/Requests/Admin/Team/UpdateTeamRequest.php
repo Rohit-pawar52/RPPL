@@ -30,6 +30,7 @@ class UpdateTeamRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255', Rule::unique('teams', 'name')->ignore($team->id)],
             'short_name' => ['nullable', 'string', 'max:20'],
+            'color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'logo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
             // Submitted via a <select> (values "1"/"0"), not a checkbox —
             // an unchecked checkbox simply omits the field from the

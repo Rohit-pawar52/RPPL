@@ -36,7 +36,7 @@ class PermissionsFoundationTest extends TestCase
         $scorer = Role::create(['name' => 'Scorer', 'slug' => 'scorer']);
 
         $this->assertEqualsCanonicalizing(
-            ['panel.access', 'dashboard.tournament', 'matches.view', 'matches.run', 'scoring.score', 'matches.finalize'],
+            ['panel.access', 'dashboard.tournament', 'matches.view', 'matches.run', 'scoring.score', 'matches.finalize', 'matches.reopen'],
             $scorer->permissionKeys()
         );
 

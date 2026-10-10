@@ -254,22 +254,44 @@ class AuctionStateService
      */
     private function colorOf(Auction $auction, ?string $teamName): ?string
     {
-        if ($teamName === null) {
-            return null;
-        }
+        return $teamName === null ? null : ($this->teamColors($auction)[$teamName] ?? null);
+    }
 
+    /**
+     * The colour of every team of this auction, by team name: the one the admin chose for the team, otherwise the next
+     * colour of the palette that no team has chosen (so an automatic colour never copies a chosen one).
+     *
+     * @return array<string, string>
+     */
+    public function teamColors(Auction $auction): array
+    {
         if (! isset($this->teamColorCache[$auction->id])) {
-            $this->teamColorCache[$auction->id] = EditionTeam::query()
+            $teams = EditionTeam::query()
                 ->where('edition_id', $auction->edition_id)
                 ->with('team')
                 ->orderBy('id')
-                ->get()
-                ->values()
-                ->mapWithKeys(fn (EditionTeam $team, int $index) => [$team->team->name => self::TEAM_COLORS[$index % count(self::TEAM_COLORS)]])
-                ->all();
+                ->get();
+
+            $chosen = $teams->map(fn (EditionTeam $team) => $this->validColor($team->team->color))->filter()->values()->all();
+            $free = array_values(array_filter(self::TEAM_COLORS, fn (string $color) => ! in_array($color, $chosen, true)));
+            $pool = $free !== [] ? $free : self::TEAM_COLORS;
+
+            $colors = [];
+            $next = 0;
+
+            foreach ($teams as $team) {
+                $colors[$team->team->name] = $this->validColor($team->team->color) ?? $pool[$next++ % count($pool)];
+            }
+
+            $this->teamColorCache[$auction->id] = $colors;
         }
 
-        return $this->teamColorCache[$auction->id][$teamName] ?? null;
+        return $this->teamColorCache[$auction->id];
+    }
+
+    private function validColor(?string $color): ?string
+    {
+        return $color !== null && preg_match('/^#[0-9a-f]{6}$/i', $color) === 1 ? strtolower($color) : null;
     }
 
     /**

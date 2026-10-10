@@ -52,12 +52,15 @@ class Advertisement extends Model
 
     public const FORMAT_CARD = 'card';
 
+    public const FORMAT_SIDE = 'side';
+
     /**
      * Normal sponsors only: the spot they show in.
      */
     public const FORMATS = [
         self::FORMAT_BANNER => 'Banner (above the season summary)',
         self::FORMAT_CARD => 'Card (in the match row)',
+        self::FORMAT_SIDE => 'Side box (live match page)',
     ];
 
     /**
@@ -96,6 +99,13 @@ class Advertisement extends Model
             'size' => '1040 × 400 px',
             'ratio' => '2.6 : 1',
             'note' => 'Only the picture area is this shape; the title and "Sponsored" label sit below it.',
+        ],
+        'normal-side' => [
+            'label' => 'Normal sponsor — side box',
+            'where' => 'A box on the right of the live match page (below the score on a phone). Every live Side box ad of the season takes turns in it, a new one every few seconds while people watch the match, and a second box shows the next ad in line.',
+            'size' => '600 × 500 px',
+            'ratio' => '6 : 5',
+            'note' => 'A picture of another shape keeps its proportions and the sides are filled with a blurred copy of it. Keep the logo and the offer in the middle. Images and short muted clips both work.',
         ],
         'mini' => [
             'label' => 'Mini sponsor — logo',
@@ -179,7 +189,11 @@ class Advertisement extends Model
             self::TIER_MAIN => 'main',
             self::TIER_AUCTION => 'auction',
             self::TIER_MINI => 'mini',
-            default => $this->format === self::FORMAT_CARD ? 'normal-card' : 'normal-banner',
+            default => match ($this->format) {
+                self::FORMAT_CARD => 'normal-card',
+                self::FORMAT_SIDE => 'normal-side',
+                default => 'normal-banner',
+            },
         };
     }
 
@@ -190,12 +204,12 @@ class Advertisement extends Model
     }
 
     /**
-     * Normal sponsors: 'banner' unless the admin chose 'card' (an empty
-     * value is a banner — see the migration).
+     * Normal sponsors: 'banner' unless the admin chose 'card' or 'side' (an
+     * empty value is a banner — see the migration).
      */
     public function effectiveFormat(): string
     {
-        return $this->format === self::FORMAT_CARD ? self::FORMAT_CARD : self::FORMAT_BANNER;
+        return in_array($this->format, [self::FORMAT_CARD, self::FORMAT_SIDE], true) ? $this->format : self::FORMAT_BANNER;
     }
 
     public function tierLabel(): string

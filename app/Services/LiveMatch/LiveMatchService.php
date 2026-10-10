@@ -5,6 +5,9 @@ namespace App\Services\LiveMatch;
 use App\Models\Delivery;
 use App\Models\GameMatch;
 use App\Models\Innings;
+use App\Models\MatchPlayer;
+use App\Services\Scoring\DeliveryService;
+use App\Services\Scoring\ScorecardService;
 use Illuminate\Support\Collection;
 
 /**
@@ -22,6 +25,11 @@ use Illuminate\Support\Collection;
 class LiveMatchService
 {
     private const RECENT_DELIVERIES_LIMIT = 30;
+
+    public function __construct(
+        private readonly DeliveryService $deliveries,
+        private readonly ScorecardService $scorecards,
+    ) {}
 
     /**
      * Whether the Live Match Center is available at all for this match.
@@ -47,7 +55,7 @@ class LiveMatchService
     }
 
     /**
-     * @return array{match_status: string, match_result: string|null, should_poll: bool, innings: list<array<string, mixed>>, recent_deliveries: list<array<string, mixed>>, chase: array<string, mixed>|null}
+     * @return array{match_status: string, match_result: string|null, should_poll: bool, innings: list<array<string, mixed>>, recent_deliveries: list<array<string, mixed>>, chase: array<string, mixed>|null, board: array<string, mixed>|null}
      */
     public function getLiveMatchData(GameMatch $match): array
     {
@@ -65,6 +73,132 @@ class LiveMatchService
             'innings' => $innings->map(fn (Innings $i) => $this->formatInnings($i))->all(),
             'recent_deliveries' => $primaryInnings ? $this->recentDeliveries($primaryInnings) : [],
             'chase' => $this->chaseInfo($match, $innings),
+            'board' => $primaryInnings ? $this->board($primaryInnings) : null,
+        ];
+    }
+
+    /**
+     * Who is batting and bowling right now, as a live score page shows it: the two batters at the crease (the one on
+     * strike first) with runs, balls, fours, sixes and strike rate, the bowler of the over in progress and the one
+     * before with their figures, the current partnership and the last wicket. Only while the innings is live, and only
+     * ever read from the same scorecard engine the Scorecard tab uses, never calculated a second way.
+     *
+     * @return array{batters: list<array<string, mixed>>, bowlers: list<array<string, mixed>>, partnership: array{runs: int, balls: int}, last_wicket: array<string, mixed>|null}|null
+     */
+    private function board(Innings $innings): ?array
+    {
+        if ($innings->status !== 'live') {
+            return null;
+        }
+
+        $state = $this->deliveries->expectedBattingState($innings);
+        $card = $this->scorecards->getInningsScorecard($innings);
+
+        $batting = collect($card['battingRows'])->keyBy(fn (array $row) => $row['matchPlayer']->id);
+        $bowling = collect($card['bowlingRows'])->keyBy(fn (array $row) => $row['matchPlayer']->id);
+
+        $batters = [];
+
+        foreach ([[$state['striker_id'] ?? null, true], [$state['non_striker_id'] ?? null, false]] as [$id, $onStrike]) {
+            if (! $id) {
+                continue;
+            }
+
+            $row = $batting->get((int) $id);
+            $matchPlayer = $row['matchPlayer'] ?? MatchPlayer::with('teamPlayer.playerRegistration.player')->find($id);
+
+            $batters[] = [
+                'name' => $matchPlayer?->teamPlayer->playerRegistration->player->name ?? '—',
+                'runs' => $row['runs'] ?? 0,
+                'balls' => $row['balls'] ?? 0,
+                'fours' => $row['fours'] ?? 0,
+                'sixes' => $row['sixes'] ?? 0,
+                'strike_rate' => $row['strikeRate'] ?? 0.0,
+                'on_strike' => $onStrike,
+            ];
+        }
+
+        // The bowler of the over in progress, then the one before: the two latest different bowlers.
+        $recentBowlerIds = Delivery::query()
+            ->where('innings_id', $innings->id)
+            ->orderByDesc('delivery_sequence')
+            ->limit(self::RECENT_DELIVERIES_LIMIT)
+            ->pluck('bowler_match_player_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->take(2)
+            ->values();
+
+        $currentBowlerId = ! ($state['awaiting_new_over_bowler'] ?? false) ? (int) ($state['bowler_id'] ?? 0) : 0;
+
+        $bowlers = $recentBowlerIds
+            ->map(function (int $id) use ($bowling, $currentBowlerId) {
+                $row = $bowling->get($id);
+
+                return $row ? [
+                    'name' => $row['matchPlayer']->teamPlayer->playerRegistration->player->name,
+                    'overs' => $row['oversDisplay'],
+                    'runs' => $row['runsConceded'],
+                    'wickets' => $row['wickets'],
+                    'economy' => $row['economy'],
+                    'current' => $id === $currentBowlerId,
+                ] : null;
+            })
+            ->filter()
+            ->values()
+            ->all();
+
+        return [
+            'batters' => $batters,
+            'bowlers' => $bowlers,
+            'partnership' => $this->partnership($innings),
+            'last_wicket' => $this->lastWicket($card, $batting),
+        ];
+    }
+
+    /**
+     * Runs and balls since the last wicket fell.
+     *
+     * @return array{runs: int, balls: int}
+     */
+    private function partnership(Innings $innings): array
+    {
+        $lastWicketSequence = (int) Delivery::where('innings_id', $innings->id)->where('is_wicket', true)->max('delivery_sequence');
+
+        $since = Delivery::query()
+            ->where('innings_id', $innings->id)
+            ->where('delivery_sequence', '>', $lastWicketSequence)
+            ->get();
+
+        return [
+            'runs' => (int) $since->sum('total_runs'),
+            'balls' => $since->filter(fn (Delivery $d) => $this->scorecards->countsAsBallFaced($d))->count(),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $card
+     * @param  Collection<int, array<string, mixed>>  $batting
+     * @return array<string, mixed>|null
+     */
+    private function lastWicket(array $card, $batting): ?array
+    {
+        $fall = $card['fallOfWickets'];
+
+        if ($fall === []) {
+            return null;
+        }
+
+        $last = end($fall);
+        $row = $batting->first(fn (array $r) => $r['matchPlayer']->teamPlayer->playerRegistration->player->name === $last['player'] && $r['dismissalDelivery']);
+
+        return [
+            'player' => $last['player'],
+            'runs' => $row['runs'] ?? null,
+            'balls' => $row['balls'] ?? null,
+            'team_score' => $last['score'],
+            'wickets' => $last['wicketNumber'],
+            'over' => $last['overNotation'],
         ];
     }
 

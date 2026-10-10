@@ -21,6 +21,7 @@ class TeamService
     public function createTeam(array $data, ?UploadedFile $logo = null): Team
     {
         $storedPath = null;
+        $data = $this->withTidyColor($data);
 
         if ($logo) {
             $storedPath = $this->storeLogo($logo);
@@ -48,6 +49,7 @@ class TeamService
     {
         $oldPath = $team->logo_path;
         $newPath = null;
+        $data = $this->withTidyColor($data);
 
         if ($logo) {
             $newPath = $this->storeLogo($logo);
@@ -69,6 +71,22 @@ class TeamService
         }
 
         return $team;
+    }
+
+    /**
+     * The team colour is stored as lower-case #rrggbb, or null for "automatic" (an empty field). A request that does not
+     * mention a colour leaves the stored one alone.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function withTidyColor(array $data): array
+    {
+        if (array_key_exists('color', $data)) {
+            $data['color'] = filled($data['color']) ? strtolower((string) $data['color']) : null;
+        }
+
+        return $data;
     }
 
     /**

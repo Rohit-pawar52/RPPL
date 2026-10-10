@@ -89,6 +89,7 @@ function applyInnings(innings) {
         crrEl.classList.toggle('hidden', !hasCrr);
 
         slot('batting').classList.toggle('hidden', !batting);
+        slot('yet')?.classList.add('hidden');
 
         if (batting) {
             teamEl.setAttribute('data-batting', '1');
@@ -184,23 +185,72 @@ function renderThisOver(deliveries) {
 
     thisOver.reverse();
 
-    const lastWicket = deliveries.find((d) => d.is_wicket);
     const balls = thisOver
         .map((d) => `<span class="mx-ball mx-ball-lg mx-ball-${outcomeKind(d)}">${escapeHtml(d.outcome_label)}</span>`)
         .join('');
 
     const lastBall = fill(I18N.bowlerToStriker, { bowler: latest.bowler, striker: latest.striker });
-    const wicketLine = lastWicket
-        ? `<li><span>${escapeHtml(I18N.lastWicket)}</span> ${escapeHtml(lastWicket.dismissed_player ?? lastWicket.striker)} (${escapeHtml(lastWicket.ball_label)})</li>`
+
+    return `
+        <div class="mx-over-row">
+            <p class="mx-over-label">${escapeHtml(I18N.thisOver)} <span>${escapeHtml(fill(I18N.overN, { n: Number(overKey) + 1 }))}</span></p>
+            <div class="mx-over-balls">${balls}</div>
+            <p class="mx-over-last"><b>${escapeHtml(I18N.lastBall)}</b> ${escapeHtml(lastBall)}</p>
+        </div>
+    `;
+}
+
+// Who is batting and bowling: mirrors public/matches/_live-board.blade.php.
+function renderBoard(board) {
+    if (!board) {
+        return '';
+    }
+
+    const num = (value) => escapeHtml(String(value ?? 0));
+    const rate = (value) => escapeHtml(formatRate(value));
+    const star = (on, title = '') => (on ? `<span class="mx-lb-star"${title ? ` title="${escapeHtml(title)}"` : ''}>*</span>` : '');
+    const empty = (cols) => `<tr><td colspan="${cols}" class="mx-lb-empty">&mdash;</td></tr>`;
+
+    const batters = board.batters.length
+        ? board.batters
+              .map(
+                  (b) => `<tr class="${b.on_strike ? 'is-strike' : ''}"><td class="mx-lb-name">${escapeHtml(b.name)}${star(b.on_strike, I18N.onStrike)}</td><td class="mx-lb-strong">${num(b.runs)}</td><td>${num(b.balls)}</td><td>${num(b.fours)}</td><td>${num(b.sixes)}</td><td>${rate(b.strike_rate)}</td></tr>`,
+              )
+              .join('')
+        : empty(6);
+
+    const bowlers = board.bowlers.length
+        ? board.bowlers
+              .map(
+                  (b) => `<tr class="${b.current ? 'is-strike' : ''}"><td class="mx-lb-name">${escapeHtml(b.name)}${star(b.current)}</td><td>${escapeHtml(String(b.overs))}</td><td>${num(b.runs)}</td><td class="mx-lb-strong">${num(b.wickets)}</td><td>${rate(b.economy)}</td></tr>`,
+              )
+              .join('')
+        : empty(5);
+
+    const wicket = board.last_wicket
+        ? `<div><dt>${escapeHtml(I18N.lastWkt)}</dt><dd>${escapeHtml(board.last_wicket.player)} ${escapeHtml(
+              fill(I18N.lastWktAt, {
+                  runs: board.last_wicket.runs ?? 0,
+                  balls: board.last_wicket.balls ?? 0,
+                  score: `${board.last_wicket.team_score}/${board.last_wicket.wickets}`,
+                  over: board.last_wicket.over,
+              }),
+          )}</dd></div>`
         : '';
 
     return `
-        <p class="mx-over-label">${escapeHtml(fill(I18N.overN, { n: Number(overKey) + 1 }))}</p>
-        <div class="mx-over-balls">${balls}</div>
-        <ul class="mx-over-facts">
-            <li><span>${escapeHtml(I18N.lastBall)}</span> ${escapeHtml(lastBall)}</li>
-            ${wicketLine}
-        </ul>
+        <table class="mx-lb">
+            <thead><tr><th>${escapeHtml(I18N.batter)}</th><th>${escapeHtml(I18N.colRuns)}</th><th>${escapeHtml(I18N.colBalls)}</th><th>${escapeHtml(I18N.colFours)}</th><th>${escapeHtml(I18N.colSixes)}</th><th>${escapeHtml(I18N.colSr)}</th></tr></thead>
+            <tbody>${batters}</tbody>
+        </table>
+        <table class="mx-lb">
+            <thead><tr><th>${escapeHtml(I18N.bowler)}</th><th>${escapeHtml(I18N.colOvers)}</th><th>${escapeHtml(I18N.colConceded)}</th><th>${escapeHtml(I18N.colWickets)}</th><th>${escapeHtml(I18N.colEco)}</th></tr></thead>
+            <tbody>${bowlers}</tbody>
+        </table>
+        <dl class="mx-lb-facts">
+            <div><dt>${escapeHtml(I18N.partnership)}</dt><dd>${num(board.partnership.runs)} (${num(board.partnership.balls)})</dd></div>
+            ${wicket}
+        </dl>
     `;
 }
 
@@ -241,12 +291,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // The score header sits above the root; everything is found by id / hook.
-    const heroEl = document.querySelector('.mx-hero');
+    const heroEl = document.getElementById('live-score-card') ?? document.querySelector('.mx-hero');
     const thisOverEl = document.getElementById('live-this-over');
     const deliveriesEl = document.getElementById('live-deliveries');
     const resultEl = document.getElementById('live-match-result');
     const chaseEl = document.getElementById('live-chase');
     const statusBadgeEl = document.getElementById('live-status-badge');
+    const boardEl = document.getElementById('live-board');
 
     // Reassigned once initRealtimeUpdates() runs, below — declared here
     // so applyUpdate() can call whatever it currently is by reference.
@@ -261,6 +312,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (deliveriesEl) {
             deliveriesEl.innerHTML = renderDeliveries(data.recent_deliveries);
+        }
+
+        if (boardEl) {
+            const boardHtml = renderBoard(data.board ?? null);
+            boardEl.innerHTML = boardHtml;
+            boardEl.classList.toggle('hidden', boardHtml === '');
         }
 
         if (chaseEl) {

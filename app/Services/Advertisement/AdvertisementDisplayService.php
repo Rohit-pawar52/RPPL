@@ -83,6 +83,21 @@ class AdvertisementDisplayService
     }
 
     /**
+     * Every live Normal sponsor made for the live match page's side box, heavier ones first. The page shows them
+     * one after another in its side boxes (see App\View\Components\AdSide), so a longer list means more of them get
+     * seen during one match.
+     *
+     * @return Collection<int, Advertisement>
+     */
+    public function sideAds(): Collection
+    {
+        return $this->liveIn(Advertisement::TIER_NORMAL)
+            ->filter(fn (Advertisement $ad) => $ad->effectiveFormat() === Advertisement::FORMAT_SIDE)
+            ->sortBy([['weight', 'desc'], ['id', 'asc']])
+            ->values();
+    }
+
+    /**
      * Every live Mini sponsor, for the logo strip (heavier ones first).
      *
      * @return Collection<int, Advertisement>

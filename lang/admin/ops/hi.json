@@ -1037,7 +1037,6 @@
     "Queued": "कतार में",
     "Completed": "पूरी हुई",
     "Send Result Notification": "नतीजे की सूचना भेजें",
-    "Reason for reopening this match (admin only)": "इस मैच को फिर खोलने का कारण (सिर्फ़ एडमिन)",
     "e.g. Scoring error found after finalization": "जैसे: फ़ाइनल होने के बाद स्कोरिंग में गलती मिली",
     "Reopen Match": "मैच फिर खोलें",
     "league": "लीग",
@@ -1162,5 +1161,6 @@
     "Reopen the auction": "नीलामी फिर खोलें",
     "Pressed Complete too early, or a player turned up late? Reopening brings back the players who were left unsold, as waiting players. Every sale and every team stays exactly as it is. The auction comes back paused, so nothing happens until you press Resume.": "Complete जल्दी दब गया, या कोई खिलाड़ी देर से आया? फिर खोलने पर जो खिलाड़ी अनसोल्ड रहे थे वे इंतज़ार वाले खिलाड़ी बनकर वापस आ जाते हैं। हर बिक्री और हर टीम जैसी है वैसी ही रहती है। नीलामी रुकी हुई वापस आती है, इसलिए आपके Resume दबाने तक कुछ नहीं होता।",
     "Reopen the auction? The unsold players become waiting players again.": "नीलामी फिर खोलें? अनसोल्ड खिलाड़ी फिर इंतज़ार वाले बन जाएँगे।",
-    "Type REOPEN to confirm": "पक्का करने के लिए REOPEN लिखें"
+    "Type REOPEN to confirm": "पक्का करने के लिए REOPEN लिखें",
+    "Reason for reopening this match": "इस मैच को फिर खोलने का कारण"
 }
