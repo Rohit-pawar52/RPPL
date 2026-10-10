@@ -191,18 +191,18 @@ function renderThisOver(deliveries) {
 
     const lastBall = fill(I18N.bowlerToStriker, { bowler: latest.bowler, striker: latest.striker });
     const wicketLine = lastWicket
-        ? `<li><span>${escapeHtml(I18N.lastWicket)}</span> ${escapeHtml(lastWicket.dismissed_player ?? lastWicket.striker)} (${escapeHtml(lastWicket.ball_label)})</li>`
+        ? `<span class="mx-over-fact"><b>${escapeHtml(I18N.lastWicket)}</b> ${escapeHtml(lastWicket.dismissed_player ?? lastWicket.striker)} (${escapeHtml(lastWicket.ball_label)})</span>`
         : '';
 
     return `
         <div class="mx-over-row">
-            <p class="mx-over-label">${escapeHtml(fill(I18N.overN, { n: Number(overKey) + 1 }))}</p>
+            <p class="mx-over-label">${escapeHtml(I18N.thisOver)} <span>${escapeHtml(fill(I18N.overN, { n: Number(overKey) + 1 }))}</span></p>
             <div class="mx-over-balls">${balls}</div>
         </div>
-        <ul class="mx-over-facts">
-            <li><span>${escapeHtml(I18N.lastBall)}</span> ${escapeHtml(lastBall)}</li>
+        <p class="mx-over-facts">
+            <span class="mx-over-fact"><b>${escapeHtml(I18N.lastBall)}</b> ${escapeHtml(lastBall)}</span>
             ${wicketLine}
-        </ul>
+        </p>
     `;
 }
 

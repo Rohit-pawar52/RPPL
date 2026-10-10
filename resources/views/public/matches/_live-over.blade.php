@@ -17,7 +17,7 @@
 
 @if($latest)
     <div class="mx-over-row">
-    <p class="mx-over-label">{{ __('ux_public_matches.live.over_n', ['n' => (int) $overKey + 1]) }}</p>
+    <p class="mx-over-label">{{ __('matches.live.this_over') }} <span>{{ __('ux_public_matches.live.over_n', ['n' => (int) $overKey + 1]) }}</span></p>
     <div class="mx-over-balls">
         @foreach($thisOver as $delivery)
             @php
@@ -34,18 +34,12 @@
         @endforeach
     </div>
     </div>
-    <ul class="mx-over-facts">
-        <li>
-            <span>{{ __('ux_public_matches.live.last_ball') }}</span>
-            {{ __('matches.centre.bowler_to_striker', ['bowler' => $latest['bowler'], 'striker' => $latest['striker']]) }}
-        </li>
+    <p class="mx-over-facts">
+        <span class="mx-over-fact"><b>{{ __('ux_public_matches.live.last_ball') }}</b> {{ __('matches.centre.bowler_to_striker', ['bowler' => $latest['bowler'], 'striker' => $latest['striker']]) }}</span>
         @if($lastWicket)
-            <li>
-                <span>{{ __('ux_public_matches.live.last_wicket') }}</span>
-                {{ $lastWicket['dismissed_player'] ?? $lastWicket['striker'] }} ({{ $lastWicket['ball_label'] }})
-            </li>
+            <span class="mx-over-fact"><b>{{ __('ux_public_matches.live.last_wicket') }}</b> {{ $lastWicket['dismissed_player'] ?? $lastWicket['striker'] }} ({{ $lastWicket['ball_label'] }})</span>
         @endif
-    </ul>
+    </p>
 @else
     <p class="pub-empty">{{ __('ux_public_matches.live.no_deliveries') }}</p>
 @endif

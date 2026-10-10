@@ -26,6 +26,7 @@
             'ballsLabel' => __('ux_public_matches.chase.balls_label'),
             'rrr' => __('ux_public_matches.chase.rrr'),
             'overN' => __('ux_public_matches.live.over_n', ['n' => ':n']),
+            'thisOver' => __('matches.live.this_over'),
             'lastBall' => __('ux_public_matches.live.last_ball'),
             'lastWicket' => __('ux_public_matches.live.last_wicket'),
             'bowlerToStriker' => __('matches.centre.bowler_to_striker', ['bowler' => ':bowler', 'striker' => ':striker']),
@@ -75,15 +76,7 @@
             </section>
 
             <section class="pub-card order-4 overflow-hidden">
-                <header class="pub-card-head !py-2">
-                    <h2 class="pub-card-title">{{ __('matches.live.this_over') }}</h2>
-                    @if($liveData['should_poll'])
-                        <span class="inline-flex items-center gap-1.5 pub-meta">
-                            <span class="live-dot text-green-600" aria-hidden="true"></span> {{ __('matches.live.auto_updates') }}
-                        </span>
-                    @endif
-                </header>
-                <div id="live-this-over" class="px-3 py-2.5 sm:px-4">
+                <div id="live-this-over" class="px-3 py-2 sm:px-4">
                     @include('public.matches._live-over', ['deliveries' => $deliveries])
                 </div>
             </section>
