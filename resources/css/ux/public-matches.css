@@ -258,7 +258,7 @@
         @apply w-[40%] pl-3 text-left sm:w-[44%] sm:pl-4;
     }
     .mx-lb td {
-        @apply border-b border-line px-1.5 py-2 text-right text-slate-700 sm:px-2;
+        @apply border-b border-line px-1.5 py-1.5 text-right text-slate-700 sm:px-2;
     }
     .mx-lb-name {
         @apply truncate font-semibold text-slate-900;
@@ -275,11 +275,16 @@
     .mx-lb-empty {
         @apply py-3 text-center text-slate-400;
     }
+    /* Partnership | last wicket on one line (wraps on a narrow phone, the bar goes with it). */
     .mx-lb-facts {
-        @apply space-y-1 px-3 py-2.5 text-[13px] sm:px-4;
+        @apply flex flex-wrap items-baseline gap-y-0.5 px-3 py-2 text-[13px] max-sm:flex-col max-sm:items-start sm:px-4;
     }
     .mx-lb-facts > div {
-        @apply flex flex-wrap gap-x-2;
+        @apply flex min-w-0 flex-wrap gap-x-1.5;
+    }
+    .mx-lb-facts > div + div::before {
+        content: '|';
+        @apply mx-2.5 text-slate-300 max-sm:hidden;
     }
     .mx-lb-facts dt {
         @apply text-[11px] font-semibold uppercase tracking-wide text-slate-400;
@@ -384,16 +389,18 @@
     .mx-over-label > span {
         @apply ml-1 font-medium normal-case tracking-normal text-slate-400;
     }
-    .mx-over-facts {
-        @apply mt-1.5 flex flex-wrap gap-x-0 gap-y-0.5 border-t border-line pt-1.5 text-[12.5px] text-slate-700;
+    /* The over in progress sits under the board, in the same card: label, balls, and the last ball at the right. */
+    .mx-over-box {
+        @apply border-t border-line bg-slate-50/60 px-3 py-2 sm:px-4;
     }
-    .mx-over-fact b {
+    .mx-lb-wrap.hidden + .mx-over-box {
+        @apply border-t-0;
+    }
+    .mx-over-last {
+        @apply min-w-0 basis-full text-[12.5px] leading-snug text-slate-700 sm:basis-auto sm:flex-1 sm:text-right;
+    }
+    .mx-over-last b {
         @apply mr-1 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400;
-    }
-    /* One line: "Last ball ... | Last wicket ..." (wraps on a narrow phone, the bar goes with it). */
-    .mx-over-fact + .mx-over-fact::before {
-        content: '|';
-        @apply mx-2 text-slate-300;
     }
     .mx-feed-row {
         @apply flex items-start gap-3 border-b border-line px-4 py-3 text-[13px] last:border-b-0 sm:px-5;

@@ -67,16 +67,14 @@
                 @include('public.matches._live-score', ['match' => $match, 'liveData' => $liveData])
             </div>
 
-            <section id="live-board-card" class="pub-card order-2 overflow-hidden {{ $liveData['board'] ? '' : 'hidden' }}" aria-label="{{ __('ux_public_matches.live.batter') }} / {{ __('ux_public_matches.live.bowler') }}">
-                <div id="live-board" class="mx-lb-wrap">
+            {{-- Batting, bowling and the over in progress are one card, so nothing is spent on borders and gaps. --}}
+            <section id="live-board-card" class="pub-card order-2 overflow-hidden" aria-label="{{ __('ux_public_matches.live.batter') }} / {{ __('ux_public_matches.live.bowler') }}">
+                <div id="live-board" class="mx-lb-wrap {{ $liveData['board'] ? '' : 'hidden' }}">
                     @if($liveData['board'])
                         @include('public.matches._live-board', ['board' => $liveData['board']])
                     @endif
                 </div>
-            </section>
-
-            <section class="pub-card order-4 overflow-hidden">
-                <div id="live-this-over" class="px-3 py-2 sm:px-4">
+                <div id="live-this-over" class="mx-over-box">
                     @include('public.matches._live-over', ['deliveries' => $deliveries])
                 </div>
             </section>

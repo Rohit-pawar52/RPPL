@@ -184,25 +184,18 @@ function renderThisOver(deliveries) {
 
     thisOver.reverse();
 
-    const lastWicket = deliveries.find((d) => d.is_wicket);
     const balls = thisOver
         .map((d) => `<span class="mx-ball mx-ball-lg mx-ball-${outcomeKind(d)}">${escapeHtml(d.outcome_label)}</span>`)
         .join('');
 
     const lastBall = fill(I18N.bowlerToStriker, { bowler: latest.bowler, striker: latest.striker });
-    const wicketLine = lastWicket
-        ? `<span class="mx-over-fact"><b>${escapeHtml(I18N.lastWicket)}</b> ${escapeHtml(lastWicket.dismissed_player ?? lastWicket.striker)} (${escapeHtml(lastWicket.ball_label)})</span>`
-        : '';
 
     return `
         <div class="mx-over-row">
             <p class="mx-over-label">${escapeHtml(I18N.thisOver)} <span>${escapeHtml(fill(I18N.overN, { n: Number(overKey) + 1 }))}</span></p>
             <div class="mx-over-balls">${balls}</div>
+            <p class="mx-over-last"><b>${escapeHtml(I18N.lastBall)}</b> ${escapeHtml(lastBall)}</p>
         </div>
-        <p class="mx-over-facts">
-            <span class="mx-over-fact"><b>${escapeHtml(I18N.lastBall)}</b> ${escapeHtml(lastBall)}</span>
-            ${wicketLine}
-        </p>
     `;
 }
 
@@ -304,7 +297,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const chaseEl = document.getElementById('live-chase');
     const statusBadgeEl = document.getElementById('live-status-badge');
     const boardEl = document.getElementById('live-board');
-    const boardCardEl = document.getElementById('live-board-card');
 
     // Reassigned once initRealtimeUpdates() runs, below — declared here
     // so applyUpdate() can call whatever it currently is by reference.
@@ -324,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (boardEl) {
             const boardHtml = renderBoard(data.board ?? null);
             boardEl.innerHTML = boardHtml;
-            boardCardEl?.classList.toggle('hidden', boardHtml === '');
+            boardEl.classList.toggle('hidden', boardHtml === '');
         }
 
         if (chaseEl) {
