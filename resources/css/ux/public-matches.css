@@ -313,8 +313,16 @@
     .mx-lsc-share {
         @apply grid size-7 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-800;
     }
+    .mx-lsc-share {
+        @apply relative;
+    }
     .mx-lsc-share.is-done {
         @apply bg-green-100 text-green-700;
+    }
+    /* "Link copied" shows for a moment under the button. */
+    .mx-lsc-share.is-done::after {
+        content: attr(title);
+        @apply pointer-events-none absolute right-0 top-full z-10 mt-1.5 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white shadow-raised;
     }
     /* Two teams side by side on a tablet / desktop (name above its score), one line each on a phone. */
     .mx-lsc-teams {
