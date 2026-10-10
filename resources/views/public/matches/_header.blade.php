@@ -64,7 +64,7 @@
 <header @class(['mx-hero', 'mx-hero-live' => $isLive])>
     <div class="mx-hero-glow" aria-hidden="true"></div>
 
-    <div class="relative px-4 pt-3 sm:px-6 sm:pt-4">
+    <div class="relative px-4 pt-2.5 sm:px-5 sm:pt-3">
         <div class="flex items-center justify-between gap-3">
             <a href="{{ route('public.matches.index') }}" class="mx-hero-back">
                 <span aria-hidden="true">&larr;</span> {{ __('public.common.all_matches') }}
@@ -102,7 +102,7 @@
 
     <h1 class="sr-only">{{ $shareTitle }}</h1>
 
-    <div @if($liveStatus) id="live-innings" aria-live="polite" @endif class="relative grid gap-4 px-4 py-5 sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-6 sm:px-6 sm:py-7">
+    <div @if($liveStatus) id="live-innings" aria-live="polite" @endif class="relative grid gap-3 px-4 py-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-5 sm:px-5 sm:py-3.5">
         @include('public.matches._score-team', ['team' => $match->teamA, 'score' => $scoreOf($match->teamA), 'outcome' => $outcomeOf($match->teamA), 'side' => 'a'])
 
         <div class="mx-vs" aria-hidden="true"><span>{{ __('matches.common.vs') }}</span></div>
@@ -110,7 +110,7 @@
         @include('public.matches._score-team', ['team' => $match->teamB, 'score' => $scoreOf($match->teamB), 'outcome' => $outcomeOf($match->teamB), 'side' => 'b'])
     </div>
 
-    <div class="relative space-y-3 border-t border-white/10 px-4 py-3.5 sm:px-6">
+    <div class="relative space-y-2 border-t border-white/10 px-4 py-2.5 sm:px-5">
         @if($liveStatus)
             <p id="live-match-result" class="mx-result {{ $resultText ? '' : 'hidden' }}">{{ $resultText }}</p>
 

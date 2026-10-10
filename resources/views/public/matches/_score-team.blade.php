@@ -19,7 +19,7 @@
     data-outcome="{{ $outcome }}"
     @if($hasScore && $score['batting']) data-batting="1" @endif
 >
-    <x-mx.team-logo :team="$team->team" size="xl" dark />
+    <x-mx.team-logo :team="$team->team" size="lg" dark />
 
     <div class="min-w-0">
         <p class="mx-team-name">{{ $teamName }}</p>

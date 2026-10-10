@@ -30,6 +30,21 @@
             'lastWicket' => __('ux_public_matches.live.last_wicket'),
             'bowlerToStriker' => __('matches.centre.bowler_to_striker', ['bowler' => ':bowler', 'striker' => ':striker']),
             'noDeliveries' => __('ux_public_matches.live.no_deliveries'),
+            'batter' => __('ux_public_matches.live.batter'),
+            'bowler' => __('ux_public_matches.live.bowler'),
+            'colRuns' => __('ux_public_matches.live.col_runs'),
+            'colBalls' => __('ux_public_matches.live.col_balls'),
+            'colFours' => __('ux_public_matches.live.col_fours'),
+            'colSixes' => __('ux_public_matches.live.col_sixes'),
+            'colSr' => __('ux_public_matches.live.col_sr'),
+            'colOvers' => __('ux_public_matches.live.col_overs'),
+            'colConceded' => __('ux_public_matches.live.col_conceded'),
+            'colWickets' => __('ux_public_matches.live.col_wickets'),
+            'colEco' => __('ux_public_matches.live.col_eco'),
+            'partnership' => __('ux_public_matches.live.partnership'),
+            'lastWkt' => __('ux_public_matches.live.last_wkt'),
+            'lastWktAt' => __('ux_public_matches.live.last_wkt_at', ['runs' => ':runs', 'balls' => ':balls', 'score' => ':score', 'over' => ':over']),
+            'onStrike' => __('ux_public_matches.live.on_strike'),
             'status' => $statusLabels,
         ];
     @endphp
@@ -38,14 +53,23 @@
 
     <div
         id="live-match-root"
-        class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-5"
+        class="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-4"
         data-match-id="{{ $match->id }}"
         data-live-data-url="{{ route('public.matches.live-data', $match) }}"
         data-should-poll="{{ $liveData['should_poll'] ? '1' : '0' }}"
         data-i18n="{{ json_encode($i18n, JSON_UNESCAPED_UNICODE) }}"
     >
-        <div class="min-w-0 space-y-4">
-            <section class="pub-card overflow-hidden">
+        {{-- On a phone the two columns flatten into one list: board, a sponsor, this over, commentary, a sponsor, details. --}}
+        <div class="contents lg:block lg:min-w-0 lg:space-y-3">
+            <section id="live-board-card" class="pub-card order-1 overflow-hidden {{ $liveData['board'] ? '' : 'hidden' }}" aria-label="{{ __('ux_public_matches.live.batter') }} / {{ __('ux_public_matches.live.bowler') }}">
+                <div id="live-board" class="mx-lb-wrap">
+                    @if($liveData['board'])
+                        @include('public.matches._live-board', ['board' => $liveData['board']])
+                    @endif
+                </div>
+            </section>
+
+            <section class="pub-card order-3 overflow-hidden">
                 <header class="pub-card-head">
                     <h2 class="pub-card-title">{{ __('matches.live.this_over') }}</h2>
                     @if($liveData['should_poll'])
@@ -59,7 +83,7 @@
                 </div>
             </section>
 
-            <section class="pub-card overflow-hidden">
+            <section class="pub-card order-4 overflow-hidden">
                 <header class="pub-card-head">
                     <h2 class="pub-card-title">{{ __('matches.live.commentary') }}</h2>
                 </header>
@@ -73,8 +97,12 @@
             </section>
         </div>
 
-        <aside class="min-w-0 space-y-4">
-            @include('public.matches._details', ['match' => $match])
+        <aside class="contents lg:block lg:min-w-0 lg:space-y-3">
+            <x-ad-side class="order-2" :offset="0" />
+            <x-ad-side class="order-5" :offset="1" />
+            <div class="order-6">
+                @include('public.matches._details', ['match' => $match])
+            </div>
         </aside>
     </div>
 
