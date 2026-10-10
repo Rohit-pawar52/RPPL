@@ -217,5 +217,7 @@
                 </section>
             @endif
         </div>
+
+        @include('admin.auctions._tools')
     @endif
 @endsection

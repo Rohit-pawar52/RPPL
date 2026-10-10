@@ -224,9 +224,31 @@ class AuctionStateService
         return filled($registration->village) ? trim($registration->village) : null;
     }
 
+    /**
+     * How many of each role a squad has (batter / bowler / all-rounder / wicket keeper), so the room can see what a
+     * team still lacks. Players with no role set are not counted.
+     *
+     * @param  Collection<int, TeamPlayer>  $teamPlayers
+     * @return array<string, int>
+     */
+    private function roleCounts(Collection $teamPlayers): array
+    {
+        $counts = array_fill_keys(array_keys(Player::PRIMARY_ROLE_LABELS), 0);
+
+        foreach ($teamPlayers as $teamPlayer) {
+            $role = $teamPlayer->playerRegistration?->player?->primary_role;
+
+            if ($role !== null && array_key_exists($role, $counts)) {
+                $counts[$role]++;
+            }
+        }
+
+        return $counts;
+    }
+
     private function publicPerson(PlayerRegistration $registration): array
     {
-        return array_diff_key($this->person($registration), ['registration_id' => true]);
+        return array_diff_key($this->person($registration), ['registration_id' => true, 'role_key' => true]);
     }
 
     /**
@@ -255,6 +277,7 @@ class AuctionStateService
                 'left' => $row['left'],
                 'count' => $row['count'],
                 'still_needed' => $row['still_needed'],
+                'roles' => $this->roleCounts($squads[$team->id] ?? collect()),
                 'players' => ($squads[$team->id] ?? collect())
                     ->map(fn (TeamPlayer $teamPlayer) => [
                         'name' => $teamPlayer->playerRegistration->player->name,
@@ -471,6 +494,7 @@ class AuctionStateService
 
         return [
             'registration_id' => $registration->id,
+            'role_key' => $player->primary_role,
             'name' => $player->name,
             // The player's public photo - never the private one submitted with the registration.
             'photo' => media_url($player->photo_path, 'user'),
@@ -539,6 +563,7 @@ class AuctionStateService
 
             return [
                 'id' => $team->id,
+                'roles' => $this->roleCounts($squads[$team->id] ?? collect()),
                 'name' => $team->team->name,
                 'short_name' => $team->team->short_name,
                 'logo' => media_url($team->team->logo_path),

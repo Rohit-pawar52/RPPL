@@ -160,6 +160,28 @@ class PublicAuctionDetailsTest extends TestCase
         $this->assertNull(collect($state['upcoming'] ?? [])->firstWhere('name', 'No Village')['village'] ?? null);
     }
 
+    public function test_each_team_shows_how_many_batters_bowlers_all_rounders_and_keepers_it_has(): void
+    {
+        $this->paid('Bowler One', 'bowler');
+        $this->paid('Bowler Two', 'bowler');
+        $this->paid('Keeper One', 'wicket_keeper');
+        $this->paid('No Role');
+        $auction = $this->liveAuction();
+
+        $this->sellAfter($auction, 'Bowler One', [[$this->alpha, 500]]);
+        $this->sellAfter($auction, 'Bowler Two', [[$this->alpha, 500]]);
+        $this->sellAfter($auction, 'Keeper One', [[$this->alpha, 500]]);
+        $this->sellAfter($auction, 'No Role', [[$this->alpha, 500]]);
+
+        $teams = collect($this->state()['teams']);
+        $alpha = $teams->firstWhere('name', $this->alpha->team->name);
+        $beta = $teams->firstWhere('name', $this->beta->team->name);
+
+        // A player with no role set is simply not counted; the other team has none yet.
+        $this->assertSame(['batter' => 0, 'bowler' => 2, 'all_rounder' => 0, 'wicket_keeper' => 1], $alpha['roles']);
+        $this->assertSame(['batter' => 0, 'bowler' => 0, 'all_rounder' => 0, 'wicket_keeper' => 0], $beta['roles']);
+    }
+
     public function test_a_price_corrected_on_the_squad_page_is_what_the_website_shows(): void
     {
         $this->paid('Corrected Price');

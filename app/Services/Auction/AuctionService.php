@@ -4,6 +4,7 @@ namespace App\Services\Auction;
 
 use App\Models\Auction;
 use App\Models\AuctionBid;
+use App\Models\AuctionEvent;
 use App\Models\AuctionLot;
 use App\Models\Edition;
 use App\Models\EditionTeam;
@@ -97,11 +98,20 @@ class AuctionService
             $this->assertSquadLimits((int) ($settings['min_squad'] ?? $auction->min_squad), (int) ($settings['max_squad'] ?? $auction->max_squad));
 
             $auction->update($settings);
+            $changedSettings = array_values(array_diff(array_keys($auction->getChanges()), ['updated_at']));
 
             $teams = EditionTeam::query()->where('edition_id', $auction->edition_id)->whereIn('id', array_keys($teamPurses))->get();
 
             foreach ($teams as $team) {
                 $team->update(['auction_purse' => filled($teamPurses[$team->id] ?? null) ? (int) $teamPurses[$team->id] : null]);
+
+                if ($team->wasChanged('auction_purse')) {
+                    $this->logEvent($auction, AuctionEvent::SETTINGS, null, $team, $team->auction_purse, 'team_purse');
+                }
+            }
+
+            if ($changedSettings !== []) {
+                $this->logEvent($auction, AuctionEvent::SETTINGS, null, null, null, implode(', ', $changedSettings));
             }
 
             return $auction->refresh();
@@ -146,6 +156,10 @@ class AuctionService
                 ->diff($eligible);
 
             $removed = $stale->isEmpty() ? 0 : $auction->lots()->whereIn('player_registration_id', $stale->all())->delete();
+
+            if ($toAdd->count() > 0 || $removed > 0) {
+                $this->logEvent($auction, AuctionEvent::POOL, null, null, null, '+'.$toAdd->count().' / -'.$removed);
+            }
 
             return ['added' => $toAdd->count(), 'removed' => $removed];
         });
@@ -230,9 +244,9 @@ class AuctionService
      * called like anyone else. The same door as "registered offline" on the
      * Squads page, minus putting them straight in a team.
      */
-    public function addWalkInPlayer(Auction $auction, string $name, string $phone): AuctionLot
+    public function addWalkInPlayer(Auction $auction, string $name, string $phone, ?string $village = null, ?string $role = null): AuctionLot
     {
-        return DB::transaction(function () use ($auction, $name, $phone) {
+        return DB::transaction(function () use ($auction, $name, $phone, $village, $role) {
             $auction = $this->lockAuction($auction);
 
             if ($auction->isCompleted()) {
@@ -256,7 +270,11 @@ class AuctionService
                 $this->fail('phone', __(':name is already registered for this season. Once their payment is marked paid they join the pool by themselves.', ['name' => $player->name]));
             }
 
-            $player ??= Player::create(['name' => $name, 'phone' => $normalised]);
+            $player ??= Player::create([
+                'name' => $name,
+                'phone' => $normalised,
+                'primary_role' => array_key_exists((string) $role, Player::PRIMARY_ROLE_LABELS) ? $role : null,
+            ]);
 
             $registration = $this->registrations->createRegistration([
                 'edition_id' => $edition->id,
@@ -264,14 +282,19 @@ class AuctionService
                 'payment_status' => 'paid',
                 'registration_fee' => $edition->registration_fee,
                 'registered_at' => now(),
+                'village' => filled($village) ? trim($village) : null,
             ]);
 
             // Saving the paid registration already put the player in the pool
             // (syncRegistration); this only makes sure of it.
-            return AuctionLot::firstOrCreate(
+            $lot = AuctionLot::firstOrCreate(
                 ['auction_id' => $auction->id, 'player_registration_id' => $registration->id],
                 ['status' => AuctionLot::PENDING, 'round' => $auction->round],
             );
+
+            $this->logEvent($auction, AuctionEvent::WALK_IN, $lot);
+
+            return $lot;
         });
     }
 
@@ -313,6 +336,7 @@ class AuctionService
             }
 
             $auction->update(['status' => Auction::STATUS_LIVE, 'started_at' => now()]);
+            $this->logEvent($auction, AuctionEvent::STARTED);
 
             return $auction;
         });
@@ -342,9 +366,13 @@ class AuctionService
             $round = $auction->round + 1;
             $auction->update(['round' => $round]);
 
-            return $auction->lots()
+            $back = $auction->lots()
                 ->where('status', AuctionLot::HOLD)
                 ->update(['status' => AuctionLot::PENDING, 'round' => $round, 'version' => DB::raw('version + 1')]);
+
+            $this->logEvent($auction, AuctionEvent::NEXT_ROUND, null, null, $back, (string) $round);
+
+            return $back;
         });
     }
 
@@ -377,6 +405,7 @@ class AuctionService
                 ]);
 
             $auction->update(['status' => Auction::STATUS_COMPLETED, 'completed_at' => now(), 'current_lot_id' => null]);
+            $this->logEvent($auction, AuctionEvent::COMPLETED, null, null, $unsold);
 
             return ['unsold' => $unsold, 'short_teams' => $this->teamsShortOfMinimum($auction)];
         });
@@ -452,6 +481,7 @@ class AuctionService
                 'version' => $lot->version + 1,
             ]);
             $auction->update(['current_lot_id' => $lot->id]);
+            $this->logEvent($auction, AuctionEvent::CALLED, $lot);
 
             return $lot->refresh();
         });
@@ -461,9 +491,13 @@ class AuctionService
      * A random player from the pending ones, or null when nobody is left
      * waiting (the auctioneer can then start the next round).
      */
-    public function callRandom(Auction $auction): ?AuctionLot
+    public function callRandom(Auction $auction, ?string $role = null): ?AuctionLot
     {
-        $pick = $auction->lots()->where('status', AuctionLot::PENDING)->inRandomOrder()->first();
+        $pick = $auction->lots()
+            ->where('status', AuctionLot::PENDING)
+            ->when($role !== null && $role !== '', fn (Builder $query) => $query->whereHas('playerRegistration.player', fn (Builder $players) => $players->where('primary_role', $role)))
+            ->inRandomOrder()
+            ->first();
 
         return $pick ? $this->callLot($auction, $pick) : null;
     }
@@ -550,6 +584,7 @@ class AuctionService
                 'leading_edition_team_id' => $team->id,
                 'version' => $lot->version + 1,
             ]);
+            $this->logEvent($auction, AuctionEvent::BID, $lot, $team, $amount, $overLimit ? 'override' : null);
 
             return $bid;
         });
@@ -582,6 +617,7 @@ class AuctionService
                 'leading_edition_team_id' => $previous?->edition_team_id,
                 'version' => $lot->version + 1,
             ]);
+            $this->logEvent($auction, AuctionEvent::BID_UNDONE, $lot, $latest->editionTeam, (int) $latest->amount);
 
             return $latest;
         });
@@ -631,6 +667,7 @@ class AuctionService
                 'version' => $lot->version + 1,
             ]);
             $auction->update(['current_lot_id' => null]);
+            $this->logEvent($auction, AuctionEvent::SOLD, $lot, $team, (int) $lot->current_bid);
 
             return $teamPlayer;
         });
@@ -690,6 +727,7 @@ class AuctionService
             }
 
             $auction->update(['current_lot_id' => $lot->id]);
+            $this->logEvent($auction, AuctionEvent::SALE_REOPENED, $lot, null, $lot->current_bid);
 
             return $lot->refresh();
         });
@@ -724,6 +762,8 @@ class AuctionService
                 $this->fail('auction', __('This player has already played a match, so the sale cannot be undone.'));
             }
 
+            $this->logEvent($auction, AuctionEvent::TAKEN_BACK, $lot);
+
             return $lot->refresh();
         });
     }
@@ -745,6 +785,198 @@ class AuctionService
             'round' => $auction->round,
             'version' => $lot->version + 1,
         ]);
+    }
+
+    // ----- Corrections and a fresh start -----------------------------------
+
+    /**
+     * Fixes a player's details from the console while the auction runs: the name and role (the player), the
+     * village (this season's registration). Nothing else is touched; the public screens catch up at once.
+     *
+     * @param  array{name?: ?string, village?: ?string, primary_role?: ?string}  $data
+     */
+    public function updatePlayerDetails(Auction $auction, AuctionLot $lot, array $data): AuctionLot
+    {
+        return DB::transaction(function () use ($auction, $lot, $data) {
+            $auction = $this->lockAuction($auction);
+            $lot = $this->lockLot($auction, $lot);
+            $lot->loadMissing('playerRegistration.player');
+            $registration = $lot->playerRegistration;
+            $player = $registration->player;
+
+            $name = isset($data['name']) ? trim((string) $data['name']) : $player->name;
+            $role = $data['primary_role'] ?? null;
+            $village = array_key_exists('village', $data) ? (filled($data['village']) ? trim((string) $data['village']) : null) : $registration->village;
+
+            if ($name === '') {
+                $this->fail('player', __('The name cannot be empty.'));
+            }
+
+            if ($role !== null && $role !== '' && ! array_key_exists($role, Player::PRIMARY_ROLE_LABELS)) {
+                $this->fail('player', __('Choose a role from the list.'));
+            }
+
+            $changed = [];
+
+            if ($name !== $player->name) {
+                $player->update(['name' => $name]);
+                $changed[] = 'name';
+            }
+
+            if (($role ?? '') !== '' && $role !== $player->primary_role) {
+                $player->update(['primary_role' => $role]);
+                $changed[] = 'role';
+            }
+
+            if ($village !== $registration->village) {
+                $registration->update(['village' => $village]);
+                $changed[] = 'village';
+            }
+
+            // The public screens listen to the lot: touching it makes them redraw with the new details.
+            $lot->touch();
+
+            if ($changed !== []) {
+                $this->logEvent($auction, AuctionEvent::PLAYER_EDITED, $lot, null, null, implode(', ', $changed));
+            }
+
+            return $lot->refresh();
+        });
+    }
+
+    /**
+     * The latest bid went to the wrong team: it moves, at the same amount, to the right one. Refused (and nothing
+     * changes) if that team cannot afford it or is already leading.
+     */
+    public function moveLatestBid(Auction $auction, AuctionLot $lot, EditionTeam $team, int $expectedVersion, ?User $by = null): AuctionBid
+    {
+        return DB::transaction(function () use ($auction, $lot, $team, $expectedVersion, $by) {
+            $auction = $this->lockAuction($auction);
+            $this->assertRunning($auction, __('The auction is not live.'));
+            $lot = $this->lockLot($auction, $lot);
+            $this->assertOnTheBlock($auction, $lot, $expectedVersion);
+
+            $latest = $lot->bids()->standing()->latest('id')->first();
+
+            if (! $latest) {
+                $this->fail('bid', __('There is no bid to move.'));
+            }
+
+            if ($latest->edition_team_id === $team->id) {
+                $this->fail('bid', __('That team already has this bid.'));
+            }
+
+            $from = $latest->editionTeam;
+            $amount = (int) $latest->amount;
+            $override = (bool) $latest->is_override;
+
+            $latest->update(['cancelled_at' => now()]);
+            $previous = $lot->bids()->standing()->latest('id')->first();
+
+            $lot->update([
+                'current_bid' => $previous?->amount,
+                'leading_edition_team_id' => $previous?->edition_team_id,
+                'version' => $lot->version + 1,
+            ]);
+
+            $bid = $this->placeBid($auction, $lot->fresh(), $team, $lot->fresh()->version, $amount, null, $override, $by);
+            $this->logEvent($auction, AuctionEvent::BID_TEAM_CHANGED, $lot->fresh(), $team, $amount, $from?->team?->name);
+
+            return $bid;
+        });
+    }
+
+    /**
+     * Corrects what a sold player went for. Same rules as a bid (the step from the minimum bid) and the team must
+     * be able to afford the difference. The squad row is the source of truth for the price.
+     */
+    public function changeSoldPrice(Auction $auction, AuctionLot $lot, int $amount): AuctionLot
+    {
+        return DB::transaction(function () use ($auction, $lot, $amount) {
+            $auction = $this->lockAuction($auction);
+            $this->assertRunning($auction, __('The auction is not live.'));
+            $lot = $this->lockLot($auction, $lot);
+            $lot->loadMissing('teamPlayer.editionTeam.team');
+
+            if (! $lot->isSold() || ! $lot->teamPlayer) {
+                $this->fail('price', __('Only a sold player has a price to correct.'));
+            }
+
+            if ($amount < $auction->min_bid || ($amount - $auction->min_bid) % $auction->bid_step !== 0) {
+                $this->fail('price', __('A price goes up in steps of :step (from :min).', ['step' => points($auction->bid_step), 'min' => points($auction->min_bid)]));
+            }
+
+            $teamPlayer = $lot->teamPlayer;
+            $team = $teamPlayer->editionTeam;
+            $old = (int) round((float) $teamPlayer->sold_amount);
+            $standing = $this->teamStanding($auction, $team);
+
+            if ($amount - $old > $standing['left']) {
+                $this->fail('price', __(':name has only :amount pts left, less than the new price.', ['name' => $team->team->name, 'amount' => points($standing['left'])]));
+            }
+
+            if ($amount === $old) {
+                return $lot;
+            }
+
+            $teamPlayer->update(['sold_amount' => $amount]);
+            $lot->update(['current_bid' => $amount, 'version' => $lot->version + 1]);
+            $this->logEvent($auction, AuctionEvent::PRICE_CHANGED, $lot, $team, $amount, (string) $old);
+
+            return $lot->refresh();
+        });
+    }
+
+    /**
+     * Back to a fresh start - for a rehearsal on the real data: every sold player leaves their team, every bid is
+     * dropped, every player waits again and the auction returns to its set-up state (round 1, not started).
+     * Refused for a completed auction, and if a sold player has already played a match.
+     */
+    public function resetAll(Auction $auction): Auction
+    {
+        return DB::transaction(function () use ($auction) {
+            $auction = $this->lockAuction($auction);
+
+            if ($auction->isCompleted()) {
+                $this->fail('auction', __('A completed auction cannot be reset.'));
+            }
+
+            $lots = $auction->lots()->with('teamPlayer')->lockForUpdate()->get();
+
+            foreach ($lots as $lot) {
+                if ($lot->teamPlayer && $lot->teamPlayer->matchPlayers()->exists()) {
+                    $this->fail('auction', __(':name has already played a match, so the auction cannot be reset.', ['name' => $lot->playerRegistration->player->name]));
+                }
+            }
+
+            foreach ($lots->filter(fn (AuctionLot $lot) => $lot->isSold()) as $lot) {
+                $teamPlayer = $lot->teamPlayer;
+                $this->resetSoldLot($auction, $lot);
+
+                if ($teamPlayer) {
+                    $this->teamPlayers->deleteTeamPlayer($teamPlayer);
+                }
+            }
+
+            $auction->lots()->where('status', '!=', AuctionLot::PENDING)->update([
+                'status' => AuctionLot::PENDING,
+                'current_bid' => null,
+                'leading_edition_team_id' => null,
+                'team_player_id' => null,
+                'called_at' => null,
+                'sold_at' => null,
+                'version' => DB::raw('version + 1'),
+            ]);
+
+            AuctionBid::query()->whereIn('auction_lot_id', $auction->lots()->select('id'))->delete();
+
+            $auction->update(['status' => Auction::STATUS_DRAFT, 'round' => 1, 'current_lot_id' => null, 'started_at' => null]);
+            $auction->lots()->update(['round' => 1]);
+
+            $this->logEvent($auction, AuctionEvent::RESET);
+
+            return $auction->refresh();
+        });
     }
 
     // ----- Internals --------------------------------------------------------
@@ -846,6 +1078,7 @@ class AuctionService
                 'version' => $lot->version + 1,
             ]);
             $auction->update(['current_lot_id' => null]);
+            $this->logEvent($auction, $status === AuctionLot::HOLD ? AuctionEvent::HELD : AuctionEvent::RELEASED, $lot);
 
             return $lot->refresh();
         });
@@ -866,6 +1099,7 @@ class AuctionService
             }
 
             $auction->update(['status' => $to]);
+            $this->logEvent($auction, $to === Auction::STATUS_PAUSED ? AuctionEvent::PAUSED : AuctionEvent::RESUMED);
 
             return $auction;
         });
@@ -884,6 +1118,38 @@ class AuctionService
                 'missing' => $row['still_needed'],
             ])
             ->values();
+    }
+
+    /**
+     * One line of the activity log: who (the signed-in user, if any), what, and the player / team / amount it was
+     * about. Written inside the transaction of the change itself.
+     */
+    private function logEvent(Auction $auction, string $type, ?AuctionLot $lot = null, ?EditionTeam $team = null, ?int $amount = null, ?string $note = null): void
+    {
+        $playerName = null;
+
+        if ($lot) {
+            $lot->loadMissing('playerRegistration.player');
+            $playerName = $lot->playerRegistration?->player?->name;
+        }
+
+        $teamName = null;
+
+        if ($team) {
+            $team->loadMissing('team');
+            $teamName = $team->team?->name;
+        }
+
+        AuctionEvent::query()->create([
+            'auction_id' => $auction->id,
+            'auction_lot_id' => $lot?->id,
+            'user_id' => auth()->id(),
+            'type' => $type,
+            'player_name' => $playerName,
+            'team_name' => $teamName,
+            'amount' => $amount,
+            'note' => $note !== null ? mb_substr($note, 0, 250) : null,
+        ]);
     }
 
     private function lockAuction(Auction $auction): Auction

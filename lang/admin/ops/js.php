@@ -149,4 +149,13 @@ return [
     'live',
     'paused',
     'completed',
+    'Undo sale',
+    'Wrong team? Move the last bid',
+    'Edit details',
+    'Edit price',
+    'New price for :player (points):',
+    'Bat',
+    'Bowl',
+    'AR',
+    'WK',
 ];

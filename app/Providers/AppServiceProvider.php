@@ -254,6 +254,7 @@ class AppServiceProvider extends ServiceProvider
             'public.maintenance',
             'public.content-page',
             'admin.editions.report-pdf',
+            'admin.auctions.results-pdf',
             'admin.edition-contributions.receipt',
             'public.matches.scorecard-pdf',
         ], BrandingComposer::class);
