@@ -295,7 +295,7 @@
 
     /* ---- Compact score card of the Live tab ---- */
     .mx-lsc {
-        @apply space-y-2 p-3 sm:p-3.5;
+        @apply space-y-1.5 px-3 py-2.5 sm:px-3.5;
     }
     .mx-lsc.mx-hero-live {
         @apply ring-1 ring-green-500/30;
@@ -316,11 +316,25 @@
     .mx-lsc-share.is-done {
         @apply bg-green-100 text-green-700;
     }
+    /* Two teams side by side on a tablet / desktop (name above its score), one line each on a phone. */
+    .mx-lsc-teams {
+        @apply grid gap-y-1.5 sm:grid-cols-2 sm:gap-x-4;
+    }
     .mx-lsc-team {
-        @apply flex items-center gap-2.5;
+        @apply grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2.5 sm:grid-cols-[auto_minmax(0,1fr)];
+    }
+    .mx-lsc-team > .mx-logo {
+        @apply col-start-1 row-start-1 sm:row-span-2;
     }
     .mx-lsc-name {
-        @apply flex min-w-0 flex-1 items-center gap-2 text-[15px] font-semibold leading-tight text-slate-900;
+        @apply col-start-2 row-start-1 flex min-w-0 items-center gap-2 text-[15px] font-semibold leading-tight text-slate-900;
+    }
+    .mx-lsc-score,
+    .mx-lsc-yet {
+        @apply col-start-3 row-start-1 sm:col-start-2 sm:row-start-2;
+    }
+    .mx-lsc-yet {
+        @apply text-xs text-slate-400;
     }
     .mx-lsc .mx-batting-tag {
         @apply shrink-0 bg-green-100 text-green-700 max-sm:hidden;
@@ -331,7 +345,7 @@
         @apply size-2 shrink-0 rounded-full bg-green-500 sm:hidden;
     }
     .mx-lsc-score {
-        @apply grid shrink-0 grid-cols-[auto_auto] items-baseline justify-end gap-x-2 text-right sm:flex sm:flex-wrap;
+        @apply grid shrink-0 grid-cols-[auto_auto] items-baseline justify-end gap-x-2 text-right sm:flex sm:flex-wrap sm:justify-start sm:text-left;
     }
     .mx-lsc-runs {
         @apply text-xl font-bold leading-none tabular-nums text-slate-900;
@@ -350,22 +364,32 @@
         @apply text-sm text-green-600;
     }
     .mx-lsc-result {
-        @apply rounded-lg bg-green-50 px-3 py-1.5 text-[13px] font-semibold text-green-800;
+        @apply rounded-lg bg-green-50 px-3 py-1 text-[13px] font-semibold text-green-800;
     }
+    /* The chase: the sentence and its four numbers share a line on a tablet / desktop, the bar runs under both. */
     .mx-lsc .mx-chase {
-        @apply rounded-lg bg-green-50 px-3 py-2;
+        @apply grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-lg bg-green-50 px-3 py-1.5;
+    }
+    .mx-lsc .mx-chase-headline {
+        @apply col-span-2 sm:col-span-1;
+    }
+    .mx-lsc .mx-chase-grid {
+        @apply col-span-2 row-start-2 sm:col-span-1 sm:col-start-2 sm:row-start-1;
+    }
+    .mx-lsc .mx-chase-bar {
+        @apply col-span-2 row-start-3 sm:row-start-2;
     }
     .mx-lsc .mx-chase-headline {
         @apply text-[13px] text-green-800;
     }
     .mx-lsc .mx-chase-bar {
-        @apply mt-1.5 h-1 bg-green-200;
+        @apply mt-0 h-1 bg-green-200;
     }
     .mx-lsc .mx-chase-bar > span {
         @apply bg-green-600;
     }
     .mx-lsc .mx-chase-grid {
-        @apply mt-1.5 flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-left;
+        @apply mt-0 flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-left sm:justify-end;
     }
     .mx-lsc .mx-chase-grid > div {
         @apply flex items-baseline gap-1 bg-transparent p-0 ring-0;

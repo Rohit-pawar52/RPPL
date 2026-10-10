@@ -49,6 +49,7 @@
         </button>
     </div>
 
+    <div class="mx-lsc-teams">
     @foreach([$match->teamA, $match->teamB] as $editionTeam)
         @php
             $score = $scoreOf($editionTeam);
@@ -66,8 +67,10 @@
                 <span class="mx-lsc-overs" data-slot="overs">{{ $score ? __('matches.common.overs_count', ['overs' => $score['overs']]) : '' }}</span>
                 <span class="mx-crr {{ $showCrr ? '' : 'hidden' }}" data-slot="crr">{{ $showCrr ? __('matches.chase.crr', ['rate' => number_format((float) $score['crr'], 2)]) : '' }}</span>
             </div>
+            <p class="mx-lsc-yet {{ $score ? 'hidden' : '' }}" data-slot="yet">{{ __('ux_public_matches.match.yet_to_bat') }}</p>
         </div>
     @endforeach
+    </div>
 
     <p id="live-match-result" class="mx-lsc-result {{ $resultText ? '' : 'hidden' }}">{{ $resultText }}</p>
 

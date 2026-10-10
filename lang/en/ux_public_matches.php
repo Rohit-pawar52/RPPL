@@ -22,6 +22,7 @@ return [
 
     'match' => [
         'batting' => 'Batting',
+        'yet_to_bat' => 'Yet to bat',
         'share' => 'Share this match',
         'link_copied' => 'Link copied',
         'starts_in' => 'Starts in',

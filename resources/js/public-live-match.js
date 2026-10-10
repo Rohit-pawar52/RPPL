@@ -89,6 +89,7 @@ function applyInnings(innings) {
         crrEl.classList.toggle('hidden', !hasCrr);
 
         slot('batting').classList.toggle('hidden', !batting);
+        slot('yet')?.classList.add('hidden');
 
         if (batting) {
             teamEl.setAttribute('data-batting', '1');

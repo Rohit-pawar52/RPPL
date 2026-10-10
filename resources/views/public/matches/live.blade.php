@@ -50,12 +50,15 @@
         ];
     @endphp
 
-    @include('public.matches._match-tabs', ['match' => $match, 'active' => 'live'])
+    {{-- The tabs sit close under the site header on this page. --}}
+    <div class="-mt-3 lg:-mt-6">
+        @include('public.matches._match-tabs', ['match' => $match, 'active' => 'live'])
+    </div>
     @include('public.matches._hero-scripts')
 
     <div
         id="live-match-root"
-        class="mt-3 grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start lg:gap-4"
+        class="mt-2 grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start lg:gap-4"
         data-match-id="{{ $match->id }}"
         data-live-data-url="{{ route('public.matches.live-data', $match) }}"
         data-should-poll="{{ $liveData['should_poll'] ? '1' : '0' }}"
