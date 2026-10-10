@@ -36,6 +36,7 @@ if (dataEl && root) {
     let lastJson = JSON.stringify(initial);
     let offline = false;
     let tab = 'sold';
+    let lastBidKey = null;
     const openSquads = new Set();
     const openSales = new Set();
     /** How the bidding went for a sale ("key:amount:bids" -> list of bids | 'loading' | 'error'). */
@@ -106,7 +107,7 @@ if (dataEl && root) {
             title: 'text-slate-900',
             muted: 'text-slate-500',
             soft: 'text-slate-600',
-            tag: 'rounded-full bg-white/10 px-2.5 py-0.5 text-xs text-slate-100 ring-1 ring-white/15',
+            tag: 'rounded-full bg-white/10 px-2 py-0.5 text-[10.5px] text-slate-100 ring-1 ring-white/15',
             rule: 'divide-line',
             bar: 'bg-slate-100',
             fill: 'bg-brand',
@@ -122,6 +123,24 @@ if (dataEl && root) {
 
     const monitorIcon = '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg>';
 
+    /** The inline style that hands a team's colour to the CSS as --tc; anything but #rrggbb is ignored. */
+    function tcValue(color) {
+        return /^#[0-9a-f]{6}$/i.test(color || '') ? color : '';
+    }
+
+    function tc(color) {
+        return tcValue(color) ? `style="--tc:${tcValue(color)}"` : '';
+    }
+
+    const crownIcon = '<svg class="h-3 w-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5L3 7z" /></svg>';
+    const shareIcon = '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" /><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4" /></svg>';
+    const pinIcon = '<svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.5 7-11.5A7 7 0 0 0 5 9.5C5 14.5 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.5" /></svg>';
+
+    /** A team's round logo (its default picture when it has none). */
+    function logo(src, sizeClass) {
+        return `<span class="relative ${sizeClass} shrink-0 overflow-hidden rounded-full bg-white/10"><img src="${esc(src || '')}" alt="" data-fallback="image" class="h-full w-full object-cover" /></span>`;
+    }
+
     // ----- The numbers -----------------------------------------------------------
 
     function header() {
@@ -130,8 +149,8 @@ if (dataEl && root) {
         const left = counts.waiting + counts.hold;
 
         const status = paused
-            ? `<span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 ${big ? 'text-[clamp(0.8rem,1.1vw,1.4rem)]' : 'text-[11px]'} font-semibold text-amber-800">${esc(t.paused)}</span>`
-            : `<span class="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-0.5 ${big ? 'text-[clamp(0.8rem,1.1vw,1.4rem)]' : 'text-[11px]'} font-bold tracking-wide text-white"><span class="live-dot" aria-hidden="true"></span>${esc(t.live)}</span>`;
+            ? `<span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 ${big ? 'text-[clamp(0.8rem,1.1vw,1.4rem)]' : 'text-[10px]'} font-semibold text-amber-800">${esc(t.paused)}</span>`
+            : `<span class="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-0.5 ${big ? 'text-[clamp(0.8rem,1.1vw,1.4rem)]' : 'text-[10px]'} font-bold tracking-wide text-white"><span class="live-dot" aria-hidden="true"></span>${esc(t.live)}</span>`;
 
         const toCome = left === 1 ? t.to_come_one : tr('to_come', { count: left });
         const done = tr('progress', { done: counts.sold + counts.unsold, total: counts.total });
@@ -140,17 +159,19 @@ if (dataEl && root) {
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                     ${status}
-                    <h1 class="${big ? 'text-[clamp(1.5rem,3vw,3.75rem)]' : 'text-2xl sm:text-3xl'} font-bold tracking-tight ${k.title}">${esc(auction.edition)} · ${esc(t.title)}</h1>
+                    <h1 class="${big ? 'text-[clamp(1.5rem,3vw,3.75rem)]' : 'text-base sm:text-xl'} font-bold tracking-tight ${k.title}">${esc(auction.edition)} · ${esc(t.title)}</h1>
                 </div>
                 <p class="mt-1 ${big ? 'text-[clamp(0.9rem,1.35vw,1.75rem)]' : 'text-xs'} ${k.muted}">${esc(tr('round', { number: auction.round }))}${left > 0 ? ` · ${esc(toCome)}` : ''}${big ? ` · ${esc(done)}` : ''}${offline ? ` · <span class="font-semibold text-amber-500">${esc(t.connection_lost)}</span>` : ''}</p>
             </div>`;
 
         if (!big) {
             return `
-                <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div class="mb-3 flex items-start justify-between gap-2">
                     ${title}
-                    <a href="${esc(bigUrl())}" class="btn btn-secondary btn-sm shrink-0">${monitorIcon}${esc(t.big_screen)}</a>
-                    <button type="button" data-share class="btn btn-secondary btn-sm shrink-0">${esc(t.share)}</button>
+                    <div class="flex shrink-0 items-center gap-1.5">
+                        <button type="button" data-share class="btn btn-secondary btn-sm min-h-9 px-2.5" aria-label="${esc(t.share)}" title="${esc(t.share)}">${shareIcon}</button>
+                        <a href="${esc(bigUrl())}" class="btn btn-secondary btn-sm min-h-9 px-2.5" aria-label="${esc(t.big_screen)}" title="${esc(t.big_screen)}">${monitorIcon}</a>
+                    </div>
                 </div>`;
         }
 
@@ -163,19 +184,6 @@ if (dataEl && root) {
                     <div class="flex flex-wrap gap-[clamp(0.4rem,0.7vw,0.9rem)]">${overviewItems().slice(0, 6).map((item) => tile(item)).join('')}</div>
                 </div>
                 <div class="mt-[clamp(0.4rem,0.7vw,0.9rem)] h-[0.35vw] min-h-1 overflow-hidden rounded-full ${k.bar}" aria-hidden="true"><div class="h-full rounded-full ${k.fill}" style="width: ${pct}%"></div></div>
-            </div>`;
-    }
-
-    /** "N of M players done" with a bar. */
-    function progress(spacing = '') {
-        const { counts } = state;
-        const done = counts.sold + counts.unsold;
-        const pct = counts.total > 0 ? Math.round((done / counts.total) * 100) : 0;
-
-        return `
-            <div class="${spacing}">
-                <div class="h-1.5 overflow-hidden rounded-full ${k.bar}" aria-hidden="true"><div class="h-full rounded-full ${k.fill} transition-all duration-500" style="width: ${pct}%"></div></div>
-                <p class="mt-1.5 ${caption} ${k.muted}">${esc(tr('progress', { done, total: counts.total }))}</p>
             </div>`;
     }
 
@@ -205,14 +213,28 @@ if (dataEl && root) {
     }
 
     function overview() {
-        // The widest tile (highest sale: it carries a name and a team) goes last and takes two columns.
-        const items = overviewItems();
-        const ordered = [items[0], items[1], items[2], items[3], items[4], items[6], items[5]];
+        const { counts, stats } = state;
+        const top = stats.highest;
+        const pct = counts.total > 0 ? Math.round(((counts.sold + counts.unsold) / counts.total) * 100) : 0;
+
+        const cell = (label, value, tone = k.title, sub = '', extra = '') => `
+            <div class="min-w-0 bg-white px-2 py-2 text-center ${extra}">
+                <p class="truncate text-[15px] font-extrabold leading-none tabular-nums ${tone}">${esc(value)}</p>
+                <p class="mt-1 truncate text-[9.5px] font-medium uppercase tracking-wide ${k.muted}">${esc(label)}${sub ? ` · ${esc(sub)}` : ''}</p>
+            </div>`;
 
         return `
-            <section class="mt-4" aria-label="${esc(t.title)}">
-                <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4">${ordered.map((item, index) => tile(item, index === 6 ? 'col-span-2' : '')).join('')}</div>
-                ${progress('mt-3')}
+            <section class="overflow-hidden rounded-xl border border-line shadow-card" aria-label="${esc(t.title)}">
+                <div class="grid grid-cols-4 gap-px bg-line sm:grid-cols-7">
+                    ${cell(t.sold_players, counts.sold, 'text-emerald-700')}
+                    ${cell(t.upcoming, counts.waiting)}
+                    ${cell(t.on_hold, counts.hold, 'text-amber-600')}
+                    ${cell(t.unsold, counts.unsold, 'text-slate-500')}
+                    ${cell(t.points_spent, pts(stats.points_spent))}
+                    ${cell(t.average_price, stats.average > 0 ? pts(stats.average) : '—')}
+                    ${cell(t.highest_sale, top ? pts(top.amount) : '—', k.title, top ? top.name : '', 'col-span-2 sm:col-span-1')}
+                </div>
+                <div class="h-1 bg-slate-100" title="${esc(tr('progress', { done: counts.sold + counts.unsold, total: counts.total }))}"><div class="h-full ${k.fill} transition-all duration-500" style="width: ${pct}%"></div></div>
             </section>`;
     }
 
@@ -229,17 +251,17 @@ if (dataEl && root) {
     }
 
     function pastLine(lot) {
-        const size = big ? 'text-[clamp(0.9rem,1.35vw,1.75rem)]' : 'text-xs';
+        const size = big ? 'text-[clamp(0.9rem,1.35vw,1.75rem)]' : 'text-[11px]';
 
         if (!lot.stats) {
-            return `<p class="mt-2 ${size} ${big ? k.muted : 'text-slate-400'}">${esc(t.first_time)}</p>`;
+            return `<p class="mt-1.5 ${size} ${big ? k.muted : 'text-white/55'}">${esc(t.first_time)}</p>`;
         }
 
         const s = lot.stats;
         const line = tr('before', { matches: s.matches, runs: s.runs, wickets: s.wickets });
         const best = s.highest !== null ? ` (${tr('best_score', { value: s.highest })})` : '';
 
-        return `<p class="mt-2 ${size} ${big ? k.soft : 'text-slate-300'}">${esc(line)}${esc(best)}</p>`;
+        return `<p class="mt-1.5 ${size} ${big ? k.soft : 'text-white/75'}">${esc(line)}${esc(best)}</p>`;
     }
 
     function photoBox(lot, sizeClass) {
@@ -247,17 +269,7 @@ if (dataEl && root) {
         return `<div class="relative ${sizeClass} shrink-0 overflow-hidden rounded-2xl bg-white/10 ring-2 ring-white/15"><img src="${esc(lot.photo || '')}" alt="" data-fallback="user" class="h-full w-full object-cover object-top" /></div>`;
     }
 
-    /** The standing bid, in the normal page (inside the dark hero card). */
-    function bidBox(lot) {
-        const hasBid = lot.current_bid !== null;
-
-        if (lot.bids_hidden) {
-            return `<div class="w-full rounded-2xl ${k.plain} px-5 py-4 text-left md:w-auto md:min-w-[14rem] md:text-right"><p class="text-[11px] font-semibold uppercase tracking-wide opacity-70">${esc(t.base_price)}</p><p class="text-4xl font-bold tabular-nums text-white">${pts(lot.base_price)}</p><p class="text-xs opacity-70">${esc(t.bidding)}</p></div>`;
-        }
-
-        return `<div class="w-full rounded-2xl ${hasBid ? k.bid : k.plain} px-5 py-4 text-left md:w-auto md:min-w-[14rem] md:text-right"><p class="text-[11px] font-semibold uppercase tracking-wide opacity-80">${esc(hasBid ? t.current_bid : t.base_price)}</p><p class="text-5xl font-extrabold leading-tight tabular-nums ${hasBid ? k.bidNumber : 'text-white'}">${pts(hasBid ? lot.current_bid : lot.base_price)}</p><p class="mt-0.5 text-sm ${hasBid ? 'font-semibold text-white' : 'opacity-70'}">${esc(hasBid ? lot.leading_team : t.no_bid_yet)}</p></div>`;
-    }
-
+    /** The sold banner above the player on the block: the team's colour on the normal page, green on the projector. */
     function justSoldBanner() {
         const { lot, last_sale: sale } = state;
 
@@ -265,7 +277,83 @@ if (dataEl && root) {
             return '';
         }
 
-        return `<div class="auc-pop mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl ${k.sold} px-4 py-2.5 ${big ? 'text-[clamp(1.1rem,2vw,2.5rem)]' : 'text-sm'} font-semibold shadow-raised"><span class="rounded bg-white/20 px-2 py-0.5 text-xs font-bold tracking-wide">${esc(t.sold)}</span>${esc(sale.name)} → ${esc(sale.team || '')} · ${pts(sale.amount)} ${esc(t.pts)}</div>`;
+        if (big) {
+            return `<div class="auc-pop mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl ${k.sold} px-4 py-2.5 text-[clamp(1.1rem,2vw,2.5rem)] font-semibold shadow-raised"><span class="rounded bg-white/20 px-2 py-0.5 text-xs font-bold tracking-wide">${esc(t.sold)}</span>${esc(sale.name)} → ${esc(sale.team || '')} · ${pts(sale.amount)} ${esc(t.pts)}</div>`;
+        }
+
+        const color = tcValue(sale.team_color) || '#16a34a';
+
+        return `<div class="auc-pop mb-2.5 flex items-center gap-2 rounded-xl px-3 py-2 text-[12.5px] font-semibold text-white shadow-raised" style="background: linear-gradient(90deg, ${color}, color-mix(in srgb, ${color} 55%, #0b2e3f))"><span class="rounded bg-white/25 px-1.5 py-0.5 text-[10px] font-bold tracking-widest">${esc(t.sold)}</span><span class="min-w-0 flex-1 truncate">${esc(sale.name)} → ${esc(sale.team || '')}</span><span class="shrink-0 tabular-nums">${pts(sale.amount)} ${esc(t.pts)}</span></div>`;
+    }
+
+    /** The standing bid and who holds it, in the dark card. */
+    function bidPanel(lot) {
+        const hasBid = lot.current_bid !== null;
+        const amount = lot.bids_hidden || !hasBid ? lot.base_price : lot.current_bid;
+        const label = lot.bids_hidden || !hasBid ? t.base_price : t.current_bid;
+        const key = `${lot.key}:${lot.current_bid}`;
+        const bump = key !== lastBidKey;
+        lastBidKey = key;
+
+        let holder;
+        if (lot.bids_hidden) {
+            holder = `<span class="text-xs font-medium text-white/60">${esc(t.bidding)}</span>`;
+        } else if (hasBid && lot.leading_team) {
+            const top = (lot.bidders || [])[0];
+            holder = `<span class="auc-chip inline-flex max-w-[11.5rem] items-center gap-1.5 rounded-full py-1 pl-1 pr-3 text-xs font-bold text-white" ${tc(lot.leading_color)}>${logo(top && top.logo, 'h-5 w-5')}<span class="truncate">${esc(lot.leading_team)}</span></span>`;
+        } else {
+            holder = `<span class="text-xs font-medium text-white/60">${esc(t.no_bid_yet)}</span>`;
+        }
+
+        return `
+            <div class="mt-3 flex items-end justify-between gap-3 rounded-xl bg-black/25 px-3.5 py-3 ring-1 ring-white/10 lg:mt-0">
+                <div class="min-w-0">
+                    <p class="text-[10px] font-semibold uppercase tracking-widest text-white/55">${esc(label)}</p>
+                    <p class="${bump ? 'auc-bump' : ''} text-4xl font-extrabold leading-none tabular-nums sm:text-5xl">${pts(amount)}<span class="ml-1 text-xs font-semibold text-white/45">${esc(t.pts)}</span></p>
+                </div>
+                <div class="min-w-0 shrink-0 text-right">${holder}</div>
+            </div>`;
+    }
+
+    /** Every team that has bid on this player: a bar of its best bid against the leader's, in its own colour. */
+    function bidBars(lot) {
+        const bidders = lot.bidders || [];
+
+        if (lot.bids_hidden || !bidders.length) {
+            return '';
+        }
+
+        const leaderTop = bidders[0].top || 1;
+        const count = lot.bid_count === 1 ? t.bids_one : tr('bids_count', { count: lot.bid_count });
+
+        const rows = bidders.map((bidder, index) => {
+            const lead = index === 0;
+            const width = Math.max(10, Math.round((bidder.top / leaderTop) * 100));
+
+            return `
+                <li class="flex items-center gap-2" ${tc(bidder.color)}>
+                    <span class="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-white/10 ring-2 ring-[color:var(--tc,#94a3b8)]"><img src="${esc(bidder.logo || '')}" alt="" data-fallback="image" class="h-full w-full object-cover" /></span>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center justify-between gap-2 text-[11px] leading-none">
+                            <span class="flex min-w-0 items-center gap-1.5 font-semibold ${lead ? 'text-white' : 'text-white/65'}"><span class="truncate">${esc(bidder.team)}</span>${lead ? `<span class="auc-lead">${crownIcon}${esc(t.leading_badge)}</span>` : ''}</span>
+                            <span class="shrink-0 font-bold tabular-nums ${lead ? 'text-white' : 'text-white/65'}">${pts(bidder.top)}</span>
+                        </div>
+                        <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full transition-all duration-500" style="width: ${width}%; background: var(--tc, #94a3b8)"></div></div>
+                    </div>
+                    <span class="w-6 shrink-0 text-right text-[10px] tabular-nums text-white/45">×${bidder.count}</span>
+                </li>`;
+        }).join('');
+
+        const recent = lot.bids.length > 1
+            ? `<div class="mt-2.5 flex items-center gap-1.5 overflow-x-auto pb-0.5 text-[10.5px] [scrollbar-width:none]"><span class="shrink-0 text-white/45">${esc(t.latest_bids)}</span>${lot.bids.slice(0, 6).map((bid) => `<span class="auc-chip shrink-0 rounded-full px-2 py-0.5 font-semibold tabular-nums text-white" ${tc(bid.color)}>${pts(bid.amount)}</span>`).join('')}</div>`
+            : '';
+
+        return `
+            <div class="mt-3 border-t border-white/10 pt-3">
+                <div class="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-widest text-white/50"><span>${esc(t.bids)}</span><span>${esc(count)}</span></div>
+                <ol class="space-y-2">${rows}</ol>
+                ${recent}
+            </div>`;
     }
 
     /** The player on the block on the projector: name across the full width, the bid beneath. */
@@ -283,7 +371,7 @@ if (dataEl && root) {
                <p class="mt-2 truncate text-[clamp(1.1rem,2.2vw,2.8rem)] font-semibold ${hasBid ? 'text-white' : 'opacity-70'}">${esc(hasBid ? lot.leading_team : t.no_bid_yet)}</p>`;
 
         const ladderBox = ladder.length
-            ? `<div class="min-w-0 self-stretch border-l border-white/10 pl-[clamp(0.75rem,1.5vw,2rem)]"><p class="${label} opacity-60">${esc(t.bids)}</p><ol class="mt-2 space-y-1.5 ${body}">${ladder.map((bid, index) => `<li class="flex justify-between gap-3 ${index === 0 ? 'font-semibold text-white' : 'text-slate-400'}"><span class="truncate">${esc(bid.team)}</span><span class="tabular-nums">${pts(bid.amount)}</span></li>`).join('')}</ol></div>`
+            ? `<div class="min-w-0 self-stretch border-l border-white/10 pl-[clamp(0.75rem,1.5vw,2rem)]"><p class="${label} opacity-60">${esc(t.bids)}</p><ol class="mt-2 space-y-1.5 ${body}">${ladder.map((bid, index) => `<li class="flex justify-between gap-3 ${index === 0 ? 'font-semibold text-white' : 'text-slate-400'}"><span class="flex min-w-0 items-center gap-2"><i class="inline-block h-[0.7em] w-[0.7em] shrink-0 rounded-full" style="background: ${tcValue(bid.color) || '#94a3b8'}"></i><span class="truncate">${esc(bid.team)}</span></span><span class="tabular-nums">${pts(bid.amount)}</span></li>`).join('')}</ol></div>`
             : '';
 
         return `
@@ -310,33 +398,31 @@ if (dataEl && root) {
             </div>`;
     }
 
-    /** The player on the block on the normal page: a dark hero card, the bid on its right. */
+    /** The player on the block on the normal page: a compact dark card that takes the colour of the leading team. */
     function normalLot(lot) {
-        const where = lot.village ? `<p class="mt-1.5 flex items-center gap-1 text-xs text-slate-400"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.5 7-11.5A7 7 0 0 0 5 9.5C5 14.5 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.5" /></svg>${esc(lot.village)}</p>` : '';
-
-        const bids = !lot.bids_hidden && lot.bids.length
-            ? `<div class="mt-5 border-t border-white/10 pt-4"><p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">${esc(t.bids)}</p><ol class="flex flex-wrap gap-2">${lot.bids.map((bid, index) => `<li class="flex items-center gap-2 rounded-full px-3 py-1 text-xs ${index === 0 ? 'bg-brand/30 font-semibold text-white ring-1 ring-accent-dark/50' : 'bg-white/5 text-slate-300 ring-1 ring-white/10'}"><span class="max-w-[10rem] truncate">${esc(bid.team)}</span><span class="font-bold tabular-nums ${index === 0 ? 'text-accent-dark' : ''}">${pts(bid.amount)}</span></li>`).join('')}</ol></div>`
-            : '';
+        const where = lot.village ? `<p class="mt-1 flex items-center gap-1 text-[11px] text-white/65">${pinIcon}<span class="truncate">${esc(lot.village)}</span></p>` : '';
 
         return `
-            <div class="pc-hero p-5 sm:p-6">
-                <div class="flex items-center justify-between gap-3">
-                    <p class="pc-eyebrow">${esc(t.on_the_block)}</p>
-                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">${esc(tr('round_short', { number: lot.round }))}</p>
+            <div class="auc-stage p-3.5 sm:p-4" ${tc(lot.leading_color)}>
+                <div class="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.18em] text-white/55">
+                    <span class="inline-flex items-center gap-1.5"><span class="live-dot" aria-hidden="true"></span>${esc(t.on_the_block)}</span>
+                    <span>${esc(tr('round_short', { number: lot.round }))}</span>
                 </div>
-                <div class="mt-4 grid items-center gap-5 md:grid-cols-[minmax(0,1fr)_auto]">
-                    <div class="flex items-center gap-4 sm:gap-5">
-                        ${photoBox(lot, 'h-24 w-24 sm:h-32 sm:w-32')}
+                <div class="mt-2.5 grid gap-3 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:items-start lg:gap-5">
+                    <div class="flex items-start gap-3">
+                        ${photoBox(lot, 'h-[4.5rem] w-[4.5rem] sm:h-24 sm:w-24 lg:h-28 lg:w-28')}
                         <div class="min-w-0 flex-1">
-                            <h2 class="break-words text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl">${esc(lot.name)}</h2>
-                            <div class="mt-2 flex flex-wrap items-center gap-1.5">${tags(lot)}</div>
+                            <h2 class="break-words text-xl font-extrabold leading-tight tracking-tight sm:text-2xl">${esc(lot.name)}</h2>
+                            <div class="mt-1.5 flex flex-wrap items-center gap-1">${tags(lot)}</div>
                             ${where}
                             ${pastLine(lot)}
                         </div>
                     </div>
-                    ${bidBox(lot)}
+                    <div class="min-w-0">
+                        ${bidPanel(lot)}
+                        ${bidBars(lot)}
+                    </div>
                 </div>
-                ${bids}
             </div>`;
     }
 
@@ -346,25 +432,34 @@ if (dataEl && root) {
         const fill = big ? 'flex flex-1 flex-col items-center justify-center' : '';
 
         if (paused) {
-            return `${justSoldBanner()}<div class="${big ? `${k.panel} ${fill} p-12` : 'rounded-2xl border border-amber-200 bg-amber-50 p-8'} text-center"><p class="${big ? 'text-[clamp(2.5rem,5vw,6rem)]' : 'text-2xl'} font-bold ${big ? k.title : 'text-amber-900'}">${esc(t.paused)}</p><p class="mt-3 ${big ? 'text-[clamp(1.1rem,2vw,2.5rem)]' : 'text-sm'} ${big ? k.muted : 'text-amber-800'}">${esc(t.paused_hint)}</p></div>`;
+            return `${justSoldBanner()}<div class="${big ? `${k.panel} ${fill} p-12` : 'rounded-2xl border border-amber-200 bg-amber-50 p-5'} text-center"><p class="${big ? 'text-[clamp(2.5rem,5vw,6rem)]' : 'text-lg'} font-bold ${big ? k.title : 'text-amber-900'}">${esc(t.paused)}</p><p class="mt-2 ${big ? 'text-[clamp(1.1rem,2vw,2.5rem)]' : 'text-[13px]'} ${big ? k.muted : 'text-amber-800'}">${esc(t.paused_hint)}</p></div>`;
         }
 
         if (lot) {
             return `${justSoldBanner()}${big ? bigLot(lot) : normalLot(lot)}`;
         }
 
-        if (sale) {
-            return `<div class="auc-pop rounded-2xl ${k.sold} ${fill} ${big ? 'p-12' : 'p-8'} text-center shadow-raised">
-                <p class="${big ? 'text-[clamp(1.5rem,2.6vw,3.5rem)]' : 'text-lg'} font-bold tracking-[0.3em]">${esc(t.sold)}</p>
-                <p class="mt-3 ${big ? 'text-[clamp(3rem,6.5vw,8rem)]' : 'text-3xl sm:text-4xl'} font-bold">${esc(sale.name)}</p>
-                <p class="mt-3 ${big ? 'text-[clamp(1.5rem,3.4vw,4.5rem)]' : 'text-xl'} font-semibold">${esc(tr('sold_to', { team: sale.team || '' }))}</p>
-                <p class="mt-1 ${big ? 'text-[clamp(2.5rem,5.5vw,7rem)]' : 'text-3xl'} font-bold tabular-nums">${esc(tr('for_points', { points: pts(sale.amount) }))}</p>
+        if (sale && big) {
+            return `<div class="auc-pop rounded-2xl ${k.sold} ${fill} p-12 text-center shadow-raised">
+                <p class="text-[clamp(1.5rem,2.6vw,3.5rem)] font-bold tracking-[0.3em]">${esc(t.sold)}</p>
+                <p class="mt-3 text-[clamp(3rem,6.5vw,8rem)] font-bold">${esc(sale.name)}</p>
+                <p class="mt-3 text-[clamp(1.5rem,3.4vw,4.5rem)] font-semibold">${esc(tr('sold_to', { team: sale.team || '' }))}</p>
+                <p class="mt-1 text-[clamp(2.5rem,5.5vw,7rem)] font-bold tabular-nums">${esc(tr('for_points', { points: pts(sale.amount) }))}</p>
             </div>`;
         }
 
-        const hourglass = '<svg class="mx-auto mb-3 h-9 w-9 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12M6 21h12M7 3c0 5 5 5 5 9s-5 4-5 9M17 3c0 5-5 5-5 9s5 4 5 9" /></svg>';
+        if (sale) {
+            return `<div class="auc-stage auc-pop p-5 text-center" ${tc(sale.team_color)}>
+                <p class="text-[11px] font-bold tracking-[0.35em] text-white/70">${esc(t.sold)}</p>
+                <p class="mt-1.5 break-words text-2xl font-extrabold leading-tight sm:text-3xl">${esc(sale.name)}</p>
+                <p class="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-bold auc-chip"><span class="truncate">${esc(tr('sold_to', { team: sale.team || '' }))}</span></p>
+                <p class="mt-2 text-3xl font-extrabold tabular-nums">${pts(sale.amount)}<span class="ml-1 text-xs font-semibold text-white/50">${esc(t.pts)}</span></p>
+            </div>`;
+        }
 
-        return `<div class="${k.panel} ${fill} ${big ? 'p-12' : 'p-10'} text-center">${big ? '' : hourglass}<p class="${big ? 'text-[clamp(2rem,4.2vw,5.5rem)]' : 'text-xl sm:text-2xl'} font-bold ${k.title}">${esc(t.waiting_next)}</p></div>`;
+        const hourglass = '<svg class="mx-auto mb-2 h-7 w-7 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12M6 21h12M7 3c0 5 5 5 5 9s-5 4-5 9M17 3c0 5-5 5-5 9s5 4 5 9" /></svg>';
+
+        return `<div class="${k.panel} ${fill} ${big ? 'p-12' : 'p-5'} text-center">${big ? '' : hourglass}<p class="${big ? 'text-[clamp(2rem,4.2vw,5.5rem)]' : 'text-base sm:text-lg'} font-bold ${k.title}">${esc(t.waiting_next)}</p></div>`;
     }
 
     // ----- The teams ---------------------------------------------------------------------
@@ -380,35 +475,49 @@ if (dataEl && root) {
 
     function teams() {
         const max = state.auction.max_squad;
+        const chevron = '<svg class="h-3.5 w-3.5 shrink-0 text-slate-400 transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>';
 
-        const cards = state.teams.map((team) => {
+        const rows = state.teams.map((team) => {
             const usedPct = team.purse > 0 ? Math.min(100, Math.round(((team.purse - team.left) / team.purse) * 100)) : 0;
             const leading = state.lot && state.lot.leading_team === team.name;
-            const top = team.players.find((p) => p.amount !== null);
-            const squad = team.players.length
-                ? `<details data-squad="${esc(team.name)}" class="mt-2 border-t border-line pt-2" ${openSquads.has(team.name) ? 'open' : ''}><summary class="cursor-pointer text-[11px] font-semibold ${k.muted} hover:text-slate-800">${esc(t.squad)} (${team.players.length})</summary><ul class="mt-1.5 space-y-1 text-[11px] ${k.soft}">${team.players.map((p) => `<li class="flex justify-between gap-2"><span class="truncate">${esc(p.name)}${p.village ? ` <span class="opacity-60">· ${esc(p.village)}</span>` : ''}</span><span class="tabular-nums">${p.amount === null ? '—' : pts(p.amount)}</span></li>`).join('')}</ul></details>`
+            const bought = team.players.filter((p) => p.amount !== null);
+            const earlier = team.players.filter((p) => p.amount === null);
+
+            // What this auction bought (with the price), then the players who were already in the squad.
+            const boughtList = bought.length
+                ? `<ul class="space-y-0.5">${bought.map((p) => `<li class="flex justify-between gap-2"><span class="truncate font-medium ${k.title}">${esc(p.name)}${p.village ? ` <span class="font-normal opacity-60">· ${esc(p.village)}</span>` : ''}</span><span class="shrink-0 font-semibold tabular-nums ${k.title}">${pts(p.amount)}</span></li>`).join('')}</ul>`
+                : '';
+            const earlierList = earlier.length
+                ? `<p class="mt-2 text-[10px] font-semibold uppercase tracking-wide ${k.muted}">${esc(t.squad_earlier)} (${earlier.length})</p><p class="mt-0.5 max-h-24 overflow-y-auto leading-relaxed ${k.muted}">${earlier.map((p) => esc(p.name)).join(' · ')}</p>`
                 : '';
 
             return `
-                <div class="rounded-xl border bg-white p-3.5 shadow-card transition ${leading ? 'border-brand ring-2 ring-brand/30' : 'border-line'}">
-                    <div class="flex items-center gap-2.5">
-                        <span class="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border border-line bg-slate-100"><img src="${esc(team.logo || '')}" alt="" data-fallback="image" class="h-full w-full object-cover" /></span>
-                        <p class="min-w-0 flex-1 truncate text-[13px] font-semibold ${k.title}" title="${esc(team.name)}">${esc(team.name)}</p>
-                        ${leading ? `<span class="shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand">${esc(t.current_bid)}</span>` : ''}
+                <details class="group auc-team overflow-hidden rounded-lg shadow-card ${leading ? 'auc-glow' : ''}" ${tc(team.color)} data-squad="${esc(team.name)}" ${openSquads.has(team.name) ? 'open' : ''}>
+                    <summary class="flex cursor-pointer list-none items-center gap-2.5 px-2.5 py-2 [&::-webkit-details-marker]:hidden">
+                        <span class="relative h-7 w-7 shrink-0 overflow-hidden rounded-full bg-white ring-2 ring-[color:var(--tc,#cbd5e1)]"><img src="${esc(team.logo || '')}" alt="" data-fallback="image" class="h-full w-full object-cover" /></span>
+                        <span class="min-w-0 flex-1">
+                            <span class="flex items-center justify-between gap-2"><span class="flex min-w-0 items-center gap-1.5"><span class="truncate text-[12.5px] font-bold ${k.title}" title="${esc(team.name)}">${esc(team.name)}</span>${leading ? `<span class="auc-lead" title="${esc(t.current_bid)}">${crownIcon}</span>` : ''}</span><span class="shrink-0 text-[13px] font-extrabold tabular-nums ${k.title}">${pts(team.left)}</span></span>
+                            <span class="mt-1.5 flex items-center gap-2"><span class="block h-1.5 flex-1 overflow-hidden rounded-full bg-black/5" aria-hidden="true"><span class="block h-full rounded-full transition-all duration-500" style="width: ${Math.max(usedPct, usedPct > 0 ? 4 : 0)}%; background: var(--tc, var(--rppl-primary))"></span></span><span class="shrink-0 text-[10px] font-bold tabular-nums ${team.still_needed > 0 ? 'text-amber-600' : k.muted}" title="${esc(tr('players_count', { count: team.count, max }))}">${team.count}/${max}</span></span>
+                        </span>
+                        ${chevron}
+                    </summary>
+                    <div class="border-t border-black/5 bg-white/80 px-2.5 py-2 text-[10.5px] ${k.soft}">
+                        <div class="flex flex-wrap gap-1">${[['batter', 'Bat'], ['bowler', 'Bowl'], ['all_rounder', 'AR'], ['wicket_keeper', 'WK']].map(([role]) => {
+                            const label = (t.roles_short || {})[role] || role;
+                            const n = (team.roles && team.roles[role]) || 0;
+
+                            return `<span class="rounded-full px-2 py-0.5 text-[10px] font-semibold ${n ? 'bg-slate-100 text-slate-700' : 'bg-amber-50 text-amber-700'}">${esc(label)} <b class="tabular-nums">${n}</b></span>`;
+                        }).join('')}</div>
+                        <p class="mt-1.5 ${k.muted}">${team.still_needed > 0 ? `<span class="font-semibold text-amber-600">${esc(tr('needs_more', { count: team.still_needed }))}</span> · ` : ''}${esc(t.spent)} <b class="tabular-nums ${k.title}">${pts(team.spent)}</b></p>
+                        <div class="mt-1.5 max-h-56 overflow-y-auto pr-0.5">${boughtList}${earlierList}</div>
                     </div>
-                    <p class="mt-2.5 text-2xl font-bold leading-none tabular-nums ${k.title}">${pts(team.left)} <span class="text-[11px] font-medium ${k.muted}">${esc(t.left)}</span></p>
-                    <div class="mt-2 h-1.5 overflow-hidden rounded-full ${k.bar}" aria-hidden="true"><div class="h-full rounded-full ${k.fill} transition-all duration-500" style="width: ${usedPct}%"></div></div>
-                    <p class="mt-2 text-[11px] ${k.muted}"><span class="font-semibold tabular-nums ${team.still_needed > 0 ? 'text-amber-600' : k.soft}">${esc(tr('players_count', { count: team.count, max }))}</span>${team.still_needed > 0 ? ` · ${esc(tr('needs_more', { count: team.still_needed }))}` : ''}</p>
-                    <p class="mt-0.5 text-[11px] ${k.muted}" title="${esc(t.roles_title || '')}">${roleLine(team)}</p>
-                    <p class="mt-0.5 truncate text-[11px] ${k.muted}">${esc(t.spent)} ${pts(team.spent)}${top ? ` · ${esc(t.top_buy)}: ${esc(top.name)} (${pts(top.amount)})` : ''}</p>
-                    ${squad}
-                </div>`;
+                </details>`;
         });
 
         return `
-            <section aria-label="${esc(t.teams)}" class="lg:sticky lg:top-20">
-                <h2 class="mb-2 text-base font-semibold tracking-tight ${k.title}">${esc(t.teams)}</h2>
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">${cards.join('')}</div>
+            <section aria-label="${esc(t.teams)}" class="order-2 lg:order-none lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:sticky lg:top-20">
+                <h2 class="mb-1.5 flex items-baseline justify-between text-sm font-bold tracking-tight ${k.title}"><span>${esc(t.teams)}</span><span class="text-[10px] font-medium ${k.muted}">${esc(t.left)}</span></h2>
+                <div class="space-y-1.5">${rows.join('')}</div>
             </section>`;
     }
 
@@ -430,7 +539,7 @@ if (dataEl && root) {
             // Many teams: narrower cards, so the name gets the whole first line.
             if (compact) {
                 return `
-                <div class="${frame}" title="${esc(tr('players_count', { count: team.count, max }))}">
+                <div class="${frame}" style="border-left: 0.35vw solid ${tcValue(team.color) || 'transparent'}" title="${esc(tr('players_count', { count: team.count, max }))}">
                     <p class="shrink-0 truncate text-[clamp(0.8rem,1.2vw,1.6rem)] font-semibold leading-tight text-white">${esc(team.name)}</p>
                     <p class="shrink-0 whitespace-nowrap text-[clamp(1.05rem,1.65vw,2.2rem)] font-bold leading-none tabular-nums text-white">${pts(team.left)} <span class="text-[clamp(0.65rem,0.85vw,1.1rem)] font-medium text-slate-400">${esc(t.left)}</span></p>
                     <div class="flex shrink-0 items-center gap-2">${bar}<span class="shrink-0 text-[clamp(0.65rem,0.9vw,1.2rem)] font-medium leading-none tabular-nums ${squadColour}">${squad}</span></div>
@@ -438,7 +547,7 @@ if (dataEl && root) {
             }
 
             return `
-                <div class="${frame}" title="${esc(tr('players_count', { count: team.count, max }))}">
+                <div class="${frame}" style="border-left: 0.35vw solid ${tcValue(team.color) || 'transparent'}" title="${esc(tr('players_count', { count: team.count, max }))}">
                     <div class="flex shrink-0 items-baseline justify-between gap-2">
                         <p class="min-w-0 truncate text-[clamp(0.9rem,1.4vw,1.9rem)] font-semibold leading-tight text-white">${esc(team.name)}</p>
                         <p class="shrink-0 text-[clamp(0.75rem,1.1vw,1.45rem)] font-medium leading-tight tabular-nums ${squadColour}">${squad}</p>
@@ -463,46 +572,66 @@ if (dataEl && root) {
             <section class="${k.panel} shrink-0 overflow-hidden p-[clamp(0.6rem,1.1vw,1.4rem)]" aria-label="${esc(t.recent_sales)}">
                 <h2 class="text-[clamp(1.1rem,1.7vw,2.2rem)] font-semibold ${k.title}">${esc(t.recent_sales)}</h2>
                 ${list.length
-                    ? `<ul class="mt-2 divide-y ${k.rule} ${body}">${list.map((sale) => `<li class="flex items-center justify-between gap-3 py-[0.35vw]"><span class="min-w-0"><span class="block truncate font-medium ${k.title}">${esc(sale.name)}</span><span class="block truncate ${caption} ${k.muted}">${esc(sale.team || '')}</span></span><span class="shrink-0 font-bold tabular-nums ${k.title}">${pts(sale.amount)}</span></li>`).join('')}</ul>`
+                    ? `<ul class="mt-2 divide-y ${k.rule} ${body}">${list.map((sale) => `<li class="flex items-center justify-between gap-3 py-[0.35vw]"><span class="min-w-0"><span class="block truncate font-medium ${k.title}">${esc(sale.name)}</span><span class="flex items-center gap-[0.5vw] truncate ${caption} ${k.muted}"><i class="inline-block h-[0.8em] w-[0.8em] shrink-0 rounded-full" style="background: ${tcValue(sale.team_color) || '#94a3b8'}"></i>${esc(sale.team || '')}</span></span><span class="shrink-0 font-bold tabular-nums ${k.title}">${pts(sale.amount)}</span></li>`).join('')}</ul>`
                     : `<p class="mt-2 ${body} ${k.muted}">${esc(t.no_sales)}</p>`}
             </section>`;
     }
 
     // ----- Sold / upcoming / on hold / unsold -----------------------------------------------
 
+    /** "Mumbai Indians" -> "MI", "Pune" -> "PUN": a short tag for a team inside a chip. */
+    function abbr(name) {
+        const words = String(name || '').trim().split(/\s+/).filter(Boolean);
+        const tag = words.length > 1 ? words.map((word) => word[0]).join('') : (words[0] || '').slice(0, 3);
+
+        return tag.toUpperCase().slice(0, 4);
+    }
+
     function ladderHtml(sig) {
         const ladder = ladders.get(sig);
         let inner;
 
-        if (Array.isArray(ladder)) {
-            inner = `<ol class="space-y-0.5">${[...ladder].reverse().map((bid, index) => `<li class="flex justify-between gap-3 ${index === 0 ? 'font-semibold text-slate-900' : 'text-slate-500'}"><span class="truncate">${esc(bid.team)}</span><span class="tabular-nums">${pts(bid.amount)}</span></li>`).join('')}</ol>`;
+        if (Array.isArray(ladder) && ladder.length) {
+            const last = ladder.length - 1;
+            const chips = ladder.map((bid, index) => `<span class="${index === last ? 'auc-chip-win' : 'auc-chip-soft'} inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]" ${tc(bid.color)} title="${esc(bid.team)}"><b class="font-bold">${esc(abbr(bid.team))}</b><span class="tabular-nums">${pts(bid.amount)}</span></span>`);
+            const teamsSeen = [];
+            ladder.forEach((bid) => {
+                if (!teamsSeen.find((team) => team.team === bid.team)) {
+                    teamsSeen.push(bid);
+                }
+            });
+
+            inner = `
+                <div class="flex flex-wrap items-center gap-x-1 gap-y-1.5">${chips.join('<span class="text-[10px] text-slate-300" aria-hidden="true">›</span>')}</div>
+                <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10.5px] text-slate-500">${teamsSeen.map((bid) => `<span class="inline-flex items-center gap-1" ${tc(bid.color)}><i class="inline-block h-2 w-2 rounded-full" style="background: var(--tc, #94a3b8)"></i>${esc(bid.team)}</span>`).join('')}</p>`;
         } else if (ladder === 'error') {
             inner = `<p class="text-amber-600">${esc(t.connection_lost)}</p>`;
         } else {
             inner = `<p class="text-slate-400">${esc(t.loading)}</p>`;
         }
 
-        return `<div class="border-t border-dashed border-line bg-slate-50 py-2.5 pl-[3.25rem] pr-4 text-[12px]"><p class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">${esc(t.bid_history)}</p>${inner}</div>`;
+        return `<div class="border-t border-dashed border-line bg-slate-50 px-3 py-2 text-[11.5px]"><p class="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">${esc(t.bid_history)}</p>${inner}</div>`;
     }
 
     function saleRow(sale, number) {
         const hasBids = sale.bids !== null && sale.bids > 0;
         const bidsLabel = hasBids ? (sale.bids === 1 ? t.bids_one : tr('bids_count', { count: sale.bids })) : '';
+        const stripe = `border-left: 3px solid ${tcValue(sale.team_color) || 'transparent'}`;
         const summary = `
-            <span class="w-6 shrink-0 text-center text-xs tabular-nums text-slate-400">${number}</span>
+            <span class="w-5 shrink-0 text-center text-[11px] tabular-nums text-slate-400">${number}</span>
             <span class="min-w-0 flex-1"><span class="block truncate text-[13px] font-semibold text-slate-900">${esc(sale.name)}</span><span class="block truncate text-[11px] text-slate-500">${esc([sale.village, sale.team, sale.role].filter(Boolean).join(' · '))}</span></span>
-            <span class="shrink-0 text-right"><span class="block text-sm font-bold tabular-nums text-slate-900">${pts(sale.amount)} <span class="text-[11px] font-normal text-slate-400">${esc(t.pts)}</span></span>${hasBids ? `<span class="block text-[11px] text-slate-500">${esc(bidsLabel)}</span>` : ''}</span>`;
+            <span class="shrink-0 text-right"><span class="block text-[13px] font-bold tabular-nums text-slate-900">${pts(sale.amount)} <span class="text-[10px] font-normal text-slate-400">${esc(t.pts)}</span></span>${hasBids ? `<span class="block text-[10px] text-slate-500">${esc(bidsLabel)}</span>` : ''}</span>`;
 
         if (!hasBids) {
-            return `<li class="flex items-center gap-3 px-4 py-2.5">${summary}</li>`;
+            return `<li class="flex items-center gap-2.5 px-3 py-2" style="${stripe}">${summary}</li>`;
         }
 
         const sig = `${sale.key}:${sale.amount}:${sale.bids}`;
 
         return `
-            <li>
+            <li style="${stripe}">
                 <details class="group" data-sale="${sale.key}" data-sig="${esc(sig)}" ${openSales.has(String(sale.key)) ? 'open' : ''}>
-                    <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-2.5 transition hover:bg-hover [&::-webkit-details-marker]:hidden">${summary}<span class="shrink-0 text-slate-400 transition group-open:rotate-180" aria-hidden="true">▾</span></summary>
+                    <summary class="flex cursor-pointer list-none items-center gap-2.5 px-3 py-2 transition hover:bg-hover [&::-webkit-details-marker]:hidden">${summary}<span class="shrink-0 text-slate-400 transition group-open:rotate-180" aria-hidden="true">▾</span></summary>
                     ${ladderHtml(sig)}
                 </details>
             </li>`;
@@ -530,7 +659,7 @@ if (dataEl && root) {
             ['unsold', t.unsold, counts.unsold],
         ];
 
-        const buttons = definitions.map(([id, label, count]) => `<button type="button" role="tab" aria-selected="${tab === id}" data-tab="${id}" class="-mb-px whitespace-nowrap border-b-2 px-3.5 py-3 text-[13px] font-semibold transition focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand ${tab === id ? 'border-brand text-brand' : 'border-transparent text-slate-500 hover:text-slate-900'}">${esc(label)} <span class="ml-0.5 rounded-full px-1.5 text-[11px] tabular-nums ${tab === id ? 'bg-brand-soft text-brand' : 'bg-slate-100 text-slate-500'}">${count}</span></button>`).join('');
+        const buttons = definitions.map(([id, label, count]) => `<button type="button" role="tab" aria-selected="${tab === id}" data-tab="${id}" class="-mb-px whitespace-nowrap border-b-2 px-3 py-2.5 text-[12.5px] font-semibold transition focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand ${tab === id ? 'border-brand text-brand' : 'border-transparent text-slate-500 hover:text-slate-900'}">${esc(label)} <span class="ml-0.5 rounded-full px-1.5 text-[11px] tabular-nums ${tab === id ? 'bg-brand-soft text-brand' : 'bg-slate-100 text-slate-500'}">${count}</span></button>`).join('');
 
         let content;
         if (tab === 'upcoming') {
@@ -566,13 +695,11 @@ if (dataEl && root) {
 
         root.innerHTML = `
             ${header()}
-            <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-                <div class="min-w-0 space-y-4">
-                    ${stage()}
-                    ${overview()}
-                    ${lists()}
-                </div>
+            <div class="grid grid-cols-[minmax(0,1fr)] items-start gap-3 lg:grid-cols-[minmax(0,1fr)_19rem] lg:grid-rows-[auto_auto_1fr]">
+                <div class="order-1 min-w-0 lg:col-start-1 lg:row-start-1">${stage()}</div>
                 ${teams()}
+                <div class="order-3 min-w-0 lg:col-start-1 lg:row-start-2">${overview()}</div>
+                <div class="order-4 min-w-0 lg:col-start-1 lg:row-start-3">${lists()}</div>
             </div>`;
     }
 

@@ -392,7 +392,7 @@ if (dataEl && root) {
             }[action.kind] || 'bg-slate-100 text-slate-400';
 
             return `
-                <div class="rounded-xl border ${leading ? 'border-green-400 bg-green-50/50 ring-2 ring-green-200' : 'border-line bg-white'} p-3 shadow-card">
+                <div class="rounded-xl border ${leading ? 'border-green-400 bg-green-50/50 ring-2 ring-green-200' : 'border-line bg-white'} p-3 shadow-card" style="border-left: 4px solid ${/^#[0-9a-f]{6}$/i.test(team.color || '') ? team.color : 'transparent'}">
                     <div class="flex items-center justify-between gap-2">
                         <p class="truncate text-sm font-bold text-slate-900" title="${esc(team.name)}">${esc(team.name)}</p>
                         <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-600" title="${esc(t('Players bought / maximum squad'))}">${team.count}/${state.auction.max_squad}</span>

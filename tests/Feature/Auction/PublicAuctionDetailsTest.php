@@ -182,6 +182,54 @@ class PublicAuctionDetailsTest extends TestCase
         $this->assertSame(['batter' => 0, 'bowler' => 0, 'all_rounder' => 0, 'wicket_keeper' => 0], $beta['roles']);
     }
 
+    public function test_every_team_bidding_on_the_player_is_listed_with_its_best_bid_and_its_own_colour(): void
+    {
+        $gamma = EditionTeam::factory()->create(['edition_id' => $this->edition->id]);
+        $delta = EditionTeam::factory()->create(['edition_id' => $this->edition->id]);
+        $this->paid('Hot Player');
+        $auction = $this->liveAuction();
+        $lot = $this->service->callLot($auction, $this->lotOf($auction, 'Hot Player'));
+
+        foreach ([[$this->alpha, 500], [$this->beta, 1000], [$gamma, 1500], [$delta, 2000], [$this->alpha, 2500], [$gamma, 3000]] as [$team, $amount]) {
+            $this->service->placeBid($auction, $lot, $team, $lot->fresh()->version, $amount);
+        }
+
+        $block = $this->state()['lot'];
+
+        // Best bid first, with how many bids each team made.
+        $this->assertSame(
+            [[$gamma->team->name, 3000, 2], [$this->alpha->team->name, 2500, 2], [$delta->team->name, 2000, 1], [$this->beta->team->name, 1000, 1]],
+            array_map(fn (array $bidder) => [$bidder['team'], $bidder['top'], $bidder['count']], $block['bidders']),
+        );
+        $this->assertSame(6, $block['bid_count']);
+        $this->assertSame($gamma->team->name, $block['leading_team']);
+
+        // Four teams, four different colours; the leader's colour is the one on the block.
+        $colours = array_column($block['bidders'], 'color');
+        $this->assertCount(4, array_unique($colours));
+        $this->assertSame($colours[0], $block['leading_color']);
+
+        // The colour belongs to the team: the same one on its card.
+        $card = collect($this->state()['teams'])->firstWhere('name', $gamma->team->name);
+        $this->assertSame($block['leading_color'], $card['color']);
+    }
+
+    public function test_with_live_bids_off_the_bidders_and_colours_of_the_block_are_not_given_out(): void
+    {
+        $this->paid('Quiet Player');
+        $auction = $this->liveAuction(['show_live_bids' => false]);
+        $lot = $this->service->callLot($auction, $this->lotOf($auction, 'Quiet Player'));
+        $this->service->placeBid($auction, $lot, $this->alpha, $lot->fresh()->version, 1000);
+
+        $block = $this->state()['lot'];
+
+        $this->assertSame([], $block['bidders']);
+        $this->assertSame([], $block['bids']);
+        $this->assertSame(0, $block['bid_count']);
+        $this->assertNull($block['leading_color']);
+        $this->assertNull($block['leading_team']);
+    }
+
     public function test_a_price_corrected_on_the_squad_page_is_what_the_website_shows(): void
     {
         $this->paid('Corrected Price');
@@ -235,12 +283,14 @@ class PublicAuctionDetailsTest extends TestCase
         $this->assertSame(1500, $state['sales'][0]['amount']);
         $this->assertSame(2, $state['sales'][0]['bids']);
 
-        $this->getJson(route('public.auction.sale', $lot))
-            ->assertOk()
-            ->assertJsonPath('bids', [
-                ['team' => $this->alpha->team->name, 'amount' => 500],
-                ['team' => $this->beta->team->name, 'amount' => 1500],
-            ]);
+        $bids = $this->getJson(route('public.auction.sale', $lot))->assertOk()->json('bids');
+        $this->assertSame(
+            [['team' => $this->alpha->team->name, 'amount' => 500], ['team' => $this->beta->team->name, 'amount' => 1500]],
+            array_map(fn (array $bid) => ['team' => $bid['team'], 'amount' => $bid['amount']], $bids),
+        );
+        // Each team has its own colour, and the same team the same colour every time.
+        $this->assertNotSame($bids[0]['color'], $bids[1]['color']);
+        $this->assertMatchesRegularExpression('/^#[0-9a-f]{6}$/', $bids[0]['color']);
     }
 
     public function test_with_live_bids_off_no_bid_count_or_history_is_given_but_the_result_still_is(): void

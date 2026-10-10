@@ -46,7 +46,7 @@
             <h2 class="pc-h2">{{ __('auction.top_buys') }}</h2>
             <ol class="pc-panel divide-y divide-line">
                 @foreach($results['top_buys'] as $buy)
-                    <li class="flex items-center gap-3 px-4 py-3 text-[13px]">
+                    <li class="flex items-center gap-3 px-4 py-3 text-[13px]" style="border-left: 3px solid {{ $buy['team_color'] ?? 'transparent' }}">
                         <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums {{ $loop->first ? 'bg-brand text-brand-fg' : 'bg-slate-100 text-slate-500' }}">{{ $loop->iteration }}</span>
                         <span class="min-w-0 flex-1">
                             <span class="block truncate font-semibold text-slate-900">{{ $buy['name'] }}</span>
@@ -65,7 +65,7 @@
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             @foreach($state['teams'] as $team)
                 @php $usedPct = $team['purse'] > 0 ? min(100, (int) round(($team['spent'] / $team['purse']) * 100)) : 0; @endphp
-                <article class="pc-panel">
+                <article class="pc-panel overflow-hidden" style="border-top: 3px solid {{ $team['color'] ?? 'transparent' }}">
                     <header class="flex items-center gap-3 border-b border-line px-4 py-3">
                         <span class="pc-avatar h-10 w-10">
                             <x-media-image :url="$team['logo']" kind="image" alt="" loading="lazy" />
@@ -76,7 +76,7 @@
                         </div>
                     </header>
                     <div class="border-b border-line px-4 py-3">
-                        <div class="h-1.5 overflow-hidden rounded-full bg-slate-100" aria-hidden="true"><div class="h-full rounded-full bg-brand" style="width: {{ $usedPct }}%"></div></div>
+                        <div class="h-1.5 overflow-hidden rounded-full bg-slate-100" aria-hidden="true"><div class="h-full rounded-full bg-brand" style="width: {{ $usedPct }}%; background: {{ $team['color'] ?? 'var(--rppl-primary)' }}"></div></div>
                         <p class="mt-2 text-xs text-slate-500">
                             {{ __('auction.spent') }} <b class="tabular-nums text-slate-800">{{ points($team['spent']) }}</b>
                             &middot; <b class="tabular-nums text-slate-800">{{ points($team['left']) }}</b> {{ __('auction.left') }}

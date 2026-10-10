@@ -50,6 +50,9 @@ return [
     'needs_js' => 'Turn on JavaScript to follow the auction live.',
     'big_screen' => 'Big screen',
     'share' => 'Share',
+    'squad_earlier' => 'Already in the squad',
+    'leading_badge' => 'Leading',
+    'latest_bids' => 'Latest',
     'link_copied' => 'Link copied',
     'roles_title' => 'Batters · bowlers · all-rounders · wicket keepers in the squad',
     'roles_short' => [
