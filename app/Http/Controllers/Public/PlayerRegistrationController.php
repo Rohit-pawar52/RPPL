@@ -97,6 +97,7 @@ class PlayerRegistrationController extends Controller
             'edition_name' => $edition->name,
             'player_name' => $registration->player->name,
             'registration_fee' => $registration->registration_fee,
+            'registered_at' => $registration->registered_at?->toIso8601String(),
         ]);
 
         return redirect()->route('public.player-registration.success');
