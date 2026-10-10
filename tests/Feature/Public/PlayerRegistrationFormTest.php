@@ -297,4 +297,31 @@ class PlayerRegistrationFormTest extends TestCase
             ->assertSee('What happens next')
             ->assertSee('Once it is confirmed, your status changes to Paid');
     }
+
+    public function test_the_success_page_tells_the_player_to_take_a_screenshot_and_can_save_the_card_as_an_image(): void
+    {
+        $this->submit()->assertRedirect(route('public.player-registration.success'));
+
+        $this->get(route('public.player-registration.success'))
+            ->assertOk()
+            ->assertSee('Take a screenshot of this page now!')
+            ->assertSee('may not be shown again')
+            ->assertSee('Download as image')
+            ->assertSee('I have saved it')
+            // Refresh / Back / closing asks first, until the player says it is saved.
+            ->assertSee('beforeunload', false)
+            ->assertSee('data-number="'.session('registration_success.registration_number').'"', false)
+            ->assertSee('Registered on');
+    }
+
+    public function test_the_success_warning_is_in_hindi_for_a_hindi_visitor(): void
+    {
+        $this->submit()->assertRedirect(route('public.player-registration.success'));
+
+        $this->withCookie('rppl_locale', 'hi')->get(route('public.player-registration.success'))
+            ->assertOk()
+            ->assertSee('अभी इस पेज का स्क्रीनशॉट ले लें!')
+            ->assertSee('इमेज के रूप में डाउनलोड करें')
+            ->assertDontSee('Take a screenshot of this page now!');
+    }
 }
