@@ -140,7 +140,10 @@ class PublicAuctionTest extends TestCase
         $this->assertSame(['Raja Bhoj', 'All-rounder', 'Left arm', 'Chicholi'], [$state['lot']['name'], $state['lot']['role'], $state['lot']['bowling'], $state['lot']['village']]);
         $this->assertSame(4000, $state['lot']['current_bid']);
         $this->assertSame($this->alpha->team->name, $state['lot']['leading_team']);
-        $this->assertSame([['team' => $this->alpha->team->name, 'amount' => 4000]], $state['lot']['bids']);
+        $this->assertSame([['team' => $this->alpha->team->name, 'amount' => 4000]], array_map(fn (array $bid) => ['team' => $bid['team'], 'amount' => $bid['amount']], $state['lot']['bids']));
+        $this->assertSame($state['lot']['leading_color'], $state['lot']['bids'][0]['color']);
+        $this->assertSame([$this->alpha->team->name], array_column($state['lot']['bidders'], 'team'));
+        $this->assertSame(1, $state['lot']['bid_count']);
         $this->assertFalse($state['lot']['bids_hidden']);
         $this->assertNull($state['lot']['stats']);
     }

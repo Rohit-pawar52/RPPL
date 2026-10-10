@@ -34,6 +34,19 @@ class AuctionStateService
     private const RECENT_BIDS = 8;
 
     /**
+     * One colour per team, so the room can follow who is bidding at a glance. They are told apart on both the light
+     * page and the dark projector, avoid red / green (they mean LIVE and SOLD there) and are handed out in the order
+     * the teams joined the season, so a team keeps its colour for the whole auction.
+     */
+    private const TEAM_COLORS = [
+        '#2563eb', '#e11d48', '#0d9488', '#7c3aed', '#ea580c', '#0891b2',
+        '#c026d3', '#ca8a04', '#4f46e5', '#be123c', '#65a30d', '#475569',
+    ];
+
+    /** @var array<int, array<string, string>> team name => colour, per auction */
+    private array $teamColorCache = [];
+
+    /**
      * How long after a sale the website keeps announcing it with SOLD.
      */
     private const SOLD_BANNER_SECONDS = 25;
@@ -193,20 +206,70 @@ class AuctionStateService
             'bids_hidden' => ! $showBids,
             'current_bid' => $showBids ? $lot->current_bid : null,
             'leading_team' => $showBids && $hasBid && $lot->leadingTeam ? $lot->leadingTeam->team->name : null,
-            'bids' => $showBids
-                ? $lot->bids()
-                    ->standing()
-                    ->with('editionTeam.team')
-                    ->latest('id')
-                    ->limit(self::RECENT_BIDS)
-                    ->get()
-                    ->map(fn (AuctionBid $bid) => [
-                        'team' => $bid->editionTeam->team->name,
-                        'amount' => $bid->amount,
-                    ])
-                    ->all()
-                : [],
+            'leading_color' => $showBids && $hasBid && $lot->leadingTeam ? $this->colorOf($auction, $lot->leadingTeam->team->name) : null,
+            ...$this->publicBidding($auction, $lot, $showBids),
         ];
+    }
+
+    /**
+     * The bidding on the player on the block: every team that has bid (its best bid, how many it made, its colour)
+     * and the latest bids, newest first. Empty when the auction hides live bids.
+     *
+     * @return array{bids: list<array<string, mixed>>, bidders: list<array<string, mixed>>, bid_count: int}
+     */
+    private function publicBidding(Auction $auction, AuctionLot $lot, bool $showBids): array
+    {
+        if (! $showBids) {
+            return ['bids' => [], 'bidders' => [], 'bid_count' => 0];
+        }
+
+        $bids = $lot->bids()->standing()->with('editionTeam.team')->latest('id')->get();
+
+        $bidders = $bids
+            ->groupBy('edition_team_id')
+            ->map(fn ($teamBids) => [
+                'team' => $teamBids->first()->editionTeam->team->name,
+                'color' => $this->colorOf($auction, $teamBids->first()->editionTeam->team->name),
+                'logo' => media_url($teamBids->first()->editionTeam->team->logo_path),
+                'top' => (int) $teamBids->max('amount'),
+                'count' => $teamBids->count(),
+            ])
+            ->sortByDesc('top')
+            ->values()
+            ->all();
+
+        return [
+            'bids' => $bids->take(self::RECENT_BIDS)->map(fn (AuctionBid $bid) => [
+                'team' => $bid->editionTeam->team->name,
+                'color' => $this->colorOf($auction, $bid->editionTeam->team->name),
+                'amount' => $bid->amount,
+            ])->values()->all(),
+            'bidders' => $bidders,
+            'bid_count' => $bids->count(),
+        ];
+    }
+
+    /**
+     * The colour of a team (by name) in this auction.
+     */
+    private function colorOf(Auction $auction, ?string $teamName): ?string
+    {
+        if ($teamName === null) {
+            return null;
+        }
+
+        if (! isset($this->teamColorCache[$auction->id])) {
+            $this->teamColorCache[$auction->id] = EditionTeam::query()
+                ->where('edition_id', $auction->edition_id)
+                ->with('team')
+                ->orderBy('id')
+                ->get()
+                ->values()
+                ->mapWithKeys(fn (EditionTeam $team, int $index) => [$team->team->name => self::TEAM_COLORS[$index % count(self::TEAM_COLORS)]])
+                ->all();
+        }
+
+        return $this->teamColorCache[$auction->id][$teamName] ?? null;
     }
 
     /**
@@ -264,7 +327,7 @@ class AuctionStateService
             ->get()
             ->groupBy('edition_team_id');
 
-        return $standings->map(function (array $row) use ($squads) {
+        return $standings->map(function (array $row) use ($auction, $squads) {
             /** @var EditionTeam $team */
             $team = $row['edition_team'];
 
@@ -272,6 +335,7 @@ class AuctionStateService
                 'name' => $team->team->name,
                 'short_name' => $team->team->short_name,
                 'logo' => media_url($team->team->logo_path),
+                'color' => $this->colorOf($auction, $team->team->name),
                 'purse' => $row['purse'],
                 'spent' => $row['spent'],
                 'left' => $row['left'],
@@ -315,6 +379,7 @@ class AuctionStateService
                 'village' => $this->villageOf($lot->playerRegistration),
                 'role' => $this->roleLabel($lot->playerRegistration->player),
                 'team' => $lot->teamPlayer?->editionTeam->team->name,
+                'team_color' => $this->colorOf($auction, $lot->teamPlayer?->editionTeam->team->name),
                 'amount' => $this->soldAmount($lot),
                 'bids' => $showBids ? (int) $lot->standing_bids_count : null,
                 'seconds_ago' => $lot->sold_at ? (int) $lot->sold_at->diffInSeconds(now(), true) : null,
@@ -393,6 +458,7 @@ class AuctionStateService
             ->get()
             ->map(fn (AuctionBid $bid) => [
                 'team' => $bid->editionTeam->team->name,
+                'color' => $this->colorOf($auction, $bid->editionTeam->team->name),
                 'amount' => $bid->amount,
             ])
             ->all();
@@ -425,6 +491,7 @@ class AuctionStateService
                     'name' => $lot->playerRegistration->player->name,
                     'village' => $this->villageOf($lot->playerRegistration),
                     'team' => $lot->teamPlayer?->editionTeam->team->name,
+                    'team_color' => $this->colorOf($auction, $lot->teamPlayer?->editionTeam->team->name),
                     'amount' => $this->soldAmount($lot),
                 ])
                 ->values()
@@ -548,7 +615,7 @@ class AuctionStateService
 
         $next = $lot ? ($lot->current_bid === null ? $auction->min_bid : $lot->current_bid + $auction->bid_step) : null;
 
-        return $standings->map(function (array $row) use ($lot, $next, $squads) {
+        return $standings->map(function (array $row) use ($auction, $lot, $next, $squads) {
             /** @var EditionTeam $team */
             $team = $row['edition_team'];
 
@@ -563,6 +630,7 @@ class AuctionStateService
 
             return [
                 'id' => $team->id,
+                'color' => $this->colorOf($auction, $team->team->name),
                 'roles' => $this->roleCounts($squads[$team->id] ?? collect()),
                 'name' => $team->team->name,
                 'short_name' => $team->team->short_name,

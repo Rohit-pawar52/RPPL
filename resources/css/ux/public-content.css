@@ -18,8 +18,61 @@
     .auc-pop {
         animation: auc-pop 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
     }
+    @keyframes auc-bump {
+        0% { transform: scale(1.14); }
+        100% { transform: scale(1); }
+    }
+    .auc-bump {
+        display: block;
+        transform-origin: left center;
+        animation: auc-bump 0.45s ease-out;
+    }
     @media (prefers-reduced-motion: reduce) {
-        .auc-pop { animation: none; }
+        .auc-pop, .auc-bump { animation: none; }
+    }
+
+    /* ---------- The auction page: every team has a colour (set --tc on an element) ---------- */
+    .auc-stage {
+        @apply relative isolate overflow-hidden rounded-2xl text-white shadow-raised;
+        background:
+            radial-gradient(130% 120% at 100% 0%, color-mix(in srgb, var(--tc, var(--rppl-primary)) 34%, transparent), transparent 58%),
+            linear-gradient(140deg, var(--color-navy-950), var(--color-navy-800));
+        transition: background 0.6s ease;
+    }
+    .auc-stage::after {
+        content: '';
+        @apply pointer-events-none absolute inset-0 -z-10;
+        background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px);
+        background-size: 14px 14px;
+        -webkit-mask-image: linear-gradient(to bottom, #000, transparent 75%);
+        mask-image: linear-gradient(to bottom, #000, transparent 75%);
+    }
+    .auc-chip {
+        border: 1px solid color-mix(in srgb, var(--tc, #94a3b8) 60%, transparent);
+        background: color-mix(in srgb, var(--tc, #94a3b8) 22%, transparent);
+    }
+    .auc-chip-soft {
+        border: 1px solid color-mix(in srgb, var(--tc, #94a3b8) 45%, white);
+        background: color-mix(in srgb, var(--tc, #94a3b8) 12%, white);
+        color: color-mix(in srgb, var(--tc, #475569) 70%, black);
+    }
+    .auc-chip-win {
+        border: 1px solid var(--tc, #475569);
+        background: var(--tc, #475569);
+        color: #fff;
+    }
+    .auc-lead {
+        @apply inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wide text-white;
+        background: var(--tc, #f59e0b);
+    }
+    .auc-team {
+        border: 1px solid var(--color-line);
+        border-left: 3px solid var(--tc, #cbd5e1);
+        background: linear-gradient(90deg, color-mix(in srgb, var(--tc, #cbd5e1) 11%, white), white 60%);
+    }
+    .auc-glow {
+        border-color: var(--tc);
+        box-shadow: 0 0 0 1px var(--tc), 0 10px 24px -10px var(--tc);
     }
 
     /* ---------- Page chrome ---------- */
