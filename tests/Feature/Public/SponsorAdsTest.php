@@ -86,9 +86,10 @@ class SponsorAdsTest extends TestCase
         $this->blade('<x-ad-slot tier="mini" />')->assertDontSee('data-ad-visible', false);
     }
 
-    public function test_banners_can_be_kept_permanently_visible_from_the_config(): void
+    public function test_banners_stay_permanently_visible_by_default(): void
     {
-        config(['ads.banner_hidden_seconds' => 0]);
+        // No setting touched: the shipped default keeps the banner on screen (no fold-away timer).
+        $this->assertSame(0, config('ads.banner_hidden_seconds'));
         Advertisement::factory()->main()->create();
 
         $this->blade('<x-ad-slot tier="main" />')
