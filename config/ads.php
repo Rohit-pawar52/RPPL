@@ -11,13 +11,15 @@ return [
     'max_video_mb' => (int) env('ADS_MAX_VIDEO_MB', 8),
 
     /*
-     * Banner sponsors do not stay on screen all the time: a banner shows
-     * when the page opens, folds away after `banner_visible_seconds`, and
-     * comes back after `banner_hidden_seconds` (then repeats). Set
-     * banner_hidden_seconds to 0 to keep banners visible permanently.
+     * Banner sponsors stay on screen permanently for now, so the sponsors get
+     * the full exposure (banner_hidden_seconds = 0). To bring back the
+     * fold-away behaviour set ADS_BANNER_HIDDEN_SECONDS (for example 30): a
+     * banner then shows when the page opens, folds away after
+     * `banner_visible_seconds` and comes back after `banner_hidden_seconds`,
+     * then repeats.
      */
     'banner_visible_seconds' => (int) env('ADS_BANNER_VISIBLE_SECONDS', 8),
-    'banner_hidden_seconds' => (int) env('ADS_BANNER_HIDDEN_SECONDS', 30),
+    'banner_hidden_seconds' => (int) env('ADS_BANNER_HIDDEN_SECONDS', 0),
 
     /*
      * The sponsor pop-up on the player auction page: it opens by itself

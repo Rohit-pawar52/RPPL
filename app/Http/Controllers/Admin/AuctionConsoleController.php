@@ -7,12 +7,14 @@ use App\Models\Auction;
 use App\Models\AuctionLot;
 use App\Models\Edition;
 use App\Models\EditionTeam;
+use App\Models\Player;
 use App\Services\Auction\AuctionNotificationService;
 use App\Services\Auction\AuctionService;
 use App\Services\Auction\AuctionStateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -59,13 +61,16 @@ class AuctionConsoleController extends Controller
     /**
      * Calls the next random waiting player to the block.
      */
-    public function random(Edition $edition): JsonResponse
+    public function random(Request $request, Edition $edition): JsonResponse
     {
         $auction = $this->auctionOf($edition);
+        $role = $request->validate(['role' => ['nullable', Rule::in(array_keys(Player::PRIMARY_ROLE_LABELS))]])['role'] ?? null;
 
-        return $this->respond($auction, function () use ($auction) {
-            if ($this->auctions->callRandom($auction) === null) {
-                return __('Nobody is waiting. Start the next round to bring the hold players back.');
+        return $this->respond($auction, function () use ($auction, $role) {
+            if ($this->auctions->callRandom($auction, $role) === null) {
+                return $role
+                    ? __('Nobody of that role is waiting. Pick another role, or any player.')
+                    : __('Nobody is waiting. Start the next round to bring the hold players back.');
             }
 
             return null;
@@ -224,12 +229,77 @@ class AuctionConsoleController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:20'],
+            'village' => ['nullable', 'string', 'max:255'],
+            'role' => ['nullable', Rule::in(array_keys(Player::PRIMARY_ROLE_LABELS))],
         ]);
 
         return $this->respond($auction, function () use ($auction, $data) {
-            $lot = $this->auctions->addWalkInPlayer($auction, $data['name'], $data['phone']);
+            $lot = $this->auctions->addWalkInPlayer($auction, $data['name'], $data['phone'], $data['village'] ?? null, $data['role'] ?? null);
 
             return __(':name is added to the waiting players.', ['name' => $lot->playerRegistration->player->name]);
+        });
+    }
+
+    /**
+     * Corrects a player's name, role or village without leaving the console.
+     */
+    public function player(Request $request, Edition $edition): JsonResponse
+    {
+        $auction = $this->auctionOf($edition);
+        $data = $request->validate([
+            'lot_id' => ['required', 'integer'],
+            'name' => ['required', 'string', 'max:255'],
+            'village' => ['nullable', 'string', 'max:255'],
+            'primary_role' => ['nullable', Rule::in(array_keys(Player::PRIMARY_ROLE_LABELS))],
+        ]);
+
+        return $this->respond($auction, function () use ($auction, $data) {
+            $lot = $this->auctions->updatePlayerDetails($auction, $this->lotOf($auction, $data['lot_id']), $data);
+
+            return __('The details of :name were saved.', ['name' => $lot->playerRegistration->player->name]);
+        });
+    }
+
+    /**
+     * The latest bid went to the wrong team: move it, at the same amount, to the right one.
+     */
+    public function fixBid(Request $request, Edition $edition): JsonResponse
+    {
+        $auction = $this->auctionOf($edition);
+        $data = $request->validate([
+            'lot_id' => ['required', 'integer'],
+            'version' => ['required', 'integer'],
+            'team_id' => ['required', 'integer'],
+        ]);
+
+        return $this->respond($auction, function () use ($auction, $data, $request) {
+            $team = EditionTeam::query()->where('edition_id', $auction->edition_id)->with('team')->find($data['team_id']);
+
+            if (! $team) {
+                throw ValidationException::withMessages(['bid' => __('That team is not in this season.')]);
+            }
+
+            $this->auctions->moveLatestBid($auction, $this->lotOf($auction, $data['lot_id']), $team, (int) $data['version'], $request->user());
+
+            return __('The bid was moved to :team.', ['team' => $team->team->name]);
+        });
+    }
+
+    /**
+     * Corrects what a sold player went for.
+     */
+    public function price(Request $request, Edition $edition): JsonResponse
+    {
+        $auction = $this->auctionOf($edition);
+        $data = $request->validate([
+            'lot_id' => ['required', 'integer'],
+            'amount' => ['required', 'integer', 'min:1'],
+        ]);
+
+        return $this->respond($auction, function () use ($auction, $data) {
+            $lot = $this->auctions->changeSoldPrice($auction, $this->lotOf($auction, $data['lot_id']), (int) $data['amount']);
+
+            return __('The price of :name is now :amount pts.', ['name' => $lot->playerRegistration->player->name, 'amount' => points($data['amount'])]);
         });
     }
 

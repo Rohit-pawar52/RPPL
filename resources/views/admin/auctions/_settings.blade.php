@@ -3,7 +3,7 @@
     edit one. Expects $values (team_purse, min_bid, bid_step, min_squad,
     max_squad, show_live_bids). All amounts are points.
 --}}
-<div class="grid gap-x-4 sm:grid-cols-2">
+<div class="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
     <x-form.input
         name="team_purse"
         :label="__('Purse for each team (points)')"

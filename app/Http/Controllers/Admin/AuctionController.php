@@ -7,12 +7,18 @@ use App\Http\Requests\Admin\Auction\StoreAuctionRequest;
 use App\Http\Requests\Admin\Auction\UpdateAuctionRequest;
 use App\Models\Auction;
 use App\Models\Edition;
+use App\Services\Auction\AuctionExportService;
 use App\Services\Auction\AuctionNotificationService;
+use App\Services\Auction\AuctionReadinessService;
 use App\Services\Auction\AuctionService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * The player auction's set-up side, for the admin and the auctioneer
@@ -26,6 +32,8 @@ class AuctionController extends Controller
     public function __construct(
         private readonly AuctionService $auctions,
         private readonly AuctionNotificationService $notifications,
+        private readonly AuctionReadinessService $readiness,
+        private readonly AuctionExportService $exports,
     ) {}
 
     public function index(): View
@@ -56,6 +64,8 @@ class AuctionController extends Controller
         if ($auction) {
             $data['counts'] = $this->auctions->counts($auction);
             $data['standings'] = $this->auctions->teamStandings($auction);
+            $data['readiness'] = $auction->isCompleted() ? null : $this->readiness->check($auction);
+            $data['events'] = $auction->events()->with('user')->latest('id')->limit(40)->get();
         } else {
             $data['readyPlayers'] = $edition->playerRegistrations()
                 ->where('payment_status', 'paid')
@@ -160,6 +170,78 @@ class AuctionController extends Controller
         }
 
         return redirect()->route('admin.auctions.show', $edition)->with('success', $message);
+    }
+
+    /**
+     * Back to a fresh start (a rehearsal on the real data). Typing RESET is the confirmation: it removes every
+     * sale, so a stray tap must not be enough.
+     */
+    public function reset(Request $request, Edition $edition): RedirectResponse
+    {
+        $auction = $this->auctionOf($edition);
+        $this->authorize('update', $auction);
+
+        $request->validate(['confirm' => ['required', 'in:RESET']], [
+            'confirm.required' => __('Type RESET to confirm.'),
+            'confirm.in' => __('Type RESET to confirm.'),
+        ]);
+
+        return $this->attempt(
+            $edition,
+            fn () => $this->auctions->resetAll($auction),
+            __('The auction was reset: every player is waiting again and every team is empty.'),
+        );
+    }
+
+    /**
+     * A spreadsheet (CSV, opens in Excel) of the result, the bids, the activity log or the squads: the auction's
+     * story outside the database, also the safety copy.
+     */
+    public function export(Edition $edition, string $what): StreamedResponse
+    {
+        $this->authorize('viewAny', Auction::class);
+        $auction = $this->auctionOf($edition);
+
+        $table = match ($what) {
+            'results' => $this->exports->results($auction),
+            'bids' => $this->exports->bids($auction),
+            'events' => $this->exports->events($auction),
+            default => abort(404),
+        };
+
+        $name = 'rppl-auction-'.Str::slug($edition->name).'-'.$what.'.csv';
+
+        return response()->streamDownload(function () use ($table) {
+            $out = fopen('php://output', 'w');
+            // A byte-order mark makes Excel read the Hindi names correctly.
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, $table['headers']);
+
+            foreach ($table['rows'] as $row) {
+                fputcsv($out, $row);
+            }
+
+            fclose($out);
+        }, $name, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * The result as a printable PDF: every team's squad, what each player cost and what is left (English, like
+     * the season report).
+     */
+    public function resultsPdf(Edition $edition): Response
+    {
+        $this->authorize('viewAny', Auction::class);
+        $auction = $this->auctionOf($edition);
+
+        $pdf = Pdf::loadView('admin.auctions.results-pdf', [
+            'edition' => $edition,
+            'auction' => $auction,
+            'squads' => $this->exports->squads($auction, $this->auctions),
+            'counts' => $this->auctions->counts($auction),
+        ])->setPaper('a4');
+
+        return $pdf->download('rppl-auction-'.Str::slug($edition->name).'-results.pdf');
     }
 
     private function auctionOf(Edition $edition): Auction

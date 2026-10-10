@@ -33,6 +33,9 @@
             'resume' => route('admin.auctions.console.resume', $edition),
             'pool' => route('admin.auctions.console.pool', $edition),
             'walk-in' => route('admin.auctions.console.walk-in', $edition),
+            'player' => route('admin.auctions.console.player', $edition),
+            'fix-bid' => route('admin.auctions.console.fix-bid', $edition),
+            'price' => route('admin.auctions.console.price', $edition),
             'setup' => route('admin.auctions.show', $edition),
         ],
     ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) !!}</script>
@@ -42,6 +45,14 @@
         <div id="ac-toolbar" class="ac-card flex flex-wrap items-center justify-between gap-x-4 gap-y-2"></div>
 
         <div id="ac-pool"></div>
+
+        {{-- No connection: shown when the screen cannot reach the server, so nobody taps into the void. --}}
+        <div id="ac-offline" class="hidden rounded-xl border-2 border-red-300 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800" role="alert">
+            {{ __('No connection. Your taps are not reaching the server: check the wifi. Nothing has been lost.') }}
+        </div>
+
+        {{-- Right after SOLD: ten seconds to take it back with one tap. --}}
+        <div id="ac-undo-sale" class="hidden" role="status" aria-live="polite"></div>
 
         <div id="ac-notice" class="hidden" role="status" aria-live="polite"></div>
 
@@ -74,6 +85,13 @@
 
             <aside class="min-w-0 space-y-4">
                 <section class="ac-card" aria-label="{{ __('Call a player') }}">
+                    <div class="mb-3 flex items-center gap-2">
+                        <label for="ac-role" class="shrink-0 text-xs font-semibold text-slate-600">{{ __('Random call from') }}</label>
+                        <select id="ac-role" class="ops-input min-h-10 flex-1">
+                            <option value="">{{ __('Any role') }}</option>
+                            @foreach(\App\Models\Player::PRIMARY_ROLE_LABELS as $key => $label)<option value="{{ $key }}">{{ __($label) }}</option>@endforeach
+                        </select>
+                    </div>
                     <label for="ac-search" class="text-sm font-semibold text-slate-800">{{ __('Find a waiting or hold player') }}</label>
                     <div class="relative mt-1.5">
                         <x-ops.icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -109,6 +127,11 @@
                     <form id="ac-walkin" class="mt-2 space-y-2" novalidate>
                         <input name="name" required maxlength="255" placeholder="{{ __('Full name') }}" aria-label="{{ __('Full name') }}" class="ops-input min-h-11" />
                         <input name="phone" required maxlength="20" inputmode="tel" placeholder="{{ __('Mobile number') }}" aria-label="{{ __('Mobile number') }}" class="ops-input min-h-11" />
+                        <input name="village" maxlength="255" placeholder="{{ __('Village (optional)') }}" aria-label="{{ __('Village (optional)') }}" class="ops-input min-h-11" />
+                        <select name="role" aria-label="{{ __('Role (optional)') }}" class="ops-input min-h-11">
+                            <option value="">{{ __('Role (optional)') }}</option>
+                            @foreach(\App\Models\Player::PRIMARY_ROLE_LABELS as $key => $label)<option value="{{ $key }}">{{ __($label) }}</option>@endforeach
+                        </select>
                         <button type="submit" class="btn btn-secondary w-full">{{ __('Register and add to the waiting players') }}</button>
                         <p class="text-[11px] text-slate-400">{{ __('They are registered for this season as paid and wait with the others — call them like anyone else.') }}</p>
                     </form>
@@ -116,6 +139,29 @@
             </aside>
         </div>
     </div>
+
+    {{-- Correct a player's details without leaving the console. --}}
+    <dialog id="ac-player-dialog" class="w-[min(28rem,calc(100vw-2rem))] rounded-2xl p-0 shadow-pop backdrop:bg-black/50">
+        <form id="ac-player-form" class="space-y-3 p-5" novalidate>
+            <h2 class="text-base font-bold text-slate-900">{{ __('Correct the player\'s details') }}</h2>
+            <label class="block text-xs font-semibold text-slate-600">{{ __('Name') }}
+                <input name="name" required maxlength="255" class="ops-input mt-1 min-h-11" />
+            </label>
+            <label class="block text-xs font-semibold text-slate-600">{{ __('Village') }}
+                <input name="village" maxlength="255" class="ops-input mt-1 min-h-11" />
+            </label>
+            <label class="block text-xs font-semibold text-slate-600">{{ __('Role') }}
+                <select name="primary_role" class="ops-input mt-1 min-h-11">
+                    <option value="">{{ __('Not set') }}</option>
+                    @foreach(\App\Models\Player::PRIMARY_ROLE_LABELS as $key => $label)<option value="{{ $key }}">{{ __($label) }}</option>@endforeach
+                </select>
+            </label>
+            <div class="flex justify-end gap-2 pt-1">
+                <button type="button" data-action="close-player" class="btn btn-secondary">{{ __('Cancel') }}</button>
+                <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
+            </div>
+        </form>
+    </dialog>
 
     @vite(['resources/js/admin-auction.js'])
 @endsection

@@ -50,7 +50,7 @@
                         <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums {{ $loop->first ? 'bg-brand text-brand-fg' : 'bg-slate-100 text-slate-500' }}">{{ $loop->iteration }}</span>
                         <span class="min-w-0 flex-1">
                             <span class="block truncate font-semibold text-slate-900">{{ $buy['name'] }}</span>
-                            <span class="block truncate text-xs text-slate-500">{{ $buy['team'] }}</span>
+                            <span class="block truncate text-xs text-slate-500">{{ collect([$buy['village'] ?? null, $buy['team']])->filter()->implode(' · ') }}</span>
                         </span>
                         <span class="shrink-0 text-base font-bold tabular-nums text-slate-900">{{ points($buy['amount']) }} <span class="text-[11px] font-normal text-slate-400">{{ __('auction.pts') }}</span></span>
                     </li>
@@ -88,7 +88,7 @@
                                 <li class="flex items-center justify-between gap-2 px-4 py-2 text-[13px]">
                                     <span class="min-w-0">
                                         <span class="block truncate font-medium text-slate-900">{{ $player['name'] }}</span>
-                                        @if($player['role'])<span class="block truncate text-[11px] text-slate-400">{{ $player['role'] }}</span>@endif
+                                        @if($player['village'] || $player['role'])<span class="block truncate text-[11px] text-slate-400">{{ collect([$player['village'], $player['role']])->filter()->implode(' · ') }}</span>@endif
                                     </span>
                                     <span class="shrink-0 font-semibold tabular-nums text-slate-700">{{ $player['amount'] === null ? '—' : points($player['amount']) }}</span>
                                 </li>
