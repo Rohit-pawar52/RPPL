@@ -199,6 +199,10 @@
     .mx-facts {
         @apply space-y-3.5;
     }
+    /* In the wide column of the Match Info tab the facts sit two to a row. */
+    .mx-facts-wide {
+        @apply grid gap-x-6 gap-y-3.5 space-y-0 sm:grid-cols-2;
+    }
     .mx-fact {
         @apply flex items-start gap-3;
     }

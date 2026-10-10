@@ -73,6 +73,7 @@ class MatchController extends Controller
 
         return view('public.matches.show', [
             'match' => $match,
+            'liveData' => $this->liveMatch->getLiveMatchData($match),
         ]);
     }
 
@@ -142,6 +143,7 @@ class MatchController extends Controller
 
         return view('public.matches.squads', [
             'match' => $match,
+            'liveData' => $this->liveMatch->getLiveMatchData($match),
             'teamAPlayers' => $selected->get($match->edition_team_a_id) ?? collect(),
             'teamBPlayers' => $selected->get($match->edition_team_b_id) ?? collect(),
         ]);

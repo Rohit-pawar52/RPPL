@@ -10,6 +10,8 @@
     $chase = $liveData['chase'] ?? null;
     $chasingTeam = collect($liveData['innings'])->firstWhere('innings_number', 2)['batting_team'] ?? null;
     $resultText = $liveData['match_result'] ?? null;
+    $hasInnings = count($liveData['innings']) > 0;
+    $startsAt = ! $hasInnings && in_array($statusValue, ['scheduled', 'toss'], true) && $match->scheduled_at && $match->scheduled_at->isFuture() ? $match->scheduled_at : null;
 
     $scoreOf = function ($editionTeam) use ($liveData) {
         $row = collect($liveData['innings'])->firstWhere('batting_team', $editionTeam->team->name);
@@ -67,12 +69,19 @@
                 <span class="mx-lsc-overs" data-slot="overs">{{ $score ? __('matches.common.overs_count', ['overs' => $score['overs']]) : '' }}</span>
                 <span class="mx-crr {{ $showCrr ? '' : 'hidden' }}" data-slot="crr">{{ $showCrr ? __('matches.chase.crr', ['rate' => number_format((float) $score['crr'], 2)]) : '' }}</span>
             </div>
-            <p class="mx-lsc-yet {{ $score ? 'hidden' : '' }}" data-slot="yet">{{ __('ux_public_matches.match.yet_to_bat') }}</p>
+            <p class="mx-lsc-yet {{ $score || ! $hasInnings ? 'hidden' : '' }}" data-slot="yet">{{ __('ux_public_matches.match.yet_to_bat') }}</p>
         </div>
     @endforeach
     </div>
 
     <p id="live-match-result" class="mx-lsc-result {{ $resultText ? '' : 'hidden' }}">{{ $resultText }}</p>
+
+    @if($startsAt)
+        <p class="mx-lsc-result">
+            {{ __('ux_public_matches.match.starts_in') }}
+            <span class="tabular-nums" data-mx-countdown="{{ $startsAt->toIso8601String() }}" data-day="{{ __('ux_public_matches.match.d') }}" data-hour="{{ __('ux_public_matches.match.h') }}" data-minute="{{ __('ux_public_matches.match.m') }}" data-soon="{{ __('ux_public_matches.match.starting_soon') }}">{{ display_datetime($startsAt, 'D, d M · h:i A') }}</span>
+        </p>
+    @endif
 
     <div id="live-chase" class="{{ $chase ? '' : 'hidden' }}">
         @if($chase)
