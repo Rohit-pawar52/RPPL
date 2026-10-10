@@ -123,7 +123,7 @@
                     <form
                         method="POST"
                         action="{{ route('admin.auctions.complete', $edition) }}"
-                        onsubmit="return confirm({{ Js::from(__('Complete the auction? Everyone still waiting, on hold or on the block becomes unsold. This cannot be undone.')) }})"
+                        onsubmit="return confirm({{ Js::from(__('Complete the auction? Everyone still waiting, on hold or on the block becomes unsold. You can reopen the auction afterwards if you need to.')) }})"
                     >
                         @csrf
                         <button type="submit" class="btn btn-lg border border-red-300/60 text-red-100 hover:bg-red-500/20">{{ __('Complete') }}</button>
