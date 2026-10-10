@@ -30,6 +30,28 @@ if [ -z "$APP_KEY" ]; then
   exit 1
 fi
 
+# Push notifications (server side): the Firebase service-account key is a secret that is never in the
+# image (it is git- and docker-ignored), so it comes from a Render environment variable and is written
+# to the place the app reads it from. FIREBASE_CREDENTIALS_JSON is the key file's whole text;
+# FIREBASE_CREDENTIALS_BASE64 is the same base64-encoded (use it if the dashboard mangles the line
+# breaks inside "private_key"). The key is never printed. Not set = push sending stays off, nothing else changes.
+FIREBASE_KEY_FILE="storage/app/firebase/firebase-service-account.json"
+if [ -n "$FIREBASE_CREDENTIALS_BASE64" ] || [ -n "$FIREBASE_CREDENTIALS_JSON" ]; then
+  mkdir -p "$(dirname "$FIREBASE_KEY_FILE")"
+  if [ -n "$FIREBASE_CREDENTIALS_BASE64" ]; then
+    printf '%s' "$FIREBASE_CREDENTIALS_BASE64" | base64 -d > "$FIREBASE_KEY_FILE" 2>/dev/null || : > "$FIREBASE_KEY_FILE"
+  else
+    printf '%s' "$FIREBASE_CREDENTIALS_JSON" > "$FIREBASE_KEY_FILE"
+  fi
+  chmod 600 "$FIREBASE_KEY_FILE"
+  if php -r '$k = json_decode(file_get_contents($argv[1]), true); exit(is_array($k) && ($k["type"] ?? "") === "service_account" && ! empty($k["private_key"]) && ! empty($k["client_email"]) ? 0 : 1);' "$FIREBASE_KEY_FILE"; then
+    echo "Push notifications: Firebase service-account key written."
+  else
+    rm -f "$FIREBASE_KEY_FILE"
+    echo "WARNING: FIREBASE_CREDENTIALS_JSON/BASE64 is not a valid Firebase service-account key; push sending stays off. Re-paste the whole JSON file (or its base64)." >&2
+  fi
+fi
+
 rm -f bootstrap/cache/*.php
 php artisan config:clear
 
@@ -86,5 +108,7 @@ fi
 
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
+# ...but the Firebase key stays readable by its owner (www-data) only.
+[ -f "$FIREBASE_KEY_FILE" ] && chmod 600 "$FIREBASE_KEY_FILE"
 
 exec apache2-foreground
