@@ -3,6 +3,25 @@
     the practice reset and the activity log.
     Expects $edition, $auction, $counts, $readiness (null once completed) and $events.
 --}}
+@if($auction->isCompleted())
+    <section class="ops-card mt-4 border-amber-300" aria-label="{{ __('Reopen the auction') }}">
+        <div class="ops-card-head"><h3 class="ops-title">{{ __('Reopen the auction') }}</h3></div>
+        <div class="ops-card-body">
+            <p class="text-[13px] text-slate-600">{{ __('Pressed Complete too early, or a player turned up late? Reopening brings back the players who were left unsold, as waiting players. Every sale and every team stays exactly as it is. The auction comes back paused, so nothing happens until you press Resume.') }}</p>
+            <form method="POST" action="{{ route('admin.auctions.reopen', $edition) }}" class="mt-3 flex flex-wrap items-end gap-2" onsubmit="return confirm({{ Js::from(__('Reopen the auction? The unsold players become waiting players again.')) }})">
+                @csrf
+                <label class="text-xs font-medium text-slate-600">{{ __('Type REOPEN to confirm') }}
+                    <input type="text" name="confirm_reopen" autocomplete="off" required class="ops-input mt-1 block min-h-10 w-40" />
+                </label>
+                @error('confirm_reopen')
+                    <p class="w-full text-xs text-red-600">{{ $message }}</p>
+                @enderror
+                <button type="submit" class="btn btn-secondary btn-sm min-h-10">{{ __('Reopen the auction') }}</button>
+            </form>
+        </div>
+    </section>
+@endif
+
 @if($readiness)
     <section class="ops-card mt-4" aria-label="{{ __('Ready for the auction day?') }}">
         <div class="ops-card-head flex flex-wrap items-center justify-between gap-2">

@@ -81,7 +81,6 @@
     "Start auction": "नीलामी शुरू करें",
     "Pause": "रोकें",
     "Resume": "फिर शुरू करें",
-    "Complete the auction? Everyone still waiting, on hold or on the block becomes unsold. This cannot be undone.": "नीलामी पूरी करें? जो खिलाड़ी अभी इंतज़ार में, होल्ड पर या बोली में हैं, सब अनबिके हो जाएँगे। इसे वापस नहीं किया जा सकता।",
     "Complete": "पूरी करें",
     "Rules and team purses": "नियम और टीम पर्स",
     "Own purse": "अपना पर्स",
@@ -1153,5 +1152,15 @@
     "A completed auction cannot be reset.": "पूरी हो चुकी नीलामी रीसेट नहीं हो सकती।",
     ":name has already played a match, so the auction cannot be reset.": ":name मैच खेल चुके हैं, इसलिए नीलामी रीसेट नहीं हो सकती।",
     "AR": "ऑल",
-    "WK": "WK"
+    "WK": "WK",
+    "The auction was reopened; :count players came back to waiting.": "नीलामी फिर खोली गई; :count खिलाड़ी वापस इंतज़ार में आए।",
+    "Only a completed auction can be reopened.": "सिर्फ़ पूरी हो चुकी नीलामी ही फिर खोली जा सकती है।",
+    "This season is completed, so its auction cannot be reopened.": "यह सीज़न पूरा हो चुका है, इसलिए इसकी नीलामी फिर नहीं खुल सकती।",
+    "Type REOPEN to confirm.": "पक्का करने के लिए REOPEN लिखें।",
+    "The auction was reopened and is paused: :count players are waiting again. Resume it when you are ready.": "नीलामी फिर खुल गई और रुकी हुई है: :count खिलाड़ी फिर इंतज़ार में हैं। तैयार हों तो उसे फिर शुरू करें।",
+    "Complete the auction? Everyone still waiting, on hold or on the block becomes unsold. You can reopen the auction afterwards if you need to.": "नीलामी पूरी करें? जो भी इंतज़ार में, होल्ड पर या बोली पर है, अनसोल्ड हो जाएगा। ज़रूरत पड़ी तो बाद में नीलामी फिर खोल सकते हैं।",
+    "Reopen the auction": "नीलामी फिर खोलें",
+    "Pressed Complete too early, or a player turned up late? Reopening brings back the players who were left unsold, as waiting players. Every sale and every team stays exactly as it is. The auction comes back paused, so nothing happens until you press Resume.": "Complete जल्दी दब गया, या कोई खिलाड़ी देर से आया? फिर खोलने पर जो खिलाड़ी अनसोल्ड रहे थे वे इंतज़ार वाले खिलाड़ी बनकर वापस आ जाते हैं। हर बिक्री और हर टीम जैसी है वैसी ही रहती है। नीलामी रुकी हुई वापस आती है, इसलिए आपके Resume दबाने तक कुछ नहीं होता।",
+    "Reopen the auction? The unsold players become waiting players again.": "नीलामी फिर खोलें? अनसोल्ड खिलाड़ी फिर इंतज़ार वाले बन जाएँगे।",
+    "Type REOPEN to confirm": "पक्का करने के लिए REOPEN लिखें"
 }
