@@ -48,6 +48,9 @@ return [
     'needs_js' => 'नीलामी लाइव देखने के लिए JavaScript चालू करें।',
     'big_screen' => 'बड़ी स्क्रीन',
     'share' => 'शेयर करें',
+    'squad_earlier' => 'पहले से स्क्वॉड में',
+    'leading_badge' => 'आगे',
+    'latest_bids' => 'ताज़ा',
     'link_copied' => 'लिंक कॉपी हो गया',
     'roles_title' => 'स्क्वॉड में बल्लेबाज़ · गेंदबाज़ · ऑलराउंडर · विकेटकीपर',
     'roles_short' => [
